@@ -137,9 +137,8 @@ export function EventItem({ event }: EventItemProps) {
           
           {". "}
           {event.summary}
-          {" (like: "}
-          <span className="italic">{event.soundsLike}</span>
-          {")"} 
+          {" Like "}
+          <span className="italic">{event.soundsLike}.</span>
           
           {/* "Just added" badge */}
           {justAdded && (
@@ -165,7 +164,7 @@ export function EventItem({ event }: EventItemProps) {
                   <TooltipTrigger asChild>
                     <span 
                       onClick={handleSchedule}
-                      className="bg-green-500 text-xs font-bold uppercase px-2 py-1 rounded-full inline-flex items-center cursor-pointer"
+                      className="bg-green-500 text-white text-xs font-bold uppercase px-2 py-1 rounded-full inline-flex items-center cursor-pointer"
                     >
                       <Check className="mr-1 h-3 w-3" /> Scheduled
                     </span>
@@ -182,15 +181,13 @@ export function EventItem({ event }: EventItemProps) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button 
-                        variant="outline2" 
+                        variant="ghost" 
                         size="sm" 
-                        className="text-xs h-6 w-6 p-0 flex items-center justify-center rounded-full" 
+                        className="text-xs h-4 w-4 p-0 flex items-center justify-center rounded-full bg-transparent" 
                         onClick={handleSchedule}
                         disabled={scheduleMutation.isPending}
                       >
-                        <div className="w-4 h-4 rounded-full bg-black flex items-center justify-center">
-                          <div className="w-3 h-3 rounded-full bg-[#FE6B41]"></div>
-                        </div>
+                        <div className="w-3 h-3 rounded-full bg-[#e15a30]"></div>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
