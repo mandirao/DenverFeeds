@@ -6,11 +6,10 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-[#FEABDA] shadow-md px-4 py-3">
       <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center">
-        <h1 className="text-2xl md:text-3xl text-black font-extrabold mb-2 sm:mb-0">SETLIST SOCIAL FEED</h1> {/* Added font-extrabold */}
+        <Link href="/">
+          <h1 className="text-2xl md:text-3xl text-black hover:text-[#F4F2EA] transition-colors font-extrabold mb-2 sm:mb-0 cursor-pointer">SETLIST SOCIAL FEED</h1>
+        </Link>
         <div className="flex space-x-4 items-center">
-          <Link href="/">
-            <a className="text-black hover:text-[#F4F2EA] transition-colors font-sora">UPCOMING</a>
-          </Link>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
