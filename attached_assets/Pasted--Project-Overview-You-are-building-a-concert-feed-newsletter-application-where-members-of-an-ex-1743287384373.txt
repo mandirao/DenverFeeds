@@ -1,0 +1,64 @@
+**#-Project Overview**
+You are building a concert feed/newsletter application where members of an exclusive meetup group come to view and vote on all of the upcoming shows they may be interested in.
+
+You will be using [tech, tech, tech, tech]  (NextJS 14, shadcn, tailwind, Lucid icon
+
+
+**#-Core functionalities**
+FUNCTIONALITY SHOULD INCLUDE:
+
+A HOMEPAGE EVENT FEED
+The events feed will show each event as a basic one-line bullet line that includes data from fields: an illustrative emoji, artist name, date, venue, summary, sounds 'like [other artist]', and hidden a “genre” field. 
+Each event and the data within should follow this basic markdown styling: 
+- 🎸 **Dr. Dog** @Red Rocks (Mon, 7/1). Psychedelic folk-rock with rich harmonies *like: My Morning Jacket*.
+- 🎶 **Crumb** @Red Rocks (Mon, 7/1). Jazzy, dreamy indie psych *like: Men I Trust*.
+Group the feed according to month—show the month name preceding the group of events happening in that time. Any event who's date is passed should be removed from the list.
+
+
+An events upload page including a form with required fields, and the option to upload a CSV for bulk additions.
+HOMEPAGE INTERACTIVITY: Users should be able to click on the following parts of an event in the feed to load useful info:
+If a user clicks on the date of a show, open a tab that allows them to add it to their Google Calendar with the relevant information. Shows should start at 7p by default and show accordingly in their calendar
+If a user clicks the venue, load a google map in a new tab searching for that venue
+If a user clicks an artist name, load a tab with search for that artist in Spotify so they can listen to a sample immediately
+Make it clear that these are interactive, and show relevant tooltips on hover
+Users should be able to upvote events to indicate to the host they'd like to see an organized meetup created.
+Users should only be able to upvote a given event one time.
+The host should be able to click a "Schedule" checkbox. When clicked display a tag/label“Scheduled!" replacing the upvote UI (to show users that they should check Meetup to RSVP to the event)
+ADD NEW EVENTS
+On an Add Event page, show an "add new event" form with a field representing the data we discussed for each event, every field is required, and every field has a maximum character length of 50 characters
+If a duplicate event is attempted to be added it should be excluded from the upload and show an error/confirmation "One or more events skipped because it already exists."
+On the homepage events feed, show a "Just added!" tag/label next to any event that was added to the feed within the last week.
+On the homepage events feed, users should be able to filter the feed by month, or genre, or 'just added' vs. 'show all'. 
+If there are no shows that match the given filter, show an empty state message on the homepage that says "No shows to see here, yet."
+To allow only an admin to take certain actions, to limit users to one vote per event, and eventually to allow users to add their own events I may eventually like to add user authentication, preferably through something with an easy UX and user identification like google oath, but it can be the most basic login to start
+
+MAIN NAV + STYLESHEET SHOULD INCLUDE
+Page title: Setlist Social Feed
+Show a button to "RSVP" that goes here: https://www.meetup.com/setlist-social-indie-denver/?eventOrigin=event_home_page
+Main Nav should be sticky compared to the page content
+Follow these key style specifications:
+Concerts should always be referred to as "Shows"
+Colors:
+Main background: #FE6B41 (orange)
+Secondary accent: #FEABDA (pink)
+Text colors: Black for contrast, #F4F2EA (off-white) for light text
+Fonts:
+Headers: Anton font (imported from @fontsource)
+Body text: Sora font (semibold 600 weight)
+Make all h1s, h2s, h3s, h4s all-caps and all body copy sentence case.
+Button Styles:
+Primary Button (.btn-primary):
+bg-black text-[#FE6B41]
+hover:bg-black/90 hover:text-[#FE6B41]
+rounded-full border-none font-medium
+All links and buttons should have relevant tooltips on hover
+Outline Button (.btn-outline):
+bg-[#FE6B41] text-black
+hover:bg-[#FE6B41]/90 hover:text-black
+rounded-full border-black font-medium
+Form fields
+Square corners in the same background color of the form background itself
+Helper text inside of empty form fields should be a darker shade of the background color
+Fields should turn white once a user has entered content
+
+Please analyze the given functionality requirements and propose a plan for the database structure and tech stack that will make this performant and scalable. What is the proposed file structure, project set up, plan for server side API codes, environment variables, error handling, type safety, api client initialization, data fetching in components, configuration for things like next.js if using.
