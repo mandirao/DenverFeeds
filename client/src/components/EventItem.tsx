@@ -59,7 +59,7 @@ export function EventItem({ event }: EventItemProps) {
   const justAdded = isRecentlyAdded(event.createdAt);
 
   return (
-    <li className="border-b border-gray-200 pb-3 relative my-4 flex items-start">
+    <li className="pb-3 relative my-4 flex items-start">
       <span className="text-2xl mr-3">{event.emoji}</span>
       
       <div className="flex-1">
@@ -72,7 +72,7 @@ export function EventItem({ event }: EventItemProps) {
                   href={spotifyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-bold hover:underline cursor-pointer"
+                  className="font-bold border-b border-dotted border-black hover:border-none hover:underline cursor-pointer"
                   onMouseEnter={() => setIsHoveringArtist(true)}
                   onMouseLeave={() => setIsHoveringArtist(false)}
                 >
@@ -95,7 +95,7 @@ export function EventItem({ event }: EventItemProps) {
                   href={mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:underline cursor-pointer"
+                  className="border-b border-dotted border-black hover:border-none hover:underline cursor-pointer"
                   onMouseEnter={() => setIsHoveringVenue(true)}
                   onMouseLeave={() => setIsHoveringVenue(false)}
                 >
@@ -118,7 +118,7 @@ export function EventItem({ event }: EventItemProps) {
                   href={calendarUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:underline cursor-pointer"
+                  className="border-b border-dotted border-black hover:border-none hover:underline cursor-pointer"
                   onMouseEnter={() => setIsHoveringDate(true)}
                   onMouseLeave={() => setIsHoveringDate(false)}
                 >
@@ -135,56 +135,65 @@ export function EventItem({ event }: EventItemProps) {
           {event.summary}
           {" (like: "}
           <span className="italic">{event.soundsLike}</span>
-          {")."}
+          {")"} 
           
           {/* "Just added" badge */}
           {justAdded && (
-            <span className="bg-[#FEABDA] text-xs font-bold uppercase px-2 py-1 rounded-full ml-2">
-              Just added!
-            </span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="bg-[#FEABDA] text-xs font-bold uppercase px-2 py-1 rounded-full ml-2 cursor-help">
+                    Just added!
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Added within the last three days</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
+          
+          {/* Show either Upvote button or Scheduled badge */}
+          <span className="ml-2">
+            {event.isScheduled ? (
+              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full inline-flex items-center">
+                <Check className="mr-1 h-3 w-3" /> Scheduled!
+              </span>
+            ) : (
+              <span className="inline-flex space-x-2">
+                {/* Optional: Admin-only Schedule button */}
+                <Button 
+                  variant="outline2" 
+                  size="sm" 
+                  className="text-xs h-6 px-2 py-0" 
+                  onClick={handleSchedule}
+                  disabled={scheduleMutation.isPending}
+                >
+                  Schedule
+                </Button>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline2" 
+                        size="sm"
+                        onClick={handleUpvote}
+                        disabled={upvoteMutation.isPending || upvoteMutation.isError}
+                        className="text-xs flex items-center gap-1 h-6 px-2 py-0"
+                      >
+                        <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Upvote this show</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </span>
+            )}
+          </span>
         </p>
-        
-        {/* Show either Upvote button or Scheduled badge */}
-        <div className="mt-2">
-          {event.isScheduled ? (
-            <span className="bg-green-500 text-white text-sm px-3 py-1 rounded-full inline-flex items-center">
-              <Check className="mr-1 h-4 w-4" /> Scheduled!
-            </span>
-          ) : (
-            <div className="flex space-x-2">
-              {/* Optional: Admin-only Schedule button */}
-              <Button 
-                variant="outline2" 
-                size="sm" 
-                className="text-sm" 
-                onClick={handleSchedule}
-                disabled={scheduleMutation.isPending}
-              >
-                Schedule
-              </Button>
-              
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline2" 
-                      size="sm"
-                      onClick={handleUpvote}
-                      disabled={upvoteMutation.isPending || upvoteMutation.isError}
-                      className="text-sm flex items-center gap-1"
-                    >
-                      <ArrowUp className="h-4 w-4" /> {event.upvotes || 0}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Upvote this show</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          )}
-        </div>
       </div>
     </li>
   );

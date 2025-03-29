@@ -46,12 +46,12 @@ export function createSpotifySearchUrl(artist: string): string {
   return `https://open.spotify.com/search/${encodeURIComponent(artist)}`;
 }
 
-// Check if event was added in the last week
+// Check if event was added in the last three days
 export function isRecentlyAdded(createdAt: Date | string | null): boolean {
   if (!createdAt) return false;
   const dateObj = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
-  const oneWeekAgo = addDays(new Date(), -7);
-  return isAfter(dateObj, oneWeekAgo);
+  const threeDaysAgo = addDays(new Date(), -3);
+  return isAfter(dateObj, threeDaysAgo);
 }
 
 // Group events by month
