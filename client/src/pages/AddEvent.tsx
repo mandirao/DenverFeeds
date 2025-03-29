@@ -18,10 +18,10 @@ import Papa from "papaparse";
 // Extend the event schema with custom validations
 const addEventSchema = insertEventSchema.extend({
   emoji: z.string().min(1, "Emoji is required").max(5, "Maximum 5 characters"),
-  artist: z.string().min(1, "Artist name is required").max(50, "Maximum 50 characters"),
-  venue: z.string().min(1, "Venue is required").max(50, "Maximum 50 characters"),
-  summary: z.string().min(1, "Summary is required").max(50, "Maximum 50 characters"),
-  soundsLike: z.string().min(1, "Sounds like is required").max(50, "Maximum 50 characters"),
+  artist: z.string().min(1, "Artist name is required").max(75, "Maximum 75 characters"),
+  venue: z.string().min(1, "Venue is required").max(75, "Maximum 75 characters"),
+  summary: z.string().min(1, "Summary is required").max(75, "Maximum 75 characters"),
+  soundsLike: z.string().min(1, "Sounds like is required").max(75, "Maximum 75 characters"),
   date: z.preprocess(
     (arg) => typeof arg === 'string' ? new Date(arg) : arg,
     z.date({
@@ -262,7 +262,7 @@ export default function AddEvent() {
                 <Input
                   id="artist"
                   {...form.register("artist")}
-                  maxLength={50}
+                  maxLength={75}
                   placeholder="Artist name"
                   className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
                 />
@@ -276,7 +276,7 @@ export default function AddEvent() {
                 <Input
                   id="venue"
                   {...form.register("venue")}
-                  maxLength={50}
+                  maxLength={75}
                   placeholder="Venue name"
                   className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
                 />
@@ -317,7 +317,7 @@ export default function AddEvent() {
                 <Input
                   id="summary"
                   {...form.register("summary")}
-                  maxLength={50}
+                  maxLength={75}
                   placeholder="Brief description of the music"
                   className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
                 />
@@ -331,7 +331,7 @@ export default function AddEvent() {
                 <Input
                   id="soundsLike"
                   {...form.register("soundsLike")}
-                  maxLength={50}
+                  maxLength={75}
                   placeholder="Similar artist"
                   className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
                 />
@@ -369,7 +369,8 @@ export default function AddEvent() {
               />
               <p className="text-sm text-gray-600 mt-2">
                 CSV format: each row should contain values in this order:<br />
-                artist, venue, date (YYYY-MM-DD), emoji, summary, sounds_like, genre
+                artist, venue, date (YYYY-MM-DD), emoji, summary, sounds_like, genre<br />
+                <span className="italic">Note: Text fields can be up to 75 characters long</span>
               </p>
               {csvError && (
                 <p className="text-red-500 text-sm mt-1">{csvError}</p>
