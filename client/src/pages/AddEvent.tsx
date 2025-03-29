@@ -57,8 +57,11 @@ export default function AddEvent() {
   // Add single event mutation
   const addEventMutation = useMutation({
     mutationFn: async (data: FormValues) => {
-      const res = await apiRequest("POST", "/api/events", data);
-      return res.json();
+      return apiRequest({
+        endpoint: "/api/events",
+        method: "POST",
+        data
+      });
     },
     onSuccess: () => {
       toast({
@@ -68,8 +71,17 @@ export default function AddEvent() {
       navigate("/");
     },
     onError: (error: any) => {
-      if (error.message?.includes("already exists")) {
-        setDuplicateError("One or more events skipped because it already exists.");
+      console.error("Single event add error:", error);
+      
+      if (error.response?.status === 409 || error.message?.includes("already exists")) {
+        setDuplicateError("This event already exists in the database.");
+      } else if (error.response?.status === 400) {
+        // Handle validation errors
+        toast({
+          title: "Validation Error",
+          description: error.response?.data?.message || "Please check your form inputs.",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Error",
@@ -83,31 +95,54 @@ export default function AddEvent() {
   // Add multiple events (CSV) mutation
   const addEventsBulkMutation = useMutation({
     mutationFn: async (events: any[]) => {
-      const res = await apiRequest("POST", "/api/events/bulk", events);
-      return res.json();
+      return apiRequest({
+        endpoint: "/api/events/bulk",
+        method: "POST",
+        data: events
+      });
     },
     onSuccess: (data) => {
-      if (data.skipped > 0) {
-        setDuplicateError("One or more events skipped because they already exist.");
+      console.log("Bulk upload response:", data);
+      
+      // Update the results display
+      if (data.results?.skipped > 0) {
+        setDuplicateError(
+          data.results.errors?.length > 0 
+            ? `Some events couldn't be added: ${data.results.errors[0]}${data.results.errors.length > 1 ? ` and ${data.results.errors.length - 1} more` : ''}`
+            : "One or more events skipped because they already exist."
+        );
       }
       
-      if (data.created > 0) {
+      if (data.results?.created > 0) {
         toast({
           title: "Events Added",
-          description: `${data.created} events have been added successfully!`,
+          description: data.message || `Added ${data.results.created} events successfully!`,
         });
         
-        if (data.skipped === 0) {
+        if (data.results.skipped === 0) {
           navigate("/");
         }
+      } else {
+        setCsvError("No events were added. Please check the CSV format and try again.");
       }
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to add events from CSV. Please check the format and try again.",
-        variant: "destructive",
-      });
+    onError: (error: any) => {
+      console.error("Bulk upload error:", error);
+      
+      // Handle structured error responses
+      if (error.response?.data?.results?.errors?.length > 0) {
+        const errors = error.response.data.results.errors;
+        setCsvError(`Upload failed: ${errors.join(", ")}`);
+      } else if (error.message?.includes("409")) {
+        setCsvError("All events already exist in the database.");
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add events from CSV. Please check the format and try again.",
+          variant: "destructive",
+        });
+        setCsvError(error.message || "Upload failed");
+      }
     },
   });
 
@@ -135,32 +170,58 @@ export default function AddEvent() {
         }
         
         try {
-          const events = results.data.map((row: any) => {
-            // If header:false, row will be an array instead of an object
-            if (Array.isArray(row) && row.length >= 7) {
-              return {
-                artist: row[0],
-                venue: row[1],
-                date: new Date(row[2]),
-                emoji: row[3],
-                summary: row[4],
-                soundsLike: row[5],
-                genre: row[6],
-              };
-            } else if (typeof row === 'object' && row !== null) {
-              // Handle case where header might be true
-              return {
-                emoji: row.emoji,
-                artist: row.artist,
-                venue: row.venue,
-                date: new Date(row.date),
-                summary: row.summary,
-                soundsLike: row.sounds_like || row.soundsLike,
-                genre: row.genre,
-              };
-            }
-            return null;
-          }).filter(Boolean);
+          // Filter out empty rows and process valid ones
+          const events = results.data
+            .filter((row: any) => {
+              // Skip empty rows
+              if (!row || (Array.isArray(row) && row.every(cell => !cell))) {
+                return false;
+              }
+              return true;
+            })
+            .map((row: any) => {
+              // If header:false, row will be an array
+              if (Array.isArray(row) && row.length >= 7) {
+                console.log("Processing CSV row:", row);
+                
+                // Check that we have the minimum required fields
+                if (!row[0] || !row[1] || !row[2] || !row[3] || !row[4] || !row[6]) {
+                  throw new Error(`Missing required fields in row: ${row.join(', ')}`);
+                }
+                
+                // For the "sounds_like" field, handle potential empty values
+                const soundsLike = row[5] || ""; 
+                
+                return {
+                  artist: row[0],
+                  venue: row[1],
+                  date: row[2], // Send as string, server will parse
+                  emoji: row[3],
+                  summary: row[4],
+                  soundsLike: soundsLike,
+                  genre: row[6],
+                };
+              } else if (typeof row === 'object' && row !== null) {
+                // Handle case where Papa might have parsed as object
+                if (!row.artist || !row.venue || !row.date || !row.emoji || !row.summary || !row.genre) {
+                  throw new Error("Missing required fields in CSV row");
+                }
+                
+                return {
+                  artist: row.artist,
+                  venue: row.venue,
+                  date: row.date, // Send as string, server will parse
+                  emoji: row.emoji,
+                  summary: row.summary,
+                  soundsLike: row.sounds_like || row.soundsLike || "",
+                  genre: row.genre,
+                };
+              }
+              return null;
+            })
+            .filter(Boolean);
+            
+          console.log("Processed events:", events);
           
           if (events.length > 0) {
             addEventsBulkMutation.mutate(events);
