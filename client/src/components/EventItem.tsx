@@ -147,12 +147,36 @@ function EventItem({ event }: EventItemProps) {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="bg-[#FEABDA] text-xs font-bold uppercase px-2 py-1 rounded-full inline-flex items-center h-5 cursor-help">
+                      <span className="bg-[#FEABDA] text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5">
                         Just added!
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Added within the last three days</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </span>
+            )}
+            
+            {/* Upvote button */}
+            {!event.isScheduled && (
+              <span className="inline-block align-middle ml-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline2" 
+                        size="sm"
+                        onClick={handleUpvote}
+                        disabled={upvoteMutation.isPending || upvoteMutation.isError}
+                        className="text-xs flex items-center gap-1 h-5 px-2 py-0"
+                      >
+                        <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Upvote this show</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -167,9 +191,10 @@ function EventItem({ event }: EventItemProps) {
                     <TooltipTrigger asChild>
                       <span 
                         onClick={handleSchedule}
-                        className="bg-[#41F2EE] text-white text-xs font-bold uppercase px-2 py-1 rounded-full inline-flex items-center h-5 cursor-pointer"
+                        className="bg-[#41D1F2] text-white text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5 cursor-pointer"
+                        style={{ position: 'relative', top: '1px' }}
                       >
-                        <Check className="mr-1 h-3 w-3" /> Scheduled
+                        <Check className="mr-0.5 h-3 w-3" /> Scheduled
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -181,29 +206,10 @@ function EventItem({ event }: EventItemProps) {
             )}
           </div>
           
-          {/* Right-aligned controls */}
+          {/* Right-aligned controls - just the scheduling dot */}
           <div className="flex items-center">
             {!event.isScheduled ? (
-              <div className="inline-flex space-x-2 ml-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="outline2" 
-                        size="sm"
-                        onClick={handleUpvote}
-                        disabled={upvoteMutation.isPending || upvoteMutation.isError}
-                        className="text-xs flex items-center gap-1 h-6 px-2 py-0"
-                      >
-                        <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Upvote this show</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                
+              <div className="ml-auto pl-2">
                 {/* Schedule button dot */}
                 <TooltipProvider>
                   <Tooltip>
