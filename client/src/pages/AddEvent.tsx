@@ -126,23 +126,41 @@ export default function AddEvent() {
     if (!file) return;
     
     Papa.parse(file, {
-      header: true,
+      header: false,
       complete: (results) => {
         if (results.errors.length > 0) {
+          console.error("CSV parsing errors:", results.errors);
           setCsvError("Error parsing CSV file. Please check the format.");
           return;
         }
         
         try {
-          const events = results.data.map((row: any) => ({
-            emoji: row.emoji,
-            artist: row.artist,
-            venue: row.venue,
-            date: new Date(row.date),
-            summary: row.summary,
-            soundsLike: row.sounds_like,
-            genre: row.genre,
-          }));
+          const events = results.data.map((row: any) => {
+            // If header:false, row will be an array instead of an object
+            if (Array.isArray(row) && row.length >= 7) {
+              return {
+                artist: row[0],
+                venue: row[1],
+                date: new Date(row[2]),
+                emoji: row[3],
+                summary: row[4],
+                soundsLike: row[5],
+                genre: row[6],
+              };
+            } else if (typeof row === 'object' && row !== null) {
+              // Handle case where header might be true
+              return {
+                emoji: row.emoji,
+                artist: row.artist,
+                venue: row.venue,
+                date: new Date(row.date),
+                summary: row.summary,
+                soundsLike: row.sounds_like || row.soundsLike,
+                genre: row.genre,
+              };
+            }
+            return null;
+          }).filter(Boolean);
           
           if (events.length > 0) {
             addEventsBulkMutation.mutate(events);
@@ -289,7 +307,8 @@ export default function AddEvent() {
                 className="block w-full p-3 border-2 border-black bg-[#FEABDA] rounded-none"
               />
               <p className="text-sm text-gray-600 mt-2">
-                CSV should include columns: artist, venue, date, emoji, summary, sounds_like, genre
+                CSV format: each row should contain values in this order:<br />
+                artist, venue, date (YYYY-MM-DD), emoji, summary, sounds_like, genre
               </p>
               {csvError && (
                 <p className="text-red-500 text-sm mt-1">{csvError}</p>
