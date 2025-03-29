@@ -6,6 +6,7 @@ import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { insertEventSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -165,7 +166,7 @@ export default function AddEvent() {
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        <div className="bg-[#F4F2EA] rounded-lg p-6">
+        <div className="bg-[#FEABDA] rounded-lg p-6">
           <h2 className="text-2xl text-black mb-6 font-anton">ADD NEW SHOW</h2>
           
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -177,7 +178,7 @@ export default function AddEvent() {
                   {...form.register("artist")}
                   maxLength={50}
                   placeholder="Artist name"
-                  className="w-full p-3 border-2 border-black bg-[#FE6B41] placeholder-[#FE6B41]/60 rounded-none focus:bg-white"
+                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
                 />
                 {form.formState.errors.artist && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.artist.message}</p>
@@ -191,7 +192,7 @@ export default function AddEvent() {
                   {...form.register("venue")}
                   maxLength={50}
                   placeholder="Venue name"
-                  className="w-full p-3 border-2 border-black bg-[#FE6B41] placeholder-[#FE6B41]/60 rounded-none focus:bg-white"
+                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
                 />
                 {form.formState.errors.venue && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.venue.message}</p>
@@ -204,7 +205,7 @@ export default function AddEvent() {
                   id="date"
                   type="date"
                   {...form.register("date")}
-                  className="w-full p-3 border-2 border-black bg-[#FE6B41] placeholder-[#FE6B41]/60 rounded-none focus:bg-white"
+                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
                 />
                 {form.formState.errors.date && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.date.message}</p>
@@ -218,7 +219,7 @@ export default function AddEvent() {
                   {...form.register("emoji")}
                   maxLength={5}
                   placeholder="Choose an emoji (e.g. 🎸)"
-                  className="w-full p-3 border-2 border-black bg-[#FE6B41] placeholder-[#FE6B41]/60 rounded-none focus:bg-white"
+                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
                 />
                 {form.formState.errors.emoji && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.emoji.message}</p>
@@ -232,7 +233,7 @@ export default function AddEvent() {
                   {...form.register("summary")}
                   maxLength={50}
                   placeholder="Brief description of the music"
-                  className="w-full p-3 border-2 border-black bg-[#FE6B41] placeholder-[#FE6B41]/60 rounded-none focus:bg-white"
+                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
                 />
                 {form.formState.errors.summary && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.summary.message}</p>
@@ -246,7 +247,7 @@ export default function AddEvent() {
                   {...form.register("soundsLike")}
                   maxLength={50}
                   placeholder="Similar artist"
-                  className="w-full p-3 border-2 border-black bg-[#FE6B41] placeholder-[#FE6B41]/60 rounded-none focus:bg-white"
+                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
                 />
                 {form.formState.errors.soundsLike && (
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.soundsLike.message}</p>
@@ -258,7 +259,7 @@ export default function AddEvent() {
                 <select
                   id="genre"
                   {...form.register("genre")}
-                  className="w-full p-3 border-2 border-black bg-[#FE6B41] placeholder-[#FE6B41]/60 rounded-none focus:bg-white"
+                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
                 >
                   <option value="" disabled>Select a genre</option>
                   {genres.map((genre) => (
@@ -278,7 +279,7 @@ export default function AddEvent() {
                 id="csv-upload"
                 accept=".csv"
                 onChange={handleCsvUpload}
-                className="block w-full p-3 border-2 border-black bg-[#FE6B41] rounded-none"
+                className="block w-full p-3 border-2 border-black bg-[#FEABDA] rounded-none"
               />
               <p className="text-sm text-gray-600 mt-2">
                 CSV should include columns: artist, venue, date, emoji, summary, sounds_like, genre
@@ -291,7 +292,7 @@ export default function AddEvent() {
             <div className="flex justify-end">
               <Button 
                 type="submit"
-                variant="primary"
+                variant="pink"
                 disabled={addEventMutation.isPending}
               >
                 ADD SHOW
@@ -308,6 +309,7 @@ export default function AddEvent() {
           </form>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

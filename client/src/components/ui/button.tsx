@@ -18,8 +18,9 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        primary: "bg-black text-[#FE6B41] hover:bg-black/90",
+        primary: "bg-black text-[#FEABDA] hover:bg-black/90",
         outline2: "bg-[#FE6B41] text-black hover:bg-[#FE6B41]/90 border-black font-medium",
+        pink: "bg-[#FEABDA] text-black hover:bg-[#FEABDA]/90 border-black font-medium",
       },
       size: {
         default: "h-10 px-4 py-2",

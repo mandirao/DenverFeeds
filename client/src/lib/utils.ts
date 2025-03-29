@@ -47,7 +47,8 @@ export function createSpotifySearchUrl(artist: string): string {
 }
 
 // Check if event was added in the last week
-export function isRecentlyAdded(createdAt: Date | string): boolean {
+export function isRecentlyAdded(createdAt: Date | string | null): boolean {
+  if (!createdAt) return false;
   const dateObj = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
   const oneWeekAgo = addDays(new Date(), -7);
   return isAfter(dateObj, oneWeekAgo);

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import EventFilters from "@/components/EventFilters";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
@@ -90,6 +91,7 @@ export default function Home() {
           )}
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
