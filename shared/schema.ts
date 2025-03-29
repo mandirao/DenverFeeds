@@ -58,22 +58,10 @@ export type InsertUpvote = z.infer<typeof insertUpvoteSchema>;
 export type Upvote = typeof upvotes.$inferSelect;
 
 export const genres = [
-  'Indie Rock',
-  'Garage Rock & Psych',
-  'Post-Punk & Darkwave',
-  'Punk & Hardcore',
-  'Shoegaze & Dream Pop',
-  'Indie Folk & Singer-Songwriter',
-  'Americana & Alt-Country',
-  'Classic & Outlaw Country',
-  'Alt-Pop & Electro-Pop',
-  'Synthpop & New Wave',
-  'Singer-Songwriter Pop',
-  'Electronic & Dance',
-  'Ambient & Experimental',
-  'Drum & Bass & House',
-  'Neo-Soul & R&B',
-  'Funk & Jam Bands',
-  'Jazz & Afrobeat',
-  'Symphonic & Contemporary Classical'
+  'Rock & Alternative',
+  'Folk, Country & Americana',
+  'Pop & Indie Pop',
+  'Electronic & Experimental',
+  'Funk, Soul & Jazz',
+  'Classical & Orchestral'
 ];

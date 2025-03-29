@@ -77,7 +77,7 @@ export function EventFilters({ onFilterChange, genres }: EventFiltersProps) {
           >
             <option value="all">All Genres</option>
             {genres.map((g) => (
-              <option key={g} value={g.toLowerCase()}>{g}</option>
+              <option key={g} value={g}>{g}</option>
             ))}
           </select>
         </div>

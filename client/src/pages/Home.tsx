@@ -40,7 +40,7 @@ export default function Home() {
     }
     
     // Genre filter
-    if (filters.genre !== "all" && event.genre.toLowerCase() !== filters.genre) {
+    if (filters.genre !== "all" && event.genre !== filters.genre) {
       return false;
     }
     

@@ -159,7 +159,14 @@ export default function AddEvent() {
     });
   };
 
-  const genres = ["Indie", "Rock", "Folk", "Pop", "Electronic", "Jazz", "Hip Hop", "R&B", "Metal", "Punk", "Country", "Blues"];
+  const genres = [
+    'Rock & Alternative',
+    'Folk, Country & Americana',
+    'Pop & Indie Pop',
+    'Electronic & Experimental',
+    'Funk, Soul & Jazz',
+    'Classical & Orchestral'
+  ];
 
   return (
     <div className="min-h-screen bg-[#FE6B41]">
@@ -263,7 +270,7 @@ export default function AddEvent() {
                 >
                   <option value="" disabled>Select a genre</option>
                   {genres.map((genre) => (
-                    <option key={genre} value={genre.toLowerCase()}>{genre}</option>
+                    <option key={genre} value={genre}>{genre}</option>
                   ))}
                 </select>
                 {form.formState.errors.genre && (
