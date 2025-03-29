@@ -13,7 +13,7 @@ export function MonthGroup({ monthName, events }: MonthGroupProps) {
   return (
     <div className="mb-10">
       <h2 className="text-2xl text-black mb-6 font-anton">{formatMonth(monthName)}</h2>
-      <ul className="space-y-4">
+      <ul className="list-none pl-0">
         {events.map((event) => (
           <EventItem key={event.id} event={event} />
         ))}

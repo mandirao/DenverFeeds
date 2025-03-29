@@ -9,7 +9,7 @@ export function Navbar() {
         <h1 className="text-2xl md:text-3xl text-black font-anton mb-2 sm:mb-0">SETLIST SOCIAL FEED</h1>
         <div className="flex space-x-4 items-center">
           <Link href="/">
-            <a className="text-black hover:text-[#F4F2EA] transition-colors font-sora">HOME</a>
+            <a className="text-black hover:text-[#F4F2EA] transition-colors font-sora">UPCOMING</a>
           </Link>
           <Link href="/add">
             <a className="text-black hover:text-[#F4F2EA] transition-colors font-sora">ADD EVENT</a>

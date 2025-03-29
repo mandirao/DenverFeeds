@@ -52,11 +52,9 @@ export function EventFilters({ onFilterChange, genres }: EventFiltersProps) {
   const months = getNextMonths();
 
   return (
-    <div className="bg-[#FEABDA] rounded-lg p-4 mb-8">
-      <h2 className="text-xl text-black mb-4 font-anton">FILTER SHOWS</h2>
+    <div className="mb-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label htmlFor="month-filter" className="block text-black mb-2 font-sora">MONTH</label>
           <select 
             id="month-filter" 
             value={month}
@@ -71,7 +69,6 @@ export function EventFilters({ onFilterChange, genres }: EventFiltersProps) {
         </div>
         
         <div>
-          <label htmlFor="genre-filter" className="block text-black mb-2 font-sora">GENRE</label>
           <select 
             id="genre-filter" 
             value={genre}
@@ -86,7 +83,6 @@ export function EventFilters({ onFilterChange, genres }: EventFiltersProps) {
         </div>
         
         <div>
-          <label htmlFor="status-filter" className="block text-black mb-2 font-sora">STATUS</label>
           <select 
             id="status-filter" 
             value={status}

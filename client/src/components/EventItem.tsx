@@ -59,89 +59,96 @@ export function EventItem({ event }: EventItemProps) {
   const justAdded = isRecentlyAdded(event.createdAt);
 
   return (
-    <li className="border-b border-gray-200 pb-3 relative">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-2xl">{event.emoji}</span>
-        
-        {/* Artist Name (Spotify link) */}
-        <TooltipProvider>
-          <Tooltip open={isHoveringArtist}>
-            <TooltipTrigger asChild>
-              <a 
-                href={spotifyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold hover:underline cursor-pointer"
-                onMouseEnter={() => setIsHoveringArtist(true)}
-                onMouseLeave={() => setIsHoveringArtist(false)}
-              >
-                {event.artist}
-              </a>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Search on Spotify</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        
-        <span className="text-gray-600">@</span>
-        
-        {/* Venue (Google Maps) */}
-        <TooltipProvider>
-          <Tooltip open={isHoveringVenue}>
-            <TooltipTrigger asChild>
-              <a 
-                href={mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline cursor-pointer"
-                onMouseEnter={() => setIsHoveringVenue(true)}
-                onMouseLeave={() => setIsHoveringVenue(false)}
-              >
-                {event.venue}
-              </a>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>View on Google Maps</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        
-        {/* Date (Google Calendar) */}
-        <TooltipProvider>
-          <Tooltip open={isHoveringDate}>
-            <TooltipTrigger asChild>
-              <a 
-                href={calendarUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline cursor-pointer text-gray-600"
-                onMouseEnter={() => setIsHoveringDate(true)}
-                onMouseLeave={() => setIsHoveringDate(false)}
-              >
-                ({formattedDate})
-              </a>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Add to Google Calendar</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        
-        <span className="ml-1">{event.summary}</span>
-        <span className="italic ml-1">like: {event.soundsLike}</span>
-        
-        {/* "Just added" badge */}
-        {justAdded && (
-          <span className="bg-[#FEABDA] text-xs font-bold uppercase px-2 py-1 rounded-full ml-2">
-            Just added!
-          </span>
-        )}
+    <li className="border-b border-gray-200 pb-3 relative my-4 flex items-start">
+      <span className="text-2xl mr-3">{event.emoji}</span>
+      
+      <div className="flex-1">
+        <p className="text-base mb-1">
+          {/* Artist Name (Spotify link) */}
+          <TooltipProvider>
+            <Tooltip open={isHoveringArtist}>
+              <TooltipTrigger asChild>
+                <a 
+                  href={spotifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold hover:underline cursor-pointer"
+                  onMouseEnter={() => setIsHoveringArtist(true)}
+                  onMouseLeave={() => setIsHoveringArtist(false)}
+                >
+                  {event.artist}
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Search on Spotify</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {" plays at "}
+          
+          {/* Venue (Google Maps) */}
+          <TooltipProvider>
+            <Tooltip open={isHoveringVenue}>
+              <TooltipTrigger asChild>
+                <a 
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline cursor-pointer"
+                  onMouseEnter={() => setIsHoveringVenue(true)}
+                  onMouseLeave={() => setIsHoveringVenue(false)}
+                >
+                  {event.venue}
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View on Google Maps</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {" on "}
+          
+          {/* Date (Google Calendar) */}
+          <TooltipProvider>
+            <Tooltip open={isHoveringDate}>
+              <TooltipTrigger asChild>
+                <a 
+                  href={calendarUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline cursor-pointer"
+                  onMouseEnter={() => setIsHoveringDate(true)}
+                  onMouseLeave={() => setIsHoveringDate(false)}
+                >
+                  {formattedDate}
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Add to Google Calendar</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {". "}
+          {event.summary}
+          {" (like: "}
+          <span className="italic">{event.soundsLike}</span>
+          {")."}
+          
+          {/* "Just added" badge */}
+          {justAdded && (
+            <span className="bg-[#FEABDA] text-xs font-bold uppercase px-2 py-1 rounded-full ml-2">
+              Just added!
+            </span>
+          )}
+        </p>
         
         {/* Show either Upvote button or Scheduled badge */}
-        <div className="ml-auto">
+        <div className="mt-2">
           {event.isScheduled ? (
-            <span className="bg-green-500 text-white text-sm px-3 py-1 rounded-full flex items-center">
+            <span className="bg-green-500 text-white text-sm px-3 py-1 rounded-full inline-flex items-center">
               <Check className="mr-1 h-4 w-4" /> Scheduled!
             </span>
           ) : (

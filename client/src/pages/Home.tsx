@@ -71,7 +71,7 @@ export default function Home() {
         />
         
         {/* Events Feed */}
-        <div className="bg-[#F4F2EA] rounded-lg p-6 mb-8 min-h-[400px]">
+        <div className="mb-8 min-h-[400px]">
           {isLoading ? (
             <div className="py-10 text-center">Loading events...</div>
           ) : error ? (
