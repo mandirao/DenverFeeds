@@ -11,7 +11,7 @@ interface EventItemProps {
   event: Event;
 }
 
-export function EventItem({ event }: EventItemProps) {
+function EventItem({ event }: EventItemProps) {
   const queryClient = useQueryClient();
   const [isHoveringArtist, setIsHoveringArtist] = useState(false);
   const [isHoveringVenue, setIsHoveringVenue] = useState(false);
@@ -67,135 +67,124 @@ export function EventItem({ event }: EventItemProps) {
       <span className="text-2xl mr-3">{event.emoji}</span>
       
       <div className="flex-1">
-        <p className="text-base">
-          {/* Artist Name (Spotify link) */}
-          <TooltipProvider>
-            <Tooltip open={isHoveringArtist}>
-              <TooltipTrigger asChild>
-                <a 
-                  href={spotifyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-bold border-b border-dotted border-black hover:border-none hover:underline cursor-pointer"
-                  onMouseEnter={() => setIsHoveringArtist(true)}
-                  onMouseLeave={() => setIsHoveringArtist(false)}
-                >
-                  {event.artist}
-                </a>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Search on Spotify</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          {" plays at "}
-          
-          {/* Venue (Google Maps) */}
-          <TooltipProvider>
-            <Tooltip open={isHoveringVenue}>
-              <TooltipTrigger asChild>
-                <a 
-                  href={mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="border-b border-dotted border-black hover:border-none hover:underline cursor-pointer"
-                  onMouseEnter={() => setIsHoveringVenue(true)}
-                  onMouseLeave={() => setIsHoveringVenue(false)}
-                >
-                  {event.venue}
-                </a>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>View on Google Maps</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          {" on "}
-          
-          {/* Date (Google Calendar) */}
-          <TooltipProvider>
-            <Tooltip open={isHoveringDate}>
-              <TooltipTrigger asChild>
-                <a 
-                  href={calendarUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="border-b border-dotted border-black hover:border-none hover:underline cursor-pointer"
-                  onMouseEnter={() => setIsHoveringDate(true)}
-                  onMouseLeave={() => setIsHoveringDate(false)}
-                >
-                  {formattedDate}
-                </a>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Add to Google Calendar</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          {". "}
-          {event.summary}
-          {" Like "}
-          <span className="italic">{event.soundsLike}.</span>
-          
-          {/* "Just added" badge */}
-          {justAdded && (
+        <div className="text-base flex items-start">
+          <div className="flex-grow">
+            {/* Artist Name (Spotify link) */}
             <TooltipProvider>
-              <Tooltip>
+              <Tooltip open={isHoveringArtist}>
                 <TooltipTrigger asChild>
-                  <span className="bg-[#FEABDA] text-xs font-bold uppercase px-2 py-1 rounded-full ml-2 cursor-help">
-                    Just added!
-                  </span>
+                  <a 
+                    href={spotifyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold border-b border-dotted border-black hover:border-none hover:underline cursor-pointer"
+                    onMouseEnter={() => setIsHoveringArtist(true)}
+                    onMouseLeave={() => setIsHoveringArtist(false)}
+                  >
+                    {event.artist}
+                  </a>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Added within the last three days</p>
+                  <p>Search on Spotify</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-          )}
-          
-          {/* Show either Schedule/Scheduled button or buttons */}
-          <span className="ml-2">
-            {event.isScheduled ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span 
-                      onClick={handleSchedule}
-                      className="bg-green-500 text-white text-xs font-bold uppercase px-2 py-1 rounded-full inline-flex items-center cursor-pointer"
-                    >
-                      <Check className="mr-1 h-3 w-3" /> Scheduled
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Click to unschedule</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-              <span className="inline-flex space-x-2">
-                {/* Empty checkmark Schedule button */}
+            
+            {" plays at "}
+            
+            {/* Venue (Google Maps) */}
+            <TooltipProvider>
+              <Tooltip open={isHoveringVenue}>
+                <TooltipTrigger asChild>
+                  <a 
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="border-b border-dotted border-black hover:border-none hover:underline cursor-pointer"
+                    onMouseEnter={() => setIsHoveringVenue(true)}
+                    onMouseLeave={() => setIsHoveringVenue(false)}
+                  >
+                    {event.venue}
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View on Google Maps</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            {" on "}
+            
+            {/* Date (Google Calendar) */}
+            <TooltipProvider>
+              <Tooltip open={isHoveringDate}>
+                <TooltipTrigger asChild>
+                  <a 
+                    href={calendarUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="border-b border-dotted border-black hover:border-none hover:underline cursor-pointer"
+                    onMouseEnter={() => setIsHoveringDate(true)}
+                    onMouseLeave={() => setIsHoveringDate(false)}
+                  >
+                    {formattedDate}
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Add to Google Calendar</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            {". "}
+            {event.summary}
+            {" like "}
+            <span className="italic">{event.soundsLike.split(',').join(', ')}.</span>
+            
+            {/* "Just added" badge */}
+            {justAdded && (
+              <span className="inline-block align-middle ml-2">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-xs h-4 w-4 p-0 flex items-center justify-center rounded-full bg-transparent" 
-                        onClick={handleSchedule}
-                        disabled={scheduleMutation.isPending}
-                      >
-                        <div className="w-3 h-3 rounded-full bg-[#e15a30]"></div>
-                      </Button>
+                      <span className="bg-[#FEABDA] text-xs font-bold uppercase px-2 py-1 rounded-full inline-flex items-center h-5 cursor-help">
+                        Just added!
+                      </span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Schedule this show</p>
+                      <p>Added within the last three days</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                
+              </span>
+            )}
+            
+            {/* Show scheduled tag */}
+            {event.isScheduled && (
+              <span className="inline-block align-middle ml-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span 
+                        onClick={handleSchedule}
+                        className="bg-[#41F2EE] text-white text-xs font-bold uppercase px-2 py-1 rounded-full inline-flex items-center h-5 cursor-pointer"
+                      >
+                        <Check className="mr-1 h-3 w-3" /> Scheduled
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Click RSVP above</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </span>
+            )}
+          </div>
+          
+          {/* Right-aligned controls */}
+          <div className="flex items-center">
+            {!event.isScheduled ? (
+              <div className="inline-flex space-x-2 ml-2">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -214,10 +203,30 @@ export function EventItem({ event }: EventItemProps) {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              </span>
-            )}
-          </span>
-        </p>
+                
+                {/* Schedule button dot */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs h-4 w-4 p-0 flex items-center justify-center rounded-full bg-transparent" 
+                        onClick={handleSchedule}
+                        disabled={scheduleMutation.isPending}
+                      >
+                        <div className="w-3 h-3 rounded-full bg-[#e15a30]"></div>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Schedule this show</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            ) : null}
+          </div>
+        </div>
       </div>
     </li>
   );
