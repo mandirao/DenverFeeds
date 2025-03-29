@@ -194,10 +194,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Event not found" });
       }
 
-      const updatedEvent = await storage.setEventScheduled(eventId);
+      const updatedEvent = await storage.setEventScheduled(eventId, true);
       res.json(updatedEvent);
     } catch (error) {
       res.status(500).json({ message: "Failed to schedule event" });
+    }
+  });
+  
+  // Unset an event as scheduled (unschedule)
+  apiRouter.post("/events/:id/unschedule", async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ message: "Invalid event ID" });
+      }
+
+      const event = await storage.getEventById(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      const updatedEvent = await storage.setEventScheduled(eventId, false);
+      res.json(updatedEvent);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to unschedule event" });
     }
   });
 

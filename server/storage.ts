@@ -19,7 +19,7 @@ export interface IStorage {
   // Upvote methods
   upvoteEvent(eventId: number, userId: number): Promise<boolean>;
   hasUserUpvoted(eventId: number, userId: number): Promise<boolean>;
-  setEventScheduled(eventId: number): Promise<Event | undefined>;
+  setEventScheduled(eventId: number, scheduled: boolean): Promise<Event | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -146,11 +146,11 @@ export class MemStorage implements IStorage {
     return eventUpvotes.some(upvote => upvote.userId === userId);
   }
 
-  async setEventScheduled(eventId: number): Promise<Event | undefined> {
+  async setEventScheduled(eventId: number, scheduled: boolean = true): Promise<Event | undefined> {
     const event = this.events.get(eventId);
     if (!event) return undefined;
     
-    event.isScheduled = true;
+    event.isScheduled = scheduled;
     this.events.set(eventId, event);
     return event;
   }

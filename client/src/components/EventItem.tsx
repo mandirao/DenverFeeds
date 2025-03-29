@@ -31,7 +31,11 @@ export function EventItem({ event }: EventItemProps) {
   // Schedule mutation
   const scheduleMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/events/${event.id}/schedule`, undefined);
+      // Toggle scheduling
+      const endpoint = event.isScheduled 
+        ? `/api/events/${event.id}/unschedule` 
+        : `/api/events/${event.id}/schedule`;
+      const res = await apiRequest("POST", endpoint, undefined);
       return res.json();
     },
     onSuccess: () => {
@@ -59,11 +63,11 @@ export function EventItem({ event }: EventItemProps) {
   const justAdded = isRecentlyAdded(event.createdAt);
 
   return (
-    <li className="pb-3 relative my-4 flex items-start">
+    <li className="pb-1 relative flex items-start">
       <span className="text-2xl mr-3">{event.emoji}</span>
       
       <div className="flex-1">
-        <p className="text-base mb-1">
+        <p className="text-base">
           {/* Artist Name (Spotify link) */}
           <TooltipProvider>
             <Tooltip open={isHoveringArtist}>
@@ -153,24 +157,47 @@ export function EventItem({ event }: EventItemProps) {
             </TooltipProvider>
           )}
           
-          {/* Show either Upvote button or Scheduled badge */}
+          {/* Show either Schedule/Scheduled button or buttons */}
           <span className="ml-2">
             {event.isScheduled ? (
-              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full inline-flex items-center">
-                <Check className="mr-1 h-3 w-3" /> Scheduled!
-              </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span 
+                      onClick={handleSchedule}
+                      className="bg-green-500 text-xs font-bold uppercase px-2 py-1 rounded-full inline-flex items-center cursor-pointer"
+                    >
+                      <Check className="mr-1 h-3 w-3" /> Scheduled
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Click to unschedule</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             ) : (
               <span className="inline-flex space-x-2">
-                {/* Optional: Admin-only Schedule button */}
-                <Button 
-                  variant="outline2" 
-                  size="sm" 
-                  className="text-xs h-6 px-2 py-0" 
-                  onClick={handleSchedule}
-                  disabled={scheduleMutation.isPending}
-                >
-                  Schedule
-                </Button>
+                {/* Empty checkmark Schedule button */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline2" 
+                        size="sm" 
+                        className="text-xs h-6 w-6 p-0 flex items-center justify-center rounded-full" 
+                        onClick={handleSchedule}
+                        disabled={scheduleMutation.isPending}
+                      >
+                        <div className="w-4 h-4 rounded-full bg-black flex items-center justify-center">
+                          <div className="w-3 h-3 rounded-full bg-[#FE6B41]"></div>
+                        </div>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Schedule this show</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 
                 <TooltipProvider>
                   <Tooltip>
