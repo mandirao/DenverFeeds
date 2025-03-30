@@ -7,7 +7,7 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 bg-[#FEABDA] shadow-md px-4 py-3">
       <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center">
         <Link href="/">
-          <h1 className="text-2xl md:text-3xl text-black hover:text-[#F4F2EA] transition-colors font-extrabold mb-2 sm:mb-0 cursor-pointer">SETLIST SOCIAL FEED</h1>
+          <h1 className="text-3xl md:text-4xl text-black hover:text-[#41F2EE] transition-colors font-black mb-2 sm:mb-0 cursor-pointer">SETLIST SOCIAL FEED</h1>
         </Link>
         <div className="flex space-x-4 items-center">
           <TooltipProvider>
@@ -17,7 +17,7 @@ export function Navbar() {
                   href="https://www.meetup.com/setlist-social-indie-denver/?eventOrigin=event_home_page" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="bg-black text-[#FE6B41] hover:bg-black/90 rounded-full px-4 py-2 font-medium transition-colors"
+                  className="bg-black text-[#FE6B41] hover:text-[#41F2EE] rounded-full px-4 py-2 font-medium transition-colors"
                 >
                   RSVP
                 </a>
