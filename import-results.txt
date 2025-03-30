@@ -1,0 +1,103 @@
+Starting import of March/April events...
+
+Validation complete:
+- Valid events: 50
+- Errors: 40
+
+Errors found:
+ - Row 52: Duplicate event (STRFKR at Red Rocks Amphitheatre)
+ - Row 53: Duplicate event (Alex Lahey at Aggie Theatre)
+ - Row 54: Duplicate event (Shakey Graves at Mission Ballroom)
+ - Row 55: Duplicate event (Baths at Marquis Theater)
+ - Row 56: Duplicate event (Alex Lahey at Meow Wolf Denver | Convergence Station)
+ - Row 57: Duplicate event (Alice Phoebe Lou at Red Rocks Amphitheatre)
+ - Row 58: Duplicate event (Remi Wolf at Red Rocks Amphitheatre)
+ - Row 59: Duplicate event (Lady Lamb at Fort Collins Armory)
+ - Row 60: Duplicate event (Lady Lamb at Globe Hall)
+ - Row 61: Duplicate event (Parker Millsap at Ogden Theatre)
+ - Row 62: Duplicate event (Sturgill Simpson at Mission Ballroom)
+ - Row 63: Duplicate event (DARKSIDE at Mission Ballroom)
+ - Row 64: Duplicate event (Duff Thompson at TBD)
+ - Row 65: Duplicate event (Babehoven at Bluebird Theater)
+ - Row 66: Duplicate event (Clap Your Hands Say Yeah at Bluebird Theater)
+ - Row 67: Duplicate event (Gregory Alan Isakov at TBD)
+ - Row 68: Duplicate event (Sublime at Red Rocks Amphitheatre)
+ - Row 69: Duplicate event (The Tallest Man on Earth at Bluebird Music Festival)
+ - Row 70: Duplicate event (Mogwai at Ogden Theatre)
+ - Row 71: Duplicate event (Fontaines D.C. at Mission Ballroom)
+ - Row 72: Duplicate event (Post Animal at Mission Ballroom)
+ - Row 73: Duplicate event (Dawes at Ogden Theatre)
+ - Row 74: Duplicate event (The Velveteers at Bluebird Theater)
+ - Row 75: Duplicate event (Spiritual Cramp at Marquis Theater)
+ - Row 76: Duplicate event (Cryogeyser at Hi-Dive)
+ - Row 77: Duplicate event (L.A. WITCH at Hi-Dive)
+ - Row 78: Duplicate event (Silversun Pickups at Aggie Theatre)
+ - Row 79: Duplicate event (Mikal Cronin at Gothic Theatre)
+ - Row 80: Duplicate event (Nada Surf at Bluebird Theater)
+ - Row 81: Duplicate event (Godspeed You! Black Emperor at Ogden Theatre)
+ - Row 82: Duplicate event (Silversun Pickups at Boulder Theater)
+ - Row 83: Duplicate event (Superheaven at TBD)
+ - Row 84: Duplicate event (Durand Bernarr at Gothic Theatre)
+ - Row 85: Duplicate event (Korine at Hi-Dive)
+ - Row 86: Duplicate event (Nada Surf at Fox Theatre)
+ - Row 87: Duplicate event (Silversun Pickups at Black Sheep)
+ - Row 88: Duplicate event (Jason Isbell at Sunset Amphitheater)
+ - Row 89: Duplicate event (Deafheaven at Gothic Theatre)
+ - Row 90: Duplicate event (Dummy at Hi-Dive)
+ - Row 91: Duplicate event (Trauma Ray at Gothic Theatre)
+
+Starting import of 50 validated events...
+Skipped duplicate event: Naked Giants @ Globe Hall
+Skipped duplicate event: Saint Motel @ Mission Ballroom
+Skipped duplicate event: The Japanese House @ Ball Arena
+Skipped duplicate event: Amyl and The Sniffers @ Mission Ballroom
+Skipped duplicate event: Sheer Mag @ Mission Ballroom
+Skipped duplicate event: Bright Eyes @ Washington's
+Skipped duplicate event: The Bug Club @ Hi-Dive
+Skipped duplicate event: Ducks Ltd. @ Hi-Dive
+Skipped duplicate event: Franz Ferdinand @ Boulder Theater
+Skipped duplicate event: Hinds @ Meow Wolf Denver | Convergence Station
+Skipped duplicate event: STRFKR @ Red Rocks Amphitheatre
+Skipped duplicate event: Alex Lahey @ Aggie Theatre
+Skipped duplicate event: Shakey Graves @ Mission Ballroom
+Skipped duplicate event: Baths @ Marquis Theater
+Skipped duplicate event: Alex Lahey @ Meow Wolf Denver | Convergence Station
+Skipped duplicate event: Alice Phoebe Lou @ Red Rocks Amphitheatre
+Skipped duplicate event: Remi Wolf @ Red Rocks Amphitheatre
+Skipped duplicate event: Lady Lamb @ Fort Collins Armory
+Skipped duplicate event: Lady Lamb @ Globe Hall
+Skipped duplicate event: Parker Millsap @ Ogden Theatre
+Skipped duplicate event: Sturgill Simpson @ Mission Ballroom
+Skipped duplicate event: DARKSIDE @ Mission Ballroom
+Skipped duplicate event: Duff Thompson @ TBD
+Skipped duplicate event: Babehoven @ Bluebird Theater
+Skipped duplicate event: Clap Your Hands Say Yeah @ Bluebird Theater
+Skipped duplicate event: Gregory Alan Isakov @ TBD
+Skipped duplicate event: Sublime @ Red Rocks Amphitheatre
+Skipped duplicate event: The Tallest Man on Earth @ Bluebird Music Festival
+Skipped duplicate event: Mogwai @ Ogden Theatre
+Skipped duplicate event: Fontaines D.C. @ Mission Ballroom
+Skipped duplicate event: Post Animal @ Mission Ballroom
+Skipped duplicate event: Dawes @ Ogden Theatre
+Skipped duplicate event: The Velveteers @ Bluebird Theater
+Skipped duplicate event: Spiritual Cramp @ Marquis Theater
+Skipped duplicate event: Cryogeyser @ Hi-Dive
+Skipped duplicate event: L.A. WITCH @ Hi-Dive
+Skipped duplicate event: Silversun Pickups @ Aggie Theatre
+Skipped duplicate event: Mikal Cronin @ Gothic Theatre
+Skipped duplicate event: Nada Surf @ Bluebird Theater
+Skipped duplicate event: Godspeed You! Black Emperor @ Ogden Theatre
+Skipped duplicate event: Silversun Pickups @ Boulder Theater
+Skipped duplicate event: Superheaven @ TBD
+Skipped duplicate event: Durand Bernarr @ Gothic Theatre
+Skipped duplicate event: Korine @ Hi-Dive
+Skipped duplicate event: Nada Surf @ Fox Theatre
+Skipped duplicate event: Silversun Pickups @ Black Sheep
+Skipped duplicate event: Jason Isbell @ Sunset Amphitheater
+Skipped duplicate event: Deafheaven @ Gothic Theatre
+Skipped duplicate event: Dummy @ Hi-Dive
+Skipped duplicate event: Trauma Ray @ Gothic Theatre
+
+Import complete:
+- Inserted: 0 events
+- Skipped: 50 events
