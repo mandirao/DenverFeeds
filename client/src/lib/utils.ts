@@ -8,24 +8,46 @@ export function cn(...inputs: ClassValue[]) {
 
 // Format date as "ddd, M/D" (e.g., "Mon, 7/1")
 export function formatDate(date: Date | string): string {
-  let dateObj: Date;
-  
+  // Special handling for dates to prevent timezone issues
   if (typeof date === 'string') {
-    // Handle ISO strings properly to maintain the day
-    if (date.includes('T')) {
-      // Regular ISO string with time component
-      dateObj = new Date(date);
-    } else {
-      // Date-only string (YYYY-MM-DD)
-      // Use date parts to create a date object that preserves the day regardless of timezone
+    // Extract the date parts directly without using the Date constructor for YYYY-MM-DD format
+    if (!date.includes('T')) {
+      // For date-only strings (YYYY-MM-DD), directly parse and format without timezone adjustments
       const [year, month, day] = date.split('-').map(Number);
-      dateObj = new Date(year, month - 1, day);
+      
+      // Create a date object using UTC to avoid timezone shifting
+      const dateObj = new Date(Date.UTC(year, month - 1, day));
+      
+      // Get day of week using UTC methods to ensure correct day
+      const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dateObj.getUTCDay()];
+      
+      // Return formatted date without allowing timezone shifts
+      return `${dayOfWeek}, ${month}/${day}`;
+    } else {
+      // For ISO strings with time component, parse using UTC
+      const dateTime = new Date(date);
+      const utcDateObj = new Date(Date.UTC(
+        dateTime.getUTCFullYear(),
+        dateTime.getUTCMonth(),
+        dateTime.getUTCDate()
+      ));
+      
+      // Format using UTC date parts
+      const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][utcDateObj.getUTCDay()];
+      return `${dayOfWeek}, ${utcDateObj.getUTCMonth() + 1}/${utcDateObj.getUTCDate()}`;
     }
   } else {
-    dateObj = date;
+    // For Date objects, create a UTC version to avoid timezone shifts
+    const utcDateObj = new Date(Date.UTC(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    ));
+    
+    // Format using UTC methods
+    const dayOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][utcDateObj.getUTCDay()];
+    return `${dayOfWeek}, ${utcDateObj.getUTCMonth() + 1}/${utcDateObj.getUTCDate()}`;
   }
-  
-  return format(dateObj, "EEE, M/d");
 }
 
 // Create Google Calendar URL
@@ -34,22 +56,34 @@ export function createGoogleCalendarUrl(event: {
   venue: string;
   date: Date | string;
 }): string {
-  let dateObj: Date;
+  let year: number;
+  let month: number;
+  let day: number;
   
   if (typeof event.date === 'string') {
-    // Handle ISO strings properly to maintain the day
     if (event.date.includes('T')) {
       // Regular ISO string with time component
-      dateObj = new Date(event.date);
+      const dateObj = new Date(event.date);
+      year = dateObj.getFullYear();
+      month = dateObj.getMonth();
+      day = dateObj.getDate();
     } else {
       // Date-only string (YYYY-MM-DD)
-      // Use date parts to create a date object that preserves the day
-      const [year, month, day] = event.date.split('-').map(Number);
-      dateObj = new Date(year, month - 1, day);
+      // Parse the parts directly
+      const parts = event.date.split('-').map(Number);
+      year = parts[0];
+      month = parts[1] - 1; // JS months are 0-indexed
+      day = parts[2];
     }
   } else {
-    dateObj = event.date;
+    // Date object
+    year = event.date.getFullYear();
+    month = event.date.getMonth();
+    day = event.date.getDate();
   }
+  
+  // Create a new date in the correct time zone (using actual date parts)
+  const dateObj = new Date(year, month, day);
   
   // Set event to start at 7pm
   dateObj.setHours(19, 0, 0, 0);
@@ -81,23 +115,38 @@ export function createSpotifySearchUrl(artist: string): string {
 export function isRecentlyAdded(createdAt: Date | string | null): boolean {
   if (!createdAt) return false;
   
-  let dateObj: Date;
+  let year: number;
+  let month: number;
+  let day: number;
   
   if (typeof createdAt === 'string') {
-    // Handle ISO strings properly
     if (createdAt.includes('T')) {
-      // Regular ISO string with time component
-      dateObj = new Date(createdAt);
+      // For ISO strings with time component, extract the date
+      const dateObj = new Date(createdAt);
+      year = dateObj.getFullYear();
+      month = dateObj.getMonth(); 
+      day = dateObj.getDate();
     } else {
-      // Date-only string (YYYY-MM-DD)
-      const [year, month, day] = createdAt.split('-').map(Number);
-      dateObj = new Date(year, month - 1, day);
+      // For date-only strings (YYYY-MM-DD), parse directly
+      const parts = createdAt.split('-').map(Number);
+      year = parts[0];
+      month = parts[1] - 1; // JS months are 0-indexed
+      day = parts[2];
     }
   } else {
-    dateObj = createdAt;
+    // Date object
+    year = createdAt.getFullYear();
+    month = createdAt.getMonth();
+    day = createdAt.getDate();
   }
   
-  const threeDaysAgo = addDays(new Date(), -3);
+  // Create a date object with the extracted parts
+  const dateObj = new Date(year, month, day);
+  
+  // Calculate three days ago from now
+  const now = new Date();
+  const threeDaysAgo = addDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), -3);
+  
   return isAfter(dateObj, threeDaysAgo);
 }
 
@@ -106,24 +155,40 @@ export function groupEventsByMonth(events: any[]) {
   const groupedEvents: Record<string, any[]> = {};
   
   events.forEach(event => {
-    let date: Date;
+    let year: number;
+    let month: number;
+    let monthName: string;
     
     if (typeof event.date === 'string') {
-      // Handle ISO strings properly to maintain the month
       if (event.date.includes('T')) {
-        // Regular ISO string with time component
-        date = new Date(event.date);
+        // For ISO strings with time component, extract parts using Date
+        const dateObj = new Date(event.date);
+        year = dateObj.getFullYear();
+        month = dateObj.getMonth();
       } else {
-        // Date-only string (YYYY-MM-DD)
-        // Use date parts to create a date object that preserves the month
-        const [year, month, day] = event.date.split('-').map(Number);
-        date = new Date(year, month - 1, day);
+        // For date-only strings (YYYY-MM-DD), parse directly
+        const parts = event.date.split('-').map(Number);
+        year = parts[0];
+        month = parts[1] - 1; // 0-indexed months
       }
+    } else if (event.date instanceof Date) {
+      year = event.date.getFullYear();
+      month = event.date.getMonth();
     } else {
-      date = event.date;
+      // Handle unexpected date format
+      console.warn('Unexpected date format:', event.date);
+      return; // Skip this event
     }
     
-    const monthYear = format(date, 'MMMM yyyy'); // e.g., "July 2023"
+    // Get month name without using Date constructor
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    monthName = monthNames[month];
+    
+    // Create a consistent key
+    const monthYear = `${monthName} ${year}`;
     
     if (!groupedEvents[monthYear]) {
       groupedEvents[monthYear] = [];
