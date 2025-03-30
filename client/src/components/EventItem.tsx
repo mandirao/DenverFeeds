@@ -254,7 +254,7 @@ function EventItem({ event }: EventItemProps) {
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Click RSVP above</p>
+                      <p>Learn more at Meetup</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
