@@ -8,7 +8,23 @@ export function cn(...inputs: ClassValue[]) {
 
 // Format date as "ddd, M/D" (e.g., "Mon, 7/1")
 export function formatDate(date: Date | string): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  let dateObj: Date;
+  
+  if (typeof date === 'string') {
+    // Handle ISO strings properly to maintain the day
+    if (date.includes('T')) {
+      // Regular ISO string with time component
+      dateObj = new Date(date);
+    } else {
+      // Date-only string (YYYY-MM-DD)
+      // Use date parts to create a date object that preserves the day regardless of timezone
+      const [year, month, day] = date.split('-').map(Number);
+      dateObj = new Date(year, month - 1, day);
+    }
+  } else {
+    dateObj = date;
+  }
+  
   return format(dateObj, "EEE, M/d");
 }
 
@@ -18,7 +34,22 @@ export function createGoogleCalendarUrl(event: {
   venue: string;
   date: Date | string;
 }): string {
-  const dateObj = typeof event.date === 'string' ? new Date(event.date) : event.date;
+  let dateObj: Date;
+  
+  if (typeof event.date === 'string') {
+    // Handle ISO strings properly to maintain the day
+    if (event.date.includes('T')) {
+      // Regular ISO string with time component
+      dateObj = new Date(event.date);
+    } else {
+      // Date-only string (YYYY-MM-DD)
+      // Use date parts to create a date object that preserves the day
+      const [year, month, day] = event.date.split('-').map(Number);
+      dateObj = new Date(year, month - 1, day);
+    }
+  } else {
+    dateObj = event.date;
+  }
   
   // Set event to start at 7pm
   dateObj.setHours(19, 0, 0, 0);
@@ -49,7 +80,23 @@ export function createSpotifySearchUrl(artist: string): string {
 // Check if event was added in the last three days
 export function isRecentlyAdded(createdAt: Date | string | null): boolean {
   if (!createdAt) return false;
-  const dateObj = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
+  
+  let dateObj: Date;
+  
+  if (typeof createdAt === 'string') {
+    // Handle ISO strings properly
+    if (createdAt.includes('T')) {
+      // Regular ISO string with time component
+      dateObj = new Date(createdAt);
+    } else {
+      // Date-only string (YYYY-MM-DD)
+      const [year, month, day] = createdAt.split('-').map(Number);
+      dateObj = new Date(year, month - 1, day);
+    }
+  } else {
+    dateObj = createdAt;
+  }
+  
   const threeDaysAgo = addDays(new Date(), -3);
   return isAfter(dateObj, threeDaysAgo);
 }
@@ -59,7 +106,23 @@ export function groupEventsByMonth(events: any[]) {
   const groupedEvents: Record<string, any[]> = {};
   
   events.forEach(event => {
-    const date = new Date(event.date);
+    let date: Date;
+    
+    if (typeof event.date === 'string') {
+      // Handle ISO strings properly to maintain the month
+      if (event.date.includes('T')) {
+        // Regular ISO string with time component
+        date = new Date(event.date);
+      } else {
+        // Date-only string (YYYY-MM-DD)
+        // Use date parts to create a date object that preserves the month
+        const [year, month, day] = event.date.split('-').map(Number);
+        date = new Date(year, month - 1, day);
+      }
+    } else {
+      date = event.date;
+    }
+    
     const monthYear = format(date, 'MMMM yyyy'); // e.g., "July 2023"
     
     if (!groupedEvents[monthYear]) {
