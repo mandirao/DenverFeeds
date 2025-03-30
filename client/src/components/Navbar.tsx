@@ -47,10 +47,11 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
             {/* Accordion for filters */}
             <Accordion type="single" collapsible defaultValue="">
               <AccordionItem value="filters" className="border-0">
-                <AccordionTrigger className="py-1 hover:no-underline">
-                  <div className="flex items-center gap-2">
+                <AccordionTrigger className="py-1 hover:no-underline flex justify-center">
+                  <div className="flex items-center justify-center gap-1">
                     <Filter className="h-4 w-4" />
-                    <span className="text-xs font-medium">Filter Shows</span>
+                    <ChevronDown className="h-3 w-3 accordion-down" />
+                    <ChevronUp className="h-3 w-3 accordion-up" />
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>

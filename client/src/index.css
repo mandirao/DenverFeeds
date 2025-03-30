@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom styles for accordion chevrons */
+.accordion-down {
+  display: inline-block;
+}
+
+.accordion-up {
+  display: none;
+}
+
+[data-state="open"] .accordion-down {
+  display: none;
+}
+
+[data-state="open"] .accordion-up {
+  display: inline-block;
+}
+
 @layer base {
   * {
     @apply border-border;

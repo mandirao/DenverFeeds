@@ -90,7 +90,7 @@ function EventItem({ event }: EventItemProps) {
               </Tooltip>
             </TooltipProvider>
             
-            {" plays at "}
+            {" @ "}
             
             {/* Venue (Google Maps) */}
             <TooltipProvider>
@@ -113,7 +113,7 @@ function EventItem({ event }: EventItemProps) {
               </Tooltip>
             </TooltipProvider>
             
-            {" on "}
+            {" ("}
             
             {/* Date (Google Calendar) */}
             <TooltipProvider>
@@ -136,7 +136,7 @@ function EventItem({ event }: EventItemProps) {
               </Tooltip>
             </TooltipProvider>
             
-            {". "}
+            {"). "}
             {event.summary}
             {" like "}
             <span className="italic">{event.soundsLike.split(',').join(', ')}.</span>
