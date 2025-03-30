@@ -76,23 +76,3 @@ export function groupEventsByMonth(events: any[]) {
 export function formatMonth(monthYear: string): string {
   return monthYear.toUpperCase();
 }
-
-// Function to get default emoji based on genre
-export function getGenreEmoji(genre: string): string {
-  switch (genre) {
-    case 'Rock & Alternative':
-      return '🎸';
-    case 'Folk, Country & Americana':
-      return '🪕';
-    case 'Pop & Indie Pop':
-      return '🎤';
-    case 'Electronic & Experimental':
-      return '🎛️';
-    case 'Funk, Soul & Jazz':
-      return '🎷';
-    case 'Classical & Orchestral':
-      return '🎻';
-    default:
-      return '🎵';
-  }
-}

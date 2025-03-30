@@ -164,8 +164,7 @@ export default function AddEvent() {
     if (!file) return;
     
     Papa.parse(file, {
-      header: true, // Changed to true to use the header row
-      skipEmptyLines: true,
+      header: false,
       complete: (results) => {
         if (results.errors.length > 0) {
           console.error("CSV parsing errors:", results.errors);
@@ -173,39 +172,55 @@ export default function AddEvent() {
           return;
         }
         
-        console.log("CSV parse results:", results);
-        
         try {
-          // Process valid rows
+          // Filter out empty rows and process valid ones
           const events = results.data
             .filter((row: any) => {
               // Skip empty rows
-              if (!row || Object.values(row).every(val => !val)) {
+              if (!row || (Array.isArray(row) && row.every(cell => !cell))) {
                 return false;
               }
               return true;
             })
             .map((row: any) => {
-              console.log("Processing CSV row:", row);
-              
-              // Verify we have all required fields
-              if (!row.artist || !row.venue || !row.date || !row.emoji || !row.summary || !row.genre) {
-                console.error("Missing required fields in row:", row);
-                throw new Error(`Missing required fields in row: ${JSON.stringify(row)}`);
+              // If header:false, row will be an array
+              if (Array.isArray(row) && row.length >= 7) {
+                console.log("Processing CSV row:", row);
+                
+                // Check that we have the minimum required fields
+                if (!row[0] || !row[1] || !row[2] || !row[3] || !row[4] || !row[6]) {
+                  throw new Error(`Missing required fields in row: ${row.join(', ')}`);
+                }
+                
+                // For the "sounds_like" field, handle potential empty values
+                const soundsLike = row[5] || ""; 
+                
+                return {
+                  artist: row[0],
+                  venue: row[1],
+                  date: row[2], // Send as string, server will parse
+                  emoji: row[3]?.charAt(0) || "", // Only take first character from emoji
+                  summary: row[4],
+                  soundsLike: soundsLike,
+                  genre: row[6],
+                };
+              } else if (typeof row === 'object' && row !== null) {
+                // Handle case where Papa might have parsed as object
+                if (!row.artist || !row.venue || !row.date || !row.emoji || !row.summary || !row.genre) {
+                  throw new Error("Missing required fields in CSV row");
+                }
+                
+                return {
+                  artist: row.artist,
+                  venue: row.venue,
+                  date: row.date, // Send as string, server will parse
+                  emoji: row.emoji?.charAt(0) || "", // Only take first character from emoji
+                  summary: row.summary,
+                  soundsLike: row.sounds_like || row.soundsLike || "",
+                  genre: row.genre,
+                };
               }
-              
-              // For the "sounds_like" field, handle potential empty values
-              const soundsLike = row.sounds_like || ""; 
-              
-              return {
-                artist: row.artist,
-                venue: row.venue,
-                date: row.date, // Send as string, server will parse
-                emoji: row.emoji?.charAt(0) || "", // Only take first character from emoji
-                summary: row.summary,
-                soundsLike: soundsLike,
-                genre: row.genre,
-              };
+              return null;
             })
             .filter(Boolean);
             
@@ -356,16 +371,9 @@ export default function AddEvent() {
                 className="block w-full p-3 border-2 border-black bg-[#FEABDA] rounded-none"
               />
               <p className="text-sm text-gray-600 mt-2">
-                CSV format: should include a header row with these column names:<br />
-                artist, venue, date, emoji, summary, sounds_like, genre<br />
-                <span className="italic">Notes:</span>
-                <ul className="list-disc pl-5 italic">
-                  <li>Date must be in YYYY-MM-DD format (e.g., 2025-05-01)</li>
-                  <li>Text fields can be up to 75 characters long</li>
-                  <li>Only the first character of the emoji field will be used</li>
-                  <li>Genre must match one of the predefined options exactly</li>
-                  <li>The sounds_like field is optional</li>
-                </ul>
+                CSV format: each row should contain values in this order:<br />
+                artist, venue, date (YYYY-MM-DD), emoji, summary, sounds_like, genre<br />
+                <span className="italic">Note: Text fields can be up to 75 characters long. Only the first character of the emoji field will be used.</span>
               </p>
               {csvError && (
                 <p className="text-red-500 text-sm mt-1">{csvError}</p>

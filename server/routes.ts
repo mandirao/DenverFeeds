@@ -46,27 +46,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert date string to Date object if it's not already
       if (req.body.date && typeof req.body.date === 'string') {
         try {
-          // Check if the date has the right format (YYYY-MM-DD)
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(req.body.date)) {
-            console.error("Invalid date format:", req.body.date);
-            throw new Error(`Invalid date format: ${req.body.date}. Expected format: YYYY-MM-DD`);
-          }
-          
-          // Parse the date string, extract year, month, day
-          const [year, month, day] = req.body.date.split('-').map(Number);
-          
-          // Create date with noon time to avoid timezone issues (noon local time is always on the same day)
-          const parsedDate = new Date(year, month - 1, day, 12, 0, 0);
-          
-          if (isNaN(parsedDate.getTime())) {
-            console.error("Invalid date values:", req.body.date);
-            throw new Error(`Invalid date values in ${req.body.date}. Expected format: YYYY-MM-DD`);
-          }
-          
-          req.body.date = parsedDate;
+          req.body.date = new Date(req.body.date);
         } catch (dateError) {
           console.error("Date parsing error:", dateError);
-          throw new Error(`Invalid date format: ${req.body.date}. Expected format: YYYY-MM-DD`);
         }
       }
 
@@ -124,27 +106,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Convert date string to Date object if it's not already
           if (item.date && typeof item.date === 'string') {
             try {
-              // Check if the date has the right format (YYYY-MM-DD)
-              if (!/^\d{4}-\d{2}-\d{2}$/.test(item.date)) {
-                console.error("Invalid date format:", item.date);
-                throw new Error(`Invalid date format: ${item.date}. Expected format: YYYY-MM-DD`);
-              }
-              
-              // Parse the date string, extract year, month, day
-              const [year, month, day] = item.date.split('-').map(Number);
-              
-              // Create date with noon time to avoid timezone issues (noon local time is always on the same day)
-              const parsedDate = new Date(year, month - 1, day, 12, 0, 0);
-              
-              if (isNaN(parsedDate.getTime())) {
-                console.error("Invalid date values:", item.date);
-                throw new Error(`Invalid date values in ${item.date}. Expected format: YYYY-MM-DD`);
-              }
-              
-              item.date = parsedDate;
+              item.date = new Date(item.date);
             } catch (dateError) {
               console.error("Date parsing error:", dateError);
-              throw new Error(`Invalid date format: ${item.date}. Expected format: YYYY-MM-DD`);
             }
           }
           
