@@ -19,7 +19,7 @@ export type User = typeof users.$inferSelect;
 // Event schema
 export const events = pgTable("events", {
   id: serial("id").primaryKey(),
-  emoji: varchar("emoji", { length: 5 }).notNull(),
+  emoji: varchar("emoji", { length: 5 }),
   artist: varchar("artist", { length: 75 }).notNull(),
   venue: varchar("venue", { length: 75 }).notNull(),
   date: timestamp("date").notNull(),

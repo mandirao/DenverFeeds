@@ -50,10 +50,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUpcomingEvents(): Promise<Event[]> {
-    const now = new Date();
+    // Create date at the start of the current day (in UTC to match our storage format)
+    const today = new Date();
+    const startOfToday = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    
+    console.log(`API: Getting upcoming events after ${startOfToday.toISOString()}`);
+    
     return db.select()
       .from(events)
-      .where(gt(events.date, now))
+      .where(gt(events.date, startOfToday))
       .orderBy(events.date);
   }
   
@@ -69,12 +74,48 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEvent(insertEvent: InsertEvent): Promise<Event> {
+    // Parse the date to ensure proper UTC formatting
+    let eventDate = insertEvent.date;
+    
+    if (typeof eventDate === 'string') {
+      try {
+        // Parse the date string
+        const parsedDate = new Date(eventDate);
+        
+        // Extract year, month, day and create a UTC date at midnight
+        const year = parsedDate.getFullYear();
+        const month = parsedDate.getMonth();
+        const day = parsedDate.getDate();
+        
+        // Use UTC to avoid timezone shifts - store all events at midnight UTC
+        // this ensures consistent date display regardless of the user's timezone
+        eventDate = new Date(Date.UTC(year, month, day));
+        
+        console.log(`API: Parsed event date from ${insertEvent.date} to ${eventDate.toISOString()}`);
+      } catch (error) {
+        console.error("Error parsing date:", error);
+        // If parsing fails, keep the original date
+      }
+    } else if (eventDate instanceof Date) {
+      // If it's already a Date object, still normalize to midnight UTC
+      const year = eventDate.getFullYear();
+      const month = eventDate.getMonth();
+      const day = eventDate.getDate();
+      eventDate = new Date(Date.UTC(year, month, day));
+    }
+    
+    // Ensure emoji is always a single character
+    const emoji = insertEvent.emoji ? insertEvent.emoji.charAt(0) : null;
+    
     const result = await db.insert(events).values({
       ...insertEvent,
+      date: eventDate,
+      emoji,
       isScheduled: false,
       upvotes: 0,
       createdAt: new Date()
     }).returning();
+    
     return result[0];
   }
 
