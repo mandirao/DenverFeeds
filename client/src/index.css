@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles for accordion icon */
-[data-state="open"] .accordion-trigger svg {
+/* Custom styles for accordion chevron icon */
+[data-state="open"] .chevron-icon {
   transform: rotate(180deg);
 }
 
