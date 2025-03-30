@@ -19,7 +19,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
             <h1 className="text-3xl md:text-4xl text-black hover:text-[#41F2EE] transition-colors font-black mb-2 sm:mb-0 cursor-pointer">SETLIST SOCIAL FEED</h1>
           </Link>
           <div className="flex space-x-3 items-center">
-            <Link href="/add-event">
+            <Link href="/add" className="inline-block">
               <Button variant="ghost" size="sm" className="text-black hover:text-[#41F2EE]">
                 <Plus className="w-4 h-4 mr-1" /> Add Show
               </Button>

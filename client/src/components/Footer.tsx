@@ -17,8 +17,8 @@ export function Footer() {
     <footer className="bg-[#FE6B41] py-4 mt-8">
       <div className="container mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
         <div className="flex space-x-4 mb-4 sm:mb-0">
-          <Link href="/add">
-            <a className="text-black hover:text-[#41F2EE] transition-colors font-sora">ADD EVENT</a>
+          <Link href="/add" className="text-black hover:text-[#41F2EE] transition-colors font-sora">
+            ADD EVENT
           </Link>
           <button 
             onClick={() => setAboutOpen(true)}
