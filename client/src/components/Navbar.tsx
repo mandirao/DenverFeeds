@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Link as LinkIcon, Filter, ChevronDown, ChevronUp } from "lucide-react";
+import { Filter, ChevronDown, ChevronUp } from "lucide-react";
 import { EventFiltersProps, MonthOption } from "@/components/EventFilters";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
@@ -28,9 +28,9 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                     href="https://www.meetup.com/setlist-social-indie-denver/?eventOrigin=event_home_page" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="bg-black text-[#FE6B41] hover:text-[#41F2EE] rounded-full px-4 py-2 font-medium transition-colors flex items-center"
+                    className="bg-black text-[#FE6B41] hover:text-[#41F2EE] rounded-full px-4 py-2 font-medium transition-colors"
                   >
-                    <LinkIcon className="w-4 h-4 mr-1" /> RSVP
+                    RSVP
                   </a>
                 </TooltipTrigger>
                 <TooltipContent>
