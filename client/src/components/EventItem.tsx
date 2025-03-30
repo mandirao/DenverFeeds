@@ -77,7 +77,7 @@ function EventItem({ event }: EventItemProps) {
                     href={spotifyUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-bold border-b border-dotted border-black hover:border-none hover:text-[#41F2EE] cursor-pointer"
+                    className="font-bold border-b border-dotted border-black hover:border-none hover:text-black cursor-pointer"
                     onMouseEnter={() => setIsHoveringArtist(true)}
                     onMouseLeave={() => setIsHoveringArtist(false)}
                   >
@@ -100,7 +100,7 @@ function EventItem({ event }: EventItemProps) {
                     href={mapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="border-b border-dotted border-black hover:border-none hover:text-[#41F2EE] cursor-pointer"
+                    className="border-b border-dotted border-black hover:border-none hover:text-black cursor-pointer"
                     onMouseEnter={() => setIsHoveringVenue(true)}
                     onMouseLeave={() => setIsHoveringVenue(false)}
                   >
@@ -123,7 +123,7 @@ function EventItem({ event }: EventItemProps) {
                     href={calendarUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="border-b border-dotted border-black hover:border-none hover:text-[#41F2EE] cursor-pointer"
+                    className="border-b border-dotted border-black hover:border-none hover:text-black cursor-pointer"
                     onMouseEnter={() => setIsHoveringDate(true)}
                     onMouseLeave={() => setIsHoveringDate(false)}
                   >

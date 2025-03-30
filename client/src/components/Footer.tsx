@@ -14,15 +14,15 @@ export function Footer() {
   const [aboutOpen, setAboutOpen] = useState(false);
   
   return (
-    <footer className="bg-[#FEABDA] py-4 mt-8">
+    <footer className="bg-[#FE6B41] py-4 mt-8">
       <div className="container mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
         <div className="flex space-x-4 mb-4 sm:mb-0">
           <Link href="/add">
-            <a className="text-black hover:text-[#F4F2EA] transition-colors font-sora">ADD EVENT</a>
+            <a className="text-black hover:text-[#41F2EE] transition-colors font-sora">ADD EVENT</a>
           </Link>
           <button 
             onClick={() => setAboutOpen(true)}
-            className="text-black hover:text-[#F4F2EA] transition-colors font-sora"
+            className="text-black hover:text-[#41F2EE] transition-colors font-sora"
           >
             ABOUT US
           </button>
@@ -41,16 +41,10 @@ export function Footer() {
           </DialogHeader>
           <DialogDescription className="text-black">
             <p className="mb-4">
-              Setlist Social is a not-for-profit community platform created to help music lovers discover and share upcoming shows with friends.
+              Setlist Social is a not-for-profit, fan-run hub for music lovers in our meetup group to share upcoming shows and stay in the loop with friends.
             </p>
             <p className="mb-4">
-              Our community is built around the love of live music and creating connections between fans, artists, and venues in our local scene.
-            </p>
-            <p className="mb-4">
-              This is a fan-run site intended for sharing information between friends. Any copyrighted content is used unintentionally, and we will promptly remove any content upon request from the rightful owner.
-            </p>
-            <p>
-              For any questions or concerns, please reach out to us through our Meetup group.
+              We don't own or claim any copyrighted material. If something here steps on any toes, let us know and we'll take it down, no fuss. Questions or concerns? Drop us a note through our Meetup group.
             </p>
           </DialogDescription>
           <DialogFooter>
