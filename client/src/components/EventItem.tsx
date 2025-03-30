@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Event } from "@shared/schema";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { formatDate, createGoogleCalendarUrl, createGoogleMapsUrl, createSpotifySearchUrl, isRecentlyAdded } from "@/lib/utils";
+import { formatDate, createGoogleCalendarUrl, createGoogleMapsUrl, createSpotifySearchUrl, isRecentlyAdded, getGenreEmoji } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { ArrowUp, Check } from "lucide-react";
@@ -110,7 +110,10 @@ function EventItem({ event }: EventItemProps) {
 
   return (
     <li className="pb-1 relative flex items-start">
-      <span className="text-2xl mr-3">{event.emoji}</span>
+      <span className="text-2xl mr-3">{
+        // Check if emoji is valid, otherwise use default emoji based on genre
+        (event.emoji && event.emoji !== '�') ? event.emoji : getGenreEmoji(event.genre)
+      }</span>
       
       <div className="flex-1">
         <div className="text-base flex items-start">
