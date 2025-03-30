@@ -27,6 +27,10 @@ function EventItem({ event }: EventItemProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
     }
   });
+  
+  // Check if user has already voted for this event
+  // Since we don't have this information from the backend yet, we'll default to false
+  const hasUserVoted = false;
 
   // Schedule mutation
   const scheduleMutation = useMutation({
@@ -173,13 +177,13 @@ function EventItem({ event }: EventItemProps) {
                         size="sm"
                         onClick={handleUpvote}
                         disabled={upvoteMutation.isPending || upvoteMutation.isError}
-                        className="text-[#F26241] hover:text-black bg-black rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0"
+                        className={`${hasUserVoted ? 'bg-[#25428A] text-white' : 'bg-black text-[#F26241]'} hover:text-black rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0`}
                       >
                         <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Upvote this show</p>
+                      <p>{hasUserVoted ? 'You voted for this show' : 'Upvote this show'}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -224,7 +228,7 @@ function EventItem({ event }: EventItemProps) {
                         onClick={handleSchedule}
                         disabled={scheduleMutation.isPending}
                       >
-                        <div className="w-3 h-3 rounded-full bg-[#e15a30]"></div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#e15a30]"></div>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>

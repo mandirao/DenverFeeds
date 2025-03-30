@@ -29,8 +29,8 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                   <AccordionItem value="filters" className="border-0">
                     <AccordionTrigger className="py-1 hover:no-underline justify-start" hideChevron>
                       <div className="flex items-center gap-1">
-                        <Filter className="h-4 w-4" />
-                        <ChevronDown className="h-3 w-3 transition-transform duration-200 chevron-icon" />
+                        <Filter className="h-3 w-3" />
+                        <ChevronDown className="h-2 w-2 transition-transform duration-200 chevron-icon" />
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
@@ -39,7 +39,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                           id="month-filter" 
                           value={filterProps.monthFilter || "all"}
                           onChange={filterProps.onMonthChange}
-                          className="text-sm p-1.5 border border-black bg-[#FEABDA] text-black rounded-sm"
+                          className="text-xs p-0.5 border border-black bg-[#FEABDA] text-black rounded-sm text-[10px] h-5"
                         >
                           <option value="all">All Months</option>
                           {filterProps.months?.map((m: MonthOption) => (
@@ -51,7 +51,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                           id="genre-filter" 
                           value={filterProps.genreFilter || "all"}
                           onChange={filterProps.onGenreChange}
-                          className="text-sm p-1.5 border border-black bg-[#FEABDA] text-black rounded-sm"
+                          className="text-xs p-0.5 border border-black bg-[#FEABDA] text-black rounded-sm text-[10px] h-5"
                         >
                           <option value="all">All Genres</option>
                           {filterProps.genres?.map((g: string) => (
@@ -63,7 +63,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                           id="status-filter" 
                           value={filterProps.statusFilter || "all"}
                           onChange={filterProps.onStatusChange}
-                          className="text-sm p-1.5 border border-black bg-[#FEABDA] text-black rounded-sm"
+                          className="text-xs p-0.5 border border-black bg-[#FEABDA] text-black rounded-sm text-[10px] h-5"
                         >
                           <option value="all">Show All</option>
                           <option value="just-added">Just Added</option>
