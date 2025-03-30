@@ -346,7 +346,7 @@ export default function AddEvent() {
           
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Madlib-style form layout */}
-            <div className="flex flex-wrap gap-2 items-baseline text-lg font-medium">
+            <div className="flex flex-wrap gap-3 items-baseline text-xl font-medium">
               {/* Emoji Field */}
               <div className="inline-flex flex-col relative">
                 <Input
@@ -354,11 +354,11 @@ export default function AddEvent() {
                   {...form.register("emoji")}
                   maxLength={5}
                   placeholder="🎸"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[60px] max-w-[80px] text-center placeholder-gray-400"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[90px] max-w-[120px] text-center placeholder-gray-400 text-xl"
                 />
-                <Label htmlFor="emoji" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">EMOJI</Label>
+                <Label htmlFor="emoji" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">EMOJI</Label>
                 {form.formState.errors.emoji && (
-                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.emoji.message}</p>
+                  <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.emoji.message}</p>
                 )}
               </div>
               
@@ -369,15 +369,15 @@ export default function AddEvent() {
                   {...form.register("artist")}
                   maxLength={75}
                   placeholder="Artist Name"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[150px] placeholder-gray-400"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[225px] placeholder-gray-400 text-xl"
                 />
-                <Label htmlFor="artist" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">ARTIST NAME</Label>
+                <Label htmlFor="artist" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">ARTIST NAME</Label>
                 {form.formState.errors.artist && (
-                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.artist.message}</p>
+                  <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.artist.message}</p>
                 )}
               </div>
               
-              <span className="flex-none">@</span>
+              <span className="flex-none text-xl">@</span>
               
               {/* Venue Field */}
               <div className="inline-flex flex-col relative">
@@ -386,15 +386,15 @@ export default function AddEvent() {
                   {...form.register("venue")}
                   maxLength={75}
                   placeholder="Venue Name"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[150px] placeholder-gray-400"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[225px] placeholder-gray-400 text-xl"
                 />
-                <Label htmlFor="venue" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">VENUE</Label>
+                <Label htmlFor="venue" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">VENUE</Label>
                 {form.formState.errors.venue && (
-                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.venue.message}</p>
+                  <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.venue.message}</p>
                 )}
               </div>
               
-              <span className="flex-none">(</span>
+              <span className="flex-none text-xl">(</span>
               
               {/* Date Field */}
               <div className="inline-flex flex-col relative">
@@ -402,15 +402,15 @@ export default function AddEvent() {
                   id="date"
                   type="date"
                   {...form.register("date")}
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[120px] placeholder-gray-400"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[180px] placeholder-gray-400 text-xl"
                 />
-                <Label htmlFor="date" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">DATE</Label>
+                <Label htmlFor="date" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">DATE</Label>
                 {form.formState.errors.date && (
-                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.date.message}</p>
+                  <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.date.message}</p>
                 )}
               </div>
               
-              <span className="flex-none">).</span>
+              <span className="flex-none text-xl">).</span>
               
               {/* Summary Field */}
               <div className="inline-flex flex-col relative">
@@ -419,15 +419,15 @@ export default function AddEvent() {
                   {...form.register("summary")}
                   maxLength={75}
                   placeholder="Short description"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[180px] placeholder-gray-400"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[270px] placeholder-gray-400 text-xl"
                 />
-                <Label htmlFor="summary" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">SUMMARY</Label>
+                <Label htmlFor="summary" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">SUMMARY</Label>
                 {form.formState.errors.summary && (
-                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.summary.message}</p>
+                  <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.summary.message}</p>
                 )}
               </div>
               
-              <span className="flex-none">like</span>
+              <span className="flex-none text-xl">like</span>
               
               {/* Sounds Like Field */}
               <div className="inline-flex flex-col relative">
@@ -436,38 +436,38 @@ export default function AddEvent() {
                   {...form.register("soundsLike")}
                   maxLength={75}
                   placeholder="similar artists"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[150px] placeholder-gray-400"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[225px] placeholder-gray-400 text-xl"
                 />
-                <Label htmlFor="soundsLike" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">SOUNDS LIKE</Label>
+                <Label htmlFor="soundsLike" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">SOUNDS LIKE</Label>
                 {form.formState.errors.soundsLike && (
-                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.soundsLike.message}</p>
+                  <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.soundsLike.message}</p>
                 )}
               </div>
               
-              <span className="flex-none">.</span>
+              <span className="flex-none text-xl">.</span>
               
               {/* Genre Field */}
               <div className="inline-flex flex-col relative">
                 <select
                   id="genre"
                   {...form.register("genre")}
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[180px] placeholder-gray-400 appearance-none"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[270px] placeholder-gray-400 appearance-none text-xl"
                 >
                   <option value="">Select genre</option>
                   {genres.map((genre) => (
                     <option key={genre} value={genre}>{genre}</option>
                   ))}
                 </select>
-                <Label htmlFor="genre" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">GENRE</Label>
+                <Label htmlFor="genre" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">GENRE</Label>
                 {form.formState.errors.genre && (
-                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.genre.message}</p>
+                  <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.genre.message}</p>
                 )}
-                <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none" />
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 pointer-events-none" />
               </div>
             </div>
             
             {/* Extra spacing to account for error messages */}
-            <div className="h-10"></div>
+            <div className="h-16"></div>
             
             <div className="flex justify-start">
               <Button 
