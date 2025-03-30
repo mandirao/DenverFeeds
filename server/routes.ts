@@ -46,7 +46,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert date string to Date object if it's not already
       if (req.body.date && typeof req.body.date === 'string') {
         try {
-          req.body.date = new Date(req.body.date);
+          // Assuming date format is "YYYY-MM-DD"
+          const [year, month, day] = req.body.date.split('-').map(Number);
+          
+          // Create date in local timezone at midnight
+          // This preserves the day as entered in the form
+          if (year && month && day) {
+            req.body.date = new Date(year, month - 1, day, 0, 0, 0);
+            console.log(`Single event: Converted date string "${req.body.date}" to Date: ${req.body.date.toISOString()}`);
+          } else {
+            req.body.date = new Date(req.body.date);
+          }
         } catch (dateError) {
           console.error("Date parsing error:", dateError);
         }
@@ -101,7 +111,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Convert date string to Date object if it's not already
           if (item.date && typeof item.date === 'string') {
             try {
-              item.date = new Date(item.date);
+              // Assuming date format is "YYYY-MM-DD"
+              const [year, month, day] = item.date.split('-').map(Number);
+              
+              // Create date in local timezone at midnight
+              // This preserves the day as entered in the CSV
+              if (year && month && day) {
+                item.date = new Date(year, month - 1, day, 0, 0, 0);
+                console.log(`Converted date string "${item.date}" to Date: ${item.date.toISOString()}`);
+              } else {
+                item.date = new Date(item.date);
+              }
             } catch (dateError) {
               console.error("Date parsing error:", dateError);
             }
