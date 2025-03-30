@@ -441,7 +441,18 @@ export default function AddEvent() {
               </div>
             </div>
             
-            <div className="pt-4 border-t border-gray-200">
+            <div className="flex justify-end">
+              <Button 
+                type="submit"
+                variant="default"
+                className="bg-black text-white hover:bg-black/90 rounded-full px-6"
+                disabled={addEventMutation.isPending}
+              >
+                ADD SHOW
+              </Button>
+            </div>
+            
+            <div className="pt-8">
               <h3 className="text-xl text-black mb-4 font-anton">OR UPLOAD CSV</h3>
               <Input
                 type="file"
@@ -450,7 +461,7 @@ export default function AddEvent() {
                 onChange={handleCsvUpload}
                 className="block w-full p-3 border-2 border-black bg-[#FEABDA] rounded-none"
               />
-              <div className="text-sm text-gray-700 mt-2 bg-gray-100 p-3 rounded-md">
+              <div className="text-sm text-black mt-2 bg-[#FEABDA] p-3 rounded-md">
                 <p className="font-medium mb-1">CSV Format Requirements:</p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>Must include header row with column names</li>
@@ -468,17 +479,6 @@ export default function AddEvent() {
                   <div className="whitespace-pre-line">{csvError}</div>
                 </div>
               )}
-            </div>
-            
-            <div className="flex justify-end">
-              <Button 
-                type="submit"
-                variant="default"
-                className="bg-black text-white hover:bg-black/90 rounded-full px-6"
-                disabled={addEventMutation.isPending}
-              >
-                ADD SHOW
-              </Button>
             </div>
             
             {/* Duplicate event error message */}

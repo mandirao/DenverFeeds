@@ -29,8 +29,8 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                   <AccordionItem value="filters" className="border-0">
                     <AccordionTrigger className="py-1 hover:no-underline justify-start" hideChevron>
                       <div className="flex items-center gap-1">
-                        <Filter className="h-3 w-3" />
-                        <ChevronDown className="h-2 w-2 transition-transform duration-200 chevron-icon" />
+                        <Filter className="h-5 w-5" />
+                        <ChevronDown className="h-4 w-4 transition-transform duration-200 chevron-icon" />
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
