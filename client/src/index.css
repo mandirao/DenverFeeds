@@ -2,21 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles for accordion chevrons */
-.accordion-down {
-  display: inline-block;
-}
-
-.accordion-up {
-  display: none;
-}
-
-[data-state="open"] .accordion-down {
-  display: none;
-}
-
-[data-state="open"] .accordion-up {
-  display: inline-block;
+/* Custom styles for accordion icon */
+[data-state="open"] .accordion-trigger svg {
+  transform: rotate(180deg);
 }
 
 @layer base {

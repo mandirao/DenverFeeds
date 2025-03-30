@@ -43,15 +43,14 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
         
         {/* Filters bar row */}
         {showFilters && filterProps && (
-          <div className="mt-3 max-w-4xl mx-auto">
+          <div className="mt-3 max-w-4xl">
             {/* Accordion for filters */}
             <Accordion type="single" collapsible defaultValue="">
               <AccordionItem value="filters" className="border-0">
-                <AccordionTrigger className="py-1 hover:no-underline flex justify-center">
-                  <div className="flex items-center justify-center gap-1">
+                <AccordionTrigger className="py-1 hover:no-underline justify-start accordion-trigger">
+                  <div className="flex items-center gap-1">
                     <Filter className="h-4 w-4" />
-                    <ChevronDown className="h-3 w-3 accordion-down" />
-                    <ChevronUp className="h-3 w-3 accordion-up" />
+                    <ChevronDown className="h-3 w-3 transition-transform duration-200" />
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
