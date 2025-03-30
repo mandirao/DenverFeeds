@@ -1,4 +1,6 @@
 import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, sql, count, desc, gt } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -22,138 +24,115 @@ export interface IStorage {
   setEventScheduled(eventId: number, scheduled: boolean): Promise<Event | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private events: Map<number, Event>;
-  private eventUpvotes: Map<number, Upvote[]>;
-  currentUserId: number;
-  currentEventId: number;
-  currentUpvoteId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.events = new Map();
-    this.eventUpvotes = new Map();
-    this.currentUserId = 1;
-    this.currentEventId = 1;
-    this.currentUpvoteId = 1;
-    
-    // Add a default user for testing
-    this.users.set(1, {
-      id: 1,
-      username: "admin",
-      password: "password"
-    });
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const result = await db.select().from(users).where(eq(users.id, id));
+    return result[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const result = await db.select().from(users).where(eq(users.username, username));
+    return result[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+    const result = await db.insert(users).values(insertUser).returning();
+    return result[0];
   }
 
   async getAllEvents(): Promise<Event[]> {
-    return Array.from(this.events.values());
+    return db.select().from(events).orderBy(events.date);
   }
 
   async getEventById(id: number): Promise<Event | undefined> {
-    return this.events.get(id);
+    const result = await db.select().from(events).where(eq(events.id, id));
+    return result[0];
   }
 
   async getUpcomingEvents(): Promise<Event[]> {
     const now = new Date();
-    return Array.from(this.events.values())
-      .filter(event => new Date(event.date) > now)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return db.select()
+      .from(events)
+      .where(gt(events.date, now))
+      .orderBy(events.date);
   }
   
   async checkDuplicateEvent(event: InsertEvent): Promise<boolean> {
-    return Array.from(this.events.values()).some(
-      existingEvent => 
-        existingEvent.artist.toLowerCase() === event.artist.toLowerCase() && 
-        existingEvent.venue.toLowerCase() === event.venue.toLowerCase() &&
-        new Date(existingEvent.date).getTime() === new Date(event.date).getTime()
+    const result = await db.select().from(events).where(
+      and(
+        eq(sql`LOWER(${events.artist})`, event.artist.toLowerCase()),
+        eq(sql`LOWER(${events.venue})`, event.venue.toLowerCase()),
+        eq(events.date, event.date)
+      )
     );
+    return result.length > 0;
   }
 
   async createEvent(insertEvent: InsertEvent): Promise<Event> {
-    const id = this.currentEventId++;
-    const event: Event = { 
-      ...insertEvent, 
-      id, 
-      isScheduled: false, 
+    const result = await db.insert(events).values({
+      ...insertEvent,
+      isScheduled: false,
       upvotes: 0,
       createdAt: new Date()
-    };
-    this.events.set(id, event);
-    // Initialize empty upvotes array for this event
-    this.eventUpvotes.set(id, []);
-    return event;
+    }).returning();
+    return result[0];
   }
 
   async updateEvent(id: number, data: Partial<Event>): Promise<Event | undefined> {
-    const event = this.events.get(id);
-    if (!event) return undefined;
-
-    const updatedEvent = { ...event, ...data };
-    this.events.set(id, updatedEvent);
-    return updatedEvent;
+    const result = await db.update(events)
+      .set(data)
+      .where(eq(events.id, id))
+      .returning();
+    return result[0];
   }
 
   async upvoteEvent(eventId: number, userId: number): Promise<boolean> {
-    const event = this.events.get(eventId);
-    const user = this.users.get(userId);
-    
-    if (!event || !user || event.isScheduled) return false;
+    // Check if event exists and is not scheduled
+    const eventResult = await db.select().from(events).where(eq(events.id, eventId));
+    if (!eventResult.length || eventResult[0].isScheduled) return false;
+
+    // Check if user exists
+    const userResult = await db.select().from(users).where(eq(users.id, userId));
+    if (!userResult.length) return false;
     
     // Check if user already upvoted
     const hasUpvoted = await this.hasUserUpvoted(eventId, userId);
     if (hasUpvoted) return false;
     
     // Add upvote
-    const upvote: Upvote = {
-      id: this.currentUpvoteId++,
+    await db.insert(upvotes).values({
       userId,
-      eventId,
-      createdAt: new Date()
-    };
-    
-    // Get or initialize upvotes array for this event
-    const eventUpvotes = this.eventUpvotes.get(eventId) || [];
-    eventUpvotes.push(upvote);
-    this.eventUpvotes.set(eventId, eventUpvotes);
+      eventId
+    });
     
     // Update event upvote count
-    event.upvotes = (event.upvotes || 0) + 1;
-    this.events.set(eventId, event);
+    await db.update(events)
+      .set({
+        upvotes: sql`${events.upvotes} + 1`
+      })
+      .where(eq(events.id, eventId));
     
     return true;
   }
 
   async hasUserUpvoted(eventId: number, userId: number): Promise<boolean> {
-    const eventUpvotes = this.eventUpvotes.get(eventId) || [];
-    return eventUpvotes.some(upvote => upvote.userId === userId);
+    const result = await db.select().from(upvotes).where(
+      and(
+        eq(upvotes.eventId, eventId),
+        eq(upvotes.userId, userId)
+      )
+    );
+    return result.length > 0;
   }
 
   async setEventScheduled(eventId: number, scheduled: boolean = true): Promise<Event | undefined> {
-    const event = this.events.get(eventId);
-    if (!event) return undefined;
-    
-    event.isScheduled = scheduled;
-    this.events.set(eventId, event);
-    return event;
+    const result = await db.update(events)
+      .set({ isScheduled: scheduled })
+      .where(eq(events.id, eventId))
+      .returning();
+    return result[0];
   }
 }
 
-export const storage = new MemStorage();
+// Replace the MemStorage with DatabaseStorage
+export const storage = new DatabaseStorage();

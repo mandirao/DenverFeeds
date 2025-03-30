@@ -44,8 +44,8 @@ export type Event = typeof events.$inferSelect;
 // Upvotes schema to track user votes
 export const upvotes = pgTable("upvotes", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  eventId: integer("event_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  eventId: integer("event_id").notNull().references(() => events.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
