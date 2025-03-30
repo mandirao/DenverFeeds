@@ -9,6 +9,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export function Footer() {
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -17,8 +18,8 @@ export function Footer() {
     <footer className="bg-[#FE6B41] py-4 mt-8">
       <div className="container mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
         <div className="flex space-x-4 mb-4 sm:mb-0">
-          <Link href="/add" className="text-black hover:text-[#41F2EE] transition-colors font-sora">
-            ADD EVENT
+          <Link href="/add" className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center">
+            <Plus className="w-4 h-4 mr-1" /> ADD SHOW
           </Link>
           <button 
             onClick={() => setAboutOpen(true)}

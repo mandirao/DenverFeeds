@@ -1,8 +1,10 @@
 import { Link } from "wouter";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Link as LinkIcon, Filter, Plus } from "lucide-react";
+import { Link as LinkIcon, Filter, ChevronDown, ChevronUp } from "lucide-react";
 import { EventFiltersProps, MonthOption } from "@/components/EventFilters";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface NavbarProps {
   showFilters?: boolean;
@@ -18,12 +20,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
           <Link href="/">
             <h1 className="text-3xl md:text-4xl text-black hover:text-[#41F2EE] transition-colors font-black mb-2 sm:mb-0 cursor-pointer">SETLIST SOCIAL FEED</h1>
           </Link>
-          <div className="flex space-x-3 items-center">
-            <Link href="/add" className="inline-block">
-              <Button variant="ghost" size="sm" className="text-black hover:text-[#41F2EE]">
-                <Plus className="w-4 h-4 mr-1" /> Add Show
-              </Button>
-            </Link>
+          <div className="flex items-center">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -47,46 +44,55 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
         {/* Filters bar row */}
         {showFilters && filterProps && (
           <div className="mt-3 max-w-4xl mx-auto">
-            <div className="flex items-center gap-2 mb-1">
-              <Filter className="h-4 w-4" />
-              <span className="text-xs font-medium">Filter Shows:</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <select 
-                id="month-filter" 
-                value={filterProps.monthFilter || "all"}
-                onChange={filterProps.onMonthChange}
-                className="text-sm p-1.5 border border-black bg-[#FE6B41] text-black rounded-sm"
-              >
-                <option value="all">All Months</option>
-                {filterProps.months?.map((m: MonthOption) => (
-                  <option key={m.key} value={m.key}>{m.display}</option>
-                ))}
-              </select>
-              
-              <select 
-                id="genre-filter" 
-                value={filterProps.genreFilter || "all"}
-                onChange={filterProps.onGenreChange}
-                className="text-sm p-1.5 border border-black bg-[#FE6B41] text-black rounded-sm"
-              >
-                <option value="all">All Genres</option>
-                {filterProps.genres?.map((g: string) => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
-              
-              <select 
-                id="status-filter" 
-                value={filterProps.statusFilter || "all"}
-                onChange={filterProps.onStatusChange}
-                className="text-sm p-1.5 border border-black bg-[#FE6B41] text-black rounded-sm"
-              >
-                <option value="all">Show All</option>
-                <option value="just-added">Just Added</option>
-                <option value="scheduled">Scheduled</option>
-              </select>
-            </div>
+            {/* Accordion for filters */}
+            <Accordion type="single" collapsible defaultValue="">
+              <AccordionItem value="filters" className="border-0">
+                <AccordionTrigger className="py-1 hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    <span className="text-xs font-medium">Filter Shows</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                    <select 
+                      id="month-filter" 
+                      value={filterProps.monthFilter || "all"}
+                      onChange={filterProps.onMonthChange}
+                      className="text-sm p-1.5 border border-black bg-[#FEABDA] text-black rounded-sm"
+                    >
+                      <option value="all">All Months</option>
+                      {filterProps.months?.map((m: MonthOption) => (
+                        <option key={m.key} value={m.key}>{m.display}</option>
+                      ))}
+                    </select>
+                    
+                    <select 
+                      id="genre-filter" 
+                      value={filterProps.genreFilter || "all"}
+                      onChange={filterProps.onGenreChange}
+                      className="text-sm p-1.5 border border-black bg-[#FEABDA] text-black rounded-sm"
+                    >
+                      <option value="all">All Genres</option>
+                      {filterProps.genres?.map((g: string) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                    
+                    <select 
+                      id="status-filter" 
+                      value={filterProps.statusFilter || "all"}
+                      onChange={filterProps.onStatusChange}
+                      className="text-sm p-1.5 border border-black bg-[#FEABDA] text-black rounded-sm"
+                    >
+                      <option value="all">Show All</option>
+                      <option value="just-added">Just Added</option>
+                      <option value="scheduled">Scheduled</option>
+                    </select>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         )}
       </div>
