@@ -247,7 +247,7 @@ function EventItem({ event }: EventItemProps) {
                     <TooltipTrigger asChild>
                       <span 
                         onClick={handleSchedule}
-                        className="bg-[#f5f5f5] text-black text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5 cursor-pointer"
+                        className="bg-[#f5f5f5] text-black text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5 cursor-text"
                         style={{ position: 'relative', top: '-1px' }}
                       >
                         <Check className="mr-0.5 h-3 w-3" /> Scheduled
