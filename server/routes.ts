@@ -46,9 +46,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert date string to Date object if it's not already
       if (req.body.date && typeof req.body.date === 'string') {
         try {
-          req.body.date = new Date(req.body.date);
+          // Try standard date parsing first
+          const parsedDate = new Date(req.body.date);
+          
+          // Check if the date is valid and has the right format (YYYY-MM-DD)
+          if (isNaN(parsedDate.getTime()) || !/^\d{4}-\d{2}-\d{2}$/.test(req.body.date)) {
+            console.error("Invalid date format:", req.body.date);
+            throw new Error(`Invalid date format: ${req.body.date}. Expected format: YYYY-MM-DD`);
+          }
+          
+          req.body.date = parsedDate;
         } catch (dateError) {
           console.error("Date parsing error:", dateError);
+          throw new Error(`Invalid date format: ${req.body.date}. Expected format: YYYY-MM-DD`);
         }
       }
 
@@ -106,9 +116,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Convert date string to Date object if it's not already
           if (item.date && typeof item.date === 'string') {
             try {
-              item.date = new Date(item.date);
+              // Try standard date parsing first
+              const parsedDate = new Date(item.date);
+              
+              // Check if the date is valid and has the right format (YYYY-MM-DD)
+              if (isNaN(parsedDate.getTime()) || !/^\d{4}-\d{2}-\d{2}$/.test(item.date)) {
+                console.error("Invalid date format:", item.date);
+                throw new Error(`Invalid date format: ${item.date}. Expected format: YYYY-MM-DD`);
+              }
+              
+              item.date = parsedDate;
             } catch (dateError) {
               console.error("Date parsing error:", dateError);
+              throw new Error(`Invalid date format: ${item.date}. Expected format: YYYY-MM-DD`);
             }
           }
           
