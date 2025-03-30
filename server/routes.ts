@@ -108,25 +108,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           console.log("Processing item:", JSON.stringify(item));
           
-          // Convert date string to Date object if it's not already
+          // Enhanced date validation and parsing
           if (item.date && typeof item.date === 'string') {
             try {
-              // Assuming date format is "YYYY-MM-DD"
-              const [year, month, day] = item.date.split('-').map(Number);
+              // Properly validate and parse date format
+              const dateStr = item.date.trim();
+              console.log(`Processing date: "${dateStr}"`);
+              
+              // Regex to validate YYYY-MM-DD format
+              const dateRegex = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
+              const match = dateStr.match(dateRegex);
+              
+              if (!match) {
+                throw new Error(`Invalid date format: "${dateStr}" - must be YYYY-MM-DD`);
+              }
+              
+              const year = parseInt(match[1], 10);
+              const month = parseInt(match[2], 10);
+              const day = parseInt(match[3], 10);
+              
+              // Validate year, month, day ranges
+              if (year < 2024 || year > 2026) {
+                throw new Error(`Invalid year: ${year} - must be between 2024 and 2026`);
+              }
+              
+              if (month < 1 || month > 12) {
+                throw new Error(`Invalid month: ${month} - must be between 1 and 12`);
+              }
+              
+              const daysInMonth = new Date(year, month, 0).getDate();
+              if (day < 1 || day > daysInMonth) {
+                throw new Error(`Invalid day: ${day} - must be between 1 and ${daysInMonth} for month ${month}`);
+              }
               
               // Create date in local timezone at midnight
-              // This preserves the day as entered in the CSV
-              if (year && month && day) {
-                item.date = new Date(year, month - 1, day, 0, 0, 0);
-                console.log(`Converted date string "${item.date}" to Date: ${item.date.toISOString()}`);
-              } else {
-                item.date = new Date(item.date);
-              }
+              item.date = new Date(year, month - 1, day, 0, 0, 0);
+              console.log(`Parsed date: ${item.date.toISOString()}`);
             } catch (dateError) {
               console.error("Date parsing error:", dateError);
+              throw dateError; // Rethrow to be caught by the outer try/catch
             }
           }
           
+          // Handle genre normalization before Zod validation
+          if (item.genre && typeof item.genre === 'string') {
+            const genres = [
+              'Rock & Alternative',
+              'Folk, Country & Americana',
+              'Pop & Indie Pop',
+              'Electronic & Experimental',
+              'Funk, Soul & Jazz',
+              'Classical & Orchestral'
+            ];
+            
+            const normalizedGenre = item.genre.trim();
+            
+            // If not a standard genre, try to normalize
+            if (!genres.includes(normalizedGenre)) {
+              // Try to find a match by normalizing format
+              const normalizedGenres = genres.map(g => g.replace(/,/g, '/'));
+              const indexBySlash = normalizedGenres.findIndex(g => 
+                g.toLowerCase() === normalizedGenre.replace(/,/g, '/').toLowerCase()
+              );
+              
+              if (indexBySlash !== -1) {
+                item.genre = genres[indexBySlash]; // Use the canonical format
+                console.log(`Normalized genre from "${normalizedGenre}" to "${item.genre}"`);
+              } else {
+                // Try a more aggressive normalization - strip spaces around commas
+                const strippedGenres = genres.map(g => g.replace(/\s*,\s*/g, ','));
+                const indexByStripped = strippedGenres.findIndex(g => 
+                  g.toLowerCase().replace(/\s*,\s*/g, ',') === 
+                  normalizedGenre.toLowerCase().replace(/\s*,\s*/g, ',')
+                );
+                
+                if (indexByStripped !== -1) {
+                  item.genre = genres[indexByStripped];
+                  console.log(`Normalized genre from "${normalizedGenre}" to "${item.genre}"`);
+                }
+              }
+            }
+          }
+          
+          // Now use Zod to validate the event data
           const eventData = insertEventSchema.parse(item);
           console.log("Parsed event data:", JSON.stringify(eventData));
           
@@ -169,6 +233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         results
       });
     } catch (error) {
+      console.error("Bulk upload error:", error);
       res.status(500).json({ message: "Failed to process bulk events" });
     }
   });

@@ -163,38 +163,100 @@ export default function AddEvent() {
     Papa.parse(file, {
       header: true, // Always use header: true for more reliable parsing
       skipEmptyLines: true,
+      quoteChar: '"', // Properly handle quoted fields
+      escapeChar: '"',
       complete: (results) => {
         if (results.errors.length > 0) {
           console.error("CSV parsing errors:", results.errors);
-          setCsvError("Error parsing CSV file. Please check the format.");
+          setCsvError(`Error parsing CSV file: ${results.errors[0].message || "Invalid format"}`);
           return;
         }
         
         try {
+          console.log("CSV headers:", results.meta.fields);
           console.log("Raw parsed data:", results.data);
+          
+          // Check for required headers
+          const requiredHeaders = ['artist', 'venue', 'date', 'emoji', 'summary', 'genre'];
+          const missingHeaders = requiredHeaders.filter(header => 
+            !results.meta.fields?.some(field => 
+              field.toLowerCase() === header.toLowerCase() || 
+              (header === 'soundsLike' && field.toLowerCase() === 'sounds_like')
+            )
+          );
+          
+          if (missingHeaders.length > 0) {
+            setCsvError(`CSV is missing required headers: ${missingHeaders.join(', ')}`);
+            return;
+          }
+          
+          // Track validation errors
+          const errors: string[] = [];
           
           // Filter out empty rows and process valid ones
           const events = results.data
-            .filter((row: any) => {
+            .filter((row: any, index: number) => {
               // Skip empty rows
               if (!row || Object.values(row).every(val => !val)) {
                 return false;
               }
+              
+              // Check for required fields
+              const missingFields = [];
+              if (!row.artist) missingFields.push('artist');
+              if (!row.venue) missingFields.push('venue');
+              if (!row.date) missingFields.push('date');
+              if (!row.emoji) missingFields.push('emoji');
+              if (!row.summary) missingFields.push('summary');
+              if (!row.genre) missingFields.push('genre');
+              
+              if (missingFields.length > 0) {
+                errors.push(`Row ${index + 2}: Missing fields: ${missingFields.join(', ')}`);
+                return false;
+              }
+              
+              // Validate date format with enhanced message
+              if (row.date) {
+                // Regex to validate YYYY-MM-DD format
+                const dateRegex = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
+                const match = row.date.trim().match(dateRegex);
+                
+                if (!match) {
+                  errors.push(`Row ${index + 2}: Invalid date format: "${row.date}" - must be YYYY-MM-DD`);
+                  return false;
+                }
+                
+                const year = parseInt(match[1], 10);
+                const month = parseInt(match[2], 10);
+                const day = parseInt(match[3], 10);
+                
+                // Basic validation ranges
+                if (year < 2024 || year > 2026) {
+                  errors.push(`Row ${index + 2}: Invalid year: ${year} - must be between 2024 and 2026`);
+                  return false;
+                }
+                
+                if (month < 1 || month > 12) {
+                  errors.push(`Row ${index + 2}: Invalid month: ${month} - must be between 1 and 12`);
+                  return false;
+                }
+                
+                const daysInMonth = new Date(year, month, 0).getDate();
+                if (day < 1 || day > daysInMonth) {
+                  errors.push(`Row ${index + 2}: Invalid day: ${day} - must be between 1 and ${daysInMonth} for month ${month}`);
+                  return false;
+                }
+              }
+              
               return true;
             })
             .map((row: any) => {
-              // Validate required fields
-              if (!row.artist || !row.venue || !row.date || !row.emoji || !row.summary || !row.genre) {
-                console.warn("Missing required fields in row:", row);
-                throw new Error("Missing required fields in CSV row");
-              }
-              
               // Normalize the genre - ensure it's one of our valid genres
               let normalizedGenre = row.genre.trim();
               const validGenre = genres.find(g => g === normalizedGenre);
               
               if (!validGenre) {
-                // Try to find a match by normalizing the format
+                // Try to find a match by normalizing format
                 const normalizedGenres = genres.map(g => g.replace(/,/g, '/'));
                 const index = normalizedGenres.findIndex(g => 
                   g.toLowerCase() === normalizedGenre.replace(/,/g, '/').toLowerCase()
@@ -203,7 +265,18 @@ export default function AddEvent() {
                 if (index !== -1) {
                   normalizedGenre = genres[index]; // Use the canonical format
                 } else {
-                  console.warn(`Genre "${normalizedGenre}" not found in valid genres list`);
+                  // Try a more aggressive normalization - strip spaces around commas
+                  const strippedGenres = genres.map(g => g.replace(/\s*,\s*/g, ','));
+                  const indexByStripped = strippedGenres.findIndex(g => 
+                    g.toLowerCase().replace(/\s*,\s*/g, ',') === 
+                    normalizedGenre.toLowerCase().replace(/\s*,\s*/g, ',')
+                  );
+                  
+                  if (indexByStripped !== -1) {
+                    normalizedGenre = genres[indexByStripped];
+                  } else {
+                    console.warn(`Genre "${normalizedGenre}" not found in valid genres list`);
+                  }
                 }
               }
               
@@ -219,6 +292,17 @@ export default function AddEvent() {
             });
             
           console.log("Processed events:", events);
+          console.log("Validation errors:", errors);
+          
+          if (errors.length > 0) {
+            // Show first 3 errors with count of remaining
+            const errorMessage = errors.length <= 3 
+              ? errors.join('\n') 
+              : `${errors.slice(0, 3).join('\n')}\n...and ${errors.length - 3} more errors`;
+            
+            setCsvError(`CSV validation failed:\n${errorMessage}`);
+            return;
+          }
           
           if (events.length > 0) {
             addEventsBulkMutation.mutate(events);
@@ -366,13 +450,23 @@ export default function AddEvent() {
                 onChange={handleCsvUpload}
                 className="block w-full p-3 border-2 border-black bg-[#FEABDA] rounded-none"
               />
-              <p className="text-sm text-gray-600 mt-2">
-                CSV format: each row should contain values in this order:<br />
-                artist, venue, date (YYYY-MM-DD), emoji, summary, sounds_like, genre<br />
-                <span className="italic">Note: Text fields can be up to 75 characters long</span>
-              </p>
+              <div className="text-sm text-gray-700 mt-2 bg-gray-100 p-3 rounded-md">
+                <p className="font-medium mb-1">CSV Format Requirements:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Must include header row with column names</li>
+                  <li>Required columns: artist, venue, date, emoji, summary, sounds_like, genre</li>
+                  <li>Date format must be YYYY-MM-DD (e.g., 2025-06-15)</li>
+                  <li>Genre must match one of the standard options</li>
+                  <li>Text fields limited to 75 characters</li>
+                  <li>Emojis limited to 5 characters</li>
+                </ul>
+                <p className="mt-2 italic">Tip: Download any CSV import errors, fix them, and try uploading again.</p>
+              </div>
               {csvError && (
-                <p className="text-red-500 text-sm mt-1">{csvError}</p>
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mt-2 rounded relative">
+                  <div className="font-bold">CSV Upload Error</div>
+                  <div className="whitespace-pre-line">{csvError}</div>
+                </div>
               )}
             </div>
             
@@ -389,9 +483,12 @@ export default function AddEvent() {
             
             {/* Duplicate event error message */}
             {duplicateError && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative flex items-center">
-                <AlertCircle className="h-5 w-5 mr-2" />
-                {duplicateError}
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                <div className="font-bold flex items-center">
+                  <AlertCircle className="h-5 w-5 mr-2" />
+                  Duplicate Event
+                </div>
+                <div className="whitespace-pre-line mt-1">{duplicateError}</div>
               </div>
             )}
           </form>
