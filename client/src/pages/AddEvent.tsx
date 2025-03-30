@@ -345,116 +345,138 @@ export default function AddEvent() {
           <h2 className="text-2xl text-black mb-6 font-anton">ADD NEW SHOW</h2>
           
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="artist" className="block text-black mb-2 font-sora">ARTIST NAME</Label>
-                <Input
-                  id="artist"
-                  {...form.register("artist")}
-                  maxLength={75}
-                  placeholder="Artist name"
-                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
-                />
-                {form.formState.errors.artist && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.artist.message}</p>
-                )}
-              </div>
-              
-              <div>
-                <Label htmlFor="venue" className="block text-black mb-2 font-sora">VENUE</Label>
-                <Input
-                  id="venue"
-                  {...form.register("venue")}
-                  maxLength={75}
-                  placeholder="Venue name"
-                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
-                />
-                {form.formState.errors.venue && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.venue.message}</p>
-                )}
-              </div>
-              
-              <div>
-                <Label htmlFor="date" className="block text-black mb-2 font-sora">DATE</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  {...form.register("date")}
-                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
-                />
-                {form.formState.errors.date && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.date.message}</p>
-                )}
-              </div>
-              
-              <div>
-                <Label htmlFor="emoji" className="block text-black mb-2 font-sora">EMOJI</Label>
+            {/* Madlib-style form layout */}
+            <div className="flex flex-wrap gap-2 items-baseline text-lg font-medium">
+              {/* Emoji Field */}
+              <div className="inline-flex flex-col relative">
                 <Input
                   id="emoji"
                   {...form.register("emoji")}
                   maxLength={5}
-                  placeholder="Choose an emoji (e.g. 🎸)"
-                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
+                  placeholder="🎸"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[60px] max-w-[80px] text-center placeholder-gray-400"
                 />
+                <Label htmlFor="emoji" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">EMOJI</Label>
                 {form.formState.errors.emoji && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.emoji.message}</p>
+                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.emoji.message}</p>
                 )}
               </div>
               
-              <div>
-                <Label htmlFor="summary" className="block text-black mb-2 font-sora">SUMMARY</Label>
+              {/* Artist Field */}
+              <div className="inline-flex flex-col relative">
+                <Input
+                  id="artist"
+                  {...form.register("artist")}
+                  maxLength={75}
+                  placeholder="Artist Name"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[150px] placeholder-gray-400"
+                />
+                <Label htmlFor="artist" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">ARTIST NAME</Label>
+                {form.formState.errors.artist && (
+                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.artist.message}</p>
+                )}
+              </div>
+              
+              <span className="flex-none">@</span>
+              
+              {/* Venue Field */}
+              <div className="inline-flex flex-col relative">
+                <Input
+                  id="venue"
+                  {...form.register("venue")}
+                  maxLength={75}
+                  placeholder="Venue Name"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[150px] placeholder-gray-400"
+                />
+                <Label htmlFor="venue" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">VENUE</Label>
+                {form.formState.errors.venue && (
+                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.venue.message}</p>
+                )}
+              </div>
+              
+              <span className="flex-none">(</span>
+              
+              {/* Date Field */}
+              <div className="inline-flex flex-col relative">
+                <Input
+                  id="date"
+                  type="date"
+                  {...form.register("date")}
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[120px] placeholder-gray-400"
+                />
+                <Label htmlFor="date" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">DATE</Label>
+                {form.formState.errors.date && (
+                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.date.message}</p>
+                )}
+              </div>
+              
+              <span className="flex-none">).</span>
+              
+              {/* Summary Field */}
+              <div className="inline-flex flex-col relative">
                 <Input
                   id="summary"
                   {...form.register("summary")}
                   maxLength={75}
-                  placeholder="Brief description of the music"
-                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
+                  placeholder="Short description"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[180px] placeholder-gray-400"
                 />
+                <Label htmlFor="summary" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">SUMMARY</Label>
                 {form.formState.errors.summary && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.summary.message}</p>
+                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.summary.message}</p>
                 )}
               </div>
               
-              <div>
-                <Label htmlFor="soundsLike" className="block text-black mb-2 font-sora">SOUNDS LIKE</Label>
+              <span className="flex-none">like</span>
+              
+              {/* Sounds Like Field */}
+              <div className="inline-flex flex-col relative">
                 <Input
                   id="soundsLike"
                   {...form.register("soundsLike")}
                   maxLength={75}
-                  placeholder="Similar artist"
-                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
+                  placeholder="similar artists"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[150px] placeholder-gray-400"
                 />
+                <Label htmlFor="soundsLike" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">SOUNDS LIKE</Label>
                 {form.formState.errors.soundsLike && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.soundsLike.message}</p>
+                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.soundsLike.message}</p>
                 )}
               </div>
               
-              <div>
-                <Label htmlFor="genre" className="block text-black mb-2 font-sora">GENRE</Label>
+              <span className="flex-none">.</span>
+              
+              {/* Genre Field */}
+              <div className="inline-flex flex-col relative">
                 <select
                   id="genre"
                   {...form.register("genre")}
-                  className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-1 px-2 min-w-[180px] placeholder-gray-400 appearance-none"
                 >
-                  <option value="" disabled>Select a genre</option>
+                  <option value="">Select genre</option>
                   {genres.map((genre) => (
                     <option key={genre} value={genre}>{genre}</option>
                   ))}
                 </select>
+                <Label htmlFor="genre" className="absolute -bottom-6 left-0 text-[10px] text-gray-700 font-sora">GENRE</Label>
                 {form.formState.errors.genre && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.genre.message}</p>
+                  <p className="absolute top-full left-0 text-red-500 text-[10px] whitespace-nowrap mt-4">{form.formState.errors.genre.message}</p>
                 )}
+                <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none" />
               </div>
             </div>
+            
+            {/* Extra spacing to account for error messages */}
+            <div className="h-10"></div>
             
             <div className="flex justify-start">
               <Button 
                 type="submit"
                 variant="default"
-                className="bg-black text-white hover:bg-black/90 rounded-full px-6"
+                className="bg-black hover:bg-[#41F2EE] text-white hover:text-black py-2 px-4 rounded-none border-2 border-black font-sora"
                 disabled={addEventMutation.isPending}
               >
-                ADD SHOW
+                {addEventMutation.isPending ? "ADDING..." : "ADD SHOW"}
               </Button>
             </div>
             
