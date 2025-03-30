@@ -161,7 +161,8 @@ export default function AddEvent() {
     if (!file) return;
     
     Papa.parse(file, {
-      header: false,
+      header: true, // Always use header: true for more reliable parsing
+      skipEmptyLines: true,
       complete: (results) => {
         if (results.errors.length > 0) {
           console.error("CSV parsing errors:", results.errors);
@@ -170,56 +171,52 @@ export default function AddEvent() {
         }
         
         try {
+          console.log("Raw parsed data:", results.data);
+          
           // Filter out empty rows and process valid ones
           const events = results.data
             .filter((row: any) => {
               // Skip empty rows
-              if (!row || (Array.isArray(row) && row.every(cell => !cell))) {
+              if (!row || Object.values(row).every(val => !val)) {
                 return false;
               }
               return true;
             })
             .map((row: any) => {
-              // If header:false, row will be an array
-              if (Array.isArray(row) && row.length >= 7) {
-                console.log("Processing CSV row:", row);
-                
-                // Check that we have the minimum required fields
-                if (!row[0] || !row[1] || !row[2] || !row[3] || !row[4] || !row[6]) {
-                  throw new Error(`Missing required fields in row: ${row.join(', ')}`);
-                }
-                
-                // For the "sounds_like" field, handle potential empty values
-                const soundsLike = row[5] || ""; 
-                
-                return {
-                  artist: row[0],
-                  venue: row[1],
-                  date: row[2], // Send as string, server will parse
-                  emoji: row[3],
-                  summary: row[4],
-                  soundsLike: soundsLike,
-                  genre: row[6],
-                };
-              } else if (typeof row === 'object' && row !== null) {
-                // Handle case where Papa might have parsed as object
-                if (!row.artist || !row.venue || !row.date || !row.emoji || !row.summary || !row.genre) {
-                  throw new Error("Missing required fields in CSV row");
-                }
-                
-                return {
-                  artist: row.artist,
-                  venue: row.venue,
-                  date: row.date, // Send as string, server will parse
-                  emoji: row.emoji,
-                  summary: row.summary,
-                  soundsLike: row.sounds_like || row.soundsLike || "",
-                  genre: row.genre,
-                };
+              // Validate required fields
+              if (!row.artist || !row.venue || !row.date || !row.emoji || !row.summary || !row.genre) {
+                console.warn("Missing required fields in row:", row);
+                throw new Error("Missing required fields in CSV row");
               }
-              return null;
-            })
-            .filter(Boolean);
+              
+              // Normalize the genre - ensure it's one of our valid genres
+              let normalizedGenre = row.genre.trim();
+              const validGenre = genres.find(g => g === normalizedGenre);
+              
+              if (!validGenre) {
+                // Try to find a match by normalizing the format
+                const normalizedGenres = genres.map(g => g.replace(/,/g, '/'));
+                const index = normalizedGenres.findIndex(g => 
+                  g.toLowerCase() === normalizedGenre.replace(/,/g, '/').toLowerCase()
+                );
+                
+                if (index !== -1) {
+                  normalizedGenre = genres[index]; // Use the canonical format
+                } else {
+                  console.warn(`Genre "${normalizedGenre}" not found in valid genres list`);
+                }
+              }
+              
+              return {
+                artist: row.artist.trim(),
+                venue: row.venue.trim(),
+                date: row.date.trim(), // Send as string, server will parse
+                emoji: row.emoji.trim(),
+                summary: row.summary.trim(),
+                soundsLike: (row.sounds_like || row.soundsLike || "").trim(),
+                genre: normalizedGenre,
+              };
+            });
             
           console.log("Processed events:", events);
           
@@ -229,10 +226,12 @@ export default function AddEvent() {
             setCsvError("No valid events found in CSV file.");
           }
         } catch (error) {
-          setCsvError("Error processing CSV data. Please check the format.");
+          console.error("CSV processing error:", error);
+          setCsvError("Error processing CSV data. Please check the format and ensure all required fields are present.");
         }
       },
-      error: () => {
+      error: (error) => {
+        console.error("CSV parse error:", error);
         setCsvError("Failed to read CSV file.");
       }
     });
