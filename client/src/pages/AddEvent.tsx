@@ -17,7 +17,7 @@ import {
   AccordionItem, 
   AccordionTrigger 
 } from "@/components/ui/accordion";
-import { AlertCircle, ChevronDown } from "lucide-react";
+import { AlertCircle, ChevronDown, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Papa from "papaparse";
 
@@ -354,7 +354,7 @@ export default function AddEvent() {
                   {...form.register("emoji")}
                   maxLength={5}
                   placeholder="🎸"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[90px] max-w-[120px] text-center text-xl placeholder:opacity-50 placeholder:text-black empty:opacity-50"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[90px] max-w-[120px] text-center text-xl placeholder:opacity-50 placeholder:text-black empty:opacity-50 [&:not(:placeholder-shown)]:opacity-100"
                 />
                 <Label htmlFor="emoji" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">EMOJI</Label>
                 {form.formState.errors.emoji && (
@@ -369,7 +369,7 @@ export default function AddEvent() {
                   {...form.register("artist")}
                   maxLength={75}
                   placeholder="e.g. Beach House"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[225px] placeholder-gray-400 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder-gray-400 text-xl"
                 />
                 <Label htmlFor="artist" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">ARTIST NAME</Label>
                 {form.formState.errors.artist && (
@@ -386,7 +386,7 @@ export default function AddEvent() {
                   {...form.register("venue")}
                   maxLength={75}
                   placeholder="e.g. Mission Ballroom"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[225px] placeholder-gray-400 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder-gray-400 text-xl"
                 />
                 <Label htmlFor="venue" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">VENUE</Label>
                 {form.formState.errors.venue && (
@@ -394,7 +394,7 @@ export default function AddEvent() {
                 )}
               </div>
               
-              <span className="flex-none text-xl">(</span>
+              <span className="flex-none text-xl mr-0 pr-0">(</span>
               
               {/* Date Field */}
               <div className="inline-flex flex-col relative">
@@ -402,15 +402,16 @@ export default function AddEvent() {
                   id="date"
                   type="date"
                   {...form.register("date")}
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[180px] text-xl text-gray-400 [color-scheme:dark]"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-1 min-w-[135px] text-xl placeholder-gray-400 empty:text-gray-400 [color-scheme:light]"
                 />
                 <Label htmlFor="date" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">DATE</Label>
                 {form.formState.errors.date && (
                   <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.date.message}</p>
                 )}
+                <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
               </div>
               
-              <span className="flex-none text-xl">).</span>
+              <span className="flex-none text-xl ml-0 pl-0">).</span>
               
               {/* Summary Field */}
               <div className="inline-flex flex-col relative">
@@ -419,7 +420,7 @@ export default function AddEvent() {
                   {...form.register("summary")}
                   maxLength={75}
                   placeholder="e.g. Dream-pop royalty with celestial vibes"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[270px] placeholder-gray-400 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[270px] placeholder-gray-400 text-xl"
                 />
                 <Label htmlFor="summary" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">SUMMARY</Label>
                 {form.formState.errors.summary && (
@@ -430,13 +431,13 @@ export default function AddEvent() {
               <span className="flex-none text-xl">like</span>
               
               {/* Sounds Like Field */}
-              <div className="inline-flex flex-col relative">
+              <div className="inline-flex flex-col relative mr-0 pr-0">
                 <Input
                   id="soundsLike"
                   {...form.register("soundsLike")}
                   maxLength={75}
                   placeholder="e.g. Mazzy Star, Cocteau Twins"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[225px] placeholder-gray-400 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder-gray-400 text-xl"
                 />
                 <Label htmlFor="soundsLike" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">SOUNDS LIKE</Label>
                 {form.formState.errors.soundsLike && (
@@ -444,14 +445,14 @@ export default function AddEvent() {
                 )}
               </div>
               
-              <span className="flex-none text-xl">.</span>
+              <span className="flex-none text-xl ml-0 pl-0">.</span>
               
               {/* Genre Field */}
               <div className="inline-flex flex-col relative">
                 <select
                   id="genre"
                   {...form.register("genre")}
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 px-3 min-w-[270px] text-xl appearance-none [&:not(:has(option:checked:not([value='']))]:text-gray-400"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[270px] text-xl appearance-none text-gray-400 [&:not(:placeholder-shown)]:text-black"
                 >
                   <option value="">Select genre</option>
                   {genres.map((genre) => (
@@ -464,21 +465,22 @@ export default function AddEvent() {
                 )}
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 pointer-events-none" />
               </div>
+              
+              {/* Add Show Button - inline with the form */}
+              <div className="inline-flex items-baseline ml-auto">
+                <Button 
+                  type="submit"
+                  variant="default"
+                  className="bg-black text-[#FE6B41] hover:text-[#41F2EE] rounded-full px-4 py-2 font-medium transition-colors"
+                  disabled={addEventMutation.isPending}
+                >
+                  {addEventMutation.isPending ? "ADDING..." : "ADD SHOW"}
+                </Button>
+              </div>
             </div>
             
             {/* Extra spacing to account for error messages */}
             <div className="h-16"></div>
-            
-            <div className="flex justify-start">
-              <Button 
-                type="submit"
-                variant="default"
-                className="bg-black hover:bg-[#41F2EE] text-white hover:text-black py-2 px-4 rounded-none border-2 border-black font-sora"
-                disabled={addEventMutation.isPending}
-              >
-                {addEventMutation.isPending ? "ADDING..." : "ADD SHOW"}
-              </Button>
-            </div>
             
             {/* Duplicate event error message */}
             {duplicateError && (
