@@ -17,10 +17,7 @@ import Papa from "papaparse";
 
 // Extend the event schema with custom validations
 const addEventSchema = insertEventSchema.extend({
-  emoji: z.string()
-    .min(1, "Emoji is required")
-    .max(5, "Maximum 5 characters")
-    .transform(val => val.charAt(0)), // Take only the first character
+  emoji: z.string().min(1, "Emoji is required").max(5, "Maximum 5 characters"),
   artist: z.string().min(1, "Artist name is required").max(75, "Maximum 75 characters"),
   venue: z.string().min(1, "Venue is required").max(75, "Maximum 75 characters"),
   summary: z.string().min(1, "Summary is required").max(75, "Maximum 75 characters"),
@@ -199,7 +196,7 @@ export default function AddEvent() {
                   artist: row[0],
                   venue: row[1],
                   date: row[2], // Send as string, server will parse
-                  emoji: row[3]?.charAt(0) || "", // Only take first character from emoji
+                  emoji: row[3],
                   summary: row[4],
                   soundsLike: soundsLike,
                   genre: row[6],
@@ -214,7 +211,7 @@ export default function AddEvent() {
                   artist: row.artist,
                   venue: row.venue,
                   date: row.date, // Send as string, server will parse
-                  emoji: row.emoji?.charAt(0) || "", // Only take first character from emoji
+                  emoji: row.emoji,
                   summary: row.summary,
                   soundsLike: row.sounds_like || row.soundsLike || "",
                   genre: row.genre,
@@ -307,7 +304,7 @@ export default function AddEvent() {
                   id="emoji"
                   {...form.register("emoji")}
                   maxLength={5}
-                  placeholder="Choose an emoji (only first character will be used)"
+                  placeholder="Choose an emoji (e.g. 🎸)"
                   className="w-full p-3 border-2 border-black bg-[#FEABDA] placeholder-[#FEABDA]/60 rounded-none focus:bg-white"
                 />
                 {form.formState.errors.emoji && (
@@ -373,7 +370,7 @@ export default function AddEvent() {
               <p className="text-sm text-gray-600 mt-2">
                 CSV format: each row should contain values in this order:<br />
                 artist, venue, date (YYYY-MM-DD), emoji, summary, sounds_like, genre<br />
-                <span className="italic">Note: Text fields can be up to 75 characters long. Only the first character of the emoji field will be used.</span>
+                <span className="italic">Note: Text fields can be up to 75 characters long</span>
               </p>
               {csvError && (
                 <p className="text-red-500 text-sm mt-1">{csvError}</p>

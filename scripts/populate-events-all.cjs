@@ -27,20 +27,12 @@ const csvFiles = [
 // Function to read and parse CSV content
 function readAndParseCsv(filePath) {
   const csvContent = fs.readFileSync(filePath, 'utf8');
-  
-  // Check if the first line has headers by checking for "artist" field
-  const hasHeader = csvContent.trim().toLowerCase().startsWith('artist,') || 
-                    csvContent.trim().toLowerCase().startsWith('"artist",');
-  
   const results = Papa.parse(csvContent, {
-    header: hasHeader,
+    header: filePath.includes('june') || filePath.includes('july') || filePath.includes('august') || filePath.includes('september'),
     skipEmptyLines: true,
   });
   
-  return {
-    data: results.data,
-    hasHeader
-  };
+  return results.data;
 }
 
 // Function to insert event into the database
@@ -66,30 +58,6 @@ async function insertEvent(event, hasHeader) {
     return false;
   }
   
-  // Parse and format the date to ensure it's stored correctly
-  // Always store date in UTC at 00:00 to ensure consistent display
-  try {
-    // First, handle the basic date parsing regardless of format
-    let eventDate = new Date(date);
-    
-    // Store all events with UTC midnight time to ensure consistent date display
-    // regardless of browser timezone
-    const year = eventDate.getFullYear();
-    const month = eventDate.getMonth();
-    const day = eventDate.getDate();
-    
-    // Create date at 00:00:00 UTC for consistent date comparison/grouping
-    const formattedDate = new Date(Date.UTC(year, month, day));
-    
-    // Convert to ISO format for database
-    date = formattedDate.toISOString();
-    
-    console.log(`Processed date: Original "${date}" -> UTC midnight: ${formattedDate.toISOString()}`);
-  } catch (error) {
-    console.error(`Error parsing date '${date}' for ${artist} @ ${venue}:`, error);
-    return false;
-  }
-  
   // Set createdAt to 30 days ago to avoid "new" tag
   const createdAt = new Date();
   createdAt.setDate(createdAt.getDate() - 30);
@@ -102,14 +70,14 @@ async function insertEvent(event, hasHeader) {
       RETURNING id;
     `;
     
-    const values = [artist, venue, date, emoji ? emoji.charAt(0) : null, summary, soundsLike, genre, createdAt];
+    const values = [artist, venue, date, emoji, summary, soundsLike, genre, createdAt];
     const result = await pool.query(query, values);
     
     if (result.rows.length > 0) {
-      console.log(`Inserted event: ${artist} @ ${venue} on ${date}`);
+      console.log(`Inserted event: ${artist} @ ${venue}`);
       return true;
     } else {
-      console.log(`Skipped duplicate event: ${artist} @ ${venue} on ${date}`);
+      console.log(`Skipped duplicate event: ${artist} @ ${venue}`);
       return false;
     }
   } catch (error) {
@@ -174,7 +142,8 @@ async function populateDatabase() {
     for (const csvFile of csvFiles) {
       try {
         console.log(`Processing file: ${csvFile}`);
-        const { data: events, hasHeader } = readAndParseCsv(csvFile);
+        const hasHeader = csvFile.includes('june') || csvFile.includes('july') || csvFile.includes('august') || csvFile.includes('september');
+        const events = readAndParseCsv(csvFile);
         
         let fileInserted = 0;
         let fileSkipped = 0;

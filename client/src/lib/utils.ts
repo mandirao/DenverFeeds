@@ -8,21 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 
 // Format date as "ddd, M/D" (e.g., "Mon, 7/1")
 export function formatDate(date: Date | string): string {
-  // IMPORTANT: Our date handling approach:
-  // 1. Backend stores all dates at midnight UTC (00:00:00Z)
-  // 2. Frontend displays dates in local timezone for the user
-  
-  // Create a new date object from the input
-  let dateObj: Date;
-  if (typeof date === 'string') {
-    // Parse the ISO date string from our database (will be in UTC)
-    dateObj = new Date(date);
-    console.log(`Formatting date from string: ${date} -> Date object: ${dateObj.toString()}`);
-  } else {
-    dateObj = date;
-  }
-  
-  // Format the date using the user's local timezone
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
   return format(dateObj, "EEE, M/d");
 }
 
@@ -32,26 +18,20 @@ export function createGoogleCalendarUrl(event: {
   venue: string;
   date: Date | string;
 }): string {
-  // Parse the date to user's local time
   const dateObj = typeof event.date === 'string' ? new Date(event.date) : event.date;
   
-  console.log(`Calendar URL: Event date from DB: ${event.date}, parsed as: ${dateObj.toString()}`);
-  
-  // Set event to start at 7pm in user's local time
-  const eventDate = new Date(dateObj);
-  eventDate.setHours(19, 0, 0, 0);
+  // Set event to start at 7pm
+  dateObj.setHours(19, 0, 0, 0);
   
   // End time is 3 hours later
-  const endDate = new Date(eventDate);
+  const endDate = new Date(dateObj);
   endDate.setHours(22, 0, 0, 0);
   
   const eventTitle = `${event.artist} @ ${event.venue}`;
   
-  // Format dates for Google Calendar (will be in local timezone)
-  const startDateString = format(eventDate, "yyyyMMdd'T'HHmmss");
+  // Format dates for Google Calendar
+  const startDateString = format(dateObj, "yyyyMMdd'T'HHmmss");
   const endDateString = format(endDate, "yyyyMMdd'T'HHmmss");
-  
-  console.log(`Calendar event time: ${eventDate.toString()} to ${endDate.toString()}`);
   
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startDateString}/${endDateString}&details=Show%20organized%20by%20Setlist%20Social`;
 }
@@ -79,16 +59,9 @@ export function groupEventsByMonth(events: any[]) {
   const groupedEvents: Record<string, any[]> = {};
   
   events.forEach(event => {
-    // Parse the date from ISO format (UTC) into local timezone
     const date = new Date(event.date);
+    const monthYear = format(date, 'MMMM yyyy'); // e.g., "July 2023"
     
-    // Log the date conversion for debugging timezone issues
-    console.log(`Event grouping: ${event.artist} @ ${event.venue}, UTC date: ${event.date}, Local date: ${date.toString()}`);
-    
-    // Format the date using date-fns to get the month and year in the user's timezone
-    const monthYear = format(date, 'MMMM yyyy'); // e.g., "July 2025"
-    
-    // Create month group if it doesn't exist yet
     if (!groupedEvents[monthYear]) {
       groupedEvents[monthYear] = [];
     }
