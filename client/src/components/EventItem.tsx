@@ -147,8 +147,8 @@ function EventItem({ event }: EventItemProps) {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="bg-[#A6432D] text-[#F26241] text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5">
-                        Just added!
+                      <span className="bg-[#FEABDA] text-black text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5">
+                        new
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -161,7 +161,7 @@ function EventItem({ event }: EventItemProps) {
             
             {/* Upvote button */}
             {!event.isScheduled && (
-              <span className="inline-block align-middle ml-2">
+              <span className="inline-block align-middle ml-2" style={{ position: 'relative', top: '2px' }}>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -191,7 +191,7 @@ function EventItem({ event }: EventItemProps) {
                     <TooltipTrigger asChild>
                       <span 
                         onClick={handleSchedule}
-                        className="bg-[#41D1F2] text-white text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5 cursor-pointer"
+                        className="bg-[#41D1F2] text-black text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5 cursor-pointer"
                         style={{ position: 'relative', top: '2px' }}
                       >
                         <Check className="mr-0.5 h-3 w-3" /> Scheduled
@@ -209,7 +209,7 @@ function EventItem({ event }: EventItemProps) {
           {/* Right-aligned controls - just the scheduling dot */}
           <div className="flex items-center">
             {!event.isScheduled ? (
-              <div className="ml-auto pl-2" style={{ position: 'relative', top: '-8px' }}>
+              <div className="ml-auto pl-2" style={{ position: 'relative', top: '2px' }}>
                 {/* Schedule button dot */}
                 <TooltipProvider>
                   <Tooltip>
