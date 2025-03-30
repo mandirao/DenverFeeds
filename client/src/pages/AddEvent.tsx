@@ -441,7 +441,7 @@ export default function AddEvent() {
               </div>
             </div>
             
-            <div className="flex justify-end">
+            <div className="flex justify-start">
               <Button 
                 type="submit"
                 variant="default"
