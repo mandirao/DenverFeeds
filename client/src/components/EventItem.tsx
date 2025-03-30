@@ -1,9 +1,9 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Event } from "@shared/schema";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { formatDate, createGoogleCalendarUrl, createGoogleMapsUrl, createSpotifySearchUrl, isRecentlyAdded } from "@/lib/utils";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { ArrowUp, Check } from "lucide-react";
 
@@ -25,12 +25,30 @@ function EventItem({ event }: EventItemProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/events/${event.id}/has-upvoted`] });
     }
   });
   
-  // Check if user has already voted for this event
-  // Since we don't have this information from the backend yet, we'll default to false
-  const hasUserVoted = false;
+  // Track if the user has voted for this event
+  const [hasVoted, setHasVoted] = useState(false);
+  
+  // Define type for our API response
+  interface UpvoteResponse {
+    hasUpvoted: boolean;
+  }
+  
+  // Check if user has already upvoted this event
+  const hasUpvotedQuery = useQuery<UpvoteResponse>({
+    queryKey: [`/api/events/${event.id}/has-upvoted`],
+    enabled: !!event.id && !event.isScheduled
+  });
+  
+  // Set the voted state based on the query result
+  useEffect(() => {
+    if (hasUpvotedQuery.data && hasUpvotedQuery.data.hasUpvoted) {
+      setHasVoted(true);
+    }
+  }, [hasUpvotedQuery.data]);
 
   // Schedule mutation
   const scheduleMutation = useMutation({
@@ -48,7 +66,14 @@ function EventItem({ event }: EventItemProps) {
   });
 
   const handleUpvote = () => {
-    upvoteMutation.mutate();
+    // Don't allow upvoting if the user has already voted
+    if (hasVoted) return;
+    
+    upvoteMutation.mutate(undefined, {
+      onSuccess: () => {
+        setHasVoted(true);
+      }
+    });
   };
 
   const handleSchedule = () => {
@@ -176,14 +201,14 @@ function EventItem({ event }: EventItemProps) {
                         variant="ghost" 
                         size="sm"
                         onClick={handleUpvote}
-                        disabled={upvoteMutation.isPending || upvoteMutation.isError}
-                        className={`${hasUserVoted ? 'bg-[#25428A] text-white' : 'bg-black text-[#F26241]'} hover:text-black rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0`}
+                        disabled={upvoteMutation.isPending || upvoteMutation.isError || hasVoted}
+                        className={`${hasVoted ? 'bg-[#25428A] text-white' : 'bg-black text-[#F26241]'} ${!hasVoted && 'hover:text-black'} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0`}
                       >
                         <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{hasUserVoted ? 'You voted for this show' : 'Upvote this show'}</p>
+                      <p>{hasVoted ? 'You voted for this show' : 'Upvote this show'}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

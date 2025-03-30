@@ -153,6 +153,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check if a user has upvoted an event
+  apiRouter.get("/events/:id/has-upvoted", async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ message: "Invalid event ID" });
+      }
+
+      // For now, use the default user ID (1) since we don't have auth
+      const userId = 1;
+
+      const hasUpvoted = await storage.hasUserUpvoted(eventId, userId);
+      res.json({ hasUpvoted });
+    } catch (error) {
+      res.status(500).json({ message: "Server error checking upvote status" });
+    }
+  });
+
   // Upvote an event
   apiRouter.post("/events/:id/upvote", async (req, res) => {
     try {
