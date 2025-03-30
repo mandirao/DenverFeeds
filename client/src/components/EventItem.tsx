@@ -16,6 +16,7 @@ function EventItem({ event }: EventItemProps) {
   const [isHoveringArtist, setIsHoveringArtist] = useState(false);
   const [isHoveringVenue, setIsHoveringVenue] = useState(false);
   const [isHoveringDate, setIsHoveringDate] = useState(false);
+  const [showUpvoteTooltip, setShowUpvoteTooltip] = useState(false);
 
   // Upvote mutation
   const upvoteMutation = useMutation({
@@ -47,6 +48,16 @@ function EventItem({ event }: EventItemProps) {
   useEffect(() => {
     if (hasUpvotedQuery.data && hasUpvotedQuery.data.hasUpvoted) {
       setHasVoted(true);
+      
+      // Show the tooltip for first-time load if already voted
+      setShowUpvoteTooltip(true);
+      
+      // Hide it after a brief delay
+      const timer = setTimeout(() => {
+        setShowUpvoteTooltip(false);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
     }
   }, [hasUpvotedQuery.data]);
 
@@ -72,6 +83,12 @@ function EventItem({ event }: EventItemProps) {
     upvoteMutation.mutate(undefined, {
       onSuccess: () => {
         setHasVoted(true);
+        // Show the tooltip after voting
+        setShowUpvoteTooltip(true);
+        // Hide the tooltip after a delay
+        setTimeout(() => {
+          setShowUpvoteTooltip(false);
+        }, 3000);
       }
     });
   };
@@ -194,18 +211,25 @@ function EventItem({ event }: EventItemProps) {
             {/* Upvote button */}
             {!event.isScheduled && (
               <span className="inline-block align-middle ml-2" style={{ position: 'relative', top: '-1px' }}>
-                <TooltipProvider>
-                  <Tooltip>
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip open={showUpvoteTooltip}>
                     <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={handleUpvote}
-                        disabled={upvoteMutation.isPending || upvoteMutation.isError || hasVoted}
-                        className={`${hasVoted ? 'bg-[#25428A] text-white' : 'bg-black text-[#F26241]'} ${!hasVoted && 'hover:text-black'} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0`}
+                      <div 
+                        className="relative"
+                        onMouseEnter={() => setShowUpvoteTooltip(true)}
+                        onMouseLeave={() => !upvoteMutation.isPending && setShowUpvoteTooltip(false)}
                       >
-                        <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
-                      </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={handleUpvote}
+                          disabled={upvoteMutation.isPending || upvoteMutation.isError || hasVoted}
+                          className={`${hasVoted ? 'bg-[#25428A] text-white' : 'bg-black text-[#F26241]'} ${!hasVoted && 'hover:text-black'} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0`}
+                          aria-label={hasVoted ? 'You voted for this show' : 'Upvote this show'}
+                        >
+                          <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
+                        </Button>
+                      </div>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>{hasVoted ? 'You voted for this show' : 'Upvote this show'}</p>
