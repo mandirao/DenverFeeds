@@ -1,110 +1,107 @@
-// Script to import the initial CSV files without "new" tags
+// Import script for July events
 const fs = require('fs');
-const path = require('path');
 const { parse } = require('papaparse');
 const { Pool } = require('pg');
 
-// Connect to database
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
 });
 
-// Get the genre emoji based on genre
-function getGenreEmoji(genre) {
-  switch (genre) {
-    case 'Rock & Alternative':
-      return '🎸';
-    case 'Folk, Country & Americana':
-    case 'Folk/Country & Americana':
-      return '🪕';
-    case 'Pop & Indie Pop':
-      return '🎤';
-    case 'Electronic & Experimental':
-      return '🎛️';
-    case 'Funk, Soul & Jazz':
-    case 'Funk/Soul/Jazz':
-      return '🎷';
-    case 'Classical & Orchestral':
-      return '🎻';
-    default:
-      return '🎵';
+// Helper function to format dates consistently
+function formatDate(dateStr) {
+  if (!dateStr) return null;
+  
+  // Try to parse the date string
+  const date = new Date(dateStr);
+  
+  // Check if it's a valid date
+  if (isNaN(date.getTime())) {
+    console.warn(`Invalid date format: ${dateStr}`);
+    return null;
   }
+  
+  // Set time to noon (12:00) to avoid timezone issues
+  date.setHours(12, 0, 0, 0);
+  
+  return date.toISOString();
 }
 
-// Function to standardize and normalize genre names
+// Helper function to get emoji based on genre
+function getGenreEmoji(genre) {
+  const genreEmojis = {
+    'rock & alternative': '🎸',
+    'folk, country & americana': '🪕',
+    'pop & indie pop': '🎤',
+    'electronic & experimental': '🎧',
+    'funk/soul/jazz': '🎷',
+    'classical & orchestral': '🎻'
+  };
+  
+  const normalizedGenre = genre.toLowerCase().trim();
+  return genreEmojis[normalizedGenre] || '🎵'; // default emoji if genre not found
+}
+
+// Helper function to normalize genre names
 function normalizeGenre(genre) {
   if (!genre) return 'Rock & Alternative'; // Default genre
   
-  // Map variations to standard names
+  // Map of common variations to standardized genre names
   const genreMap = {
-    'Folk/Country & Americana': 'Folk, Country & Americana',
-    'Folk & Country': 'Folk, Country & Americana',
-    'Funk/Soul/Jazz': 'Funk, Soul & Jazz',
-    'Electronic': 'Electronic & Experimental',
-    'Rock': 'Rock & Alternative',
-    'Pop': 'Pop & Indie Pop',
-    'Classical': 'Classical & Orchestral'
+    'rock': 'Rock & Alternative',
+    'alt': 'Rock & Alternative',
+    'alternative': 'Rock & Alternative',
+    'rock & alt': 'Rock & Alternative',
+    'rock and alternative': 'Rock & Alternative',
+    'rock & alternative': 'Rock & Alternative',
+    
+    'folk': 'Folk, Country & Americana',
+    'country': 'Folk, Country & Americana',
+    'americana': 'Folk, Country & Americana',
+    'folk/country': 'Folk, Country & Americana',
+    'folk & country': 'Folk, Country & Americana',
+    'folk, country & americana': 'Folk, Country & Americana',
+    'folk/country & americana': 'Folk, Country & Americana',
+    
+    'pop': 'Pop & Indie Pop',
+    'indie pop': 'Pop & Indie Pop',
+    'indie': 'Pop & Indie Pop',
+    'pop & indie': 'Pop & Indie Pop',
+    'pop & indie pop': 'Pop & Indie Pop',
+    
+    'electronic': 'Electronic & Experimental',
+    'exp': 'Electronic & Experimental',
+    'experimental': 'Electronic & Experimental',
+    'electronic & exp': 'Electronic & Experimental',
+    'electronic and experimental': 'Electronic & Experimental',
+    'electronic & experimental': 'Electronic & Experimental',
+    
+    'funk': 'Funk/Soul/Jazz',
+    'soul': 'Funk/Soul/Jazz',
+    'jazz': 'Funk/Soul/Jazz',
+    'funk/soul': 'Funk/Soul/Jazz',
+    'soul/jazz': 'Funk/Soul/Jazz',
+    'funk/jazz': 'Funk/Soul/Jazz',
+    'funk/soul/jazz': 'Funk/Soul/Jazz',
+    
+    'classical': 'Classical & Orchestral',
+    'orchestral': 'Classical & Orchestral',
+    'classical & orchestral': 'Classical & Orchestral',
+    'orchestra': 'Classical & Orchestral'
   };
   
-  return genreMap[genre] || genre;
+  const normalizedInput = genre.toLowerCase().trim();
+  return genreMap[normalizedInput] || genre; // Use provided genre if not in map
 }
 
-// Format date into ISO format making sure it's noon on the specified day
-function formatDate(dateStr) {
-  // If already in ISO format, return as is
-  if (dateStr.match(/^\d{4}-\d{2}-\d{2}T/)) {
-    return dateStr;
-  }
-  
-  try {
-    // Parse various date formats (MM/DD/YYYY, DD-MM-YYYY, etc.)
-    const parts = dateStr.split(/[\/\-\.]/);
-    let day, month, year;
-    
-    // Try to determine format based on parts
-    if (parts.length === 3) {
-      // If year is likely in the first position (YYYY-MM-DD)
-      if (parts[0].length === 4) {
-        year = parts[0];
-        month = parts[1];
-        day = parts[2];
-      } 
-      // Assume MM/DD/YYYY format (most common in US)
-      else {
-        month = parts[0];
-        day = parts[1];
-        year = parts[2];
-      }
-      
-      // Ensure 4-digit year
-      if (year.length === 2) {
-        year = '20' + year;
-      }
-      
-      // Pad month and day with leading zeros if needed
-      month = month.padStart(2, '0');
-      day = day.padStart(2, '0');
-      
-      // Create date at noon UTC to avoid timezone issues
-      const formattedDate = `${year}-${month}-${day}T12:00:00.000Z`;
-      return formattedDate;
-    }
-  } catch (error) {
-    console.error(`Error parsing date: ${dateStr}`, error);
-  }
-  
-  // If we couldn't parse the date, return original
-  return dateStr;
-}
-
-// Check if an event already exists in the database (duplicate check)
+// Check for duplicate events
 async function checkDuplicateEvent(event) {
   try {
     const result = await pool.query(
-      'SELECT COUNT(*) FROM events WHERE artist = $1 AND date = $2 AND venue = $3',
-      [event.artist, event.date, event.venue]
+      'SELECT * FROM events WHERE artist = $1 AND venue = $2 AND date = $3',
+      [event.artist, event.venue, event.date]
     );
-    return parseInt(result.rows[0].count) > 0;
+    
+    return result.rows.length > 0;
   } catch (error) {
     console.error('Error checking for duplicate event:', error);
     return false;
@@ -135,6 +132,8 @@ async function insertEvent(event) {
     
     // Use the extracted emoji or fall back to the genre emoji
     const finalEmoji = emojiToUse || getGenreEmoji(event.genre);
+    
+    console.log(`For ${event.artist}, original emoji: ${event.emoji}, using: ${finalEmoji}`);
     
     const result = await pool.query(
       'INSERT INTO events (artist, venue, date, genre, emoji, summary, sounds_like, is_scheduled, created_at, upvotes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
@@ -275,35 +274,21 @@ async function processCSV(filePath) {
   }
 }
 
-// Function to import the specified CSV files
-async function importCSVs() {
+// Import July events
+async function importJulyEvents() {
   try {
-    // Specific CSV files to import
-    const csvFiles = [
-      'attached_assets/april_followed_artists_bulletin.csv',
-      'attached_assets/june_followed_artists_bulletin.csv',
-      'attached_assets/followed_artists_may2025.csv',
-      'attached_assets/july_events_bulletin_extended.csv',
-      'attached_assets/july_followed_artists_bulletin.csv',
-    ];
+    const julyFile = 'attached_assets/july_events_bulletin_extended.csv';
     
-    console.log(`Found ${csvFiles.length} CSV files to import`);
+    console.log(`Importing July events from ${julyFile}`);
     
-    let totalImported = 0;
-    let totalSkipped = 0;
-    
-    for (const file of csvFiles) {
-      const { imported, skipped } = await processCSV(file);
-      totalImported += imported;
-      totalSkipped += skipped;
-    }
+    const { imported, skipped } = await processCSV(julyFile);
     
     console.log(`=== Import Complete ===`);
-    console.log(`Total events imported: ${totalImported}`);
-    console.log(`Total events skipped: ${totalSkipped}`);
+    console.log(`Total July events imported: ${imported}`);
+    console.log(`Total July events skipped: ${skipped}`);
     
   } catch (error) {
-    console.error('Error importing CSV files:', error);
+    console.error('Error importing July events:', error);
   } finally {
     // Close the database connection
     await pool.end();
@@ -311,12 +296,12 @@ async function importCSVs() {
 }
 
 // Run the import
-importCSVs()
+importJulyEvents()
   .then(() => {
-    console.log('CSV import completed successfully');
+    console.log('July events import completed successfully');
     process.exit(0);
   })
   .catch((error) => {
-    console.error('CSV import failed:', error);
+    console.error('July events import failed:', error);
     process.exit(1);
   });
