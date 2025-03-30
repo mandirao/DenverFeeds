@@ -1,19 +1,59 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 
-interface EventFiltersProps {
+export interface MonthOption {
+  key: string;
+  display: string;
+}
+
+export interface EventFiltersProps {
+  // The original callback
   onFilterChange: (filters: {
     month: string;
     genre: string;
     status: string;
   }) => void;
+  
+  // Data
   genres: string[];
+  months?: MonthOption[];
+  
+  // Current filter values
+  monthFilter?: string;
+  genreFilter?: string;
+  statusFilter?: string;
+  
+  // Individual change handlers for navbar integration
+  onMonthChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onGenreChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onStatusChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
+
+// Generate an array of the next 12 months for the filter
+export const getNextMonths = (): MonthOption[] => {
+  const months = [];
+  const currentDate = new Date();
+  
+  for (let i = 0; i < 12; i++) {
+    const nextMonth = new Date(currentDate);
+    nextMonth.setMonth(currentDate.getMonth() + i);
+    const monthKey = format(nextMonth, "MMMM yyyy");
+    const monthDisplay = format(nextMonth, "MMMM yyyy");
+    months.push({ key: monthKey, display: monthDisplay });
+  }
+  
+  return months;
+};
 
 export function EventFilters({ onFilterChange, genres }: EventFiltersProps) {
   const [month, setMonth] = useState("all");
   const [genre, setGenre] = useState("all");
   const [status, setStatus] = useState("all");
+  const [months, setMonths] = useState<MonthOption[]>([]);
+  
+  useEffect(() => {
+    setMonths(getNextMonths());
+  }, []);
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newMonth = e.target.value;
@@ -32,24 +72,6 @@ export function EventFilters({ onFilterChange, genres }: EventFiltersProps) {
     setStatus(newStatus);
     onFilterChange({ month, genre, status: newStatus });
   };
-
-  // Generate an array of the next 12 months for the filter
-  const getNextMonths = () => {
-    const months = [];
-    const currentDate = new Date();
-    
-    for (let i = 0; i < 12; i++) {
-      const nextMonth = new Date(currentDate);
-      nextMonth.setMonth(currentDate.getMonth() + i);
-      const monthKey = format(nextMonth, "MMMM yyyy");
-      const monthDisplay = format(nextMonth, "MMMM yyyy");
-      months.push({ key: monthKey, display: monthDisplay });
-    }
-    
-    return months;
-  };
-
-  const months = getNextMonths();
 
   return (
     <div className="mb-8">

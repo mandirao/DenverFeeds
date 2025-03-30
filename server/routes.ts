@@ -43,6 +43,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new event
   apiRouter.post("/events", async (req, res) => {
     try {
+      // Convert date string to Date object if it's not already
+      if (req.body.date && typeof req.body.date === 'string') {
+        try {
+          req.body.date = new Date(req.body.date);
+        } catch (dateError) {
+          console.error("Date parsing error:", dateError);
+        }
+      }
+
       const eventData = insertEventSchema.parse(req.body);
       
       // Check for duplicate

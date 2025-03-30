@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import EventFilters from "@/components/EventFilters";
+import { getNextMonths } from "@/components/EventFilters";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import { groupEventsByMonth, isRecentlyAdded } from "@/lib/utils";
@@ -30,6 +30,7 @@ export default function Home() {
 
   // Extract unique genres for the filter
   const genres = extractGenres(events);
+  const months = getNextMonths();
 
   // Filter events based on selected filters
   const filteredEvents = events.filter(event => {
@@ -60,17 +61,37 @@ export default function Home() {
   // Check if we have events to display after filtering
   const hasEvents = Object.keys(groupedEvents).length > 0;
 
+  // Handle individual filter changes
+  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters({ ...filters, month: e.target.value });
+  };
+
+  const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters({ ...filters, genre: e.target.value });
+  };
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters({ ...filters, status: e.target.value });
+  };
+
   return (
     <div className="min-h-screen bg-[#FE6B41]">
-      <Navbar />
+      <Navbar 
+        showFilters={true}
+        filterProps={{
+          onFilterChange: setFilters,
+          genres,
+          months,
+          monthFilter: filters.month,
+          genreFilter: filters.genre,
+          statusFilter: filters.status,
+          onMonthChange: handleMonthChange,
+          onGenreChange: handleGenreChange,
+          onStatusChange: handleStatusChange
+        }}
+      />
       
       <main className="container mx-auto px-4 py-8">
-        {/* Filters */}
-        <EventFilters 
-          onFilterChange={setFilters} 
-          genres={genres}
-        />
-        
         {/* Events Feed */}
         <div className="mb-8 min-h-[400px]">
           {isLoading ? (

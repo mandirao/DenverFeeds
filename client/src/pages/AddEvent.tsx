@@ -249,7 +249,7 @@ export default function AddEvent() {
 
   return (
     <div className="min-h-screen bg-[#FE6B41]">
-      <Navbar />
+      <Navbar showFilters={false} />
       
       <main className="container mx-auto px-4 py-8">
         <div className="bg-[#FEABDA] rounded-lg p-6">
@@ -380,7 +380,8 @@ export default function AddEvent() {
             <div className="flex justify-end">
               <Button 
                 type="submit"
-                variant="pink"
+                variant="default"
+                className="bg-black text-white hover:bg-black/90 rounded-full px-6"
                 disabled={addEventMutation.isPending}
               >
                 ADD SHOW

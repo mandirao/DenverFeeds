@@ -77,7 +77,7 @@ function EventItem({ event }: EventItemProps) {
                     href={spotifyUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-bold border-b border-dotted border-black hover:border-none hover:text-black cursor-pointer"
+                    className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
                     onMouseEnter={() => setIsHoveringArtist(true)}
                     onMouseLeave={() => setIsHoveringArtist(false)}
                   >
@@ -100,7 +100,7 @@ function EventItem({ event }: EventItemProps) {
                     href={mapsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="border-b border-dotted border-black hover:border-none hover:text-black cursor-pointer"
+                    className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
                     onMouseEnter={() => setIsHoveringVenue(true)}
                     onMouseLeave={() => setIsHoveringVenue(false)}
                   >
@@ -123,7 +123,7 @@ function EventItem({ event }: EventItemProps) {
                     href={calendarUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="border-b border-dotted border-black hover:border-none hover:text-black cursor-pointer"
+                    className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
                     onMouseEnter={() => setIsHoveringDate(true)}
                     onMouseLeave={() => setIsHoveringDate(false)}
                   >
@@ -173,7 +173,7 @@ function EventItem({ event }: EventItemProps) {
                         size="sm"
                         onClick={handleUpvote}
                         disabled={upvoteMutation.isPending || upvoteMutation.isError}
-                        className="text-[#F26241] hover:text-[#41F2EE] bg-black rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0"
+                        className="text-[#F26241] hover:text-black bg-black rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0"
                       >
                         <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
                       </Button>
