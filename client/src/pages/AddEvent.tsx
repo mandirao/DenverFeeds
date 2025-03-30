@@ -11,7 +11,13 @@ import { insertEventSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle } from "lucide-react";
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion";
+import { AlertCircle, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Papa from "papaparse";
 
@@ -453,32 +459,42 @@ export default function AddEvent() {
             </div>
             
             <div className="pt-8">
-              <h3 className="text-xl text-black mb-4 font-anton">OR UPLOAD CSV</h3>
-              <Input
-                type="file"
-                id="csv-upload"
-                accept=".csv"
-                onChange={handleCsvUpload}
-                className="block w-full p-3 border-2 border-black bg-[#FEABDA] rounded-none"
-              />
-              <div className="text-sm text-black mt-2 bg-[#FEABDA] p-3 rounded-md">
-                <p className="font-medium mb-1">CSV Format Requirements:</p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Must include header row with column names</li>
-                  <li>Required columns: artist, venue, date, emoji, summary, sounds_like, genre</li>
-                  <li>Date format must be YYYY-MM-DD (e.g., 2025-06-15)</li>
-                  <li>Genre must match one of the standard options</li>
-                  <li>Text fields limited to 75 characters</li>
-                  <li>Emojis limited to 5 characters</li>
-                </ul>
-                <p className="mt-2 italic">Tip: Download any CSV import errors, fix them, and try uploading again.</p>
-              </div>
-              {csvError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mt-2 rounded relative">
-                  <div className="font-bold">CSV Upload Error</div>
-                  <div className="whitespace-pre-line">{csvError}</div>
-                </div>
-              )}
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="csv-upload" className="border-0">
+                  <AccordionTrigger className="p-0 hover:no-underline">
+                    <h3 className="text-xl text-black font-anton text-left flex items-center">
+                      OR UPLOAD CSV
+                    </h3>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4">
+                    <Input
+                      type="file"
+                      id="csv-upload"
+                      accept=".csv"
+                      onChange={handleCsvUpload}
+                      className="block w-full p-3 border-2 border-black bg-[#FEABDA] rounded-none"
+                    />
+                    <div className="text-sm text-black mt-2 bg-[#FEABDA] p-3 rounded-md">
+                      <p className="font-medium mb-1">CSV Format Requirements:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Must include header row with column names</li>
+                        <li>Required columns: artist, venue, date, emoji, summary, sounds_like, genre</li>
+                        <li>Date format must be YYYY-MM-DD (e.g., 2025-06-15)</li>
+                        <li>Genre must match one of the standard options</li>
+                        <li>Text fields limited to 75 characters</li>
+                        <li>Emojis limited to 5 characters</li>
+                      </ul>
+                      <p className="mt-2 italic">Tip: Download any CSV import errors, fix them, and try uploading again.</p>
+                    </div>
+                    {csvError && (
+                      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mt-2 rounded relative">
+                        <div className="font-bold">CSV Upload Error</div>
+                        <div className="whitespace-pre-line">{csvError}</div>
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
             
             {/* Duplicate event error message */}
