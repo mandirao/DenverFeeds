@@ -52,6 +52,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Ensure emoji is only the first character
+      if (req.body.emoji && req.body.emoji.length > 0) {
+        req.body.emoji = req.body.emoji.charAt(0);
+      }
+      
       const eventData = insertEventSchema.parse(req.body);
       
       // Check for duplicate
@@ -105,6 +110,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } catch (dateError) {
               console.error("Date parsing error:", dateError);
             }
+          }
+          
+          // Ensure emoji is only the first character in bulk uploads too
+          if (item.emoji && item.emoji.length > 0) {
+            item.emoji = item.emoji.charAt(0);
           }
           
           const eventData = insertEventSchema.parse(item);
