@@ -23,20 +23,25 @@ import Papa from "papaparse";
 
 // Function to check if string contains only emoji characters
 function containsOnlyEmoji(str: string) {
-  // Simple check for emoji-only content
-  // Check if every character's code point is in emoji ranges
+  // More complete emoji detection 
   for (let i = 0; i < str.length; i++) {
     const code = str.codePointAt(i) || 0;
+    
     // Skip surrogate pairs
     if (code >= 0xD800 && code <= 0xDBFF) {
       continue;
     }
     
-    // Check if character is in emoji ranges
+    // Check if character is in emoji ranges (more comprehensive)
     const isEmoji = 
-      (code >= 0x1F000 && code <= 0x1FAFF) || // Emojis and pictographs
+      (code >= 0x1F000 && code <= 0x1FFFF) || // Extended pictographs (includes 🪘 U+1F98C)
       (code >= 0x2600 && code <= 0x27BF) ||   // Misc symbols and dingbats
-      (code >= 0x2B50 && code <= 0x2B55) ||   // Additional stars
+      (code >= 0x2300 && code <= 0x23FF) ||   // Misc technical
+      (code >= 0x2B00 && code <= 0x2BFF) ||   // Misc symbols and arrows
+      (code >= 0x1F300 && code <= 0x1F9FF) || // Additional emoticons
+      (code >= 0x1FA70 && code <= 0x1FAFF) || // Symbols and pictographs extended-A
+      (code >= 0x1F600 && code <= 0x1F64F) || // Emoticons
+      (code >= 0x1F680 && code <= 0x1F6FF) || // Transport and map symbols
       (code >= 0x2700 && code <= 0x27BF) ||   // Dingbats
       (code === 0x263A) ||                    // Smiling face
       (code === 0x2639) ||                    // Frowning face
@@ -381,7 +386,7 @@ export default function AddEvent() {
                   {...form.register("emoji")}
                   maxLength={5}
                   placeholder="🎸"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black !bg-transparent"
                 />
                 <Label htmlFor="emoji" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">VIBE</Label>
                 {form.formState.errors.emoji && (
@@ -430,7 +435,7 @@ export default function AddEvent() {
                       id="date"
                       type="date"
                       {...form.register("date")}
-                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/30 text-black/30 [&:not(:placeholder-shown)]:text-black [color-scheme:light] appearance-none [&::-webkit-calendar-picker-indicator]:hidden"
+                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/30 text-black [color-scheme:light] appearance-none [&::-webkit-calendar-picker-indicator]:hidden !bg-transparent"
                     />
                     <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
                   </div>
@@ -482,11 +487,11 @@ export default function AddEvent() {
                 <select
                   id="genre"
                   {...form.register("genre")}
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pt-1 pb-3 pl-0 min-w-[270px] text-xl appearance-none text-black/20 h-[43px] [&:not(:placeholder-shown)]:text-black [&:not([value=''])]:text-black"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pt-1 pb-3 pl-0 min-w-[270px] text-xl appearance-none text-black/20 h-[43px] [&:not([value=''])]:text-black !bg-transparent"
                 >
                   <option value="" className="text-black/20">Genre</option>
                   {genres.map((genre) => (
-                    <option key={genre} value={genre}>{genre}</option>
+                    <option key={genre} value={genre} className="text-black">{genre}</option>
                   ))}
                 </select>
                 <Label htmlFor="genre" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">GENRE</Label>
