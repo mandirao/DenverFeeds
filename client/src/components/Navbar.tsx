@@ -75,7 +75,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                         </div>
                         
                         {/* Denver/Boulder area toggle */}
-                        <div className="flex items-center justify-start space-x-2 mt-1">
+                        <div className="flex items-center justify-start space-x-2 mt-1 ml-2">
                           <div className="relative">
                             <Switch 
                               id="denver-area-only" 
