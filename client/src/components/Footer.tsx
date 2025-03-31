@@ -25,7 +25,7 @@ export function Footer() {
             onClick={() => setAboutOpen(true)}
             className="text-black hover:text-[#41F2EE] transition-colors font-sora underline"
           >
-            ABOUT US
+            ABOUT
           </button>
         </div>
         
@@ -41,12 +41,12 @@ export function Footer() {
             <DialogTitle className="text-xl font-anton">ABOUT SETLIST SOCIAL</DialogTitle>
           </DialogHeader>
           <DialogDescription className="text-black">
-            <p className="mb-4">
-              Setlist Social is a not-for-profit, fan-run hub for music lovers in our meetup group to share upcoming shows and stay in the loop with friends.
-            </p>
-            <p className="mb-4">
-              We don't own or claim any copyrighted material. If something here steps on any toes, let us know and we'll take it down, no fuss. Questions or concerns? Drop us a note through our Meetup group.
-            </p>
+            <div className="mb-4">
+              Setlist Social is a not-for-profit, fan-run hub for music lovers in our Denver meetup group to share upcoming shows w/ friends.
+            </div>
+            <div className="mb-4">
+              We don't own or claim any copyrighted material. Questions or concerns? Drop a note through our Meetup group.
+            </div>
           </DialogDescription>
           <DialogFooter>
             <Button variant="outline2" onClick={() => setAboutOpen(false)}>
