@@ -37,8 +37,8 @@ export default function Home() {
 
   // Filter events based on selected filters
   const filteredEvents = events.filter(event => {
-    // Month filter (not applied for top-voted)
-    if (filters.status !== "top-voted" && filters.month !== "all") {
+    // Month filter (now applied for all views including top-voted)
+    if (filters.month !== "all") {
       const eventMonth = format(new Date(event.date), "MMMM yyyy");
       if (eventMonth !== filters.month) return false;
     }
@@ -95,9 +95,20 @@ export default function Home() {
   
   if (filters.status === "top-voted") {
     // For top-voted, we show a flat list without month/week grouping
+    // Create subtitle if month or genre filters are applied
+    let filterSubtitle = '';
+    if (filters.month !== 'all' && filters.genre !== 'all') {
+      filterSubtitle = `${filters.genre} in ${filters.month}`;
+    } else if (filters.month !== 'all') {
+      filterSubtitle = filters.month;
+    } else if (filters.genre !== 'all') {
+      filterSubtitle = filters.genre;
+    }
+    
     displayContent = (
       <div className="p-4 mb-8">
-        <h2 className="text-xl font-black mb-4 text-white uppercase">TOP VOTED</h2>
+        <h2 className="text-xl font-black mb-1 text-white uppercase">TOP VOTED</h2>
+        {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
         <ul className="space-y-6">
           {sortedEvents.map(event => (
             <EventItem key={event.id} event={event} />
