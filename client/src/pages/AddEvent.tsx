@@ -21,9 +21,43 @@ import { AlertCircle, ChevronDown, CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Papa from "papaparse";
 
+// Function to check if string contains only emoji characters
+function containsOnlyEmoji(str: string) {
+  // Simple check for emoji-only content
+  // Check if every character's code point is in emoji ranges
+  for (let i = 0; i < str.length; i++) {
+    const code = str.codePointAt(i) || 0;
+    // Skip surrogate pairs
+    if (code >= 0xD800 && code <= 0xDBFF) {
+      continue;
+    }
+    
+    // Check if character is in emoji ranges
+    const isEmoji = 
+      (code >= 0x1F000 && code <= 0x1FAFF) || // Emojis and pictographs
+      (code >= 0x2600 && code <= 0x27BF) ||   // Misc symbols and dingbats
+      (code >= 0x2B50 && code <= 0x2B55) ||   // Additional stars
+      (code >= 0x2700 && code <= 0x27BF) ||   // Dingbats
+      (code === 0x263A) ||                    // Smiling face
+      (code === 0x2639) ||                    // Frowning face
+      (code === 0x270C) ||                    // Victory hand
+      (code === 0x2764);                      // Heart
+      
+    if (!isEmoji) {
+      return false;
+    }
+  }
+  return true;
+}
+
 // Extend the event schema with custom validations
 const addEventSchema = insertEventSchema.extend({
-  emoji: z.string().min(1, "Emoji is required").max(5, "Maximum 5 characters"),
+  emoji: z.string()
+    .min(1, "Emoji is required")
+    .max(5, "Maximum 5 characters")
+    .refine(value => containsOnlyEmoji(value), {
+      message: "Only emoji characters are allowed"
+    }),
   artist: z.string().min(1, "Artist name is required").max(75, "Maximum 75 characters"),
   venue: z.string().min(1, "Venue is required").max(75, "Maximum 75 characters"),
   summary: z.string().min(1, "Summary is required").max(75, "Maximum 75 characters"),
@@ -430,7 +464,7 @@ export default function AddEvent() {
                   {form.formState.errors.date && (
                     <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.date.message}</p>
                   )}
-                  <CalendarIcon className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
+                  <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
                 </div>
                 <span className="flex-none text-xl ml-0 pl-0">).</span>
               </div>
@@ -444,7 +478,7 @@ export default function AddEvent() {
                   placeholder="Dream-pop royalty with celestial vibes"
                   className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[270px] placeholder:text-black/20 text-xl"
                 />
-                <Label htmlFor="summary" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">SUMMARY</Label>
+                <Label htmlFor="summary" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">SNAPPY BAND INTRO</Label>
                 {form.formState.errors.summary && (
                   <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.summary.message}</p>
                 )}
@@ -475,9 +509,9 @@ export default function AddEvent() {
                 <select
                   id="genre"
                   {...form.register("genre")}
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-[0.4rem] pb-[0.65rem] pl-0 min-w-[270px] text-xl appearance-none text-black/20"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pt-1 pb-3 pl-0 min-w-[270px] text-xl appearance-none text-black/20 h-[43px]"
                 >
-                  <option value="" className="text-black/20">Select genre</option>
+                  <option value="" className="text-black/20">Genre</option>
                   {genres.map((genre) => (
                     <option key={genre} value={genre}>{genre}</option>
                   ))}
@@ -490,7 +524,7 @@ export default function AddEvent() {
               </div>
               
               {/* Add Show Button - positioned 20px after the genre dropdown */}
-              <div className="inline-flex items-baseline ml-5">
+              <div className="inline-flex items-baseline ml-2">
                 <Button 
                   type="submit"
                   variant="default"
