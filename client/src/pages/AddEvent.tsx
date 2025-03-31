@@ -389,7 +389,7 @@ export default function AddEvent() {
                   maxLength={5}
                   placeholder="🎸"
                   inputMode="none"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/20 placeholder:opacity-80 empty:opacity-80 [&:not(:placeholder-shown)]:opacity-100 cursor-pointer"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/20 placeholder:opacity-95 empty:opacity-95 [&:not(:placeholder-shown)]:opacity-100 cursor-pointer"
                   onClick={(e) => {
                     // Try multiple approaches to trigger emoji picker
                     try {
