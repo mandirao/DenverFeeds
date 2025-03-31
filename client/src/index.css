@@ -13,7 +13,7 @@
 }
 
 #denver-area-only[data-state="checked"] span {
-  transform: translateX(5px) !important;
+  transform: translateX(8px) !important;
 }
 
 /* Make the thumb/circle clickable */
