@@ -536,9 +536,9 @@ export default function AddEvent() {
         <div className="mt-1 p-6 bg-[#FE6B41] rounded-lg">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="csv-upload" className="border-0">
-              <AccordionTrigger className="p-0 hover:no-underline">
+              <AccordionTrigger className="p-0 hover:no-underline" hideChevron>
                 <h3 className="text-sm text-black font-anton text-left flex items-center">
-                  UPLOAD A CSV
+                  CSV <ChevronDown className="h-4 w-4 ml-1 shrink-0 transition-transform duration-200 data-[state=open]:rotate-180" />
                 </h3>
               </AccordionTrigger>
               <AccordionContent className="pt-4">
