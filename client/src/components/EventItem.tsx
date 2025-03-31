@@ -61,6 +61,9 @@ function EventItem({ event }: EventItemProps) {
       
       return () => clearTimeout(timer);
     }
+    else if (hasUpvotedQuery.data && !hasUpvotedQuery.data.hasUpvoted) {
+      setHasVoted(false);
+    }
   }, [hasUpvotedQuery.data]);
 
   // Schedule mutation
@@ -241,15 +244,15 @@ function EventItem({ event }: EventItemProps) {
                           size="sm"
                           onClick={handleUpvote}
                           disabled={upvoteMutation.isPending || upvoteMutation.isError || hasVoted}
-                          className={`${hasVoted ? 'bg-[#25428A] text-white' : 'bg-black text-[#F26241]'} ${!hasVoted && 'hover:text-black'} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0`}
-                          aria-label={hasVoted ? 'You voted for this show' : 'Upvote this show'}
+                          className={`${hasVoted ? 'bg-[#25428A] text-white' : 'bg-black text-[#F26241]'} ${!hasVoted && 'hover:text-[#41F2EE]'} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0`}
+                          aria-label={hasVoted ? 'You already voted for this one' : 'Upvote this show'}
                         >
                           <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
                         </Button>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{hasVoted ? 'You voted for this show' : 'Upvote this show'}</p>
+                      <p>{hasVoted ? 'You already voted for this one' : 'Upvote this show'}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
