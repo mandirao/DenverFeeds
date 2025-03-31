@@ -59,7 +59,13 @@ const addEventSchema = insertEventSchema.extend({
   venue: z.string().min(1, "Venue is required").max(75, "Maximum 75 characters"),
   summary: z.string().min(1, "Summary is required").max(75, "Maximum 75 characters"),
   soundsLike: z.string().min(1, "Sounds like is required").max(75, "Maximum 75 characters"),
-  date: z.string().min(1, "Date is required"),
+  date: z.preprocess(
+    (arg) => typeof arg === 'string' ? new Date(arg) : arg,
+    z.date({
+      required_error: "Date is required",
+      invalid_type_error: "That's not a date!",
+    })
+  ),
   genre: z.string().min(1, "Genre is required"),
 });
 
@@ -81,7 +87,7 @@ export default function AddEvent() {
       emoji: "",
       artist: "",
       venue: "",
-      date: "",
+      date: undefined,
       summary: "",
       soundsLike: "",
       genre: "",
@@ -362,21 +368,8 @@ export default function AddEvent() {
     if (value === "other") {
       // Enter "other" custom venue mode
       setCustomVenueMode(true);
-      form.setValue("venue", "");
+      form.setValue("venue", "Other: ");
       setVenueSearchOpen(false);
-      
-      // Focus the input field after a brief delay to allow rendering
-      setTimeout(() => {
-        const venueInput = document.getElementById("venue");
-        if (venueInput) {
-          venueInput.focus();
-        }
-      }, 100);
-    } else if (value === "tbd") {
-      // Set TBD value
-      form.setValue("venue", "TBD");
-      setVenueSearchOpen(false);
-      setCustomVenueMode(false);
     } else {
       // Just set the selected venue
       form.setValue("venue", value);
@@ -442,7 +435,7 @@ export default function AddEvent() {
                       id="venue"
                       {...form.register("venue")}
                       maxLength={75}
-                      placeholder="Type venue name"
+                      placeholder="Other: Type venue name"
                       className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[170px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
                     />
                     <button 
@@ -478,22 +471,6 @@ export default function AddEvent() {
                         />
                         <CommandList>
                           <CommandEmpty>No venues found.</CommandEmpty>
-                          <CommandGroup heading="Quick Options">
-                            <CommandItem
-                              value="tbd"
-                              onSelect={handleVenueSelect}
-                              className="cursor-pointer"
-                            >
-                              TBD
-                            </CommandItem>
-                            <CommandItem
-                              value="other"
-                              onSelect={handleVenueSelect}
-                              className="cursor-pointer"
-                            >
-                              Other/Festival (custom)
-                            </CommandItem>
-                          </CommandGroup>
                           <CommandGroup heading="Denver/Boulder Area">
                             {venueOptions
                               .filter(venue => venue.group === "denver_boulder" && venue.label.toLowerCase().includes(searchValue.toLowerCase()))
@@ -524,6 +501,15 @@ export default function AddEvent() {
                               ))
                             }
                           </CommandGroup>
+                          <CommandGroup heading="Other">
+                            <CommandItem
+                              value="other"
+                              onSelect={handleVenueSelect}
+                              className="cursor-pointer"
+                            >
+                              Other/Festival (custom)
+                            </CommandItem>
+                          </CommandGroup>
                         </CommandList>
                       </Command>
                     </PopoverContent>
@@ -545,48 +531,13 @@ export default function AddEvent() {
                 <span className="flex-none text-xl mr-0 pr-0">(</span>
                 <div className="inline-flex flex-col relative">
                   <div className="relative">
-                    <div className="relative">
-                      <div
-                        className={`inline-flex items-center justify-between border-0 border-b-2 border-black bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-left text-xl ${!form.getValues("date") ? "text-black/20" : "text-black"} cursor-pointer`}
-                        onClick={() => {
-                          // This technique creates a simulated click on the date input
-                          const dateInput = document.getElementById('date-input') as HTMLInputElement;
-                          if (dateInput) {
-                            const event = new MouseEvent('click', {
-                              view: window,
-                              bubbles: true,
-                              cancelable: true,
-                            });
-                            dateInput.dispatchEvent(event);
-                          }
-                        }}
-                      >
-                        <span className="flex-1">
-                          {form.getValues("date") 
-                            ? new Date(form.getValues("date")).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric"
-                              })
-                            : "Select date"}
-                        </span>
-                        <CalendarIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </div>
-                      <input
-                        id="date-input"
-                        type="date"
-                        className="w-full h-full absolute top-0 left-0 opacity-0 cursor-pointer"
-                        onChange={(e) => {
-                          form.setValue("date", e.target.value, { shouldValidate: true });
-                          form.trigger("date");
-                        }}
-                      />
-                      <input
-                        id="date"
-                        type="hidden"
-                        {...form.register("date")}
-                      />
-                    </div>
+                    <Input
+                      id="date"
+                      type="date"
+                      {...form.register("date")}
+                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black [color-scheme:light] appearance-none [&::-webkit-calendar-picker-indicator]:hidden !bg-transparent"
+                    />
+                    <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
                   </div>
                   <Label htmlFor="date" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">DATE</Label>
                   {form.formState.errors.date && (
@@ -631,57 +582,23 @@ export default function AddEvent() {
                 <span className="flex-none text-xl ml-0 pl-0">.</span>
               </div>
               
-              {/* Genre Field - Dropdown */}
+              {/* Genre Field */}
               <div className="inline-flex flex-col relative">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      role="combobox"
-                      aria-label="Select genre"
-                      className={`inline-flex items-center justify-between border-0 border-b-2 border-black bg-transparent p-2 pl-0 min-w-[270px] text-left text-xl ${!form.getValues("genre") ? "text-black/20" : "text-black"}`}
-                    >
-                      <span>{form.getValues("genre") || "Genre"}</span>
-                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0">
-                    <Command>
-                      <CommandInput 
-                        placeholder="Search genres..." 
-                        className="h-9 border-none focus:ring-0"
-                      />
-                      <CommandList>
-                        <CommandEmpty>No genre found.</CommandEmpty>
-                        <CommandGroup>
-                          {genres.map(genre => (
-                            <CommandItem
-                              key={genre}
-                              value={genre}
-                              onSelect={(value) => {
-                                form.setValue("genre", value);
-                                // Force re-render to update the display text
-                                form.trigger("genre");
-                              }}
-                              className="cursor-pointer"
-                            >
-                              {genre}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <input 
-                  type="hidden" 
+                <select
                   id="genre"
                   {...form.register("genre")}
-                />
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pt-1 pb-3 pl-0 min-w-[270px] text-xl appearance-none text-black/20 h-[43px] [&:not([value=''])]:text-black !bg-transparent"
+                >
+                  <option value="" className="text-black/20">Genre</option>
+                  {genres.map((genre) => (
+                    <option key={genre} value={genre} className="text-black">{genre}</option>
+                  ))}
+                </select>
                 <Label htmlFor="genre" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">GENRE</Label>
                 {form.formState.errors.genre && (
                   <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.genre.message}</p>
                 )}
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 pointer-events-none" />
               </div>
               
               {/* Add Show Button - positioned very close to the genre dropdown */}
