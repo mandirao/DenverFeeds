@@ -31,10 +31,10 @@ function WeekGroup({ weekEvents, isLastWeek }: WeekProps) {
         ))}
       </ul>
       {!isLastWeek && (
-        <div className="relative py-5">
+        <div className="relative pt-5 pb-7">
           <div
             className="absolute left-0 h-[2px] bg-black"
-            style={{ width: "30px", marginLeft: "3rem" }}
+            style={{ width: "30px", marginLeft: "48px" }}
           />
         </div>
       )}
