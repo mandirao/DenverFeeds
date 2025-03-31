@@ -101,12 +101,13 @@ export function createGoogleCalendarUrl(event: {
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startDateString}/${endDateString}&details=Show%20organized%20by%20Setlist%20Social`;
 }
 
-// Create Google Maps URL or Google search for TBD venues
+// Create Google search URL for venue and tickets
 export function createGoogleMapsUrl(venue: string, artist?: string): string {
-  // If venue is TBD, create a Google search for the artist + Denver
-  if (venue === "TBD" && artist) {
-    return createGoogleSearchUrl(`${artist} Denver concert`);
+  // For all venues, create a Google search for the artist + Denver + Tickets
+  if (artist) {
+    return createGoogleSearchUrl(`${artist} Denver Tickets`);
   }
+  // Fallback to standard maps URL if no artist provided
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue)}`;
 }
 

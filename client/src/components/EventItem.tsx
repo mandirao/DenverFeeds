@@ -154,7 +154,7 @@ function EventItem({ event }: EventItemProps) {
                   </a>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{event.venue === "TBD" ? "Search for concert information" : "View on Google Maps"}</p>
+                  <p>Find tickets and venue information</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
