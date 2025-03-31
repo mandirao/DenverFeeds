@@ -111,7 +111,7 @@ export default function Home() {
       <div className="p-4 mb-8">
         <h2 className="text-xl font-black mb-1 text-white uppercase">TOP VOTED</h2>
         {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
-        <ul className="space-y-6">
+        <ul className="list-none pl-0 space-y-2 mb-3">
           {sortedEvents.map(event => (
             <EventItem key={event.id} event={event} />
           ))}
