@@ -263,8 +263,7 @@ function EventItem({ event }: EventItemProps) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span 
-                        onClick={handleSchedule}
-                        className="bg-[#f5f5f5] text-black text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5 cursor-text"
+                        className="bg-[#f5f5f5] text-black text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5"
                         style={{ position: 'relative', top: '-1px' }}
                       >
                         <Check className="mr-0.5 h-3 w-3" /> Scheduled
@@ -287,17 +286,17 @@ function EventItem({ event }: EventItemProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full bg-transparent opacity-40 hover:opacity-100"
+                    className="text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full bg-transparent opacity-40"
                   >
                     <MoreVertical className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-32 border-none bg-white shadow-md rounded-md">
+                <DropdownMenuContent align="end" className="w-32 border-none bg-gray-100 shadow-md rounded-sm font-sans">
                   {event.isScheduled ? (
                     <DropdownMenuItem 
                       onClick={handleSchedule}
                       disabled={scheduleMutation.isPending}
-                      className="text-sm py-2 focus:bg-[#f5f5f5] rounded-none"
+                      className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                     >
                       Unschedule
                     </DropdownMenuItem>
@@ -305,7 +304,7 @@ function EventItem({ event }: EventItemProps) {
                     <DropdownMenuItem 
                       onClick={handleSchedule}
                       disabled={scheduleMutation.isPending}
-                      className="text-sm py-2 focus:bg-[#f5f5f5] rounded-none"
+                      className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                     >
                       Schedule
                     </DropdownMenuItem>
@@ -313,7 +312,7 @@ function EventItem({ event }: EventItemProps) {
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <DropdownMenuItem 
-                        className="text-red-500 focus:text-red-500 text-sm py-2 focus:bg-[#f5f5f5] rounded-none"
+                        className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                         onSelect={(e) => e.preventDefault()} // Prevent the dropdown from closing
                       >
                         Delete
