@@ -97,7 +97,7 @@ export default function Home() {
     // For top-voted, we show a flat list without month/week grouping
     displayContent = (
       <div className="p-4 mb-8">
-        <h2 className="text-3xl font-bold mb-4 text-white uppercase">TOP VOTED</h2>
+        <h2 className="text-xl font-black mb-4 text-white uppercase">TOP VOTED</h2>
         <ul className="space-y-6">
           {sortedEvents.map(event => (
             <EventItem key={event.id} event={event} />
