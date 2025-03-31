@@ -354,9 +354,17 @@ export default function AddEvent() {
                   {...form.register("emoji")}
                   maxLength={5}
                   placeholder="🎸"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[80px] max-w-[80px] text-center text-xl placeholder:opacity-50 placeholder:text-black empty:opacity-50 [&:not(:placeholder-shown)]:opacity-100"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[24px] max-w-[24px] text-center text-xl placeholder:opacity-50 placeholder:text-black empty:opacity-50 [&:not(:placeholder-shown)]:opacity-100"
+                  onFocus={(e) => {
+                    // Try to open the browser's native emoji picker
+                    try {
+                      (e.target as HTMLInputElement).showPicker?.();
+                    } catch (err) {
+                      console.log("Native emoji picker not supported");
+                    }
+                  }}
                 />
-                <Label htmlFor="emoji" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">EMOJI</Label>
+                <Label htmlFor="emoji" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">VIBE</Label>
                 {form.formState.errors.emoji && (
                   <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.emoji.message}</p>
                 )}
