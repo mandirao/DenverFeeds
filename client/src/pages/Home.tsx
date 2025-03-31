@@ -33,6 +33,8 @@ export default function Home() {
 
   // Extract unique genres for the filter
   const genres = extractGenres(events);
+  
+  // Get unique months, ensuring no duplicates for the filter dropdown
   const months = getNextMonths();
 
   // Filter events based on selected filters

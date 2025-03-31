@@ -54,11 +54,19 @@ export interface EventFiltersProps {
 export const getNextMonths = (): MonthOption[] => {
   const months = [];
   const currentDate = new Date();
+  const monthsSeen = new Set<string>();
   
   for (let i = 0; i < 12; i++) {
     const nextMonth = new Date(currentDate);
     nextMonth.setMonth(currentDate.getMonth() + i);
     const monthKey = format(nextMonth, "MMMM yyyy");
+    
+    // Skip duplicates
+    if (monthsSeen.has(monthKey)) {
+      continue;
+    }
+    
+    monthsSeen.add(monthKey);
     const monthDisplay = format(nextMonth, "MMMM yyyy");
     months.push({ key: monthKey, display: monthDisplay });
   }
