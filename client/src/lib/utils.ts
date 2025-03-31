@@ -251,7 +251,8 @@ export function groupEventsByMonth(events: any[]) {
   return groupedEvents;
 }
 
-// Group events by proximity - events separated by more than 3 days should be in different groups
+// Group events by week within a month
+// A week starts on Monday and ends on Sunday
 export function groupEventsByWeek(events: any[]) {
   // First sort by date
   const sortedEvents = [...events].sort((a, b) => {
@@ -260,46 +261,39 @@ export function groupEventsByWeek(events: any[]) {
     return dateA.getTime() - dateB.getTime();
   });
   
-  const eventGroups: any[][] = [];
-  let currentGroup: any[] = [];
-  let previousDate: Date | null = null;
-  
-  // Max days gap between events in the same group
-  const MAX_DAY_GAP = 3; 
+  const weekGroups: any[][] = [];
+  let currentWeek: number | null = null;
+  let currentWeekEvents: any[] = [];
   
   sortedEvents.forEach(event => {
     const { year, month, day } = extractDateParts(event.date);
+    
+    // Create date object to get week number and day of week
     const eventDate = new Date(year, month, day);
+    const dayOfWeek = eventDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const weekNumber = getWeekNumber(eventDate);
     
-    // If this is the first event, just add it to the current group
-    if (previousDate === null) {
-      currentGroup = [event];
-    } else {
-      // Calculate the gap in days between this event and the previous one
-      const dayGap = Math.floor((eventDate.getTime() - previousDate.getTime()) / (1000 * 60 * 60 * 24));
-      
-      // If the gap is more than MAX_DAY_GAP days, start a new group
-      if (dayGap > MAX_DAY_GAP) {
-        if (currentGroup.length > 0) {
-          eventGroups.push([...currentGroup]);
-        }
-        currentGroup = [event];
-      } else {
-        // Otherwise, add to the current group
-        currentGroup.push(event);
+    // If this is a new week, start a new group
+    // We want to break at the transition from Sunday to Monday
+    const isNewWeek = currentWeek !== weekNumber;
+    
+    if (isNewWeek) {
+      if (currentWeekEvents.length > 0) {
+        weekGroups.push([...currentWeekEvents]);
       }
+      currentWeek = weekNumber;
+      currentWeekEvents = [event];
+    } else {
+      currentWeekEvents.push(event);
     }
-    
-    // Update the previous date for the next iteration
-    previousDate = eventDate;
   });
   
   // Add the last group
-  if (currentGroup.length > 0) {
-    eventGroups.push(currentGroup);
+  if (currentWeekEvents.length > 0) {
+    weekGroups.push(currentWeekEvents);
   }
   
-  return eventGroups;
+  return weekGroups;
 }
 
 // Format month for display
