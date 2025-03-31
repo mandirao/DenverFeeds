@@ -159,42 +159,75 @@ export function isRecentlyAdded(createdAt: Date | string | null): boolean {
   return isAfter(dateObj, threeDaysAgo);
 }
 
-// Group events by month
+// Helper function to normalize date and extract year, month, day
+function extractDateParts(eventDate: string | Date): { year: number; month: number; day: number } {
+  let year: number;
+  let month: number;
+  let day: number;
+  
+  if (typeof eventDate === 'string') {
+    if (eventDate.includes('T')) {
+      // For ISO strings with time component, extract parts using Date
+      const dateObj = new Date(eventDate);
+      year = dateObj.getFullYear();
+      month = dateObj.getMonth();
+      day = dateObj.getDate();
+    } else {
+      // For date-only strings (YYYY-MM-DD), parse directly
+      const parts = eventDate.split('-').map(Number);
+      year = parts[0];
+      month = parts[1] - 1; // 0-indexed months
+      day = parts[2];
+    }
+  } else if (eventDate instanceof Date) {
+    year = eventDate.getFullYear();
+    month = eventDate.getMonth();
+    day = eventDate.getDate();
+  } else {
+    // Default to current date if format is unexpected
+    console.warn('Unexpected date format:', eventDate);
+    const now = new Date();
+    year = now.getFullYear();
+    month = now.getMonth();
+    day = now.getDate();
+  }
+  
+  return { year, month, day };
+}
+
+// Calculate week number for a date
+function getWeekNumber(date: Date): number {
+  // Copy date to avoid modifying the original
+  const d = new Date(date);
+  // Set to the nearest Thursday (to handle the case where the week spans two years)
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  // Get first day of year
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  // Calculate week number: 1 + (difference in days) / 7 (rounded down)
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
+// Group events by month and then by week
 export function groupEventsByMonth(events: any[]) {
+  // First, sort events by date
+  const sortedEvents = [...events].sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateA.getTime() - dateB.getTime();
+  });
+  
   const groupedEvents: Record<string, any[]> = {};
   
-  events.forEach(event => {
-    let year: number;
-    let month: number;
-    let monthName: string;
+  sortedEvents.forEach(event => {
+    const { year, month } = extractDateParts(event.date);
     
-    if (typeof event.date === 'string') {
-      if (event.date.includes('T')) {
-        // For ISO strings with time component, extract parts using Date
-        const dateObj = new Date(event.date);
-        year = dateObj.getFullYear();
-        month = dateObj.getMonth();
-      } else {
-        // For date-only strings (YYYY-MM-DD), parse directly
-        const parts = event.date.split('-').map(Number);
-        year = parts[0];
-        month = parts[1] - 1; // 0-indexed months
-      }
-    } else if (event.date instanceof Date) {
-      year = event.date.getFullYear();
-      month = event.date.getMonth();
-    } else {
-      // Handle unexpected date format
-      console.warn('Unexpected date format:', event.date);
-      return; // Skip this event
-    }
-    
-    // Get month name without using Date constructor
+    // Get month name
     const monthNames = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
-    monthName = monthNames[month];
+    const monthName = monthNames[month];
     
     // Create a consistent key
     const monthYear = `${monthName} ${year}`;
@@ -207,6 +240,46 @@ export function groupEventsByMonth(events: any[]) {
   });
   
   return groupedEvents;
+}
+
+// Group events by week within a month
+export function groupEventsByWeek(events: any[]) {
+  // First sort by date
+  const sortedEvents = [...events].sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateA.getTime() - dateB.getTime();
+  });
+  
+  const weekGroups: any[][] = [];
+  let currentWeek: number | null = null;
+  let currentWeekEvents: any[] = [];
+  
+  sortedEvents.forEach(event => {
+    const { year, month, day } = extractDateParts(event.date);
+    
+    // Create date object to get week number
+    const eventDate = new Date(year, month, day);
+    const weekNumber = getWeekNumber(eventDate);
+    
+    // If this is a new week, start a new group
+    if (currentWeek !== weekNumber) {
+      if (currentWeekEvents.length > 0) {
+        weekGroups.push([...currentWeekEvents]);
+      }
+      currentWeek = weekNumber;
+      currentWeekEvents = [event];
+    } else {
+      currentWeekEvents.push(event);
+    }
+  });
+  
+  // Add the last group
+  if (currentWeekEvents.length > 0) {
+    weekGroups.push(currentWeekEvents);
+  }
+  
+  return weekGroups;
 }
 
 // Format month for display
