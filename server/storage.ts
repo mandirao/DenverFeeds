@@ -22,6 +22,7 @@ export interface IStorage {
   
   // Upvote methods
   upvoteEvent(eventId: number, userId: number): Promise<boolean>;
+  removeUpvote(eventId: number, userId: number): Promise<boolean>;
   hasUserUpvoted(eventId: number, userId: number): Promise<boolean>;
   setEventScheduled(eventId: number, scheduled: boolean): Promise<Event | undefined>;
 }
@@ -117,6 +118,37 @@ export class DatabaseStorage implements IStorage {
     await db.update(events)
       .set({
         upvotes: sql`${events.upvotes} + 1`
+      })
+      .where(eq(events.id, eventId));
+    
+    return true;
+  }
+
+  async removeUpvote(eventId: number, userId: number): Promise<boolean> {
+    // Check if event exists
+    const eventResult = await db.select().from(events).where(eq(events.id, eventId));
+    if (!eventResult.length) return false;
+    
+    // Check if user exists
+    const userResult = await db.select().from(users).where(eq(users.id, userId));
+    if (!userResult.length) return false;
+    
+    // Check if user has upvoted
+    const hasUpvoted = await this.hasUserUpvoted(eventId, userId);
+    if (!hasUpvoted) return false;
+    
+    // Remove the upvote
+    await db.delete(upvotes).where(
+      and(
+        eq(upvotes.eventId, eventId),
+        eq(upvotes.userId, userId)
+      )
+    );
+    
+    // Update event upvote count (ensure it doesn't go below 0)
+    await db.update(events)
+      .set({
+        upvotes: sql`GREATEST(${events.upvotes} - 1, 0)`
       })
       .where(eq(events.id, eventId));
     

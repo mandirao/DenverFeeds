@@ -266,7 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Upvote an event
+  // Upvote or remove vote for an event
   apiRouter.post("/events/:id/upvote", async (req, res) => {
     try {
       const eventId = parseInt(req.params.id);
@@ -293,23 +293,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (event.isScheduled) {
-        return res.status(400).json({ message: "Cannot upvote a scheduled event" });
+        return res.status(400).json({ message: "Cannot vote on a scheduled event" });
       }
 
       const hasUpvoted = await storage.hasUserUpvoted(eventId, user.id);
+      let success;
+      
       if (hasUpvoted) {
-        return res.status(400).json({ message: "You have already upvoted this event" });
+        // User already voted, so remove the vote
+        success = await storage.removeUpvote(eventId, user.id);
+      } else {
+        // User hasn't voted, add the vote
+        success = await storage.upvoteEvent(eventId, user.id);
       }
-
-      const success = await storage.upvoteEvent(eventId, user.id);
+      
       if (success) {
         const updatedEvent = await storage.getEventById(eventId);
         res.json(updatedEvent);
       } else {
-        res.status(400).json({ message: "Failed to upvote event" });
+        res.status(400).json({ message: "Failed to process vote" });
       }
     } catch (error) {
-      res.status(500).json({ message: "Server error while upvoting" });
+      res.status(500).json({ message: "Server error while processing vote" });
     }
   });
 

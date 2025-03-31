@@ -93,14 +93,14 @@ function EventItem({ event }: EventItemProps) {
   });
 
   const handleUpvote = () => {
-    // Don't allow upvoting if the user has already voted
-    if (hasVoted) return;
-    
     upvoteMutation.mutate(undefined, {
       onSuccess: () => {
-        setHasVoted(true);
-        // Show the tooltip after voting
+        // Toggle the vote state
+        setHasVoted(!hasVoted);
+        
+        // Show the tooltip with appropriate message
         setShowUpvoteTooltip(true);
+        
         // Hide the tooltip after a delay
         setTimeout(() => {
           setShowUpvoteTooltip(false);
@@ -243,8 +243,8 @@ function EventItem({ event }: EventItemProps) {
                           variant="ghost" 
                           size="sm"
                           onClick={handleUpvote}
-                          disabled={upvoteMutation.isPending || upvoteMutation.isError || hasVoted}
-                          className={`${hasVoted ? 'bg-[#25428A] text-white' : 'bg-black text-[#F26241]'} ${!hasVoted && 'hover:text-[#41F2EE]'} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0`}
+                          disabled={upvoteMutation.isPending || upvoteMutation.isError}
+                          className={`${hasVoted ? 'bg-[#25428A] text-white hover:opacity-90' : 'bg-black text-[#F26241] hover:text-[#41F2EE]'} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0 cursor-pointer`}
                           aria-label={hasVoted ? 'You already voted for this one' : 'Upvote this show'}
                         >
                           <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
@@ -252,7 +252,7 @@ function EventItem({ event }: EventItemProps) {
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{hasVoted ? 'You already voted for this one' : 'Upvote this show'}</p>
+                      <p>{hasVoted ? 'Click to remove your vote' : 'Upvote this show'}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
