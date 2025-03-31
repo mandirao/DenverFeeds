@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Filter, ChevronDown } from "lucide-react";
+import { Filter, ChevronDown, Music, Users } from "lucide-react";
 import { EventFiltersProps, MonthOption } from "@/components/EventFilters";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Switch } from "@/components/ui/switch";
@@ -96,7 +96,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
               </div>
             )}
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center space-x-3">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -104,13 +104,33 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                     href="https://www.meetup.com/setlist-social-indie-denver/?eventOrigin=event_home_page" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="bg-black text-[#FE6B41] hover:text-[#41F2EE] rounded-full px-4 py-2 font-medium transition-colors"
+                    className="bg-black text-[#FE6B41] hover:text-[#41F2EE] rounded-full px-4 py-2 font-medium transition-colors flex items-center gap-1"
                   >
-                    Meetup
+                    <Users className="h-4 w-4" />
+                    <span>Meetup</span>
                   </a>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Join our Meetup group</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a 
+                    href="https://open.spotify.com/playlist/65hepNEHQKF41ymtEqunGr?si=x_8SYxZyRUWJNhZRG4wvhQ" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-black text-[#1DB954] hover:text-[#41F2EE] rounded-full px-4 py-2 font-medium transition-colors flex items-center gap-1"
+                  >
+                    <Music className="h-4 w-4" />
+                    <span>Playlist</span>
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Listen to our Weekly Spotify Playlist</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
