@@ -103,9 +103,9 @@ export function createGoogleCalendarUrl(event: {
 
 // Create Google search URL for venue and tickets
 export function createGoogleMapsUrl(venue: string, artist?: string): string {
-  // For all venues, create a Google search for the artist + Denver + Tickets
+  // For all venues, create a Google search for the artist + Colorado + Tickets
   if (artist) {
-    return createGoogleSearchUrl(`${artist} Denver Tickets`);
+    return createGoogleSearchUrl(`${artist} Colorado Tickets`);
   }
   // Fallback to standard maps URL if no artist provided
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue)}`;
