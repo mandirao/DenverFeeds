@@ -368,8 +368,12 @@ export default function AddEvent() {
     if (value === "other") {
       // Enter "other" custom venue mode
       setCustomVenueMode(true);
-      form.setValue("venue", "Other: ");
+      form.setValue("venue", ""); // Empty field for user to type
       setVenueSearchOpen(false);
+      // Focus the input after a short delay to allow the UI to update
+      setTimeout(() => {
+        document.getElementById("venue")?.focus();
+      }, 50);
     } else {
       // Just set the selected venue
       form.setValue("venue", value);
@@ -435,7 +439,7 @@ export default function AddEvent() {
                       id="venue"
                       {...form.register("venue")}
                       maxLength={75}
-                      placeholder="Other: Type venue name"
+                      placeholder="Type venue name"
                       className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[170px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
                     />
                     <button 
@@ -471,9 +475,32 @@ export default function AddEvent() {
                         />
                         <CommandList>
                           <CommandEmpty>No venues found.</CommandEmpty>
+                          {/* Special options at the top without a heading */}
+                          {(!searchValue || "tbd".includes(searchValue.toLowerCase())) && (
+                            <CommandItem
+                              value="TBD"
+                              onSelect={handleVenueSelect}
+                              className="cursor-pointer border-b"
+                            >
+                              TBD
+                            </CommandItem>
+                          )}
+                          {(!searchValue || "other".includes(searchValue.toLowerCase()) || "festival".includes(searchValue.toLowerCase())) && (
+                            <CommandItem
+                              value="other"
+                              onSelect={handleVenueSelect}
+                              className="cursor-pointer border-b"
+                            >
+                              Other/Festival (custom)
+                            </CommandItem>
+                          )}
+                          
                           <CommandGroup heading="Denver/Boulder Area">
                             {venueOptions
-                              .filter(venue => venue.group === "denver_boulder" && venue.label.toLowerCase().includes(searchValue.toLowerCase()))
+                              .filter(venue => 
+                                venue.group === "denver_boulder" && 
+                                venue.label.toLowerCase().includes(searchValue.toLowerCase())
+                              )
                               .map(venue => (
                                 <CommandItem
                                   key={venue.value}
@@ -488,7 +515,10 @@ export default function AddEvent() {
                           </CommandGroup>
                           <CommandGroup heading="Road Trip">
                             {venueOptions
-                              .filter(venue => venue.group === "road_trip" && venue.label.toLowerCase().includes(searchValue.toLowerCase()))
+                              .filter(venue => 
+                                venue.group === "road_trip" && 
+                                venue.label.toLowerCase().includes(searchValue.toLowerCase())
+                              )
                               .map(venue => (
                                 <CommandItem
                                   key={venue.value}
@@ -500,15 +530,6 @@ export default function AddEvent() {
                                 </CommandItem>
                               ))
                             }
-                          </CommandGroup>
-                          <CommandGroup heading="Other">
-                            <CommandItem
-                              value="other"
-                              onSelect={handleVenueSelect}
-                              className="cursor-pointer"
-                            >
-                              Other/Festival (custom)
-                            </CommandItem>
                           </CommandGroup>
                         </CommandList>
                       </Command>

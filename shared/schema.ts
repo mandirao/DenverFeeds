@@ -20,6 +20,7 @@ export interface VenueOption {
 }
 
 export const venueOptions: VenueOption[] = [
+  { value: "TBD", label: "TBD", group: "other" },
   { value: "other", label: "Other/Festival", group: "other" },
   
   // Denver/Boulder Area venues
@@ -143,16 +144,16 @@ export const insertEventSchema = createInsertSchema(events)
     
     // Add custom validation for venue to handle both predefined venues and 'other' entries
     venue: z.string().refine((val) => {
-      // Custom venue validation logic:
-      // 1. Allow any value if it starts with "Other: " (for festivals and non-listed venues)
-      if (val.startsWith("Other: ") && val.length > 7) {
+      // 1. For regular venues, check against our predefined list
+      if (venueOptions.some(venue => venue.value === val)) {
         return true;
       }
       
-      // 2. For regular venues, check against our predefined list
-      return venueOptions.some(venue => venue.value === val && venue.value !== "other");
+      // 2. Allow any value when user has selected "other" option (custom venue)
+      // The value doesn't need to be prefixed with "Other: " anymore
+      return true;
     }, {
-      message: "Please select a venue from the list or use 'Other/Festival' for custom venues"
+      message: "Please enter a venue name or select from the list"
     })
   });
 
