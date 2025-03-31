@@ -389,7 +389,7 @@ export default function AddEvent() {
                   maxLength={5}
                   placeholder="🎸"
                   inputMode="none"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/20 placeholder:opacity-70 empty:opacity-70 [&:not(:placeholder-shown)]:opacity-100 cursor-pointer"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/20 placeholder:opacity-80 empty:opacity-80 [&:not(:placeholder-shown)]:opacity-100 cursor-pointer"
                   onClick={(e) => {
                     // Try multiple approaches to trigger emoji picker
                     try {
@@ -454,17 +454,19 @@ export default function AddEvent() {
               <div className="inline-flex flex-nowrap items-baseline">
                 <span className="flex-none text-xl mr-0 pr-0">(</span>
                 <div className="inline-flex flex-col relative">
-                  <Input
-                    id="date"
-                    type="date"
-                    {...form.register("date")}
-                    className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/30 empty:text-black/30 [color-scheme:light]"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="date"
+                      type="date"
+                      {...form.register("date")}
+                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/30 empty:text-black/30 [color-scheme:light] appearance-none"
+                    />
+                    <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
+                  </div>
                   <Label htmlFor="date" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">DATE</Label>
                   {form.formState.errors.date && (
                     <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.date.message}</p>
                   )}
-                  <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
                 </div>
                 <span className="flex-none text-xl ml-0 pl-0">).</span>
               </div>
@@ -557,7 +559,7 @@ export default function AddEvent() {
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="csv-upload" className="border-0">
               <AccordionTrigger className="p-0 hover:no-underline">
-                <h3 className="text-xl text-black font-anton text-left flex items-center">
+                <h3 className="text-sm text-black font-anton text-left flex items-center">
                   UPLOAD A CSV
                 </h3>
               </AccordionTrigger>

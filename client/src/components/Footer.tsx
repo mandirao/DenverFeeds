@@ -18,12 +18,12 @@ export function Footer() {
     <footer className="bg-[#FE6B41] py-4 mt-8">
       <div className="container mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
         <div className="flex space-x-4 mb-4 sm:mb-0">
-          <Link href="/add" className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center">
+          <Link href="/add" className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline">
             <Plus className="w-4 h-4 mr-1" /> ADD SHOW
           </Link>
           <button 
             onClick={() => setAboutOpen(true)}
-            className="text-black hover:text-[#41F2EE] transition-colors font-sora"
+            className="text-black hover:text-[#41F2EE] transition-colors font-sora underline"
           >
             ABOUT US
           </button>
