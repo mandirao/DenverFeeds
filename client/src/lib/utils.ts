@@ -262,30 +262,35 @@ export function groupEventsByWeek(events: any[]) {
   });
   
   const weekGroups: any[][] = [];
-  let currentWeek: number | null = null;
   let currentWeekEvents: any[] = [];
+  let previousDate: Date | null = null;
   
   sortedEvents.forEach(event => {
     const { year, month, day } = extractDateParts(event.date);
-    
-    // Create date object to get week number and day of week
     const eventDate = new Date(year, month, day);
     const dayOfWeek = eventDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    const weekNumber = getWeekNumber(eventDate);
     
-    // If this is a new week, start a new group
-    // We want to break at the transition from Sunday to Monday
-    const isNewWeek = currentWeek !== weekNumber;
+    // Check if we need to start a new week group
+    let startNewGroup = false;
     
-    if (isNewWeek) {
-      if (currentWeekEvents.length > 0) {
-        weekGroups.push([...currentWeekEvents]);
-      }
-      currentWeek = weekNumber;
-      currentWeekEvents = [event];
-    } else {
-      currentWeekEvents.push(event);
+    if (previousDate) {
+      const prevDay = previousDate.getDay();
+      // Start a new group if:
+      // 1. Current day is Monday (1) and previous day was ANY day (transition to new week)
+      // 2. OR if days are not consecutive (gap in events)
+      const dayDiff = (eventDate.getTime() - previousDate.getTime()) / (1000 * 60 * 60 * 24);
+      
+      // If current day is Monday (1) OR there's a gap of more than 1 day
+      startNewGroup = dayOfWeek === 1 || dayDiff > 1;
     }
+    
+    if (startNewGroup && currentWeekEvents.length > 0) {
+      weekGroups.push([...currentWeekEvents]);
+      currentWeekEvents = [];
+    }
+    
+    currentWeekEvents.push(event);
+    previousDate = eventDate;
   });
   
   // Add the last group
