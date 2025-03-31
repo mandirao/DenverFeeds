@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getNextMonths } from "@/components/EventFilters";
+import { getNextMonths, nonDenverAreaVenues } from "@/components/EventFilters";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import { groupEventsByMonth, isRecentlyAdded } from "@/lib/utils";
@@ -20,7 +20,8 @@ export default function Home() {
   const [filters, setFilters] = useState({
     month: "all",
     genre: "all",
-    status: "all"
+    status: "all",
+    denverAreaOnly: true
   });
 
   // Fetch events
@@ -52,6 +53,11 @@ export default function Home() {
       return false;
     }
     
+    // Denver/Boulder area filter
+    if (filters.denverAreaOnly && nonDenverAreaVenues.includes(event.venue)) {
+      return false;
+    }
+    
     return true;
   });
   
@@ -73,6 +79,10 @@ export default function Home() {
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilters({ ...filters, status: e.target.value });
   };
+  
+  const handleDenverAreaOnlyChange = (checked: boolean) => {
+    setFilters({ ...filters, denverAreaOnly: checked });
+  };
 
   return (
     <div className="min-h-screen bg-[#FE6B41]">
@@ -85,9 +95,11 @@ export default function Home() {
           monthFilter: filters.month,
           genreFilter: filters.genre,
           statusFilter: filters.status,
+          denverAreaOnlyFilter: filters.denverAreaOnly,
           onMonthChange: handleMonthChange,
           onGenreChange: handleGenreChange,
-          onStatusChange: handleStatusChange
+          onStatusChange: handleStatusChange,
+          onDenverAreaOnlyChange: handleDenverAreaOnlyChange
         }}
       />
       

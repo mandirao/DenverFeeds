@@ -1,10 +1,25 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export interface MonthOption {
   key: string;
   display: string;
 }
+
+// List of venues outside the Denver/Boulder area
+export const nonDenverAreaVenues = [
+  "Aggie Theatre",
+  "Black Sheep",
+  "Ford Amphitheater",
+  "Fort Collins Armory",
+  "New Belgium Brewing Company",
+  "Sunset Amphitheater",
+  "The Coast",
+  "The Mishawaka",
+  "Washington's"
+];
 
 export interface EventFiltersProps {
   // The original callback
@@ -12,6 +27,7 @@ export interface EventFiltersProps {
     month: string;
     genre: string;
     status: string;
+    denverAreaOnly: boolean;
   }) => void;
   
   // Data
@@ -22,11 +38,13 @@ export interface EventFiltersProps {
   monthFilter?: string;
   genreFilter?: string;
   statusFilter?: string;
+  denverAreaOnlyFilter?: boolean;
   
   // Individual change handlers for navbar integration
   onMonthChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onGenreChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onStatusChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onDenverAreaOnlyChange?: (checked: boolean) => void;
 }
 
 // Generate an array of the next 12 months for the filter
@@ -45,32 +63,44 @@ export const getNextMonths = (): MonthOption[] => {
   return months;
 };
 
-export function EventFilters({ onFilterChange, genres }: EventFiltersProps) {
+export function EventFilters({ onFilterChange, genres, denverAreaOnlyFilter = true }: EventFiltersProps) {
   const [month, setMonth] = useState("all");
   const [genre, setGenre] = useState("all");
   const [status, setStatus] = useState("all");
+  const [denverAreaOnly, setDenverAreaOnly] = useState(denverAreaOnlyFilter);
   const [months, setMonths] = useState<MonthOption[]>([]);
   
   useEffect(() => {
     setMonths(getNextMonths());
   }, []);
 
+  useEffect(() => {
+    // Initialize with the default filters including denverAreaOnly=true
+    onFilterChange({ month, genre, status, denverAreaOnly });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newMonth = e.target.value;
     setMonth(newMonth);
-    onFilterChange({ month: newMonth, genre, status });
+    onFilterChange({ month: newMonth, genre, status, denverAreaOnly });
   };
 
   const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newGenre = e.target.value;
     setGenre(newGenre);
-    onFilterChange({ month, genre: newGenre, status });
+    onFilterChange({ month, genre: newGenre, status, denverAreaOnly });
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value;
     setStatus(newStatus);
-    onFilterChange({ month, genre, status: newStatus });
+    onFilterChange({ month, genre, status: newStatus, denverAreaOnly });
+  };
+
+  const handleDenverAreaOnlyChange = (checked: boolean) => {
+    setDenverAreaOnly(checked);
+    onFilterChange({ month, genre, status, denverAreaOnly: checked });
   };
 
   return (
@@ -116,6 +146,19 @@ export function EventFilters({ onFilterChange, genres }: EventFiltersProps) {
             <option value="scheduled">Scheduled</option>
           </select>
         </div>
+      </div>
+      
+      {/* Denver/Boulder area toggle */}
+      <div className="flex items-center justify-start space-x-2 mt-4">
+        <Switch 
+          id="denver-area-only" 
+          checked={denverAreaOnly}
+          onCheckedChange={handleDenverAreaOnlyChange}
+          className="bg-[#FE6B41] data-[state=checked]:bg-[#FEABDA]"
+        />
+        <Label htmlFor="denver-area-only" className="text-sm font-medium cursor-pointer">
+          Denver/Boulder area shows only
+        </Label>
       </div>
     </div>
   );

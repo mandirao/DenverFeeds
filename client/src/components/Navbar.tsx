@@ -5,6 +5,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Filter, ChevronDown } from "lucide-react";
 import { EventFiltersProps, MonthOption } from "@/components/EventFilters";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface NavbarProps {
   showFilters?: boolean;
@@ -34,41 +36,56 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                        <select 
-                          id="month-filter" 
-                          value={filterProps.monthFilter || "all"}
-                          onChange={filterProps.onMonthChange}
-                          className="text-xs p-0.5 border border-black bg-[#FEABDA] text-black rounded-sm text-[10px] h-5"
-                        >
-                          <option value="all">All Months</option>
-                          {filterProps.months?.map((m: MonthOption) => (
-                            <option key={m.key} value={m.key}>{m.display}</option>
-                          ))}
-                        </select>
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                          <select 
+                            id="month-filter" 
+                            value={filterProps.monthFilter || "all"}
+                            onChange={filterProps.onMonthChange}
+                            className="text-xs p-0.5 border border-black bg-[#FEABDA] text-black rounded-sm text-[10px] h-5"
+                          >
+                            <option value="all">All Months</option>
+                            {filterProps.months?.map((m: MonthOption) => (
+                              <option key={m.key} value={m.key}>{m.display}</option>
+                            ))}
+                          </select>
+                          
+                          <select 
+                            id="genre-filter" 
+                            value={filterProps.genreFilter || "all"}
+                            onChange={filterProps.onGenreChange}
+                            className="text-xs p-0.5 border border-black bg-[#FEABDA] text-black rounded-sm text-[10px] h-5"
+                          >
+                            <option value="all">All Genres</option>
+                            {filterProps.genres?.map((g: string) => (
+                              <option key={g} value={g}>{g}</option>
+                            ))}
+                          </select>
+                          
+                          <select 
+                            id="status-filter" 
+                            value={filterProps.statusFilter || "all"}
+                            onChange={filterProps.onStatusChange}
+                            className="text-xs p-0.5 border border-black bg-[#FEABDA] text-black rounded-sm text-[10px] h-5"
+                          >
+                            <option value="all">Show All</option>
+                            <option value="just-added">Just Added</option>
+                            <option value="scheduled">Scheduled</option>
+                          </select>
+                        </div>
                         
-                        <select 
-                          id="genre-filter" 
-                          value={filterProps.genreFilter || "all"}
-                          onChange={filterProps.onGenreChange}
-                          className="text-xs p-0.5 border border-black bg-[#FEABDA] text-black rounded-sm text-[10px] h-5"
-                        >
-                          <option value="all">All Genres</option>
-                          {filterProps.genres?.map((g: string) => (
-                            <option key={g} value={g}>{g}</option>
-                          ))}
-                        </select>
-                        
-                        <select 
-                          id="status-filter" 
-                          value={filterProps.statusFilter || "all"}
-                          onChange={filterProps.onStatusChange}
-                          className="text-xs p-0.5 border border-black bg-[#FEABDA] text-black rounded-sm text-[10px] h-5"
-                        >
-                          <option value="all">Show All</option>
-                          <option value="just-added">Just Added</option>
-                          <option value="scheduled">Scheduled</option>
-                        </select>
+                        {/* Denver/Boulder area toggle */}
+                        <div className="flex items-center justify-start space-x-2 mt-1">
+                          <Switch 
+                            id="denver-area-only" 
+                            checked={filterProps.denverAreaOnlyFilter}
+                            onCheckedChange={filterProps.onDenverAreaOnlyChange}
+                            className="bg-[#FE6B41] data-[state=checked]:bg-[#41F2EE] h-4 w-7"
+                          />
+                          <Label htmlFor="denver-area-only" className="text-[10px] font-medium cursor-pointer">
+                            Denver/Boulder area shows only
+                          </Label>
+                        </div>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
