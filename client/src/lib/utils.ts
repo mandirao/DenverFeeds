@@ -98,7 +98,8 @@ export function createGoogleCalendarUrl(event: {
   const startDateString = format(dateObj, "yyyyMMdd'T'HHmmss");
   const endDateString = format(endDate, "yyyyMMdd'T'HHmmss");
   
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startDateString}/${endDateString}&details=Show%20organized%20by%20Setlist%20Social`;
+  // Include the venue as the location
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startDateString}/${endDateString}&details=Show%20organized%20by%20Setlist%20Social&location=${encodeURIComponent(event.venue)}`;
 }
 
 // Create Google search URL for venue and tickets
