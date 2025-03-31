@@ -7,7 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { insertEventSchema, genres } from "@shared/schema";
+import { insertEventSchema, genres, venueOptions } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,9 +17,22 @@ import {
   AccordionItem, 
   AccordionTrigger 
 } from "@/components/ui/accordion";
-import { AlertCircle, ChevronDown, CalendarIcon } from "lucide-react";
+import { AlertCircle, ChevronDown, CalendarIcon, X, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Papa from "papaparse";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 // Function to check if string contains only emoji characters
 function containsOnlyEmoji(str: string) {
@@ -63,6 +76,9 @@ export default function AddEvent() {
   const { toast } = useToast();
   const [csvError, setCsvError] = useState<string | null>(null);
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  const [venueSearchOpen, setVenueSearchOpen] = useState(false);
+  const [customVenueMode, setCustomVenueMode] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
 
   // Form setup
   const form = useForm<FormValues>({
@@ -346,6 +362,27 @@ export default function AddEvent() {
   };
 
   // Use genres directly from schema.ts instead of hardcoding them here
+  
+  // Handle venue selection
+  const handleVenueSelect = (value: string) => {
+    if (value === "other") {
+      // Enter "other" custom venue mode
+      setCustomVenueMode(true);
+      form.setValue("venue", "Other: ");
+      setVenueSearchOpen(false);
+    } else {
+      // Just set the selected venue
+      form.setValue("venue", value);
+      setVenueSearchOpen(false);
+      setCustomVenueMode(false);
+    }
+  };
+  
+  // Handle exiting custom venue mode
+  const exitCustomVenueMode = () => {
+    setCustomVenueMode(false);
+    form.setValue("venue", "");
+  };
 
   return (
     <div className="min-h-screen bg-[#FE6B41]">
@@ -390,14 +427,98 @@ export default function AddEvent() {
               
               <span className="flex-none text-xl">@</span>
               
-              {/* Venue Field */}
+              {/* Venue Field - Searchable Dropdown */}
               <div className="inline-flex flex-col relative">
-                <Input
-                  id="venue"
+                {customVenueMode ? (
+                  <div className="inline-flex items-center min-w-[200px]">
+                    <Input
+                      id="venue"
+                      {...form.register("venue")}
+                      maxLength={75}
+                      placeholder="Other: Type venue name"
+                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[170px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={exitCustomVenueMode}
+                      className="ml-1 text-gray-700 hover:text-black transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <Popover open={venueSearchOpen} onOpenChange={setVenueSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        role="combobox"
+                        aria-expanded={venueSearchOpen}
+                        className="inline-flex items-center justify-between border-0 border-b-2 border-black bg-transparent p-2 pl-0 min-w-[180px] text-left text-xl"
+                      >
+                        <span className={`truncate ${!form.getValues("venue") ? "text-black/20" : "text-black"}`}>
+                          {form.getValues("venue") || "Select venue"}
+                        </span>
+                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search venues..." 
+                          className="h-9 border-none focus:ring-0"
+                          value={searchValue}
+                          onValueChange={setSearchValue}
+                        />
+                        <CommandList>
+                          <CommandEmpty>No venues found.</CommandEmpty>
+                          <CommandGroup heading="Denver/Boulder Area">
+                            {venueOptions
+                              .filter(venue => venue.group === "denver_boulder" && venue.label.toLowerCase().includes(searchValue.toLowerCase()))
+                              .map(venue => (
+                                <CommandItem
+                                  key={venue.value}
+                                  value={venue.value}
+                                  onSelect={handleVenueSelect}
+                                  className="cursor-pointer"
+                                >
+                                  {venue.label}
+                                </CommandItem>
+                              ))
+                            }
+                          </CommandGroup>
+                          <CommandGroup heading="Road Trip">
+                            {venueOptions
+                              .filter(venue => venue.group === "road_trip" && venue.label.toLowerCase().includes(searchValue.toLowerCase()))
+                              .map(venue => (
+                                <CommandItem
+                                  key={venue.value}
+                                  value={venue.value}
+                                  onSelect={handleVenueSelect}
+                                  className="cursor-pointer"
+                                >
+                                  {venue.label}
+                                </CommandItem>
+                              ))
+                            }
+                          </CommandGroup>
+                          <CommandGroup heading="Other">
+                            <CommandItem
+                              value="other"
+                              onSelect={handleVenueSelect}
+                              className="cursor-pointer"
+                            >
+                              Other/Festival (custom)
+                            </CommandItem>
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                )}
+                <input 
+                  type="hidden" 
+                  id="venue-hidden" 
                   {...form.register("venue")}
-                  maxLength={75}
-                  placeholder="Mission Ballroom"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[135px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
                 />
                 <Label htmlFor="venue" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">VENUE</Label>
                 {form.formState.errors.venue && (

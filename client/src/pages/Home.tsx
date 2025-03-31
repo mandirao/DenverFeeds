@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getNextMonths, nonDenverAreaVenues } from "@/components/EventFilters";
+import { getNextMonths, denverBoulderVenues } from "@/components/EventFilters";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
@@ -56,8 +56,12 @@ export default function Home() {
     }
     
     // Denver/Boulder area filter
-    if (filters.denverAreaOnly && nonDenverAreaVenues.includes(event.venue)) {
-      return false;
+    if (filters.denverAreaOnly) {
+      // Check if venue is part of the Denver/Boulder list
+      // Also allow venues with "Other:" prefix since these might be local festivals
+      if (!denverBoulderVenues.includes(event.venue) && !event.venue.startsWith("Other:")) {
+        return false;
+      }
     }
     
     return true;
