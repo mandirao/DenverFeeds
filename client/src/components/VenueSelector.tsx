@@ -245,17 +245,27 @@ export function VenueSelector({
           </PopoverContent>
         </Popover>
       ) : (
-        <Input
-          ref={inputRef}
-          placeholder="Enter venue or festival name..."
-          value={value === "Other/Festival" ? customVenue : value}
-          onChange={handleCustomVenueChange}
-          className={cn(
-            error ? "border-red-500" : "border-gray-300",
-            className
-          )}
-          style={style}
-        />
+        <div className="relative">
+          <Input
+            ref={inputRef}
+            placeholder="Enter venue or festival name..."
+            value={value === "Other/Festival" ? customVenue : value}
+            onChange={handleCustomVenueChange}
+            className={cn(
+              error ? "border-red-500" : "border-gray-300",
+              className
+            )}
+            style={style}
+          />
+          <button 
+            type="button"
+            onClick={() => onChange("")} 
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            aria-label="Clear custom venue and return to dropdown"
+          >
+            ✕
+          </button>
+        </div>
       )}
     </div>
   );

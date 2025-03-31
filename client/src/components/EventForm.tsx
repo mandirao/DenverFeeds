@@ -153,7 +153,7 @@ export function EventForm({
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={form.handleSubmit(onSubmit)}>
       {/* Only show the heading when not editing (in Add Event page) */}
       {!isEditing && <h2 className="text-2xl font-bold mb-4">Add Event</h2>}
       
@@ -168,150 +168,169 @@ export function EventForm({
         </div>
       )}
 
-      <div>
-        <Label htmlFor="emoji" className="mb-1 block">
-          Emoji
-        </Label>
-        <Input 
-          {...form.register("emoji")}
-          id="emoji"
-          placeholder="🎸"
-          className={`bg-transparent border rounded-sm focus:border-[#FEABDA] ${form.formState.errors.emoji ? 'border-red-500' : 'border-gray-300'}`}
-          style={{ 
-            backgroundColor: 'rgba(254, 171, 218, 0.2)',
-            opacity: form.watch("emoji") ? 1 : 0.2
-          }}
-        />
-        {form.formState.errors.emoji && (
-          <p className="text-red-500 text-sm mt-1">{form.formState.errors.emoji.message}</p>
-        )}
-      </div>
+      {/* Mad-lib style form */}
+      <div className="mb-8 space-y-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span>I want to see</span>
+          <div className="inline-flex items-center">
+            <Input 
+              {...form.register("emoji")}
+              id="emoji"
+              placeholder="🎸"
+              className={`w-12 bg-transparent border rounded-sm focus:border-[#FEABDA] text-center ${form.formState.errors.emoji ? 'border-red-500' : 'border-gray-300'}`}
+              style={{ 
+                backgroundColor: 'rgba(254, 171, 218, 0.2)',
+                opacity: form.watch("emoji") ? 1 : 0.2
+              }}
+            />
+          </div>
+          <div className="flex-1">
+            <Input 
+              {...form.register("artist")}
+              id="artist"
+              placeholder="Band / Performer name"
+              className={`w-full bg-transparent border rounded-sm focus:border-[#FEABDA] ${form.formState.errors.artist ? 'border-red-500' : 'border-gray-300'}`}
+              style={{ 
+                backgroundColor: 'rgba(254, 171, 218, 0.2)',
+                opacity: form.watch("artist") ? 1 : 0.2
+              }}
+            />
+          </div>
+        </div>
 
-      <div>
-        <Label htmlFor="artist" className="mb-1 block">
-          Artist Name
-        </Label>
-        <Input 
-          {...form.register("artist")}
-          id="artist"
-          placeholder="Band / Performer name"
-          className={`bg-transparent border rounded-sm focus:border-[#FEABDA] ${form.formState.errors.artist ? 'border-red-500' : 'border-gray-300'}`}
-          style={{ 
-            backgroundColor: 'rgba(254, 171, 218, 0.2)',
-            opacity: form.watch("artist") ? 1 : 0.2
-          }}
-        />
-        {form.formState.errors.artist && (
-          <p className="text-red-500 text-sm mt-1">{form.formState.errors.artist.message}</p>
+        {(form.formState.errors.emoji || form.formState.errors.artist) && (
+          <div className="ml-20 space-y-1 text-sm">
+            {form.formState.errors.emoji && (
+              <p className="text-red-500">{form.formState.errors.emoji.message}</p>
+            )}
+            {form.formState.errors.artist && (
+              <p className="text-red-500">{form.formState.errors.artist.message}</p>
+            )}
+          </div>
         )}
-      </div>
 
-      <div>
-        <Label htmlFor="venue" className="mb-1 block">
-          Venue
-        </Label>
-        <VenueSelector
-          value={form.watch("venue")}
-          onChange={(value) => form.setValue("venue", value)}
-          error={!!form.formState.errors.venue}
-          style={{ 
-            backgroundColor: 'rgba(254, 171, 218, 0.2)',
-            opacity: form.watch("venue") ? 1 : 0.2
-          }}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <span>at</span>
+          <div className="flex-1">
+            <VenueSelector
+              value={form.watch("venue")}
+              onChange={(value) => form.setValue("venue", value)}
+              error={!!form.formState.errors.venue}
+              style={{ 
+                backgroundColor: 'rgba(254, 171, 218, 0.2)',
+                opacity: form.watch("venue") ? 1 : 0.2
+              }}
+            />
+          </div>
+        </div>
+          
         {form.formState.errors.venue && (
-          <p className="text-red-500 text-sm mt-1">{form.formState.errors.venue.message}</p>
+          <div className="ml-20 space-y-1 text-sm">
+            <p className="text-red-500">{form.formState.errors.venue.message}</p>
+          </div>
         )}
-      </div>
 
-      <div>
-        <Label htmlFor="date" className="mb-1 block">
-          Date
-        </Label>
-        <input 
-          id="date"
-          type="date"
-          className={`w-full bg-transparent border rounded-sm p-2 focus:border-[#FEABDA] ${form.formState.errors.date ? 'border-red-500' : 'border-gray-300'}`}
-          style={{ 
-            backgroundColor: 'rgba(254, 171, 218, 0.2)',
-            opacity: form.watch("date") ? 1 : 0.2
-          }}
-          value={form.watch("date") instanceof Date 
-            ? format(form.watch("date") as Date, "yyyy-MM-dd") 
-            : ""}
-          onChange={(e) => {
-            if (e.target.value) {
-              form.setValue("date", new Date(e.target.value));
-            } else {
-              form.setValue("date", new Date());
-            }
-          }}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <span>on</span>
+          <div className="inline-block flex-1">
+            <input 
+              id="date"
+              type="date"
+              className={`w-full bg-transparent border rounded-sm p-2 focus:border-[#FEABDA] ${form.formState.errors.date ? 'border-red-500' : 'border-gray-300'}`}
+              style={{ 
+                backgroundColor: 'rgba(254, 171, 218, 0.2)',
+                opacity: form.watch("date") ? 1 : 0.2
+              }}
+              value={form.watch("date") instanceof Date 
+                ? format(form.watch("date") as Date, "yyyy-MM-dd") 
+                : ""}
+              onChange={(e) => {
+                if (e.target.value) {
+                  form.setValue("date", new Date(e.target.value));
+                } else {
+                  form.setValue("date", new Date());
+                }
+              }}
+            />
+          </div>
+        </div>
+
         {form.formState.errors.date && (
-          <p className="text-red-500 text-sm mt-1">{form.formState.errors.date.message as string}</p>
+          <div className="ml-20 space-y-1 text-sm">
+            <p className="text-red-500">{form.formState.errors.date.message as string}</p>
+          </div>
         )}
-      </div>
 
-      <div>
-        <Label htmlFor="genre" className="mb-1 block">
-          Genre
-        </Label>
-        <select
-          {...form.register("genre")}
-          id="genre"
-          className={`w-full bg-transparent border rounded-sm p-2 focus:border-[#FEABDA] ${form.formState.errors.genre ? 'border-red-500' : 'border-gray-300'}`}
-          style={{ 
-            backgroundColor: 'rgba(254, 171, 218, 0.2)',
-            opacity: form.watch("genre") ? 1 : 0.2
-          }}
-        >
-          <option value="">Select genre</option>
-          {genres.map((genre) => (
-            <option key={genre} value={genre}>
-              {genre}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap items-center gap-2">
+          <span>which can be described as</span>
+          <div className="flex-1">
+            <select
+              {...form.register("genre")}
+              id="genre"
+              className={`w-full bg-transparent border rounded-sm p-2 focus:border-[#FEABDA] ${form.formState.errors.genre ? 'border-red-500' : 'border-gray-300'}`}
+              style={{ 
+                backgroundColor: 'rgba(254, 171, 218, 0.2)',
+                opacity: form.watch("genre") ? 1 : 0.2
+              }}
+            >
+              <option value="">Select genre</option>
+              {genres.map((genre) => (
+                <option key={genre} value={genre}>
+                  {genre}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {form.formState.errors.genre && (
-          <p className="text-red-500 text-sm mt-1">{form.formState.errors.genre.message}</p>
+          <div className="ml-20 space-y-1 text-sm">
+            <p className="text-red-500">{form.formState.errors.genre.message}</p>
+          </div>
         )}
-      </div>
 
-      <div>
-        <Label htmlFor="summary" className="mb-1 block">
-          Summary
-        </Label>
-        <Input 
-          {...form.register("summary")}
-          id="summary"
-          placeholder="A few words about the show..."
-          className={`bg-transparent border rounded-sm focus:border-[#FEABDA] ${form.formState.errors.summary ? 'border-red-500' : 'border-gray-300'}`}
-          style={{ 
-            backgroundColor: 'rgba(254, 171, 218, 0.2)',
-            opacity: form.watch("summary") ? 1 : 0.2
-          }}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <span>with</span>
+          <div className="flex-1">
+            <Input 
+              {...form.register("summary")}
+              id="summary"
+              placeholder="A few words about the show..."
+              className={`w-full bg-transparent border rounded-sm focus:border-[#FEABDA] ${form.formState.errors.summary ? 'border-red-500' : 'border-gray-300'}`}
+              style={{ 
+                backgroundColor: 'rgba(254, 171, 218, 0.2)',
+                opacity: form.watch("summary") ? 1 : 0.2
+              }}
+            />
+          </div>
+        </div>
+
         {form.formState.errors.summary && (
-          <p className="text-red-500 text-sm mt-1">{form.formState.errors.summary.message}</p>
+          <div className="ml-20 space-y-1 text-sm">
+            <p className="text-red-500">{form.formState.errors.summary.message}</p>
+          </div>
         )}
-      </div>
 
-      <div>
-        <Label htmlFor="soundsLike" className="mb-1 block">
-          Sounds Like
-        </Label>
-        <Input 
-          {...form.register("soundsLike")}
-          id="soundsLike"
-          placeholder="Similar artists or bands (comma separated)"
-          className={`bg-transparent border rounded-sm focus:border-[#FEABDA] ${form.formState.errors.soundsLike ? 'border-red-500' : 'border-gray-300'}`}
-          style={{ 
-            backgroundColor: 'rgba(254, 171, 218, 0.2)',
-            opacity: form.watch("soundsLike") ? 1 : 0.2
-          }}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <span>and they sound like</span>
+          <div className="flex-1">
+            <Input 
+              {...form.register("soundsLike")}
+              id="soundsLike"
+              placeholder="Similar artists or bands (comma separated)"
+              className={`w-full bg-transparent border rounded-sm focus:border-[#FEABDA] ${form.formState.errors.soundsLike ? 'border-red-500' : 'border-gray-300'}`}
+              style={{ 
+                backgroundColor: 'rgba(254, 171, 218, 0.2)',
+                opacity: form.watch("soundsLike") ? 1 : 0.2
+              }}
+            />
+          </div>
+        </div>
+
         {form.formState.errors.soundsLike && (
-          <p className="text-red-500 text-sm mt-1">{form.formState.errors.soundsLike.message}</p>
+          <div className="ml-20 space-y-1 text-sm">
+            <p className="text-red-500">{form.formState.errors.soundsLike.message}</p>
+          </div>
         )}
       </div>
 
