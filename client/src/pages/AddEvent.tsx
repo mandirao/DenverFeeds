@@ -546,8 +546,9 @@ export default function AddEvent() {
                 <div className="inline-flex flex-col relative">
                   <div className="relative">
                     <div className="relative">
-                      <button
-                        type="button"
+                      <div 
+                        role="button"
+                        tabIndex={0}
                         onClick={() => {
                           // Focus the hidden input to show the date picker
                           const input = document.getElementById("date-picker");
@@ -556,10 +557,19 @@ export default function AddEvent() {
                             input.focus();
                           }
                         }}
-                        className={`inline-flex items-center justify-between border-0 border-b-2 border-black bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-left text-xl ${!form.getValues("date") ? "text-black/20" : "text-black"}`}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            const input = document.getElementById("date-picker");
+                            if (input) {
+                              input.click();
+                              input.focus();
+                            }
+                          }
+                        }}
+                        className={`inline-flex items-center justify-between border-0 border-b-2 border-black bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-left text-xl ${!form.getValues("date") ? "text-black/20" : "text-black"} cursor-pointer`}
                         aria-label="Select date"
                       >
-                        <span>
+                        <span className="flex-1">
                           {form.getValues("date") 
                             ? new Date(form.getValues("date")).toLocaleDateString("en-US", {
                                 month: "short",
@@ -569,7 +579,7 @@ export default function AddEvent() {
                             : "Select date"}
                         </span>
                         <CalendarIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </button>
+                      </div>
                       <input
                         id="date-picker"
                         type="date"
