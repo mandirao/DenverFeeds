@@ -3,13 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getNextMonths } from "@/components/EventFilters";
+import { getNextMonths, nonDenverAreaVenues } from "@/components/EventFilters";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
 import { groupEventsByMonth, isRecentlyAdded } from "@/lib/utils";
 import { Event, genres as schemaGenres } from "@shared/schema";
-import { isDenverArea } from "@/components/VenueSelector";
 
 export default function Home() {
   const [filters, setFilters] = useState({
@@ -20,12 +19,9 @@ export default function Home() {
     sortBy: "date"
   });
 
-  // Fetch events - always refresh on mount to ensure we have latest data
+  // Fetch events
   const { data: events = [], isLoading, error } = useQuery<Event[]>({
     queryKey: ["/api/events"],
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    staleTime: 0 // Consider data stale immediately so it refreshes every time
   });
 
   // Use the genres list directly from schema
@@ -60,7 +56,7 @@ export default function Home() {
     }
     
     // Denver/Boulder area filter
-    if (filters.denverAreaOnly && !isDenverArea(event.venue)) {
+    if (filters.denverAreaOnly && nonDenverAreaVenues.includes(event.venue)) {
       return false;
     }
     

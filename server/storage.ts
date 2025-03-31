@@ -17,7 +17,7 @@ export interface IStorage {
   getUpcomingEvents(): Promise<Event[]>;
   createEvent(event: InsertEvent): Promise<Event>;
   updateEvent(id: number, data: Partial<Event>): Promise<Event | undefined>;
-  checkDuplicateEvent(event: InsertEvent, excludeId?: number): Promise<boolean>;
+  checkDuplicateEvent(event: InsertEvent): Promise<boolean>;
   deleteEvent(id: number): Promise<boolean>;
   
   // Upvote methods
@@ -66,20 +66,14 @@ export class DatabaseStorage implements IStorage {
       .orderBy(events.date);
   }
   
-  async checkDuplicateEvent(event: InsertEvent, excludeId?: number): Promise<boolean> {
-    // Build the base conditions for duplicate check
-    const conditions = [
-      eq(sql`LOWER(${events.artist})`, event.artist.toLowerCase()),
-      eq(sql`LOWER(${events.venue})`, event.venue.toLowerCase()),
-      eq(events.date, event.date)
-    ];
-    
-    // If excludeId is provided, add a condition to exclude that event ID
-    if (excludeId !== undefined) {
-      conditions.push(sql`${events.id} != ${excludeId}`);
-    }
-    
-    const result = await db.select().from(events).where(and(...conditions));
+  async checkDuplicateEvent(event: InsertEvent): Promise<boolean> {
+    const result = await db.select().from(events).where(
+      and(
+        eq(sql`LOWER(${events.artist})`, event.artist.toLowerCase()),
+        eq(sql`LOWER(${events.venue})`, event.venue.toLowerCase()),
+        eq(events.date, event.date)
+      )
+    );
     return result.length > 0;
   }
 
