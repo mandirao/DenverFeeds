@@ -260,14 +260,14 @@ export function groupEventsByWeek(events: any[]) {
     
     // Create date object to get week number
     const eventDate = new Date(year, month, day);
-    const weekNumber = getWeekNumber(eventDate);
     
-    // If this is a new week, start a new group
-    if (currentWeek !== weekNumber) {
-      if (currentWeekEvents.length > 0) {
-        weekGroups.push([...currentWeekEvents]);
-      }
-      currentWeek = weekNumber;
+    // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    const dayOfWeek = eventDate.getDay();
+    
+    // Consider Monday as the first day of the week
+    // If it's Monday (dayOfWeek === 1), start a new week
+    if (dayOfWeek === 1 && currentWeekEvents.length > 0) {
+      weekGroups.push([...currentWeekEvents]);
       currentWeekEvents = [event];
     } else {
       currentWeekEvents.push(event);
