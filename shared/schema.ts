@@ -15,12 +15,16 @@ export const genres = [
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"),
+  sessionId: text("session_id").unique(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+  sessionId: true,
+}).extend({
+  password: z.string().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

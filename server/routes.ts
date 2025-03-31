@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertEventSchema } from "@shared/schema";
@@ -246,10 +246,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid event ID" });
       }
 
-      // For now, use the default user ID (1) since we don't have auth
-      const userId = 1;
+      // Get user ID from session
+      // @ts-ignore - Session properties are added by express-session
+      const userId = req.session?.userId;
+      
+      // Create a database user entry if this is the first user action
+      let user = await storage.getUserBySessionId(userId);
+      if (!user) {
+        user = await storage.createUser({
+          username: `user-${Date.now()}`,
+          sessionId: userId
+        });
+      }
 
-      const hasUpvoted = await storage.hasUserUpvoted(eventId, userId);
+      const hasUpvoted = await storage.hasUserUpvoted(eventId, user.id);
       res.json({ hasUpvoted });
     } catch (error) {
       res.status(500).json({ message: "Server error checking upvote status" });
@@ -264,8 +274,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid event ID" });
       }
 
-      // For now, use the default user ID (1) since we don't have auth
-      const userId = 1;
+      // Get user ID from session
+      // @ts-ignore - Session properties are added by express-session
+      const sessionId = req.session?.userId;
+      
+      // Get or create the user
+      let user = await storage.getUserBySessionId(sessionId);
+      if (!user) {
+        user = await storage.createUser({
+          username: `user-${Date.now()}`,
+          sessionId: sessionId
+        });
+      }
 
       const event = await storage.getEventById(eventId);
       if (!event) {
@@ -276,12 +296,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Cannot upvote a scheduled event" });
       }
 
-      const hasUpvoted = await storage.hasUserUpvoted(eventId, userId);
+      const hasUpvoted = await storage.hasUserUpvoted(eventId, user.id);
       if (hasUpvoted) {
         return res.status(400).json({ message: "You have already upvoted this event" });
       }
 
-      const success = await storage.upvoteEvent(eventId, userId);
+      const success = await storage.upvoteEvent(eventId, user.id);
       if (success) {
         const updatedEvent = await storage.getEventById(eventId);
         res.json(updatedEvent);

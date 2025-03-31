@@ -8,6 +8,7 @@ import { eq, and, sql, count, desc, gt } from "drizzle-orm";
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserBySessionId(sessionId: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
   // Event methods
@@ -33,6 +34,12 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.username, username));
+    return result[0];
+  }
+  
+  async getUserBySessionId(sessionId: string): Promise<User | undefined> {
+    if (!sessionId) return undefined;
+    const result = await db.select().from(users).where(eq(users.sessionId, sessionId));
     return result[0];
   }
 
