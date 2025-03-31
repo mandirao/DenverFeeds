@@ -23,32 +23,11 @@ import Papa from "papaparse";
 
 // Function to check if string contains only emoji characters
 function containsOnlyEmoji(str: string) {
-  // More complete emoji detection 
+  // Very permissive emoji check - any non-ascii character is likely an emoji
+  // This is a simple approach that should work for drum emoji 🪘 and others
   for (let i = 0; i < str.length; i++) {
-    const code = str.codePointAt(i) || 0;
-    
-    // Skip surrogate pairs
-    if (code >= 0xD800 && code <= 0xDBFF) {
-      continue;
-    }
-    
-    // Check if character is in emoji ranges (more comprehensive)
-    const isEmoji = 
-      (code >= 0x1F000 && code <= 0x1FFFF) || // Extended pictographs (includes 🪘 U+1F98C)
-      (code >= 0x2600 && code <= 0x27BF) ||   // Misc symbols and dingbats
-      (code >= 0x2300 && code <= 0x23FF) ||   // Misc technical
-      (code >= 0x2B00 && code <= 0x2BFF) ||   // Misc symbols and arrows
-      (code >= 0x1F300 && code <= 0x1F9FF) || // Additional emoticons
-      (code >= 0x1FA70 && code <= 0x1FAFF) || // Symbols and pictographs extended-A
-      (code >= 0x1F600 && code <= 0x1F64F) || // Emoticons
-      (code >= 0x1F680 && code <= 0x1F6FF) || // Transport and map symbols
-      (code >= 0x2700 && code <= 0x27BF) ||   // Dingbats
-      (code === 0x263A) ||                    // Smiling face
-      (code === 0x2639) ||                    // Frowning face
-      (code === 0x270C) ||                    // Victory hand
-      (code === 0x2764);                      // Heart
-      
-    if (!isEmoji) {
+    const charCode = str.charCodeAt(i);
+    if (charCode < 128 && charCode !== 32) { // Allow spaces, reject ASCII chars
       return false;
     }
   }
@@ -435,7 +414,7 @@ export default function AddEvent() {
                       id="date"
                       type="date"
                       {...form.register("date")}
-                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/30 text-black [color-scheme:light] appearance-none [&::-webkit-calendar-picker-indicator]:hidden !bg-transparent"
+                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black [color-scheme:light] appearance-none [&::-webkit-calendar-picker-indicator]:hidden !bg-transparent"
                     />
                     <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
                   </div>
