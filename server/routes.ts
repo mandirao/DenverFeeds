@@ -158,7 +158,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'Pop & Indie Pop',
               'Electronic & Experimental',
               'Funk, Soul & Jazz',
-              'Classical & Orchestral'
+              'Classical & Orchestral',
+              'Hip Hop & R&B'
             ];
             
             const normalizedGenre = item.genre.trim();

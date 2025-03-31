@@ -9,7 +9,8 @@ export const genres = [
   'Pop & Indie Pop',
   'Electronic & Experimental',
   'Funk, Soul & Jazz',
-  'Classical & Orchestral'
+  'Classical & Orchestral',
+  'Hip Hop & R&B'
 ];
 
 export const users = pgTable("users", {
