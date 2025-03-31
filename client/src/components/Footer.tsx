@@ -17,20 +17,20 @@ export function Footer() {
   return (
     <footer className="bg-[#FE6B41] py-4 mt-8">
       <div className="container mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
-        <div className="flex space-x-4 mb-4 sm:mb-0">
-          <Link href="/add" className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline">
+        <div className="mb-4 sm:mb-0">
+          <Link href="/add" className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm">
             <Plus className="w-4 h-4 mr-1" /> ADD SHOW
           </Link>
+        </div>
+        
+        <div className="text-sm text-black flex items-center space-x-2">
+          <span>© {new Date().getFullYear()} Setlist Social Feed.</span>
           <button 
             onClick={() => setAboutOpen(true)}
-            className="text-black hover:text-[#41F2EE] transition-colors font-sora underline"
+            className="text-black hover:text-[#41F2EE] transition-colors font-sora underline text-sm"
           >
             ABOUT
           </button>
-        </div>
-        
-        <div className="text-sm text-black">
-          © {new Date().getFullYear()} Setlist Social Feed
         </div>
       </div>
       
