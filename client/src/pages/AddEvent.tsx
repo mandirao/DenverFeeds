@@ -376,7 +376,7 @@ export default function AddEvent() {
       
       <main className="container mx-auto px-4 py-8">
         <div className="bg-[#FEABDA] rounded-lg p-6">
-          <h2 className="text-2xl text-black mb-6 font-anton">ADD NEW SHOW</h2>
+          <h2 className="text-2xl text-black mb-6 font-anton font-black uppercase">ADD A SHOW</h2>
           
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Madlib-style form layout */}
@@ -389,7 +389,7 @@ export default function AddEvent() {
                   maxLength={5}
                   placeholder="🎸"
                   inputMode="none"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/30 placeholder:opacity-100 empty:opacity-70 [&:not(:placeholder-shown)]:opacity-100 cursor-pointer"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/20 placeholder:opacity-70 empty:opacity-70 [&:not(:placeholder-shown)]:opacity-100 cursor-pointer"
                   onClick={(e) => {
                     // Try multiple approaches to trigger emoji picker
                     try {
@@ -425,7 +425,7 @@ export default function AddEvent() {
                   {...form.register("artist")}
                   maxLength={75}
                   placeholder="Beach House"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder:text-black/20 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[135px] placeholder:text-black/20 text-xl"
                 />
                 <Label htmlFor="artist" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">ARTIST NAME</Label>
                 {form.formState.errors.artist && (
@@ -442,7 +442,7 @@ export default function AddEvent() {
                   {...form.register("venue")}
                   maxLength={75}
                   placeholder="Mission Ballroom"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder:text-black/20 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[135px] placeholder:text-black/20 text-xl"
                 />
                 <Label htmlFor="venue" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">VENUE</Label>
                 {form.formState.errors.venue && (
@@ -458,7 +458,7 @@ export default function AddEvent() {
                     id="date"
                     type="date"
                     {...form.register("date")}
-                    className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-1 min-w-[135px] text-xl placeholder:text-black/30 empty:text-black/30 [color-scheme:light]"
+                    className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/30 empty:text-black/30 [color-scheme:light]"
                   />
                   <Label htmlFor="date" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">DATE</Label>
                   {form.formState.errors.date && (
@@ -476,7 +476,7 @@ export default function AddEvent() {
                   {...form.register("summary")}
                   maxLength={75}
                   placeholder="Dream-pop royalty with celestial vibes"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[270px] placeholder:text-black/20 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[378px] placeholder:text-black/20 text-xl"
                 />
                 <Label htmlFor="summary" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">SNAPPY BAND INTRO</Label>
                 {form.formState.errors.summary && (
@@ -496,7 +496,7 @@ export default function AddEvent() {
                     placeholder="Mazzy Star, Cocteau Twins"
                     className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder:text-black/20 text-xl"
                   />
-                  <Label htmlFor="soundsLike" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">SOUNDS LIKE</Label>
+                  <Label htmlFor="soundsLike" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">SIMILAR ARTIST(S)</Label>
                   {form.formState.errors.soundsLike && (
                     <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.soundsLike.message}</p>
                   )}
@@ -523,8 +523,8 @@ export default function AddEvent() {
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 pointer-events-none" />
               </div>
               
-              {/* Add Show Button - positioned 20px after the genre dropdown */}
-              <div className="inline-flex items-baseline ml-2">
+              {/* Add Show Button - positioned very close to the genre dropdown */}
+              <div className="inline-flex items-baseline ml-1">
                 <Button 
                   type="submit"
                   variant="default"
