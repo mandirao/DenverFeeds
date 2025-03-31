@@ -355,7 +355,7 @@ export default function AddEvent() {
                   maxLength={5}
                   placeholder="🎸"
                   inputMode="none"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/30 placeholder:opacity-100 empty:opacity-60 [&:not(:placeholder-shown)]:opacity-100 cursor-pointer"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/30 placeholder:opacity-100 empty:opacity-70 [&:not(:placeholder-shown)]:opacity-100 cursor-pointer"
                   onClick={(e) => {
                     // Try multiple approaches to trigger emoji picker
                     try {
@@ -378,7 +378,7 @@ export default function AddEvent() {
                     }
                   }}
                 />
-                <Label htmlFor="emoji" className="absolute -bottom-7 left-0 text-[11px] text-gray-700 font-sora font-bold">VIBE</Label>
+                <Label htmlFor="emoji" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">VIBE</Label>
                 {form.formState.errors.emoji && (
                   <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.emoji.message}</p>
                 )}
@@ -393,7 +393,7 @@ export default function AddEvent() {
                   placeholder="Beach House"
                   className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder:text-black/20 text-xl"
                 />
-                <Label htmlFor="artist" className="absolute -bottom-7 left-0 text-[11px] text-gray-700 font-sora font-bold">ARTIST NAME</Label>
+                <Label htmlFor="artist" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">ARTIST NAME</Label>
                 {form.formState.errors.artist && (
                   <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.artist.message}</p>
                 )}
@@ -410,7 +410,7 @@ export default function AddEvent() {
                   placeholder="Mission Ballroom"
                   className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder:text-black/20 text-xl"
                 />
-                <Label htmlFor="venue" className="absolute -bottom-7 left-0 text-[11px] text-gray-700 font-sora font-bold">VENUE</Label>
+                <Label htmlFor="venue" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">VENUE</Label>
                 {form.formState.errors.venue && (
                   <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.venue.message}</p>
                 )}
@@ -426,11 +426,11 @@ export default function AddEvent() {
                     {...form.register("date")}
                     className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-1 min-w-[135px] text-xl placeholder:text-black/30 empty:text-black/30 [color-scheme:light]"
                   />
-                  <Label htmlFor="date" className="absolute -bottom-7 left-0 text-[11px] text-gray-700 font-sora font-bold">DATE</Label>
+                  <Label htmlFor="date" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">DATE</Label>
                   {form.formState.errors.date && (
                     <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.date.message}</p>
                   )}
-                  <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
+                  <CalendarIcon className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
                 </div>
                 <span className="flex-none text-xl ml-0 pl-0">).</span>
               </div>
@@ -444,7 +444,7 @@ export default function AddEvent() {
                   placeholder="Dream-pop royalty with celestial vibes"
                   className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[270px] placeholder:text-black/20 text-xl"
                 />
-                <Label htmlFor="summary" className="absolute -bottom-7 left-0 text-[11px] text-gray-700 font-sora font-bold">SUMMARY</Label>
+                <Label htmlFor="summary" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">SUMMARY</Label>
                 {form.formState.errors.summary && (
                   <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.summary.message}</p>
                 )}
@@ -462,7 +462,7 @@ export default function AddEvent() {
                     placeholder="Mazzy Star, Cocteau Twins"
                     className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder:text-black/20 text-xl"
                   />
-                  <Label htmlFor="soundsLike" className="absolute -bottom-7 left-0 text-[11px] text-gray-700 font-sora font-bold">SOUNDS LIKE</Label>
+                  <Label htmlFor="soundsLike" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">SOUNDS LIKE</Label>
                   {form.formState.errors.soundsLike && (
                     <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.soundsLike.message}</p>
                   )}
@@ -475,14 +475,14 @@ export default function AddEvent() {
                 <select
                   id="genre"
                   {...form.register("genre")}
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[270px] text-xl appearance-none text-black/20"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-[0.4rem] pb-[0.65rem] pl-0 min-w-[270px] text-xl appearance-none text-black/20"
                 >
                   <option value="" className="text-black/20">Select genre</option>
                   {genres.map((genre) => (
                     <option key={genre} value={genre}>{genre}</option>
                   ))}
                 </select>
-                <Label htmlFor="genre" className="absolute -bottom-7 left-0 text-[11px] text-gray-700 font-sora font-bold">GENRE</Label>
+                <Label htmlFor="genre" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">GENRE</Label>
                 {form.formState.errors.genre && (
                   <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.genre.message}</p>
                 )}
@@ -494,7 +494,7 @@ export default function AddEvent() {
                 <Button 
                   type="submit"
                   variant="default"
-                  className="bg-black text-[#FE6B41] hover:text-[#41F2EE] rounded-full px-4 py-2 font-medium transition-colors"
+                  className="bg-black hover:bg-black text-[#FE6B41] hover:text-[#41F2EE] rounded-full px-4 py-2 font-medium transition-colors"
                   disabled={addEventMutation.isPending}
                 >
                   {addEventMutation.isPending ? "ADDING..." : "ADD SHOW"}
