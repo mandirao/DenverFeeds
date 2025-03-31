@@ -332,6 +332,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to unschedule event" });
     }
   });
+  
+  // Delete an event
+  apiRouter.delete("/events/:id", async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ message: "Invalid event ID" });
+      }
+
+      const event = await storage.getEventById(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      const success = await storage.deleteEvent(eventId);
+      if (success) {
+        res.status(200).json({ message: "Event deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete event" });
+      }
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      res.status(500).json({ message: "Server error while deleting event" });
+    }
+  });
 
   app.use("/api", apiRouter);
 

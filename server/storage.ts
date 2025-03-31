@@ -17,6 +17,7 @@ export interface IStorage {
   createEvent(event: InsertEvent): Promise<Event>;
   updateEvent(id: number, data: Partial<Event>): Promise<Event | undefined>;
   checkDuplicateEvent(event: InsertEvent): Promise<boolean>;
+  deleteEvent(id: number): Promise<boolean>;
   
   // Upvote methods
   upvoteEvent(eventId: number, userId: number): Promise<boolean>;
@@ -131,6 +132,22 @@ export class DatabaseStorage implements IStorage {
       .where(eq(events.id, eventId))
       .returning();
     return result[0];
+  }
+
+  async deleteEvent(id: number): Promise<boolean> {
+    try {
+      // First delete any upvotes associated with this event
+      await db.delete(upvotes).where(eq(upvotes.eventId, id));
+      
+      // Then delete the event
+      const result = await db.delete(events).where(eq(events.id, id)).returning();
+      
+      // If we got a result back, the deletion was successful
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      return false;
+    }
   }
 }
 

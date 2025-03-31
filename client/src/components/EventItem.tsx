@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { formatDate, createGoogleCalendarUrl, createGoogleMapsUrl, createSpotifySearchUrl, isRecentlyAdded } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowUp, Check } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ArrowUp, Check, Trash2 } from "lucide-react";
 
 interface EventItemProps {
   event: Event;
@@ -75,6 +76,17 @@ function EventItem({ event }: EventItemProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
     }
   });
+  
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", `/api/events/${event.id}`, undefined);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+    }
+  });
 
   const handleUpvote = () => {
     // Don't allow upvoting if the user has already voted
@@ -95,6 +107,10 @@ function EventItem({ event }: EventItemProps) {
 
   const handleSchedule = () => {
     scheduleMutation.mutate();
+  };
+  
+  const handleDelete = () => {
+    deleteMutation.mutate();
   };
 
   // Format date for display
@@ -262,11 +278,45 @@ function EventItem({ event }: EventItemProps) {
             )}
           </div>
           
-          {/* Right-aligned controls - just the scheduling dot */}
+          {/* Right-aligned controls - scheduling dot and delete button */}
           <div className="flex items-center">
-            {!event.isScheduled ? (
-              <div className="ml-auto pl-2" style={{ position: 'relative', top: '2px' }}>
-                {/* Schedule button dot */}
+            <div className="ml-auto pl-2 flex items-center gap-2" style={{ position: 'relative', top: '2px' }}>
+              {/* Delete button with confirmation dialog */}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-4 w-4 p-0 flex items-center justify-center rounded-full hover:bg-red-100"
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="h-3 w-3 text-gray-400 hover:text-red-500" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Event</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this event? This action cannot be undone.
+                      <p className="mt-2">
+                        <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
+                      </p>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleDelete}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              
+              {/* Schedule button dot (only show if not scheduled) */}
+              {!event.isScheduled && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -285,8 +335,8 @@ function EventItem({ event }: EventItemProps) {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              </div>
-            ) : null}
+              )}
+            </div>
           </div>
         </div>
       </div>
