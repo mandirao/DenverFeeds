@@ -8,14 +8,7 @@ import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
 import { groupEventsByMonth, isRecentlyAdded } from "@/lib/utils";
-import { Event } from "@shared/schema";
-
-// Extract unique genres from events
-const extractGenres = (events: Event[]): string[] => {
-  const genreSet = new Set<string>();
-  events.forEach(event => genreSet.add(event.genre));
-  return Array.from(genreSet);
-};
+import { Event, genres as schemaGenres } from "@shared/schema";
 
 export default function Home() {
   const [filters, setFilters] = useState({
@@ -31,8 +24,8 @@ export default function Home() {
     queryKey: ["/api/events"],
   });
 
-  // Extract unique genres for the filter
-  const genres = extractGenres(events);
+  // Use the genres list directly from schema
+  const genres = schemaGenres;
   
   // Get unique months, ensuring no duplicates for the filter dropdown
   const months = getNextMonths();

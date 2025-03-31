@@ -7,7 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { insertEventSchema } from "@shared/schema";
+import { insertEventSchema, genres } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -361,14 +361,7 @@ export default function AddEvent() {
     });
   };
 
-  const genres = [
-    'Rock & Alternative',
-    'Folk, Country & Americana',
-    'Pop & Indie Pop',
-    'Electronic & Experimental',
-    'Funk, Soul & Jazz',
-    'Classical & Orchestral'
-  ];
+  // Use genres directly from schema.ts instead of hardcoding them here
 
   return (
     <div className="min-h-screen bg-[#FE6B41]">
