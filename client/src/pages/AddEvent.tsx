@@ -388,29 +388,7 @@ export default function AddEvent() {
                   {...form.register("emoji")}
                   maxLength={5}
                   placeholder="🎸"
-                  inputMode="none"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/20 placeholder:opacity-95 empty:opacity-95 [&:not(:placeholder-shown)]:opacity-100 cursor-pointer"
-                  onClick={(e) => {
-                    // Try multiple approaches to trigger emoji picker
-                    try {
-                      // First try the showPicker API (Chrome/Edge)
-                      (e.target as HTMLInputElement).showPicker?.();
-                    } catch (err) {
-                      console.log("Native emoji picker not supported");
-                      
-                      // Fallback - open input with emoji keyboard if supported
-                      const input = e.target as HTMLInputElement;
-                      input.focus();
-                      
-                      // For Safari and other browsers, we'll set the input type to text temporarily
-                      if (!input.showPicker) {
-                        input.blur();
-                        setTimeout(() => {
-                          input.click();
-                        }, 100);
-                      }
-                    }
-                  }}
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/20 placeholder:opacity-95 empty:opacity-95 [&:not(:placeholder-shown)]:opacity-100"
                 />
                 <Label htmlFor="emoji" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">VIBE</Label>
                 {form.formState.errors.emoji && (
