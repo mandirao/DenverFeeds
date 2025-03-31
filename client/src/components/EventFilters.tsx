@@ -28,6 +28,7 @@ export interface EventFiltersProps {
     genre: string;
     status: string;
     denverAreaOnly: boolean;
+    sortBy: string;
   }) => void;
   
   // Data
@@ -39,12 +40,14 @@ export interface EventFiltersProps {
   genreFilter?: string;
   statusFilter?: string;
   denverAreaOnlyFilter?: boolean;
+  sortByFilter?: string;
   
   // Individual change handlers for navbar integration
   onMonthChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onGenreChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onStatusChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onDenverAreaOnlyChange?: (checked: boolean) => void;
+  onSortByChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
 // Generate an array of the next 12 months for the filter
@@ -63,11 +66,17 @@ export const getNextMonths = (): MonthOption[] => {
   return months;
 };
 
-export function EventFilters({ onFilterChange, genres, denverAreaOnlyFilter = true }: EventFiltersProps) {
+export function EventFilters({ 
+  onFilterChange, 
+  genres, 
+  denverAreaOnlyFilter = true,
+  sortByFilter = "date"
+}: EventFiltersProps) {
   const [month, setMonth] = useState("all");
   const [genre, setGenre] = useState("all");
   const [status, setStatus] = useState("all");
   const [denverAreaOnly, setDenverAreaOnly] = useState(denverAreaOnlyFilter);
+  const [sortBy, setSortBy] = useState(sortByFilter);
   const [months, setMonths] = useState<MonthOption[]>([]);
   
   useEffect(() => {
@@ -75,37 +84,43 @@ export function EventFilters({ onFilterChange, genres, denverAreaOnlyFilter = tr
   }, []);
 
   useEffect(() => {
-    // Initialize with the default filters including denverAreaOnly=true
-    onFilterChange({ month, genre, status, denverAreaOnly });
+    // Initialize with the default filters including denverAreaOnly=true and sortBy=date
+    onFilterChange({ month, genre, status, denverAreaOnly, sortBy });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newMonth = e.target.value;
     setMonth(newMonth);
-    onFilterChange({ month: newMonth, genre, status, denverAreaOnly });
+    onFilterChange({ month: newMonth, genre, status, denverAreaOnly, sortBy });
   };
 
   const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newGenre = e.target.value;
     setGenre(newGenre);
-    onFilterChange({ month, genre: newGenre, status, denverAreaOnly });
+    onFilterChange({ month, genre: newGenre, status, denverAreaOnly, sortBy });
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value;
     setStatus(newStatus);
-    onFilterChange({ month, genre, status: newStatus, denverAreaOnly });
+    onFilterChange({ month, genre, status: newStatus, denverAreaOnly, sortBy });
+  };
+
+  const handleSortByChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newSortBy = e.target.value;
+    setSortBy(newSortBy);
+    onFilterChange({ month, genre, status, denverAreaOnly, sortBy: newSortBy });
   };
 
   const handleDenverAreaOnlyChange = (checked: boolean) => {
     setDenverAreaOnly(checked);
-    onFilterChange({ month, genre, status, denverAreaOnly: checked });
+    onFilterChange({ month, genre, status, denverAreaOnly: checked, sortBy });
   };
 
   return (
     <div className="mb-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <select 
             id="month-filter" 
@@ -144,6 +159,18 @@ export function EventFilters({ onFilterChange, genres, denverAreaOnlyFilter = tr
             <option value="all">Show All</option>
             <option value="just-added">Just Added</option>
             <option value="scheduled">Scheduled</option>
+          </select>
+        </div>
+
+        <div>
+          <select 
+            id="sort-by-filter" 
+            value={sortBy}
+            onChange={handleSortByChange}
+            className="w-full p-2 border-2 border-black bg-[#FE6B41] text-black rounded-none"
+          >
+            <option value="date">Sort by Date</option>
+            <option value="votes">Top Voted</option>
           </select>
         </div>
       </div>

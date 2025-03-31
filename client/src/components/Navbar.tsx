@@ -37,7 +37,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-1">
                           <select 
                             id="month-filter" 
                             value={filterProps.monthFilter || "all"}
@@ -71,6 +71,16 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                             <option value="all">Show All</option>
                             <option value="just-added">Just Added</option>
                             <option value="scheduled">Scheduled</option>
+                          </select>
+
+                          <select 
+                            id="sort-by-filter" 
+                            value={filterProps.sortByFilter || "date"}
+                            onChange={filterProps.onSortByChange}
+                            className="text-xs p-0.5 border border-black bg-[#FEABDA] text-black rounded-sm text-[10px] h-5"
+                          >
+                            <option value="date">Sort by Date</option>
+                            <option value="votes">Top Voted</option>
                           </select>
                         </div>
                         

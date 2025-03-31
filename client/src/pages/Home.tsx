@@ -21,7 +21,8 @@ export default function Home() {
     month: "all",
     genre: "all",
     status: "all",
-    denverAreaOnly: true
+    denverAreaOnly: true,
+    sortBy: "date"
   });
 
   // Fetch events
@@ -61,8 +62,31 @@ export default function Home() {
     return true;
   });
   
-  // Group filtered events by month and week
-  const groupedByMonthAndWeek = groupEventsByMonth(filteredEvents);
+  // Sort events based on sortBy option
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
+    if (filters.sortBy === "votes") {
+      // For "Top Voted", prioritize events with votes (and not scheduled)
+      if (!a.isScheduled && !b.isScheduled) {
+        // Both are unscheduled, sort by votes (highest first)
+        return (b.upvotes || 0) - (a.upvotes || 0);
+      } else if (!a.isScheduled && a.upvotes && a.upvotes > 0) {
+        // a is unscheduled with votes, higher priority
+        return -1;
+      } else if (!b.isScheduled && b.upvotes && b.upvotes > 0) {
+        // b is unscheduled with votes, higher priority
+        return 1;
+      } else {
+        // Default to date sorting when votes are the same
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      }
+    } else {
+      // Default (date) sort
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    }
+  });
+  
+  // Group sorted events by month and week
+  const groupedByMonthAndWeek = groupEventsByMonth(sortedEvents);
   
   // Check if we have events to display after filtering
   const hasEvents = Object.keys(groupedByMonthAndWeek).length > 0;
@@ -83,6 +107,10 @@ export default function Home() {
   const handleDenverAreaOnlyChange = (checked: boolean) => {
     setFilters({ ...filters, denverAreaOnly: checked });
   };
+  
+  const handleSortByChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilters({ ...filters, sortBy: e.target.value });
+  };
 
   return (
     <div className="min-h-screen bg-[#FE6B41]">
@@ -96,10 +124,12 @@ export default function Home() {
           genreFilter: filters.genre,
           statusFilter: filters.status,
           denverAreaOnlyFilter: filters.denverAreaOnly,
+          sortByFilter: filters.sortBy,
           onMonthChange: handleMonthChange,
           onGenreChange: handleGenreChange,
           onStatusChange: handleStatusChange,
-          onDenverAreaOnlyChange: handleDenverAreaOnlyChange
+          onDenverAreaOnlyChange: handleDenverAreaOnlyChange,
+          onSortByChange: handleSortByChange
         }}
       />
       
