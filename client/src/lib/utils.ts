@@ -160,51 +160,112 @@ export function isRecentlyAdded(createdAt: Date | string | null): boolean {
   return isAfter(dateObj, threeDaysAgo);
 }
 
-// Group events by month
-export function groupEventsByMonth(events: any[]) {
-  const groupedEvents: Record<string, any[]> = {};
+// Get the UTC week start (Monday) and end (Sunday) dates for a given date
+export function getWeekRange(date: Date): { start: Date, end: Date, key: string } {
+  // Create date from UTC components to avoid timezone shifts
+  const utcYear = date.getUTCFullYear();
+  const utcMonth = date.getUTCMonth();
+  const utcDate = date.getUTCDate();
+  const utcDay = date.getUTCDay(); // 0 = Sunday, 1 = Monday, etc.
   
-  events.forEach(event => {
-    let year: number;
-    let month: number;
-    let monthName: string;
-    
-    if (typeof event.date === 'string') {
-      if (event.date.includes('T')) {
-        // For ISO strings with time component, extract parts using Date
-        const dateObj = new Date(event.date);
-        year = dateObj.getFullYear();
-        month = dateObj.getMonth();
-      } else {
-        // For date-only strings (YYYY-MM-DD), parse directly
-        const parts = event.date.split('-').map(Number);
-        year = parts[0];
-        month = parts[1] - 1; // 0-indexed months
-      }
-    } else if (event.date instanceof Date) {
-      year = event.date.getFullYear();
-      month = event.date.getMonth();
+  // Calculate days to subtract to get to Monday (if Sunday, go back 6 days)
+  const daysToSubtract = utcDay === 0 ? 6 : utcDay - 1;
+  
+  // Create start date (Monday)
+  const start = new Date(Date.UTC(utcYear, utcMonth, utcDate - daysToSubtract));
+  
+  // Create end date (Sunday)
+  const end = new Date(Date.UTC(utcYear, utcMonth, utcDate + (7 - daysToSubtract) - 1));
+  
+  // Create a consistent key for this week: "YYYY-MM-DD"
+  const key = `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, '0')}-${String(start.getUTCDate()).padStart(2, '0')}`;
+  
+  return { start, end, key };
+}
+
+// Extract UTC date components from various date formats
+export function extractUtcDateComponents(eventDate: string | Date): { year: number, month: number, day: number, date: Date } {
+  let year: number;
+  let month: number;
+  let day: number;
+  let date: Date;
+  
+  if (typeof eventDate === 'string') {
+    if (eventDate.includes('T')) {
+      // For ISO strings with time component, extract the date
+      date = new Date(eventDate);
+      year = date.getUTCFullYear();
+      month = date.getUTCMonth();
+      day = date.getUTCDate();
     } else {
-      // Handle unexpected date format
-      console.warn('Unexpected date format:', event.date);
-      return; // Skip this event
+      // For date-only strings (YYYY-MM-DD), parse directly
+      const parts = eventDate.split('-').map(Number);
+      year = parts[0];
+      month = parts[1] - 1; // JS months are 0-indexed
+      day = parts[2];
+      date = new Date(Date.UTC(year, month, day));
     }
+  } else {
+    // Date object
+    date = eventDate;
+    year = date.getUTCFullYear();
+    month = date.getUTCMonth();
+    day = date.getUTCDate();
+  }
+  
+  return { year, month, day, date };
+}
+
+// Group events by month and then by week
+export function groupEventsByMonth(events: any[]) {
+  const groupedEvents: Record<string, any> = {};
+  
+  // Sort events by date
+  const sortedEvents = [...events].sort((a, b) => {
+    const dateA = extractUtcDateComponents(a.date).date;
+    const dateB = extractUtcDateComponents(b.date).date;
+    return dateA.getTime() - dateB.getTime();
+  });
+  
+  sortedEvents.forEach(event => {
+    const { year, month, date } = extractUtcDateComponents(event.date);
     
-    // Get month name without using Date constructor
+    // Get month name
     const monthNames = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
-    monthName = monthNames[month];
+    const monthName = monthNames[month];
     
-    // Create a consistent key
+    // Create a consistent key for month
     const monthYear = `${monthName} ${year}`;
     
+    // Initialize the month structure if it doesn't exist
     if (!groupedEvents[monthYear]) {
-      groupedEvents[monthYear] = [];
+      groupedEvents[monthYear] = {
+        events: [],
+        weekGroups: {}
+      };
     }
     
-    groupedEvents[monthYear].push(event);
+    // Add to month events array
+    groupedEvents[monthYear].events.push(event);
+    
+    // Get week grouping
+    const weekInfo = getWeekRange(date);
+    const weekKey = weekInfo.key;
+    
+    // Initialize the week if it doesn't exist
+    if (!groupedEvents[monthYear].weekGroups[weekKey]) {
+      groupedEvents[monthYear].weekGroups[weekKey] = {
+        start: weekInfo.start,
+        end: weekInfo.end,
+        events: []
+      };
+    }
+    
+    // Add event to the week group
+    groupedEvents[monthYear].weekGroups[weekKey].events.push(event);
   });
   
   return groupedEvents;

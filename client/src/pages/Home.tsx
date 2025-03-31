@@ -61,11 +61,11 @@ export default function Home() {
     return true;
   });
   
-  // Group filtered events by month
-  const groupedEvents = groupEventsByMonth(filteredEvents);
+  // Group filtered events by month and week
+  const groupedByMonthAndWeek = groupEventsByMonth(filteredEvents);
   
   // Check if we have events to display after filtering
-  const hasEvents = Object.keys(groupedEvents).length > 0;
+  const hasEvents = Object.keys(groupedByMonthAndWeek).length > 0;
 
   // Handle individual filter changes
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -114,7 +114,7 @@ export default function Home() {
             <EmptyState />
           ) : (
             // Render events grouped by month
-            Object.entries(groupedEvents).map(([month, monthEvents]) => (
+            Object.entries(groupedByMonthAndWeek).map(([month, monthEvents]) => (
               <MonthGroup 
                 key={month} 
                 monthName={month} 
