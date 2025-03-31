@@ -459,7 +459,7 @@ export default function AddEvent() {
                       id="date"
                       type="date"
                       {...form.register("date")}
-                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/30 empty:text-black/30 [color-scheme:light] appearance-none"
+                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/30 empty:text-black/30 [color-scheme:light] appearance-none [&::-webkit-calendar-picker-indicator]:hidden"
                     />
                     <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
                   </div>
@@ -569,7 +569,7 @@ export default function AddEvent() {
                   id="csv-upload"
                   accept=".csv"
                   onChange={handleCsvUpload}
-                  className="block w-full p-3 border-2 border-black bg-[#FEABDA] rounded-none"
+                  className="block w-full p-3 border-2 border-black bg-[#FEABDA] rounded-none file:text-black file:opacity-20"
                 />
                 <div className="text-sm text-black mt-2 bg-[#FEABDA] p-3 rounded-md">
                   <p className="font-medium mb-1">CSV Format Requirements:</p>
