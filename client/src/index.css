@@ -7,6 +7,20 @@
   transform: rotate(180deg);
 }
 
+/* Denver area toggle custom styling */
+#denver-area-only[data-state="unchecked"] span {
+  transform: translateX(-4px) !important;
+}
+
+#denver-area-only[data-state="checked"] span {
+  transform: translateX(calc(5px - 8px)) !important;
+}
+
+/* Make the thumb/circle clickable */
+#denver-area-only span {
+  pointer-events: auto !important;
+}
+
 @layer base {
   * {
     @apply border-border;

@@ -76,12 +76,14 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                         
                         {/* Denver/Boulder area toggle */}
                         <div className="flex items-center justify-start space-x-2 mt-1">
-                          <Switch 
-                            id="denver-area-only" 
-                            checked={filterProps.denverAreaOnlyFilter}
-                            onCheckedChange={filterProps.onDenverAreaOnlyChange}
-                            className="bg-[#FE6B41] data-[state=checked]:bg-[#41F2EE] h-4 w-7"
-                          />
+                          <div className="relative">
+                            <Switch 
+                              id="denver-area-only" 
+                              checked={filterProps.denverAreaOnlyFilter}
+                              onCheckedChange={filterProps.onDenverAreaOnlyChange}
+                              className="bg-[#FE6B41] data-[state=checked]:bg-[#41F2EE] h-4 w-7"
+                            />
+                          </div>
                           <Label htmlFor="denver-area-only" className="text-[10px] font-medium cursor-pointer">
                             Denver/Boulder area shows only
                           </Label>
