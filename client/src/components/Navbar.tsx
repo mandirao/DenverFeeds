@@ -130,7 +130,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                   </a>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Listen to our Weekly Spotify Playlist</p>
+                  <p>Join our monthly Spotify playlist</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
