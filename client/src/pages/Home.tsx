@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { getNextMonths, nonDenverAreaVenues } from "@/components/EventFilters";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
+import EventItem from "@/components/EventItem";
 import { groupEventsByMonth, isRecentlyAdded } from "@/lib/utils";
 import { Event } from "@shared/schema";
 
@@ -36,8 +37,8 @@ export default function Home() {
 
   // Filter events based on selected filters
   const filteredEvents = events.filter(event => {
-    // Month filter
-    if (filters.month !== "all") {
+    // Month filter (not applied for top-voted)
+    if (filters.status !== "top-voted" && filters.month !== "all") {
       const eventMonth = format(new Date(event.date), "MMMM yyyy");
       if (eventMonth !== filters.month) return false;
     }
@@ -52,6 +53,11 @@ export default function Home() {
       return false;
     } else if (filters.status === "scheduled" && !event.isScheduled) {
       return false;
+    } else if (filters.status === "top-voted") {
+      // Only show unscheduled events with at least 1 vote
+      if (event.isScheduled || !event.upvotes || event.upvotes < 1) {
+        return false;
+      }
     }
     
     // Denver/Boulder area filter
@@ -62,21 +68,17 @@ export default function Home() {
     return true;
   });
   
-  // Sort events based on sortBy option
+  // Sort events based on sortBy option and status
   const sortedEvents = [...filteredEvents].sort((a, b) => {
-    if (filters.sortBy === "votes") {
-      // For "Top Voted", prioritize events with votes (and not scheduled)
-      if (!a.isScheduled && !b.isScheduled) {
-        // Both are unscheduled, sort by votes (highest first)
-        return (b.upvotes || 0) - (a.upvotes || 0);
-      } else if (!a.isScheduled && a.upvotes && a.upvotes > 0) {
-        // a is unscheduled with votes, higher priority
-        return -1;
-      } else if (!b.isScheduled && b.upvotes && b.upvotes > 0) {
-        // b is unscheduled with votes, higher priority
-        return 1;
+    if (filters.status === "top-voted" || filters.sortBy === "votes") {
+      // Sort by votes (highest first)
+      const aVotes = a.upvotes || 0;
+      const bVotes = b.upvotes || 0;
+      
+      if (aVotes !== bVotes) {
+        return bVotes - aVotes; // Highest votes first
       } else {
-        // Default to date sorting when votes are the same
+        // If votes are the same, sort by date
         return new Date(a.date).getTime() - new Date(b.date).getTime();
       }
     } else {
@@ -85,11 +87,39 @@ export default function Home() {
     }
   });
   
-  // Group sorted events by month and week
+  // For standard view, group by month and week
   const groupedByMonthAndWeek = groupEventsByMonth(sortedEvents);
   
+  // Determine if we should group by month/week or show a flat list
+  let displayContent;
+  
+  if (filters.status === "top-voted") {
+    // For top-voted, we show a flat list without month/week grouping
+    displayContent = (
+      <div className="bg-white p-4 mb-8 shadow-md">
+        <h2 className="text-2xl font-bold mb-4">Top Voted Events</h2>
+        <ul className="space-y-6">
+          {sortedEvents.map(event => (
+            <EventItem key={event.id} event={event} />
+          ))}
+        </ul>
+      </div>
+    );
+  } else {
+    // Standard view with month/week grouping
+    displayContent = Object.entries(groupedByMonthAndWeek).map(([month, monthEvents]) => (
+      <MonthGroup 
+        key={month} 
+        monthName={month} 
+        events={monthEvents} 
+      />
+    ));
+  }
+  
   // Check if we have events to display after filtering
-  const hasEvents = Object.keys(groupedByMonthAndWeek).length > 0;
+  const hasEvents = filters.status === "top-voted" 
+    ? sortedEvents.length > 0 
+    : Object.entries(groupedByMonthAndWeek).length > 0;
 
   // Handle individual filter changes
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -101,7 +131,14 @@ export default function Home() {
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilters({ ...filters, status: e.target.value });
+    const newStatus = e.target.value;
+    
+    // If selecting "top-voted", automatically set sortBy to "votes"
+    if (newStatus === "top-voted") {
+      setFilters({ ...filters, status: newStatus, sortBy: "votes" });
+    } else {
+      setFilters({ ...filters, status: newStatus });
+    }
   };
   
   const handleDenverAreaOnlyChange = (checked: boolean) => {
@@ -143,14 +180,8 @@ export default function Home() {
           ) : !hasEvents ? (
             <EmptyState />
           ) : (
-            // Render events grouped by month
-            Object.entries(groupedByMonthAndWeek).map(([month, monthEvents]) => (
-              <MonthGroup 
-                key={month} 
-                monthName={month} 
-                events={monthEvents} 
-              />
-            ))
+            // Render events using the appropriate display method
+            displayContent
           )}
         </div>
       </main>

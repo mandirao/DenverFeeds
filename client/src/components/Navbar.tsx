@@ -69,18 +69,9 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                             className="text-xs p-0.5 border border-black bg-[#FEABDA] text-black rounded-sm text-[10px] h-5"
                           >
                             <option value="all">Show All</option>
+                            <option value="top-voted">Top Voted</option>
                             <option value="just-added">Just Added</option>
                             <option value="scheduled">Scheduled</option>
-                          </select>
-
-                          <select 
-                            id="sort-by-filter" 
-                            value={filterProps.sortByFilter || "date"}
-                            onChange={filterProps.onSortByChange}
-                            className="text-xs p-0.5 border border-black bg-[#FEABDA] text-black rounded-sm text-[10px] h-5"
-                          >
-                            <option value="date">Sort by Date</option>
-                            <option value="votes">Top Voted</option>
                           </select>
                         </div>
                         

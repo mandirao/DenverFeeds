@@ -104,7 +104,14 @@ export function EventFilters({
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newStatus = e.target.value;
     setStatus(newStatus);
-    onFilterChange({ month, genre, status: newStatus, denverAreaOnly, sortBy });
+    
+    // If selecting "top-voted", automatically set sortBy to "votes"
+    if (newStatus === "top-voted") {
+      setSortBy("votes");
+      onFilterChange({ month, genre, status: newStatus, denverAreaOnly, sortBy: "votes" });
+    } else {
+      onFilterChange({ month, genre, status: newStatus, denverAreaOnly, sortBy });
+    }
   };
 
   const handleSortByChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -120,7 +127,7 @@ export function EventFilters({
 
   return (
     <div className="mb-8">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <select 
             id="month-filter" 
@@ -157,20 +164,9 @@ export function EventFilters({
             className="w-full p-2 border-2 border-black bg-[#FE6B41] text-black rounded-none"
           >
             <option value="all">Show All</option>
+            <option value="top-voted">Top Voted</option>
             <option value="just-added">Just Added</option>
             <option value="scheduled">Scheduled</option>
-          </select>
-        </div>
-
-        <div>
-          <select 
-            id="sort-by-filter" 
-            value={sortBy}
-            onChange={handleSortByChange}
-            className="w-full p-2 border-2 border-black bg-[#FE6B41] text-black rounded-none"
-          >
-            <option value="date">Sort by Date</option>
-            <option value="votes">Top Voted</option>
           </select>
         </div>
       </div>
