@@ -381,7 +381,7 @@ export default function AddEvent() {
                   {...form.register("emoji")}
                   maxLength={5}
                   placeholder="🎸"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/20 placeholder:opacity-95 empty:opacity-95 [&:not(:placeholder-shown)]:opacity-100"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black"
                 />
                 <Label htmlFor="emoji" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">VIBE</Label>
                 {form.formState.errors.emoji && (
@@ -396,7 +396,7 @@ export default function AddEvent() {
                   {...form.register("artist")}
                   maxLength={75}
                   placeholder="Beach House"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[135px] placeholder:text-black/20 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[135px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl"
                 />
                 <Label htmlFor="artist" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">ARTIST NAME</Label>
                 {form.formState.errors.artist && (
@@ -413,7 +413,7 @@ export default function AddEvent() {
                   {...form.register("venue")}
                   maxLength={75}
                   placeholder="Mission Ballroom"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[135px] placeholder:text-black/20 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[135px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl"
                 />
                 <Label htmlFor="venue" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">VENUE</Label>
                 {form.formState.errors.venue && (
@@ -430,7 +430,7 @@ export default function AddEvent() {
                       id="date"
                       type="date"
                       {...form.register("date")}
-                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/30 empty:text-black/30 [color-scheme:light] appearance-none [&::-webkit-calendar-picker-indicator]:hidden"
+                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/30 text-black/30 [&:not(:placeholder-shown)]:text-black [color-scheme:light] appearance-none [&::-webkit-calendar-picker-indicator]:hidden"
                     />
                     <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
                   </div>
@@ -449,7 +449,7 @@ export default function AddEvent() {
                   {...form.register("summary")}
                   maxLength={75}
                   placeholder="Dream-pop royalty with celestial vibes"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[378px] placeholder:text-black/20 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[378px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl"
                 />
                 <Label htmlFor="summary" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">SNAPPY BAND INTRO</Label>
                 {form.formState.errors.summary && (
@@ -467,7 +467,7 @@ export default function AddEvent() {
                     {...form.register("soundsLike")}
                     maxLength={75}
                     placeholder="Mazzy Star, Cocteau Twins"
-                    className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder:text-black/20 text-xl"
+                    className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl"
                   />
                   <Label htmlFor="soundsLike" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">SIMILAR ARTIST(S)</Label>
                   {form.formState.errors.soundsLike && (
@@ -482,7 +482,7 @@ export default function AddEvent() {
                 <select
                   id="genre"
                   {...form.register("genre")}
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pt-1 pb-3 pl-0 min-w-[270px] text-xl appearance-none text-black/20 h-[43px]"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pt-1 pb-3 pl-0 min-w-[270px] text-xl appearance-none text-black/20 h-[43px] [&:not(:placeholder-shown)]:text-black [&:not([value=''])]:text-black"
                 >
                   <option value="" className="text-black/20">Genre</option>
                   {genres.map((genre) => (
