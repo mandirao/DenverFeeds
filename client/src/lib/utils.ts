@@ -195,26 +195,17 @@ function extractDateParts(eventDate: string | Date): { year: number; month: numb
   return { year, month, day };
 }
 
-// Calculate week number for a date, ensuring weeks start on Monday
+// Calculate week number for a date
 function getWeekNumber(date: Date): number {
   // Copy date to avoid modifying the original
   const d = new Date(date);
-  // Set to midnight to ensure consistent day calculations
+  // Set to the nearest Thursday (to handle the case where the week spans two years)
   d.setHours(0, 0, 0, 0);
-  
-  // Adjust the date to nearest Monday (start of week)
-  // getDay() returns 0 for Sunday, 1 for Monday, etc.
-  // We want Monday as day 0, so we adjust:
-  // - For Monday (1), subtract 1 → 0 days (day 0)
-  // - For Tuesday (2), subtract 1 → 1 day
-  // - For Sunday (0), subtract 1 → -1, then (+ 7) % 7 = 6 days
-  const dayOfWeek = (d.getDay() + 6) % 7; // 0 = Monday, 6 = Sunday
-  d.setDate(d.getDate() - dayOfWeek);
-  
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
   // Get first day of year
   const yearStart = new Date(d.getFullYear(), 0, 1);
-  // Calculate week number: (difference in days) / 7 (rounded up)
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000) / 7);
+  // Calculate week number: 1 + (difference in days) / 7 (rounded down)
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 // Group events by month and then by week
@@ -252,7 +243,6 @@ export function groupEventsByMonth(events: any[]) {
 }
 
 // Group events by week within a month
-// A week starts on Monday and ends on Sunday
 export function groupEventsByWeek(events: any[]) {
   // First sort by date
   const sortedEvents = [...events].sort((a, b) => {
@@ -262,35 +252,26 @@ export function groupEventsByWeek(events: any[]) {
   });
   
   const weekGroups: any[][] = [];
+  let currentWeek: number | null = null;
   let currentWeekEvents: any[] = [];
-  let previousDate: Date | null = null;
   
   sortedEvents.forEach(event => {
     const { year, month, day } = extractDateParts(event.date);
+    
+    // Create date object to get week number
     const eventDate = new Date(year, month, day);
-    const dayOfWeek = eventDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const weekNumber = getWeekNumber(eventDate);
     
-    // Check if we need to start a new week group
-    let startNewGroup = false;
-    
-    if (previousDate) {
-      const prevDay = previousDate.getDay();
-      // Start a new group if:
-      // 1. Current day is Monday (1) and previous day was ANY day (transition to new week)
-      // 2. OR if days are not consecutive (gap in events)
-      const dayDiff = (eventDate.getTime() - previousDate.getTime()) / (1000 * 60 * 60 * 24);
-      
-      // If current day is Monday (1) OR there's a gap of more than 1 day
-      startNewGroup = dayOfWeek === 1 || dayDiff > 1;
+    // If this is a new week, start a new group
+    if (currentWeek !== weekNumber) {
+      if (currentWeekEvents.length > 0) {
+        weekGroups.push([...currentWeekEvents]);
+      }
+      currentWeek = weekNumber;
+      currentWeekEvents = [event];
+    } else {
+      currentWeekEvents.push(event);
     }
-    
-    if (startNewGroup && currentWeekEvents.length > 0) {
-      weekGroups.push([...currentWeekEvents]);
-      currentWeekEvents = [];
-    }
-    
-    currentWeekEvents.push(event);
-    previousDate = eventDate;
   });
   
   // Add the last group
