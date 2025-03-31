@@ -555,7 +555,7 @@ export default function AddEvent() {
         </div>
         
         {/* CSV Upload Section - outside the form on orange background */}
-        <div className="mt-8 p-6 bg-[#FE6B41] rounded-lg">
+        <div className="mt-1 p-6 bg-[#FE6B41] rounded-lg">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="csv-upload" className="border-0">
               <AccordionTrigger className="p-0 hover:no-underline">
