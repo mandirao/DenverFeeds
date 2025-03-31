@@ -59,13 +59,7 @@ const addEventSchema = insertEventSchema.extend({
   venue: z.string().min(1, "Venue is required").max(75, "Maximum 75 characters"),
   summary: z.string().min(1, "Summary is required").max(75, "Maximum 75 characters"),
   soundsLike: z.string().min(1, "Sounds like is required").max(75, "Maximum 75 characters"),
-  date: z.preprocess(
-    (arg) => typeof arg === 'string' ? new Date(arg) : arg,
-    z.date({
-      required_error: "Date is required",
-      invalid_type_error: "That's not a date!",
-    })
-  ),
+  date: z.string().min(1, "Date is required"),
   genre: z.string().min(1, "Genre is required"),
 });
 
@@ -87,7 +81,7 @@ export default function AddEvent() {
       emoji: "",
       artist: "",
       venue: "",
-      date: undefined,
+      date: "",
       summary: "",
       soundsLike: "",
       genre: "",
@@ -531,13 +525,46 @@ export default function AddEvent() {
                 <span className="flex-none text-xl mr-0 pr-0">(</span>
                 <div className="inline-flex flex-col relative">
                   <div className="relative">
-                    <Input
-                      id="date"
-                      type="date"
-                      {...form.register("date")}
-                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black [color-scheme:light] appearance-none [&::-webkit-calendar-picker-indicator]:hidden !bg-transparent"
-                    />
-                    <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none text-black" />
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Focus the hidden input to show the date picker
+                          const input = document.getElementById("date-picker");
+                          if (input) {
+                            input.click();
+                            input.focus();
+                          }
+                        }}
+                        className={`inline-flex items-center justify-between border-0 border-b-2 border-black bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-left text-xl ${!form.getValues("date") ? "text-black/20" : "text-black"}`}
+                        aria-label="Select date"
+                      >
+                        <span>
+                          {form.getValues("date") 
+                            ? new Date(form.getValues("date")).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric"
+                              })
+                            : "Select date"}
+                        </span>
+                        <CalendarIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </button>
+                      <input
+                        id="date-picker"
+                        type="date"
+                        className="opacity-0 absolute top-0 left-0 w-full h-full cursor-pointer"
+                        onChange={(e) => {
+                          form.setValue("date", e.target.value, { shouldValidate: true });
+                          form.trigger("date");
+                        }}
+                      />
+                      <input
+                        id="date"
+                        type="hidden"
+                        {...form.register("date")}
+                      />
+                    </div>
                   </div>
                   <Label htmlFor="date" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">DATE</Label>
                   {form.formState.errors.date && (
@@ -582,23 +609,57 @@ export default function AddEvent() {
                 <span className="flex-none text-xl ml-0 pl-0">.</span>
               </div>
               
-              {/* Genre Field */}
+              {/* Genre Field - Dropdown */}
               <div className="inline-flex flex-col relative">
-                <select
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      role="combobox"
+                      aria-label="Select genre"
+                      className={`inline-flex items-center justify-between border-0 border-b-2 border-black bg-transparent p-2 pl-0 min-w-[270px] text-left text-xl ${!form.getValues("genre") ? "text-black/20" : "text-black"}`}
+                    >
+                      <span>{form.getValues("genre") || "Genre"}</span>
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search genres..." 
+                        className="h-9 border-none focus:ring-0"
+                      />
+                      <CommandList>
+                        <CommandEmpty>No genre found.</CommandEmpty>
+                        <CommandGroup>
+                          {genres.map(genre => (
+                            <CommandItem
+                              key={genre}
+                              value={genre}
+                              onSelect={(value) => {
+                                form.setValue("genre", value);
+                                // Force re-render to update the display text
+                                form.trigger("genre");
+                              }}
+                              className="cursor-pointer"
+                            >
+                              {genre}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <input 
+                  type="hidden" 
                   id="genre"
                   {...form.register("genre")}
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pt-1 pb-3 pl-0 min-w-[270px] text-xl appearance-none text-black/20 h-[43px] [&:not([value=''])]:text-black !bg-transparent"
-                >
-                  <option value="" className="text-black/20">Genre</option>
-                  {genres.map((genre) => (
-                    <option key={genre} value={genre} className="text-black">{genre}</option>
-                  ))}
-                </select>
+                />
                 <Label htmlFor="genre" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">GENRE</Label>
                 {form.formState.errors.genre && (
                   <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.genre.message}</p>
                 )}
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 pointer-events-none" />
               </div>
               
               {/* Add Show Button - positioned very close to the genre dropdown */}
