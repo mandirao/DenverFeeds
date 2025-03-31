@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { 
   Dialog, 
@@ -9,18 +9,28 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, List } from "lucide-react";
 
 export function Footer() {
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [location] = useLocation();
+  
+  // Determine if we're on the Add Show page
+  const isAddPage = location === "/add";
   
   return (
     <footer className="bg-[#FE6B41] py-4 mt-8">
       <div className="container mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
         <div className="mb-4 sm:mb-0">
-          <Link href="/add" className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm">
-            <Plus className="w-4 h-4 mr-1" /> ADD SHOW
-          </Link>
+          {isAddPage ? (
+            <Link href="/" className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm">
+              <List className="w-4 h-4 mr-1" /> VIEW SHOWS
+            </Link>
+          ) : (
+            <Link href="/add" className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm">
+              <Plus className="w-4 h-4 mr-1" /> ADD SHOW
+            </Link>
+          )}
         </div>
         
         <div className="text-sm text-black flex items-center space-x-2">
