@@ -12,6 +12,7 @@ import { AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
+import { VenueSelector, allVenues } from "./VenueSelector";
 
 // Function to check if string contains only emoji characters
 function containsOnlyEmoji(str: string) {
@@ -35,7 +36,20 @@ const eventFormSchema = insertEventSchema.extend({
       message: "Only emoji characters are allowed"
     }),
   artist: z.string().min(1, "Artist name is required").max(75, "Maximum 75 characters"),
-  venue: z.string().min(1, "Venue is required").max(75, "Maximum 75 characters"),
+  venue: z.string()
+    .min(1, "Venue is required")
+    .max(75, "Maximum 75 characters")
+    .refine(
+      value => {
+        // Allow any value if it's "Other/Festival" (user will enter custom venue)
+        if (value === "Other/Festival") return true;
+        // For all other entries, enforce the list
+        return allVenues.includes(value);
+      },
+      {
+        message: "Please select a venue from the list or choose 'Other/Festival'"
+      }
+    ),
   summary: z.string().min(1, "Summary is required").max(75, "Maximum 75 characters"),
   soundsLike: z.string().min(1, "Sounds like is required").max(75, "Maximum 75 characters"),
   date: z.preprocess(
@@ -196,11 +210,10 @@ export function EventForm({
         <Label htmlFor="venue" className="mb-1 block">
           Venue
         </Label>
-        <Input 
-          {...form.register("venue")}
-          id="venue"
-          placeholder="Where is the show?"
-          className={`bg-transparent border rounded-sm focus:border-[#FEABDA] ${form.formState.errors.venue ? 'border-red-500' : 'border-gray-300'}`}
+        <VenueSelector
+          value={form.watch("venue")}
+          onChange={(value) => form.setValue("venue", value)}
+          error={!!form.formState.errors.venue}
           style={{ 
             backgroundColor: 'rgba(254, 171, 218, 0.2)',
             opacity: form.watch("venue") ? 1 : 0.2

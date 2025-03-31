@@ -2,24 +2,12 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { isDenverArea } from "./VenueSelector";
 
 export interface MonthOption {
   key: string;
   display: string;
 }
-
-// List of venues outside the Denver/Boulder area
-export const nonDenverAreaVenues = [
-  "Aggie Theatre",
-  "Black Sheep",
-  "Ford Amphitheater",
-  "Fort Collins Armory",
-  "New Belgium Brewing Company",
-  "Sunset Amphitheater",
-  "The Coast",
-  "The Mishawaka",
-  "Washington's"
-];
 
 export interface EventFiltersProps {
   // The original callback
