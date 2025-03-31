@@ -140,7 +140,8 @@ export function EventForm({
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <h2 className="text-2xl font-bold mb-4">{isEditing ? "Edit Event" : "Add Event"}</h2>
+      {/* Only show the heading when not editing (in Add Event page) */}
+      {!isEditing && <h2 className="text-2xl font-bold mb-4">Add Event</h2>}
       
       {/* Show duplicate error */}
       {duplicateError && (

@@ -315,7 +315,7 @@ function EventItem({ event }: EventItemProps) {
                     onClick={() => setEditDialogOpen(true)}
                     className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                   >
-                    <Edit className="h-3 w-3 mr-2" /> Edit
+                    Edit
                   </DropdownMenuItem>
                   {event.isScheduled ? (
                     <DropdownMenuItem 
@@ -373,7 +373,25 @@ function EventItem({ event }: EventItemProps) {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-md md:max-w-xl lg:max-w-2xl">
+        <DialogContent 
+          className="sm:max-w-md md:max-w-xl lg:max-w-2xl bg-white rounded-lg p-6 border-none shadow-xl"
+          aria-describedby="edit-event-description"
+        >
+          <div className="flex justify-between items-center mb-4">
+            <div className="space-y-1">
+              <div className="text-xl font-semibold text-[#FE6B41]" id="edit-dialog-title">Edit Event</div>
+              <p className="text-sm text-gray-500" id="edit-event-description">
+                Update the event details below
+              </p>
+            </div>
+            <button 
+              onClick={() => setEditDialogOpen(false)}
+              className="rounded-full h-6 w-6 inline-flex items-center justify-center text-gray-500 hover:bg-gray-100"
+            >
+              ✕
+            </button>
+          </div>
+          
           <EventForm 
             defaultValues={getDefaultValues()}
             onSuccess={() => {
