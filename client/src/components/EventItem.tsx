@@ -102,7 +102,7 @@ function EventItem({ event }: EventItemProps) {
   
   // Create URLs for interactive elements
   const calendarUrl = createGoogleCalendarUrl(event);
-  const mapsUrl = createGoogleMapsUrl(event.venue);
+  const mapsUrl = createGoogleMapsUrl(event.venue, event.artist);
   const spotifyUrl = createSpotifySearchUrl(event.artist);
   
   // Check if the event was added in the last week
@@ -154,7 +154,7 @@ function EventItem({ event }: EventItemProps) {
                   </a>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>View on Google Maps</p>
+                  <p>{event.venue === "TBD" ? "Search for concert information" : "View on Google Maps"}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
