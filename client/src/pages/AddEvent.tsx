@@ -354,7 +354,7 @@ export default function AddEvent() {
                   {...form.register("emoji")}
                   maxLength={5}
                   placeholder="🎸"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[24px] max-w-[24px] text-center text-xl placeholder:opacity-50 placeholder:text-black empty:opacity-50 [&:not(:placeholder-shown)]:opacity-100"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/30 placeholder:opacity-100 empty:opacity-50 [&:not(:placeholder-shown)]:opacity-100"
                   onFocus={(e) => {
                     // Try to open the browser's native emoji picker
                     try {
@@ -377,7 +377,7 @@ export default function AddEvent() {
                   {...form.register("artist")}
                   maxLength={75}
                   placeholder="e.g. Beach House"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder-gray-400 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder:text-black/30 text-xl"
                 />
                 <Label htmlFor="artist" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">ARTIST NAME</Label>
                 {form.formState.errors.artist && (
@@ -394,7 +394,7 @@ export default function AddEvent() {
                   {...form.register("venue")}
                   maxLength={75}
                   placeholder="e.g. Mission Ballroom"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder-gray-400 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder:text-black/30 text-xl"
                 />
                 <Label htmlFor="venue" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">VENUE</Label>
                 {form.formState.errors.venue && (
@@ -410,7 +410,7 @@ export default function AddEvent() {
                     id="date"
                     type="date"
                     {...form.register("date")}
-                    className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-1 min-w-[135px] text-xl placeholder-gray-400 empty:text-gray-400 [color-scheme:light]"
+                    className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-1 min-w-[135px] text-xl placeholder:text-black/30 empty:text-black/30 [color-scheme:light]"
                   />
                   <Label htmlFor="date" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">DATE</Label>
                   {form.formState.errors.date && (
@@ -428,7 +428,7 @@ export default function AddEvent() {
                   {...form.register("summary")}
                   maxLength={75}
                   placeholder="e.g. Dream-pop royalty with celestial vibes"
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[270px] placeholder-gray-400 text-xl"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[270px] placeholder:text-black/30 text-xl"
                 />
                 <Label htmlFor="summary" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">SUMMARY</Label>
                 {form.formState.errors.summary && (
@@ -440,20 +440,20 @@ export default function AddEvent() {
               
               {/* Sounds Like Field with attached period */}
               <div className="inline-flex flex-nowrap items-baseline">
-                <span className="flex-none text-xl mr-0 pr-0">.</span>
                 <div className="inline-flex flex-col relative mr-0 pr-0">
                   <Input
                     id="soundsLike"
                     {...form.register("soundsLike")}
                     maxLength={75}
                     placeholder="e.g. Mazzy Star, Cocteau Twins"
-                    className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder-gray-400 text-xl"
+                    className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder:text-black/30 text-xl"
                   />
                   <Label htmlFor="soundsLike" className="absolute -bottom-7 left-0 text-[15px] text-gray-700 font-sora">SOUNDS LIKE</Label>
                   {form.formState.errors.soundsLike && (
                     <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.soundsLike.message}</p>
                   )}
                 </div>
+                <span className="flex-none text-xl ml-0 pl-0">.</span>
               </div>
               
               {/* Genre Field */}
@@ -461,9 +461,9 @@ export default function AddEvent() {
                 <select
                   id="genre"
                   {...form.register("genre")}
-                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[270px] text-xl appearance-none text-gray-400"
+                  className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[270px] text-xl appearance-none text-black/30"
                 >
-                  <option value="" className="text-gray-400">Select genre</option>
+                  <option value="" className="text-black/30">Select genre</option>
                   {genres.map((genre) => (
                     <option key={genre} value={genre}>{genre}</option>
                   ))}
@@ -475,8 +475,8 @@ export default function AddEvent() {
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 pointer-events-none" />
               </div>
               
-              {/* Add Show Button - inline with the form */}
-              <div className="inline-flex items-baseline ml-auto">
+              {/* Add Show Button - positioned 20px after the genre dropdown */}
+              <div className="inline-flex items-baseline ml-5">
                 <Button 
                   type="submit"
                   variant="default"
