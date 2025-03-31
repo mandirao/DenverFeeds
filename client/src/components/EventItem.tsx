@@ -6,7 +6,8 @@ import { formatDate, createGoogleCalendarUrl, createGoogleMapsUrl, createSpotify
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { ArrowUp, Check, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ArrowUp, Check, Trash2, MoreVertical } from "lucide-react";
 
 interface EventItemProps {
   event: Event;
@@ -278,64 +279,67 @@ function EventItem({ event }: EventItemProps) {
             )}
           </div>
           
-          {/* Right-aligned controls - scheduling dot and delete button */}
+          {/* Right-aligned 3-dot menu */}
           <div className="flex items-center">
-            <div className="ml-auto pl-2 flex items-center gap-2" style={{ position: 'relative', top: '2px' }}>
-              {/* Delete button with confirmation dialog */}
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
+            <div className="ml-auto pl-2" style={{ position: 'relative', top: '2px' }}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-xs h-4 w-4 p-0 flex items-center justify-center rounded-full hover:bg-red-100"
-                    disabled={deleteMutation.isPending}
+                    className="text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full bg-transparent opacity-50 hover:opacity-100"
                   >
-                    <Trash2 className="h-3 w-3 text-gray-400 hover:text-red-500" />
+                    <MoreVertical className="h-3 w-3" />
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Event</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete this event? This action cannot be undone.
-                      <p className="mt-2">
-                        <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
-                      </p>
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
-                      onClick={handleDelete}
-                      className="bg-red-500 hover:bg-red-600"
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-32">
+                  {event.isScheduled ? (
+                    <DropdownMenuItem 
+                      onClick={handleSchedule}
+                      disabled={scheduleMutation.isPending}
                     >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              
-              {/* Schedule button dot (only show if not scheduled) */}
-              {!event.isScheduled && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-xs h-4 w-4 p-0 flex items-center justify-center rounded-full bg-transparent" 
-                        onClick={handleSchedule}
-                        disabled={scheduleMutation.isPending}
+                      Unschedule
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem 
+                      onClick={handleSchedule}
+                      disabled={scheduleMutation.isPending}
+                    >
+                      Schedule
+                    </DropdownMenuItem>
+                  )}
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem 
+                        className="text-red-500 focus:text-red-500"
+                        onSelect={(e) => e.preventDefault()} // Prevent the dropdown from closing
                       >
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#e15a30]"></div>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Schedule this show</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+                        Delete
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Event</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this event? This action cannot be undone.
+                          <p className="mt-2">
+                            <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
+                          </p>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={handleDelete}
+                          className="bg-red-500 hover:bg-red-600"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
