@@ -19,9 +19,12 @@ export default function Home() {
     sortBy: "date"
   });
 
-  // Fetch events
+  // Fetch events - always refresh on mount to ensure we have latest data
   const { data: events = [], isLoading, error } = useQuery<Event[]>({
     queryKey: ["/api/events"],
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0 // Consider data stale immediately so it refreshes every time
   });
 
   // Use the genres list directly from schema

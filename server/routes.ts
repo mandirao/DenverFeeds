@@ -1,10 +1,12 @@
 import express, { type Express, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertEventSchema } from "@shared/schema";
+import { insertEventSchema, events } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 import { ZodError } from "zod";
 import { parse } from "date-fns";
+import { and, eq, sql } from "drizzle-orm";
+import { db } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -359,6 +361,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Update an existing event
+  apiRouter.put("/events/:id", async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ message: "Invalid event ID" });
+      }
+
+      const event = await storage.getEventById(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      // Convert date string to Date object if it's not already
+      if (req.body.date && typeof req.body.date === 'string') {
+        try {
+          // Assuming date format is "YYYY-MM-DD"
+          const [year, month, day] = req.body.date.split('-').map(Number);
+          
+          // Create date in local timezone at midnight
+          if (year && month && day) {
+            req.body.date = new Date(year, month - 1, day, 0, 0, 0);
+          } else {
+            req.body.date = new Date(req.body.date);
+          }
+        } catch (dateError) {
+          console.error("Date parsing error:", dateError);
+        }
+      }
+
+      const eventData = insertEventSchema.parse(req.body);
+      
+      // Check for duplicate using the custom method that's aware of the current event ID
+      const isDuplicate = await storage.checkDuplicateEvent(eventData, eventId);
+      if (isDuplicate) {
+        return res.status(409).json({ 
+          message: "Cannot update: Another event with the same artist, venue, and date already exists." 
+        });
+      }
+
+      const updatedEvent = await storage.updateEvent(eventId, eventData);
+      res.json(updatedEvent);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        console.error("ZodError updating event:", error);
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: `Validation error: ${validationError.message}`
+        });
+      } else if (error instanceof Error) {
+        console.error("Error updating event:", error);
+      }
+      res.status(500).json({ message: "Failed to update event" });
+    }
+  });
+
   // Delete an event
   apiRouter.delete("/events/:id", async (req, res) => {
     try {

@@ -7,7 +7,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowUp, Check, Trash2, MoreVertical } from "lucide-react";
+import { ArrowUp, Check, Trash2, MoreVertical, Edit } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { EventForm } from "@/components/EventForm";
 
 interface EventItemProps {
   event: Event;
@@ -19,6 +21,20 @@ function EventItem({ event }: EventItemProps) {
   const [isHoveringVenue, setIsHoveringVenue] = useState(false);
   const [isHoveringDate, setIsHoveringDate] = useState(false);
   const [showUpvoteTooltip, setShowUpvoteTooltip] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  // Prepare default values for the edit form
+  const getDefaultValues = () => {
+    return {
+      emoji: event.emoji,
+      artist: event.artist,
+      venue: event.venue,
+      date: new Date(event.date),
+      genre: event.genre,
+      summary: event.summary,
+      soundsLike: event.soundsLike
+    };
+  };
 
   // Upvote mutation
   const upvoteMutation = useMutation({
@@ -295,6 +311,12 @@ function EventItem({ event }: EventItemProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-32 border-none bg-gray-100 shadow-md rounded-sm font-sans">
+                  <DropdownMenuItem 
+                    onClick={() => setEditDialogOpen(true)}
+                    className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                  >
+                    <Edit className="h-3 w-3 mr-2" /> Edit
+                  </DropdownMenuItem>
                   {event.isScheduled ? (
                     <DropdownMenuItem 
                       onClick={handleSchedule}
@@ -348,6 +370,24 @@ function EventItem({ event }: EventItemProps) {
           </div>
         </div>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md md:max-w-xl lg:max-w-2xl">
+          <EventForm 
+            defaultValues={getDefaultValues()}
+            onSuccess={() => {
+              setEditDialogOpen(false);
+              // Show success in upvote tooltip
+              setShowUpvoteTooltip(true);
+              setTimeout(() => setShowUpvoteTooltip(false), 3000);
+            }}
+            onCancel={() => setEditDialogOpen(false)}
+            eventId={event.id}
+            isEditing={true}
+          />
+        </DialogContent>
+      </Dialog>
     </li>
   );
 }
