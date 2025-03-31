@@ -19,7 +19,7 @@ export function WeekGroup({ events, isLastWeekInMonth }: WeekGroupProps) {
       
       {/* Week separator - only show if not the last week in the month */}
       {!isLastWeekInMonth && (
-        <div className="mx-auto w-[30px] h-[1px] bg-black my-3" aria-hidden="true" />
+        <div className="ml-0 w-[30px] h-[1px] bg-black my-6" aria-hidden="true" />
       )}
     </div>
   );
