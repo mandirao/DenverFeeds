@@ -20,12 +20,12 @@ export interface VenueOption {
 }
 
 export const venueOptions: VenueOption[] = [
-  { value: "TBD", label: "TBD", group: "other" },
-  { value: "other", label: "Other/Festival", group: "other" },
-  
   // Denver/Boulder Area venues
+  { value: "TBD", label: "TBD", group: "denver_boulder" },
+  { value: "other", label: "Other/Festival", group: "denver_boulder" },
   { value: "Ball Arena", label: "Ball Arena", group: "denver_boulder" },
   { value: "Bluebird Theater", label: "Bluebird Theater", group: "denver_boulder" },
+  { value: "Boettcher Concert Hall", label: "Boettcher Concert Hall", group: "denver_boulder" },
   { value: "Boulder Theater", label: "Boulder Theater", group: "denver_boulder" },
   { value: "Cervantes' Masterpiece Ballroom", label: "Cervantes' Masterpiece Ballroom", group: "denver_boulder" },
   { value: "Chautauqua Auditorium", label: "Chautauqua Auditorium", group: "denver_boulder" },
@@ -57,6 +57,7 @@ export const venueOptions: VenueOption[] = [
   { value: "Skylark Lounge", label: "Skylark Lounge", group: "denver_boulder" },
   { value: "Summit Music Hall", label: "Summit Music Hall", group: "denver_boulder" },
   { value: "The Church", label: "The Church", group: "denver_boulder" },
+  { value: "The Meadowlark", label: "The Meadowlark", group: "denver_boulder" },
   
   // Road Trip venues
   { value: "Aggie Theatre", label: "Aggie Theatre", group: "road_trip" },
