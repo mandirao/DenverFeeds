@@ -105,7 +105,7 @@ export function Footer() {
           console.log("Raw parsed data:", results.data);
           
           // Check for required headers
-          const requiredHeaders = ['artist', 'venue', 'date', 'emoji', 'summary', 'genre'];
+          const requiredHeaders = ['artist', 'venue', 'date', 'emoji', 'summary', 'genre', 'requester'];
           const missingHeaders = requiredHeaders.filter(header => 
             !results.meta.fields?.some(field => 
               field.toLowerCase() === header.toLowerCase() || 
@@ -135,6 +135,7 @@ export function Footer() {
               if (!row.emoji) missingFields.push('emoji');
               if (!row.summary) missingFields.push('summary');
               if (!row.genre) missingFields.push('genre');
+              if (!row.requester) missingFields.push('requester');
               
               if (missingFields.length > 0) {
                 errors.push(`Row ${index + 2}: Missing fields: ${missingFields.join(', ')}`);
@@ -243,7 +244,7 @@ export function Footer() {
           <DialogHeader>
             <DialogTitle className="text-xl font-anton">UPLOAD CSV FILE</DialogTitle>
           </DialogHeader>
-          <DialogDescription className="text-black mt-2">
+          <div className="text-black mt-2">
             <div className="mb-4">
               <Input
                 type="file"
@@ -254,14 +255,25 @@ export function Footer() {
               />
             </div>
             <div className="text-sm text-black mt-4 bg-[#FE6B41] p-3 rounded-md">
-              <p className="font-medium mb-1">CSV Format Requirements:</p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Must include header row with column names</li>
-                <li>Required columns: artist, venue, date, emoji, summary, sounds_like, genre</li>
-                <li>Date format must be YYYY-MM-DD (e.g., 2025-06-15)</li>
-                <li>Genre must match one of the standard options</li>
-                <li>Optional: requester column (defaults to "Mandi")</li>
-              </ul>
+              <div className="font-medium mb-2">CSV Format Requirements:</div>
+              <div className="mb-3">
+                <div className="font-bold mb-1">Required Columns:</div>
+                <div className="grid grid-cols-2 gap-2 ml-4 mb-2">
+                  <div>• artist</div> <div>Name of performer/band</div>
+                  <div>• venue</div> <div>Location (from venue list or custom)</div>
+                  <div>• date</div> <div>Format: YYYY-MM-DD</div>
+                  <div>• emoji</div> <div>1-5 characters representing vibe</div>
+                  <div>• summary</div> <div>Brief description (75 chars max)</div>
+                  <div>• sounds_like</div> <div>Similar artists</div>
+                  <div>• genre</div> <div>Must match standard genre options</div>
+                  <div>• requester</div> <div>Your name</div>
+                </div>
+                <div className="font-bold mt-3 mb-1">Example CSV row:</div>
+                <div className="bg-white text-black p-2 rounded text-xs font-mono overflow-x-auto">
+                  artist,venue,date,emoji,summary,sounds_like,genre,requester<br/>
+                  Khruangbin,Red Rocks Amphitheatre,2025-07-15,🎸,Psychedelic trio with funky grooves,Tame Impala,Funk/Soul & Jazz,Sarah
+                </div>
+              </div>
             </div>
             
             {csvError && (
@@ -273,7 +285,7 @@ export function Footer() {
                 <div className="whitespace-pre-line">{csvError}</div>
               </div>
             )}
-          </DialogDescription>
+          </div>
           <DialogFooter>
             <Button variant="outline2" onClick={() => setCsvModalOpen(false)}>
               Cancel

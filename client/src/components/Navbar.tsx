@@ -140,7 +140,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                 <TooltipTrigger asChild>
                   <Link 
                     href="/add"
-                    className="bg-black text-white hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors flex items-center gap-1"
+                    className="bg-black text-[#FEABDA] hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors flex items-center gap-1"
                   >
                     <span>+ Show</span>
                   </Link>
