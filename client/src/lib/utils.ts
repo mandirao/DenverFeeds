@@ -82,15 +82,35 @@ export function createGoogleCalendarUrl(event: {
     day = event.date.getDate();
   }
   
-  // Create dates in Mountain Time (Denver)
-  const dateObj = new Date(Date.UTC(year, month, day, 19 - 6, 0, 0)); // 7PM MDT (UTC-6)
-  const endDate = new Date(Date.UTC(year, month, day, 22 - 6, 0, 0)); // 10PM MDT (UTC-6)
+  // Create dates for 7pm-10pm in Denver local time
+  // For Google Calendar, we need to use UTC format with Z suffix
+  // First, create a Date object for the specified date at 7pm Denver time
+  // Then we'll get the UTC values from this date to ensure proper timezone handling
+
+  // Create a date for 7pm in Denver time zone
+  // We need to do this in a specific format to ensure consistency
+  const startDate = new Date(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T19:00:00-06:00`);
+  const endDate = new Date(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T22:00:00-06:00`);
   
   const eventTitle = `${event.artist} @ ${event.venue}`;
   
-  // Format dates for Google Calendar
-  const startDateString = format(dateObj, "yyyyMMdd'T'HHmmss");
-  const endDateString = format(endDate, "yyyyMMdd'T'HHmmss");
+  // Format dates for Google Calendar using UTC representation
+  const startYear = startDate.getUTCFullYear();
+  const startMonth = String(startDate.getUTCMonth() + 1).padStart(2, '0');
+  const startDay = String(startDate.getUTCDate()).padStart(2, '0');
+  const startHour = String(startDate.getUTCHours()).padStart(2, '0');
+  const startMinute = String(startDate.getUTCMinutes()).padStart(2, '0');
+  const startSecond = String(startDate.getUTCSeconds()).padStart(2, '0');
+  
+  const endYear = endDate.getUTCFullYear();
+  const endMonth = String(endDate.getUTCMonth() + 1).padStart(2, '0');
+  const endDay = String(endDate.getUTCDate()).padStart(2, '0');
+  const endHour = String(endDate.getUTCHours()).padStart(2, '0');
+  const endMinute = String(endDate.getUTCMinutes()).padStart(2, '0');
+  const endSecond = String(endDate.getUTCSeconds()).padStart(2, '0');
+  
+  const startDateString = `${startYear}${startMonth}${startDay}T${startHour}${startMinute}${startSecond}Z`;
+  const endDateString = `${endYear}${endMonth}${endDay}T${endHour}${endMinute}${endSecond}Z`;
   
   // Include the venue as the location
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startDateString}/${endDateString}&details=Show%20organized%20by%20Setlist%20Social&location=${encodeURIComponent(event.venue)}`;
