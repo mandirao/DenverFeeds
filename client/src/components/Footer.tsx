@@ -240,7 +240,7 @@ export function Footer() {
       
       {/* CSV Upload Dialog */}
       <Dialog open={csvModalOpen} onOpenChange={setCsvModalOpen}>
-        <DialogContent className="bg-[#FEABDA] sm:max-w-md">
+        <DialogContent className="bg-[#FEABDA] max-w-xl sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-anton">UPLOAD CSV FILE</DialogTitle>
           </DialogHeader>
@@ -255,24 +255,10 @@ export function Footer() {
               />
             </div>
             <div className="text-sm text-black mt-4 bg-[#FE6B41] p-3 rounded-md">
-              <div className="font-medium mb-2">CSV Format Requirements:</div>
-              <div className="mb-3">
-                <div className="font-bold mb-1">Required Columns:</div>
-                <div className="grid grid-cols-2 gap-2 ml-4 mb-2">
-                  <div>• artist</div> <div>Name of performer/band</div>
-                  <div>• venue</div> <div>Location (from venue list or custom)</div>
-                  <div>• date</div> <div>Format: YYYY-MM-DD</div>
-                  <div>• emoji</div> <div>1-5 characters representing vibe</div>
-                  <div>• summary</div> <div>Brief description (75 chars max)</div>
-                  <div>• sounds_like</div> <div>Similar artists</div>
-                  <div>• genre</div> <div>Must match standard genre options</div>
-                  <div>• requester</div> <div>Your name</div>
-                </div>
-                <div className="font-bold mt-3 mb-1">Example CSV row:</div>
-                <div className="bg-white text-black p-2 rounded text-xs font-mono overflow-x-auto">
-                  artist,venue,date,emoji,summary,sounds_like,genre,requester<br/>
-                  Khruangbin,Red Rocks Amphitheatre,2025-07-15,🎸,Psychedelic trio with funky grooves,Tame Impala,Funk/Soul & Jazz,Sarah
-                </div>
+              <div className="font-medium mb-2">Example CSV Format:</div>
+              <div className="bg-white text-black p-2 rounded text-xs font-mono overflow-x-auto">
+                <code className="block">artist,venue,date,emoji,summary,sounds_like,genre,requester</code>
+                <code className="block">Khruangbin,Red Rocks,2025-07-15,🎸,Psychedelic trio,Tame Impala,Funk/Soul & Jazz,Sarah</code>
               </div>
             </div>
             
