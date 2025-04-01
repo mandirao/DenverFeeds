@@ -19,9 +19,11 @@ export default function Home() {
     sortBy: "date"
   });
 
-  // Fetch events
+  // Fetch events - with refetchOnMount: always to ensure a fresh load every time
   const { data: events = [], isLoading, error } = useQuery<Event[]>({
     queryKey: ["/api/events"],
+    refetchOnMount: 'always',  // This forces a refresh every time the component mounts
+    staleTime: 0,              // Consider data stale immediately
   });
 
   // Use the genres list directly from schema
