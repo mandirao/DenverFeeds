@@ -58,10 +58,15 @@ export default function Home() {
     }
     
     // Denver/Boulder area filter
+    // Filter based on venue location
     if (filters.denverAreaOnly) {
-      // Check if venue is part of the Denver/Boulder list
-      // Also allow venues with "Other:" prefix since these might be local festivals
+      // When ON: Show only Denver/Boulder venues
       if (!denverBoulderVenues.includes(event.venue) && !event.venue.startsWith("Other:")) {
+        return false;
+      }
+    } else {
+      // When OFF: Show only roadtrip venues (exclude Denver/Boulder venues)
+      if (denverBoulderVenues.includes(event.venue) || event.venue.startsWith("Other:")) {
         return false;
       }
     }
