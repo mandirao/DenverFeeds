@@ -9,14 +9,182 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, List } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { AlertCircle, List, Upload } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import Papa from "papaparse";
 
 export function Footer() {
   const [aboutOpen, setAboutOpen] = useState(false);
-  const [location] = useLocation();
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
+  const [csvError, setCsvError] = useState<string | null>(null);
+  const [location, navigate] = useLocation();
+  const { toast } = useToast();
   
   // Determine if we're on the Add Show page
   const isAddPage = location === "/add";
+  
+  // Add multiple events (CSV) mutation
+  const addEventsBulkMutation = useMutation({
+    mutationFn: async (events: any[]) => {
+      return apiRequest({
+        endpoint: "/api/events/bulk",
+        method: "POST",
+        data: events
+      });
+    },
+    onSuccess: (data) => {
+      console.log("Bulk upload response:", data);
+      
+      if (data.results?.created > 0) {
+        toast({
+          title: "Events Added",
+          description: data.message || `Added ${data.results.created} events successfully!`,
+        });
+        
+        if (data.results.skipped === 0) {
+          setCsvModalOpen(false);
+          navigate("/");
+        }
+      } else {
+        setCsvError("No events were added. Please check the CSV format and try again.");
+      }
+      
+      // Update the results display
+      if (data.results?.skipped > 0) {
+        setCsvError(
+          data.results.errors?.length > 0 
+            ? `Some events couldn't be added: ${data.results.errors[0]}${data.results.errors.length > 1 ? ` and ${data.results.errors.length - 1} more` : ''}`
+            : "One or more events skipped because they already exist."
+        );
+      }
+    },
+    onError: (error: any) => {
+      console.error("Bulk upload error:", error);
+      
+      // Handle structured error responses
+      if (error.response?.data?.results?.errors?.length > 0) {
+        const errors = error.response.data.results.errors;
+        setCsvError(`Upload failed: ${errors.join(", ")}`);
+      } else if (error.message?.includes("409")) {
+        setCsvError("All events already exist in the database.");
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add events from CSV. Please check the format and try again.",
+          variant: "destructive",
+        });
+        setCsvError(error.message || "Upload failed");
+      }
+    },
+  });
+
+  // Handle CSV upload
+  const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setCsvError(null);
+    
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      quoteChar: '"',
+      escapeChar: '"',
+      complete: (results) => {
+        if (results.errors.length > 0) {
+          console.error("CSV parsing errors:", results.errors);
+          setCsvError(`Error parsing CSV file: ${results.errors[0].message || "Invalid format"}`);
+          return;
+        }
+        
+        try {
+          console.log("CSV headers:", results.meta.fields);
+          console.log("Raw parsed data:", results.data);
+          
+          // Check for required headers
+          const requiredHeaders = ['artist', 'venue', 'date', 'emoji', 'summary', 'genre'];
+          const missingHeaders = requiredHeaders.filter(header => 
+            !results.meta.fields?.some(field => 
+              field.toLowerCase() === header.toLowerCase() || 
+              (header === 'soundsLike' && field.toLowerCase() === 'sounds_like')
+            )
+          );
+          
+          if (missingHeaders.length > 0) {
+            setCsvError(`CSV is missing required headers: ${missingHeaders.join(', ')}`);
+            return;
+          }
+          
+          // Track validation errors
+          const errors: string[] = [];
+          
+          // Process valid events
+          const events = results.data
+            .filter((row: any, index: number) => {
+              // Skip empty rows
+              if (!row || Object.values(row).every(val => !val)) return false;
+              
+              // Check for required fields
+              const missingFields = [];
+              if (!row.artist) missingFields.push('artist');
+              if (!row.venue) missingFields.push('venue');
+              if (!row.date) missingFields.push('date');
+              if (!row.emoji) missingFields.push('emoji');
+              if (!row.summary) missingFields.push('summary');
+              if (!row.genre) missingFields.push('genre');
+              
+              if (missingFields.length > 0) {
+                errors.push(`Row ${index + 2}: Missing fields: ${missingFields.join(', ')}`);
+                return false;
+              }
+              
+              return true;
+            })
+            .map((row: any) => {
+              return {
+                artist: row.artist.trim(),
+                venue: row.venue.trim(),
+                date: row.date.trim(),
+                emoji: row.emoji.trim(),
+                summary: row.summary.trim(),
+                soundsLike: (row.sounds_like || row.soundsLike || "").trim(),
+                genre: row.genre.trim(),
+                requester: row.requester?.trim() || "Mandi",
+              };
+            });
+          
+          console.log("Processed events:", events);
+          console.log("Validation errors:", errors);
+          
+          if (errors.length > 0) {
+            // Show first 3 errors with count of remaining
+            const errorMessage = errors.length <= 3 
+              ? errors.join('\n') 
+              : `${errors.slice(0, 3).join('\n')}\n...and ${errors.length - 3} more errors`;
+            
+            setCsvError(`CSV validation failed:\n${errorMessage}`);
+            return;
+          }
+          
+          if (events.length > 0) {
+            addEventsBulkMutation.mutate(events);
+          } else {
+            setCsvError("No valid events found in CSV file.");
+          }
+        } catch (error) {
+          console.error("CSV processing error:", error);
+          setCsvError("Error processing CSV data. Please check the format.");
+        }
+      },
+      error: (error) => {
+        console.error("CSV parse error:", error);
+        setCsvError("Failed to read CSV file.");
+      }
+    });
+  };
   
   return (
     <footer className="bg-[#FE6B41] py-4 mt-8">
@@ -27,9 +195,12 @@ export function Footer() {
               <List className="w-4 h-4 mr-1" /> VIEW SHOWS
             </Link>
           ) : (
-            <Link href="/add" className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm">
-              <Plus className="w-4 h-4 mr-1" /> ADD SHOW
-            </Link>
+            <button
+              onClick={() => setCsvModalOpen(true)} 
+              className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm"
+            >
+              <Upload className="w-4 h-4 mr-1" /> UPLOAD CSV
+            </button>
           )}
         </div>
         
@@ -61,6 +232,51 @@ export function Footer() {
           <DialogFooter>
             <Button variant="outline2" onClick={() => setAboutOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* CSV Upload Dialog */}
+      <Dialog open={csvModalOpen} onOpenChange={setCsvModalOpen}>
+        <DialogContent className="bg-[#FEABDA] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-anton">UPLOAD CSV FILE</DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="text-black mt-2">
+            <div className="mb-4">
+              <Input
+                type="file"
+                id="csv-upload"
+                accept=".csv"
+                onChange={handleCsvUpload}
+                className="block w-full p-3 border-2 border-black bg-[#FEABDA] rounded-none file:text-black file:opacity-20"
+              />
+            </div>
+            <div className="text-sm text-black mt-4 bg-[#FE6B41] p-3 rounded-md">
+              <p className="font-medium mb-1">CSV Format Requirements:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Must include header row with column names</li>
+                <li>Required columns: artist, venue, date, emoji, summary, sounds_like, genre</li>
+                <li>Date format must be YYYY-MM-DD (e.g., 2025-06-15)</li>
+                <li>Genre must match one of the standard options</li>
+                <li>Optional: requester column (defaults to "Mandi")</li>
+              </ul>
+            </div>
+            
+            {csvError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mt-4 rounded relative">
+                <div className="font-bold flex items-center">
+                  <AlertCircle className="h-5 w-5 mr-2" />
+                  CSV Upload Error
+                </div>
+                <div className="whitespace-pre-line">{csvError}</div>
+              </div>
+            )}
+          </DialogDescription>
+          <DialogFooter>
+            <Button variant="outline2" onClick={() => setCsvModalOpen(false)}>
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>

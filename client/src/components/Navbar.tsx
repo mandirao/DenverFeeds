@@ -96,7 +96,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
               </div>
             )}
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -104,7 +104,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                     href="https://www.meetup.com/setlist-social-indie-denver/?eventOrigin=event_home_page" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="bg-black text-[#FE6B41] hover:text-[#41F2EE] rounded-full px-4 py-2 font-medium transition-colors flex items-center gap-1"
+                    className="bg-black text-[#FE6B41] hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors flex items-center gap-1"
                   >
                     <Users className="h-4 w-4" />
                     <span>Meetup</span>
@@ -123,7 +123,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                     href="https://open.spotify.com/playlist/65hepNEHQKF41ymtEqunGr?si=x_8SYxZyRUWJNhZRG4wvhQ" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="bg-black text-[#1DB954] hover:text-[#41F2EE] rounded-full px-4 py-2 font-medium transition-colors flex items-center gap-1"
+                    className="bg-black text-[#1DB954] hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors flex items-center gap-1"
                   >
                     <Music className="h-4 w-4" />
                     <span>Playlist</span>
@@ -131,6 +131,22 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Join our monthly Spotify playlist</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link 
+                    href="/add"
+                    className="bg-black text-white hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors flex items-center gap-1"
+                  >
+                    <span>+ Show</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Add a new show</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
