@@ -82,15 +82,9 @@ export function createGoogleCalendarUrl(event: {
     day = event.date.getDate();
   }
   
-  // Create a new date in the correct time zone (using actual date parts)
-  const dateObj = new Date(year, month, day);
-  
-  // Set event to start at 7pm
-  dateObj.setHours(19, 0, 0, 0);
-  
-  // End time is 3 hours later
-  const endDate = new Date(dateObj);
-  endDate.setHours(22, 0, 0, 0);
+  // Create dates in Mountain Time (Denver)
+  const dateObj = new Date(Date.UTC(year, month, day, 19 - 6, 0, 0)); // 7PM MDT (UTC-6)
+  const endDate = new Date(Date.UTC(year, month, day, 22 - 6, 0, 0)); // 10PM MDT (UTC-6)
   
   const eventTitle = `${event.artist} @ ${event.venue}`;
   

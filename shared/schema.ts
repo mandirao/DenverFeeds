@@ -144,18 +144,7 @@ export const insertEventSchema = createInsertSchema(events)
     }),
     
     // Add custom validation for venue to handle both predefined venues and 'other' entries
-    venue: z.string().refine((val) => {
-      // 1. For regular venues, check against our predefined list
-      if (venueOptions.some(venue => venue.value === val)) {
-        return true;
-      }
-      
-      // 2. Allow any value when user has selected "other" option (custom venue)
-      // The value doesn't need to be prefixed with "Other: " anymore
-      return true;
-    }, {
-      message: "Please enter a venue name or select from the list"
-    }),
+    venue: z.string().min(1, "Venue is required").max(75, "Venue must be 75 characters or less"),
     
     // Add validation for requester field
     requester: z.string().min(1, "Your name is required").max(50, "Name must be 50 characters or less")
