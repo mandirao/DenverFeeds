@@ -7,7 +7,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowUp, Check, Trash2, MoreVertical } from "lucide-react";
+import { ArrowUp, Check, Trash2, MoreVertical, Edit } from "lucide-react";
+import EditEventModal from "@/components/EditEventModal";
 
 interface EventItemProps {
   event: Event;
@@ -19,6 +20,7 @@ function EventItem({ event }: EventItemProps) {
   const [isHoveringVenue, setIsHoveringVenue] = useState(false);
   const [isHoveringDate, setIsHoveringDate] = useState(false);
   const [showUpvoteTooltip, setShowUpvoteTooltip] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Upvote mutation
   const upvoteMutation = useMutation({
@@ -129,226 +131,243 @@ function EventItem({ event }: EventItemProps) {
   const justAdded = isRecentlyAdded(event.createdAt);
 
   return (
-    <li className="pb-1 relative flex items-start">
-      <span className="text-2xl mr-3">{event.emoji}</span>
-      
-      <div className="flex-1">
-        <div className="text-base flex items-start">
-          <div className="flex-grow">
-            {/* Artist Name (Spotify link) */}
-            <TooltipProvider>
-              <Tooltip open={isHoveringArtist}>
-                <TooltipTrigger asChild>
-                  <a 
-                    href={spotifyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-                    onMouseEnter={() => setIsHoveringArtist(true)}
-                    onMouseLeave={() => setIsHoveringArtist(false)}
-                  >
-                    {event.artist}
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Search on Spotify</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            {" @ "}
-            
-            {/* Venue (Google Maps) */}
-            <TooltipProvider>
-              <Tooltip open={isHoveringVenue}>
-                <TooltipTrigger asChild>
-                  <a 
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-                    onMouseEnter={() => setIsHoveringVenue(true)}
-                    onMouseLeave={() => setIsHoveringVenue(false)}
-                  >
-                    {event.venue}
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Find tickets and venue information</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            {" ("}
-            
-            {/* Date (Google Calendar) */}
-            <TooltipProvider>
-              <Tooltip open={isHoveringDate}>
-                <TooltipTrigger asChild>
-                  <a 
-                    href={calendarUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-                    onMouseEnter={() => setIsHoveringDate(true)}
-                    onMouseLeave={() => setIsHoveringDate(false)}
-                  >
-                    {formattedDate}
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Add to Google Calendar</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            {"). "}
-            {event.summary}
-            {" like "}
-            <span className="italic">{event.soundsLike.split(',').join(', ')}.</span>
-            
-            {/* "Just added" badge */}
-            {justAdded && (
-              <span className="inline-block align-middle ml-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span 
-                        className="bg-[#FEABDA] text-black text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5"
-                        style={{ position: 'relative', top: '-3px' }}
-                      >
-                        new
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Added within the last three days</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </span>
-            )}
-            
-            {/* Upvote button */}
-            {!event.isScheduled && (
-              <span className="inline-block align-middle ml-2" style={{ position: 'relative', top: '-1px' }}>
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip open={showUpvoteTooltip}>
-                    <TooltipTrigger asChild>
-                      <div 
-                        className="relative"
-                        onMouseEnter={() => setShowUpvoteTooltip(true)}
-                        onMouseLeave={() => !upvoteMutation.isPending && setShowUpvoteTooltip(false)}
-                      >
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={handleUpvote}
-                          disabled={upvoteMutation.isPending || upvoteMutation.isError}
-                          className={`${hasVoted ? 'bg-[#25428A] text-white hover:opacity-90' : 'bg-black text-[#F26241] hover:text-[#41F2EE]'} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0 cursor-pointer`}
-                          aria-label={hasVoted ? 'You already voted for this one' : 'Upvote this show'}
+    <>
+      <li className="pb-1 relative flex items-start">
+        <span className="text-2xl mr-3">{event.emoji}</span>
+        
+        <div className="flex-1">
+          <div className="text-base flex items-start">
+            <div className="flex-grow">
+              {/* Artist Name (Spotify link) */}
+              <TooltipProvider>
+                <Tooltip open={isHoveringArtist}>
+                  <TooltipTrigger asChild>
+                    <a 
+                      href={spotifyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
+                      onMouseEnter={() => setIsHoveringArtist(true)}
+                      onMouseLeave={() => setIsHoveringArtist(false)}
+                    >
+                      {event.artist}
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Search on Spotify</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              {" @ "}
+              
+              {/* Venue (Google Maps) */}
+              <TooltipProvider>
+                <Tooltip open={isHoveringVenue}>
+                  <TooltipTrigger asChild>
+                    <a 
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
+                      onMouseEnter={() => setIsHoveringVenue(true)}
+                      onMouseLeave={() => setIsHoveringVenue(false)}
+                    >
+                      {event.venue}
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Find tickets and venue information</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              {" ("}
+              
+              {/* Date (Google Calendar) */}
+              <TooltipProvider>
+                <Tooltip open={isHoveringDate}>
+                  <TooltipTrigger asChild>
+                    <a 
+                      href={calendarUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
+                      onMouseEnter={() => setIsHoveringDate(true)}
+                      onMouseLeave={() => setIsHoveringDate(false)}
+                    >
+                      {formattedDate}
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Add to Google Calendar</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              {"). "}
+              {event.summary}
+              {" like "}
+              <span className="italic">{event.soundsLike.split(',').join(', ')}.</span>
+              
+              {/* "Just added" badge */}
+              {justAdded && (
+                <span className="inline-block align-middle ml-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span 
+                          className="bg-[#FEABDA] text-black text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5"
+                          style={{ position: 'relative', top: '-3px' }}
                         >
-                          <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
-                        </Button>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{hasVoted ? 'Click to remove your vote' : 'Upvote this show'}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </span>
-            )}
+                          new
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Added within the last three days</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </span>
+              )}
+              
+              {/* Upvote button */}
+              {!event.isScheduled && (
+                <span className="inline-block align-middle ml-2" style={{ position: 'relative', top: '-1px' }}>
+                  <TooltipProvider delayDuration={100}>
+                    <Tooltip open={showUpvoteTooltip}>
+                      <TooltipTrigger asChild>
+                        <div 
+                          className="relative"
+                          onMouseEnter={() => setShowUpvoteTooltip(true)}
+                          onMouseLeave={() => !upvoteMutation.isPending && setShowUpvoteTooltip(false)}
+                        >
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={handleUpvote}
+                            disabled={upvoteMutation.isPending || upvoteMutation.isError}
+                            className={`${hasVoted ? 'bg-[#25428A] text-white hover:opacity-90' : 'bg-black text-[#F26241] hover:text-[#41F2EE]'} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0 cursor-pointer`}
+                            aria-label={hasVoted ? 'You already voted for this one' : 'Upvote this show'}
+                          >
+                            <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
+                          </Button>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{hasVoted ? 'Click to remove your vote' : 'Upvote this show'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </span>
+              )}
+              
+              {/* Show scheduled tag */}
+              {event.isScheduled && (
+                <span className="inline-block align-middle ml-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span 
+                          className="bg-[#f5f5f5] text-black text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5"
+                          style={{ position: 'relative', top: '-1px' }}
+                        >
+                          <Check className="mr-0.5 h-3 w-3" /> Scheduled
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Learn more at Meetup</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </span>
+              )}
+            </div>
             
-            {/* Show scheduled tag */}
-            {event.isScheduled && (
-              <span className="inline-block align-middle ml-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span 
-                        className="bg-[#f5f5f5] text-black text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5"
-                        style={{ position: 'relative', top: '-1px' }}
-                      >
-                        <Check className="mr-0.5 h-3 w-3" /> Scheduled
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Learn more at Meetup</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </span>
-            )}
-          </div>
-          
-          {/* Right-aligned 3-dot menu */}
-          <div className="flex items-center">
-            <div className="ml-auto pl-2" style={{ position: 'relative', top: '2px' }}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full bg-transparent opacity-40"
-                  >
-                    <MoreVertical className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-32 border-none bg-gray-100 shadow-md rounded-sm font-sans">
-                  {event.isScheduled ? (
+            {/* Right-aligned 3-dot menu */}
+            <div className="flex items-center">
+              <div className="ml-auto pl-2" style={{ position: 'relative', top: '2px' }}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full bg-transparent opacity-40"
+                    >
+                      <MoreVertical className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-32 border-none bg-gray-100 shadow-md rounded-sm font-sans">
                     <DropdownMenuItem 
-                      onClick={handleSchedule}
-                      disabled={scheduleMutation.isPending}
+                      onClick={() => setIsEditModalOpen(true)}
                       className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                     >
-                      Unschedule
+                      <Edit className="h-3 w-3 mr-2" /> Edit
                     </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem 
-                      onClick={handleSchedule}
-                      disabled={scheduleMutation.isPending}
-                      className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
-                    >
-                      Schedule
-                    </DropdownMenuItem>
-                  )}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
+                    {event.isScheduled ? (
                       <DropdownMenuItem 
-                        className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
-                        onSelect={(e) => e.preventDefault()} // Prevent the dropdown from closing
+                        onClick={handleSchedule}
+                        disabled={scheduleMutation.isPending}
+                        className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                       >
-                        Delete
+                        Unschedule
                       </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Event</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this event? This action cannot be undone.
-                          <p className="mt-2">
-                            <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
-                          </p>
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={handleDelete}
-                          className="bg-red-500 hover:bg-red-600"
+                    ) : (
+                      <DropdownMenuItem 
+                        onClick={handleSchedule}
+                        disabled={scheduleMutation.isPending}
+                        className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                      >
+                        Schedule
+                      </DropdownMenuItem>
+                    )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <DropdownMenuItem 
+                          className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                          onSelect={(e) => e.preventDefault()} // Prevent the dropdown from closing
                         >
                           Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                        </DropdownMenuItem>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Event</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this event? This action cannot be undone.
+                            <p className="mt-2">
+                              <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
+                            </p>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={handleDelete}
+                            className="bg-red-500 hover:bg-red-600"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </li>
+      </li>
+      
+      {/* Edit Event Modal */}
+      {isEditModalOpen && (
+        <EditEventModal
+          event={event}
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+        />
+      )}
+    </>
   );
 }
 

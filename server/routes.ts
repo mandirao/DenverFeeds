@@ -319,6 +319,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update an existing event
+  apiRouter.patch("/events/:id", async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ message: "Invalid event ID" });
+      }
+
+      // Get the existing event
+      const existingEvent = await storage.getEventById(eventId);
+      if (!existingEvent) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      // Convert date string to Date object if it's not already
+      if (req.body.date && typeof req.body.date === 'string') {
+        try {
+          // Assuming date format is "YYYY-MM-DD"
+          const [year, month, day] = req.body.date.split('-').map(Number);
+          
+          // Create date in local timezone at midnight
+          // This preserves the day as entered in the form
+          if (year && month && day) {
+            req.body.date = new Date(year, month - 1, day, 0, 0, 0);
+          } else {
+            req.body.date = new Date(req.body.date);
+          }
+        } catch (dateError) {
+          console.error("Date parsing error:", dateError);
+        }
+      }
+
+      // Validate the update data using the schema
+      const eventData = insertEventSchema.parse(req.body);
+      
+      // Check if this would create a duplicate (except for the current event)
+      // Only need to check if one of the key fields is changing
+      if (
+        eventData.artist !== existingEvent.artist ||
+        eventData.venue !== existingEvent.venue ||
+        (eventData.date && new Date(eventData.date).getTime() !== new Date(existingEvent.date).getTime())
+      ) {
+        const isDuplicate = await storage.checkDuplicateEvent(eventData);
+        if (isDuplicate) {
+          return res.status(409).json({ 
+            message: "Another event with this artist, venue, and date already exists." 
+          });
+        }
+      }
+
+      // Update the event
+      const updatedEvent = await storage.updateEvent(eventId, eventData);
+      res.json(updatedEvent);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        console.error("ZodError updating event:", error);
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: `Validation error: ${validationError.message}`
+        });
+      } else if (error instanceof Error) {
+        console.error("Error updating event:", error);
+      }
+      res.status(500).json({ message: "Failed to update event" });
+    }
+  });
+
   // Set an event as scheduled
   apiRouter.post("/events/:id/schedule", async (req, res) => {
     try {
