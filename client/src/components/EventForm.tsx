@@ -301,28 +301,24 @@ export default function EventForm({
         <div className="inline-flex flex-nowrap items-baseline">
           <span className="flex-none text-xl text-black mr-0 pr-0">(</span>
           <div className="inline-flex flex-col relative">
-            <div className="relative">
-              <Controller
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <div className="relative w-full">
-                    <Input
-                      id="date"
-                      type="date"
-                      value={field.value ? formatDateForInput(field.value) : ''}
-                      onChange={(e) => {
-                        field.onChange(e.target.value ? new Date(e.target.value) : null);
-                      }}
-                      className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-6 min-w-[135px] text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black [color-scheme:light] !bg-transparent"
-                    />
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <CalendarIcon className="h-4 w-4 text-black" />
-                    </div>
-                  </div>
-                )}
-              />
-            </div>
+            <Controller
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <div className="relative">
+                  <Input
+                    id="date"
+                    type="date"
+                    value={field.value ? formatDateForInput(field.value) : ''}
+                    onChange={(e) => {
+                      field.onChange(e.target.value ? new Date(e.target.value) : null);
+                    }}
+                    className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-6 min-w-[135px] text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black [color-scheme:light] !bg-transparent"
+                  />
+                  <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-black" />
+                </div>
+              )}
+            />
             <Label htmlFor="date" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">DATE</Label>
             {form.formState.errors.date && (
               <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.date.message}</p>
