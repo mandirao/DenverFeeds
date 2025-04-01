@@ -8,7 +8,7 @@ import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
 import { groupEventsByMonth, isRecentlyAdded } from "@/lib/utils";
-import { Event, genres as schemaGenres } from "@shared/schema";
+import { venueOptions, VenueOption, Event, genres as schemaGenres } from "@shared/schema";
 
 export default function Home() {
   const [filters, setFilters] = useState({
@@ -59,15 +59,26 @@ export default function Home() {
     
     // Denver/Boulder area filter
     // Filter based on venue location
+    // Get all the road trip venues for easier checking
+    const roadTripVenues = venueOptions
+      .filter(venue => venue.group === "road_trip")
+      .map(venue => venue.value);
+      
     if (filters.denverAreaOnly) {
       // When ON: Show only Denver/Boulder venues
-      if (!denverBoulderVenues.includes(event.venue) && !event.venue.startsWith("Other:")) {
-        return false;
+      // A venue is considered Denver/Boulder if:
+      // 1. It's in the denverBoulderVenues list, OR
+      // 2. It starts with "Other:", OR
+      // 3. It's a custom venue not in our road trip list
+      if (roadTripVenues.includes(event.venue)) {
+        return false; // Filter out road trip venues
       }
     } else {
-      // When OFF: Show only roadtrip venues (exclude Denver/Boulder venues)
-      if (denverBoulderVenues.includes(event.venue) || event.venue.startsWith("Other:")) {
-        return false;
+      // When OFF: Show only roadtrip venues
+      // A venue is considered a road trip if:
+      // It's explicitly in our road trip venues list
+      if (!roadTripVenues.includes(event.venue)) {
+        return false; // Filter out Denver/Boulder and custom venues
       }
     }
     

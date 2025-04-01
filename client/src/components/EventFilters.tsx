@@ -170,7 +170,7 @@ export function EventFilters({
         </div>
       </div>
       
-      {/* Denver/Boulder area toggle */}
+      {/* Denver/Boulder area toggle with contextual label */}
       <div className="flex items-center justify-start space-x-2 mt-4">
         <Switch 
           id="denver-area-only" 
