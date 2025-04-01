@@ -302,7 +302,7 @@ function EventItem({ event }: EventItemProps) {
                       onClick={() => setIsEditModalOpen(true)}
                       className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                     >
-                      <Edit className="h-3 w-3 mr-2" /> Edit
+                      Edit
                     </DropdownMenuItem>
                     {event.isScheduled ? (
                       <DropdownMenuItem 

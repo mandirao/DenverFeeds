@@ -167,7 +167,7 @@ export default function EventForm({
           )}
         </div>
         
-        <span className="flex-none text-xl">@</span>
+        <span className="flex-none text-xl text-black">@</span>
         
         {/* Venue Field - Searchable Dropdown */}
         <div className="inline-flex flex-col relative">
@@ -183,7 +183,7 @@ export default function EventForm({
               <button 
                 type="button" 
                 onClick={exitCustomVenueMode}
-                className="ml-1 text-gray-700 hover:text-black transition-colors"
+                className="ml-1 text-black hover:text-gray-700 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -200,7 +200,7 @@ export default function EventForm({
                   <span className={`truncate ${!form.getValues("venue") ? "text-black/20" : "text-black"}`}>
                     {form.getValues("venue") || "Select venue"}
                   </span>
-                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 text-black" />
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-[300px] p-0">
@@ -287,7 +287,7 @@ export default function EventForm({
         
         {/* Date Field with attached parentheses */}
         <div className="inline-flex flex-nowrap items-baseline">
-          <span className="flex-none text-xl mr-0 pr-0">(</span>
+          <span className="flex-none text-xl text-black mr-0 pr-0">(</span>
           <div className="inline-flex flex-col relative">
             <div className="relative">
               <Input
@@ -303,7 +303,7 @@ export default function EventForm({
               <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.date.message}</p>
             )}
           </div>
-          <span className="flex-none text-xl ml-0 pl-0">).</span>
+          <span className="flex-none text-xl text-black ml-0 pl-0">).</span>
         </div>
         
         {/* Summary Field */}
@@ -321,7 +321,7 @@ export default function EventForm({
           )}
         </div>
         
-        <span className="flex-none text-xl">like</span>
+        <span className="flex-none text-xl text-black">like</span>
         
         {/* Sounds Like Field with attached period */}
         <div className="inline-flex flex-nowrap items-baseline">
@@ -338,7 +338,7 @@ export default function EventForm({
               <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.soundsLike.message}</p>
             )}
           </div>
-          <span className="flex-none text-xl ml-0 pl-0">.</span>
+          <span className="flex-none text-xl text-black ml-0 pl-0">.</span>
         </div>
         
         {/* Genre Field */}
@@ -357,7 +357,7 @@ export default function EventForm({
           {form.formState.errors.genre && (
             <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.genre.message}</p>
           )}
-          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 pointer-events-none" />
+          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 pointer-events-none text-black" />
         </div>
         
         {/* Action Buttons */}
