@@ -306,16 +306,29 @@ export default function EventForm({
               name="date"
               render={({ field }) => (
                 <div className="relative">
-                  <Input
-                    id="date"
-                    type="date"
-                    value={field.value ? formatDateForInput(field.value) : ''}
-                    onChange={(e) => {
-                      field.onChange(e.target.value ? new Date(e.target.value) : null);
-                    }}
-                    className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-6 min-w-[135px] text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black [color-scheme:light] !bg-transparent"
-                  />
-                  <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none h-4 w-4 text-black" />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div className="relative inline-block">
+                        <Input
+                          id="date"
+                          readOnly
+                          value={field.value ? formatDateForInput(field.value) : ''}
+                          className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-6 min-w-[135px] text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black !bg-transparent cursor-pointer"
+                        />
+                        <CalendarIcon className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-black pointer-events-none" />
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <input
+                        type="date"
+                        value={field.value ? formatDateForInput(field.value) : ''}
+                        onChange={(e) => {
+                          field.onChange(e.target.value ? new Date(e.target.value) : null);
+                        }}
+                        className="p-2"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )}
             />
