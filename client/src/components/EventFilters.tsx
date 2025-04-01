@@ -179,7 +179,7 @@ export function EventFilters({
           className="bg-[#FE6B41] data-[state=checked]:bg-[#41F2EE]"
         />
         <Label htmlFor="denver-area-only" className="text-sm font-medium cursor-pointer">
-          {denverAreaOnly ? "Denver/Boulder area" : "Roadtrip shows"}
+          {denverAreaOnly ? "Denver/Boulder" : "Roadtrips"}
         </Label>
       </div>
     </div>
