@@ -123,13 +123,18 @@ export default function EventForm({
       setCustomVenueMode(true);
       form.setValue("venue", ""); // Empty field for user to type
       setVenueSearchOpen(false);
+      
       // Focus the input after a short delay to allow the UI to update
       setTimeout(() => {
-        document.getElementById("venue")?.focus();
+        const venueInput = document.getElementById("venue");
+        if (venueInput) {
+          venueInput.focus();
+        }
       }, 50);
     } else {
       // Just set the selected venue
       form.setValue("venue", value);
+      form.clearErrors("venue"); // Clear any validation errors
       setVenueSearchOpen(false);
       setCustomVenueMode(false);
     }
@@ -139,6 +144,7 @@ export default function EventForm({
   const exitCustomVenueMode = () => {
     setCustomVenueMode(false);
     form.setValue("venue", "");
+    form.clearErrors("venue"); // Clear any venue validation errors
   };
 
   // Handle form submission
@@ -287,11 +293,7 @@ export default function EventForm({
               </PopoverContent>
             </Popover>
           )}
-          <input 
-            type="hidden" 
-            id="venue-hidden" 
-            {...form.register("venue")}
-          />
+          {/* Hidden input is unnecessary since we already register venue in the custom mode input */}
           <Label htmlFor="venue" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">VENUE</Label>
           {form.formState.errors.venue && (
             <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.venue.message}</p>
