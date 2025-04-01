@@ -86,7 +86,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                             />
                           </div>
                           <Label htmlFor="denver-area-only" className="text-[10px] font-medium cursor-pointer">
-                            {filterProps.denverAreaOnlyFilter ? "Denver/Boulder only" : "Denver + Roadtrips"}
+                            {filterProps.denverAreaOnlyFilter ? "Denver/Boulder" : "Roadtrips"}
                           </Label>
                         </div>
                       </div>
