@@ -61,6 +61,7 @@ export const venueOptions: VenueOption[] = [
   
   // Road Trip venues
   { value: "Aggie Theatre", label: "Aggie Theatre", group: "road_trip" },
+  { value: "Belly Up Aspen", label: "Belly Up Aspen", group: "road_trip" },
   { value: "Black Sheep", label: "Black Sheep", group: "road_trip" },
   { value: "Ford Amphitheater", label: "Ford Amphitheater", group: "road_trip" },
   { value: "Fort Collins Armory", label: "Fort Collins Armory", group: "road_trip" },
