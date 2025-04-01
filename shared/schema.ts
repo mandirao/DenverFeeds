@@ -64,6 +64,7 @@ export const venueOptions: VenueOption[] = [
   { value: "Black Sheep", label: "Black Sheep", group: "road_trip" },
   { value: "Ford Amphitheater", label: "Ford Amphitheater", group: "road_trip" },
   { value: "Fort Collins Armory", label: "Fort Collins Armory", group: "road_trip" },
+  { value: "Gerald Ford Amphitheater", label: "Gerald Ford Amphitheater", group: "road_trip" },
   { value: "Gold Hill Inn", label: "Gold Hill Inn", group: "road_trip" },
   { value: "New Belgium Brewing Company", label: "New Belgium Brewing Company", group: "road_trip" },
   { value: "Sunset Amphitheater", label: "Sunset Amphitheater", group: "road_trip" },
