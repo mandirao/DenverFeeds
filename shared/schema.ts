@@ -108,6 +108,7 @@ export const events = pgTable("events", {
   summary: varchar("summary", { length: 75 }).notNull(),
   soundsLike: varchar("sounds_like", { length: 75 }).notNull(),
   genre: varchar("genre", { length: 30 }).notNull(),
+  requester: varchar("requester", { length: 50 }).default('Mandi'),
   isScheduled: boolean("is_scheduled").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   upvotes: integer("upvotes").default(0),
@@ -154,7 +155,10 @@ export const insertEventSchema = createInsertSchema(events)
       return true;
     }, {
       message: "Please enter a venue name or select from the list"
-    })
+    }),
+    
+    // Add validation for requester field
+    requester: z.string().min(1, "Your name is required").max(50, "Name must be 50 characters or less")
   });
 
 export type InsertEvent = z.infer<typeof insertEventSchema>;

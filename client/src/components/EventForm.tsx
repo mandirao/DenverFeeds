@@ -102,6 +102,7 @@ export default function EventForm({
       summary: initialData?.summary || "",
       soundsLike: initialData?.soundsLike || "",
       genre: initialData?.genre || "",
+      requester: initialData?.requester || "",
     },
   });
 
@@ -394,8 +395,23 @@ export default function EventForm({
           <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 pointer-events-none text-black" />
         </div>
         
+        {/* Requester (Your Name) Field */}
+        <div className="inline-flex flex-col relative mt-6 mb-6">
+          <Input
+            id="requester"
+            {...form.register("requester")}
+            maxLength={50}
+            placeholder="Your name"
+            className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[200px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
+          />
+          <Label htmlFor="requester" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">YOUR NAME</Label>
+          {form.formState.errors.requester && (
+            <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.requester.message}</p>
+          )}
+        </div>
+        
         {/* Action Buttons */}
-        <div className="inline-flex items-baseline space-x-2 ml-1">
+        <div className="inline-flex items-baseline space-x-2 ml-1 mt-4">
           <Button 
             type="submit"
             variant="default"

@@ -210,6 +210,27 @@ function EventItem({ event }: EventItemProps) {
               {" like "}
               <span className="italic">{event.soundsLike.split(',').join(', ')}.</span>
               
+              {/* Requester information with bell emoji for non-Mandi requesters */}
+              {event.requester && event.requester !== 'Mandi' && (
+                <span className="inline-block align-middle ml-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span 
+                          className="text-base inline-flex items-center"
+                          style={{ position: 'relative', top: '-1px' }}
+                        >
+                          🛎️
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Added by {event.requester}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </span>
+              )}
+              
               {/* "Just added" badge */}
               {justAdded && (
                 <span className="inline-block align-middle ml-2">
