@@ -176,10 +176,10 @@ export function EventFilters({
           id="denver-area-only" 
           checked={denverAreaOnly}
           onCheckedChange={handleDenverAreaOnlyChange}
-          className="bg-[#FE6B41] data-[state=checked]:bg-[#FEABDA]"
+          className="bg-[#FE6B41] data-[state=checked]:bg-[#41F2EE]"
         />
         <Label htmlFor="denver-area-only" className="text-sm font-medium cursor-pointer">
-          Denver/Boulder area shows only
+          {denverAreaOnly ? "Denver/Boulder only" : "Denver + Roadtrips"}
         </Label>
       </div>
     </div>
