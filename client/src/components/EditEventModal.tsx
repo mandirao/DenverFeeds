@@ -131,41 +131,40 @@ export default function EditEventModal({ event, isOpen, onClose }: EditEventModa
           submitButtonText="UPDATE"
           isPending={updateEventMutation.isPending}
           duplicateError={duplicateError}
-        />
-        
-        <DialogFooter className="mt-8 pb-4">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="border-red-500 text-red-500 hover:bg-red-500/10 hover:text-red-600"
-              >
-                Delete Event
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Event</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete this event? This action cannot be undone.
-                  <p className="mt-2">
-                    <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
-                  </p>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleDelete}
-                  className="bg-red-500 hover:bg-red-600"
-                  disabled={deleteEventMutation.isPending}
+          extraActions={
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="link" 
+                  className="text-red-500 hover:text-red-600 font-normal underline px-2 h-auto"
                 >
-                  {deleteEventMutation.isPending ? "Deleting..." : "Delete"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </DialogFooter>
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Event</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this event? This action cannot be undone.
+                    <p className="mt-2">
+                      <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
+                    </p>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleDelete}
+                    className="bg-red-500 hover:bg-red-600"
+                    disabled={deleteEventMutation.isPending}
+                  >
+                    {deleteEventMutation.isPending ? "Deleting..." : "Delete"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          }
+        />
       </DialogContent>
     </Dialog>
   );

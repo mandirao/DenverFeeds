@@ -65,6 +65,7 @@ interface EventFormProps {
   submitButtonText?: string;
   isPending?: boolean;
   duplicateError?: string | null;
+  extraActions?: React.ReactNode;
 }
 
 export default function EventForm({ 
@@ -73,11 +74,22 @@ export default function EventForm({
   initialData, 
   submitButtonText = "ADD SHOW",
   isPending = false,
-  duplicateError = null
+  duplicateError = null,
+  extraActions
 }: EventFormProps) {
   const [venueSearchOpen, setVenueSearchOpen] = useState(false);
   const [customVenueMode, setCustomVenueMode] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+
+  // Format the date for input field (YYYY-MM-DD format)
+  const formatDateForInput = (dateString?: string | Date): string => {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    
+    return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+  };
 
   // Form setup
   const form = useForm<EventFormValues>({
@@ -293,6 +305,7 @@ export default function EventForm({
               <Input
                 id="date"
                 type="date"
+                defaultValue={initialData?.date ? formatDateForInput(initialData.date) : ''}
                 {...form.register("date")}
                 className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 min-w-[135px] text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black [color-scheme:light] appearance-none [&::-webkit-calendar-picker-indicator]:hidden !bg-transparent"
               />
@@ -372,14 +385,17 @@ export default function EventForm({
           </Button>
           
           {onCancel && (
-            <Button 
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              className="rounded-full border-black text-black hover:bg-gray-200 hover:text-black px-4 py-2 font-medium transition-colors"
-            >
-              CANCEL
-            </Button>
+            <>
+              <Button 
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                className="rounded-full border-black text-black hover:bg-gray-200 hover:text-black px-4 py-2 font-medium transition-colors"
+              >
+                CANCEL
+              </Button>
+              {extraActions}
+            </>
           )}
         </div>
       </div>
