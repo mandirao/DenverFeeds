@@ -59,10 +59,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUpcomingEvents(): Promise<Event[]> {
+    // Use end of day in Denver time (UTC-6) for comparison
     const now = new Date();
+    
+    // Create a date set to end of the current day in Denver time (UTC-6)
+    const endOfDayDenver = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23, 59, 59 // 11:59:59 PM
+    );
+    
+    // Adjust for Denver timezone (UTC-6)
+    const denverOffset = -6 * 60; // Denver timezone offset in minutes
+    const currentOffset = endOfDayDenver.getTimezoneOffset(); // Browser's timezone offset
+    
+    // Adjust the time based on the difference between browser's timezone and Denver
+    const totalOffsetMinutes = denverOffset - currentOffset;
+    endOfDayDenver.setMinutes(endOfDayDenver.getMinutes() + totalOffsetMinutes);
+    
+    // Filter events where date is today or in the future
     return db.select()
       .from(events)
-      .where(gt(events.date, now))
+      .where(
+        // Include events that match today's date or are in the future
+        sql`DATE(${events.date}) >= DATE(${now})`
+      )
       .orderBy(events.date);
   }
   
