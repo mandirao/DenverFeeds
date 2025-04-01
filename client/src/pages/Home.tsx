@@ -134,15 +134,10 @@ export default function Home() {
       </div>
     );
   } else {
-    // Standard view with appropriate heading based on filter
+    // Standard view with events grouped by month
     displayContent = (
       <>
-        {/* Display heading based on filter */}
-        <h2 className="text-xl font-black mb-4 text-white uppercase">
-          {filters.denverAreaOnly ? "Denver/Boulder" : "Roadtrip Shows"}
-        </h2>
-        
-        {/* Display events grouped by month */}
+        {/* Display events grouped by month without additional heading */}
         {Object.entries(groupedByMonthAndWeek).map(([month, monthEvents]) => (
           <MonthGroup 
             key={month} 
