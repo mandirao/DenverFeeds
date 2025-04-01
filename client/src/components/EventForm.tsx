@@ -313,9 +313,9 @@ export default function EventForm({
                           id="date"
                           readOnly
                           value={field.value ? formatDateForInput(field.value) : ''}
-                          className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-0 w-[100px] text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black !bg-transparent cursor-pointer"
+                          className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-5 w-[120px] text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black !bg-transparent cursor-pointer"
                         />
-                        <CalendarIcon className="absolute right-[-18px] top-1/2 -translate-y-1/2 h-4 w-4 text-black pointer-events-none" />
+                        <CalendarIcon className="absolute right-1 top-1/2 -translate-y-1/2 h-4 w-4 text-black pointer-events-none" />
                       </div>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
