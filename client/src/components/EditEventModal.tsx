@@ -146,10 +146,10 @@ export default function EditEventModal({ event, isOpen, onClose }: EditEventModa
                   <AlertDialogTitle>Delete Event</AlertDialogTitle>
                   <AlertDialogDescription>
                     Are you sure you want to delete this event? This action cannot be undone.
-                    <p className="mt-2">
-                      <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
-                    </p>
                   </AlertDialogDescription>
+                  <div className="mt-2 px-6">
+                    <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
+                  </div>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
