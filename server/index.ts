@@ -3,13 +3,22 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import session from "express-session";
 import { randomUUID } from "crypto";
+import connectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Configure session middleware
+// Configure session middleware with PostgreSQL session store
+const PgSession = connectPgSimple(session);
+
 app.use(session({
+  store: new PgSession({
+    pool: pool,                // Connect to the same pool as our app
+    tableName: 'session',     // Use a dedicated table for sessions
+    createTableIfMissing: true // Auto-create the session table if it doesn't exist
+  }),
   secret: process.env.SESSION_SECRET || 'setlist-social-dev-secret',
   resave: false,
   saveUninitialized: true,
