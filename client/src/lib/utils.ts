@@ -56,64 +56,54 @@ export function createGoogleCalendarUrl(event: {
   venue: string;
   date: Date | string;
 }): string {
-  let year: number;
-  let month: number;
-  let day: number;
+  let dateObj: Date;
   
+  // Convert input date to a JavaScript Date object
   if (typeof event.date === 'string') {
     if (event.date.includes('T')) {
-      // Regular ISO string with time component
-      const dateObj = new Date(event.date);
-      year = dateObj.getFullYear();
-      month = dateObj.getMonth();
-      day = dateObj.getDate();
+      // ISO string with time component - create a date object from it
+      dateObj = new Date(event.date);
     } else {
-      // Date-only string (YYYY-MM-DD)
-      // Parse the parts directly
+      // Date-only string (YYYY-MM-DD) - parse the parts and create a date at noon
       const parts = event.date.split('-').map(Number);
-      year = parts[0];
-      month = parts[1] - 1; // JS months are 0-indexed
-      day = parts[2];
+      dateObj = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12, 0, 0));
     }
   } else {
-    // Date object
-    year = event.date.getFullYear();
-    month = event.date.getMonth();
-    day = event.date.getDate();
+    // It's already a Date object
+    dateObj = new Date(event.date);
   }
   
-  // Create dates for 7pm-10pm in Denver local time
-  // For Google Calendar, we need to use UTC format with Z suffix
-  // First, create a Date object for the specified date at 7pm Denver time
-  // Then we'll get the UTC values from this date to ensure proper timezone handling
-
-  // Create a date for 7pm in Denver time zone
-  // We need to do this in a specific format to ensure consistency
-  const startDate = new Date(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T19:00:00-06:00`);
-  const endDate = new Date(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T22:00:00-06:00`);
+  // Extract date parts (in local timezone, which doesn't matter for the date only)
+  const year = dateObj.getFullYear();
+  const month = dateObj.getMonth() + 1; // Convert to 1-indexed month
+  const day = dateObj.getDate();
   
+  // Format date for display (for debugging)
+  const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  
+  // Create the event specifically in Denver time (MDT/MST, UTC-6 or UTC-7)
+  // We'll hard-code the UTC-6 offset for now (Denver time during standard time)
+  // For a production app, we should determine if Denver is currently in daylight saving time
+  
+  // Create 7:00 PM Denver time event
+  // Format: YYYYMMDDTHHMMSS (in Denver time)
+  const denverStart = `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}T190000`;
+  const denverEnd = `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}T220000`;
+
+  // For Google Calendar, we need to specify the timezone
+  // Instead of converting to UTC which causes issues, we'll use Denver timezone directly
   const eventTitle = `${event.artist} @ ${event.venue}`;
   
-  // Format dates for Google Calendar using UTC representation
-  const startYear = startDate.getUTCFullYear();
-  const startMonth = String(startDate.getUTCMonth() + 1).padStart(2, '0');
-  const startDay = String(startDate.getUTCDate()).padStart(2, '0');
-  const startHour = String(startDate.getUTCHours()).padStart(2, '0');
-  const startMinute = String(startDate.getUTCMinutes()).padStart(2, '0');
-  const startSecond = String(startDate.getUTCSeconds()).padStart(2, '0');
+  // Google Calendar accepts two formats:
+  // 1. UTC format with Z suffix: YYYYMMDDTHHMMSSz
+  // 2. Local time with timezone: YYYYMMDDTHHMMSS (with "ctz" parameter for timezone)
   
-  const endYear = endDate.getUTCFullYear();
-  const endMonth = String(endDate.getUTCMonth() + 1).padStart(2, '0');
-  const endDay = String(endDate.getUTCDate()).padStart(2, '0');
-  const endHour = String(endDate.getUTCHours()).padStart(2, '0');
-  const endMinute = String(endDate.getUTCMinutes()).padStart(2, '0');
-  const endSecond = String(endDate.getUTCSeconds()).padStart(2, '0');
+  // We'll use the second format for better accuracy with Denver time
+  const startDateString = denverStart;
+  const endDateString = denverEnd;
   
-  const startDateString = `${startYear}${startMonth}${startDay}T${startHour}${startMinute}${startSecond}Z`;
-  const endDateString = `${endYear}${endMonth}${endDay}T${endHour}${endMinute}${endSecond}Z`;
-  
-  // Include the venue as the location
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startDateString}/${endDateString}&details=Show%20organized%20by%20Setlist%20Social&location=${encodeURIComponent(event.venue)}`;
+  // Include the venue as the location and specify Denver timezone
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startDateString}/${endDateString}&details=Show%20organized%20by%20Setlist%20Social&location=${encodeURIComponent(event.venue)}&ctz=America/Denver`;
 }
 
 // Create Google search URL for venue and tickets

@@ -59,31 +59,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUpcomingEvents(): Promise<Event[]> {
-    // Use end of day in Denver time (UTC-6) for comparison
+    // Get the current date in Denver time (UTC-6)
     const now = new Date();
     
-    // Create a date set to end of the current day in Denver time (UTC-6)
-    const endOfDayDenver = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23, 59, 59 // 11:59:59 PM
+    // Create a date string for the beginning of today in Denver time
+    // Let's create a date that represents "today at 00:00:00" in Denver time
+    const today = new Date();
+    
+    // Format the date as YYYY-MM-DD at 00:00:00 in Denver time
+    // This approach uses ISO string with Denver timezone offset
+    const denverToday = new Date(
+      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T00:00:00-06:00`
     );
     
-    // Adjust for Denver timezone (UTC-6)
-    const denverOffset = -6 * 60; // Denver timezone offset in minutes
-    const currentOffset = endOfDayDenver.getTimezoneOffset(); // Browser's timezone offset
+    // Convert to UTC for database comparison
+    const denverTodayUtc = new Date(Date.UTC(
+      denverToday.getUTCFullYear(),
+      denverToday.getUTCMonth(),
+      denverToday.getUTCDate(),
+      denverToday.getUTCHours(),
+      denverToday.getUTCMinutes()
+    ));
     
-    // Adjust the time based on the difference between browser's timezone and Denver
-    const totalOffsetMinutes = denverOffset - currentOffset;
-    endOfDayDenver.setMinutes(endOfDayDenver.getMinutes() + totalOffsetMinutes);
-    
-    // Filter events where date is today or in the future
+    // Filter events where date is today or in the future using Denver timezone
     return db.select()
       .from(events)
       .where(
-        // Include events that match today's date or are in the future
-        sql`DATE(${events.date}) >= DATE(${now})`
+        // Include events that match today's date or are in the future in Denver time
+        sql`${events.date} >= ${denverTodayUtc}`
       )
       .orderBy(events.date);
   }
