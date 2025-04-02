@@ -59,34 +59,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUpcomingEvents(): Promise<Event[]> {
-    // Get the current date in Denver time (UTC-6)
-    const now = new Date();
+    // In PostgreSQL, we can directly use date operations for correct handling
+    // We want to include all events from the beginning of the current day in Denver time
     
-    // Create a date string for the beginning of today in Denver time
-    // Let's create a date that represents "today at 00:00:00" in Denver time
-    const today = new Date();
+    // Let's use a direct database date comparison approach
+    // This explicitly casts events.date to DATE to remove time component
+    // And compares with CURRENT_DATE in the database's timezone
     
-    // Format the date as YYYY-MM-DD at 00:00:00 in Denver time
-    // This approach uses ISO string with Denver timezone offset
-    const denverToday = new Date(
-      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}T00:00:00-06:00`
-    );
+    // We need to account for the fact that we still need to show today's events
+    // Since database may be a day ahead, we'll use "yesterday or later" to include current day
     
-    // Convert to UTC for database comparison
-    const denverTodayUtc = new Date(Date.UTC(
-      denverToday.getUTCFullYear(),
-      denverToday.getUTCMonth(),
-      denverToday.getUTCDate(),
-      denverToday.getUTCHours(),
-      denverToday.getUTCMinutes()
-    ));
+    // Get events from the beginning of yesterday (to ensure we include today's events across timezones)
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
     
-    // Filter events where date is today or in the future using Denver timezone
+    // Format as ISO string (YYYY-MM-DD)
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    
+    // Filter events that are from yesterday's date or later
     return db.select()
       .from(events)
       .where(
-        // Include events that match today's date or are in the future in Denver time
-        sql`${events.date} >= ${denverTodayUtc}`
+        // Use the ISO date strings for comparison, which automatically handles timezone differences
+        sql`DATE(${events.date}) >= DATE(${yesterdayStr})`
       )
       .orderBy(events.date);
   }

@@ -56,54 +56,50 @@ export function createGoogleCalendarUrl(event: {
   venue: string;
   date: Date | string;
 }): string {
-  let dateObj: Date;
+  // Get the date components directly from the date string or object
+  let year: number;
+  let month: number;
+  let day: number;
   
-  // Convert input date to a JavaScript Date object
   if (typeof event.date === 'string') {
     if (event.date.includes('T')) {
-      // ISO string with time component - create a date object from it
-      dateObj = new Date(event.date);
+      // It's an ISO string with time component
+      const parts = event.date.split('T')[0].split('-').map(Number);
+      year = parts[0];
+      month = parts[1];
+      day = parts[2];
     } else {
-      // Date-only string (YYYY-MM-DD) - parse the parts and create a date at noon
+      // It's a date-only string (YYYY-MM-DD)
       const parts = event.date.split('-').map(Number);
-      dateObj = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12, 0, 0));
+      year = parts[0];
+      month = parts[1];
+      day = parts[2];
     }
   } else {
-    // It's already a Date object
-    dateObj = new Date(event.date);
+    // It's a Date object - extract UTC components to ensure we get the database date
+    // This is important because Date objects might be affected by browser timezone
+    year = event.date.getUTCFullYear();
+    month = event.date.getUTCMonth() + 1; // Convert to 1-indexed month
+    day = event.date.getUTCDate();
   }
   
-  // Extract date parts (in local timezone, which doesn't matter for the date only)
-  const year = dateObj.getFullYear();
-  const month = dateObj.getMonth() + 1; // Convert to 1-indexed month
-  const day = dateObj.getDate();
+  // Build the date string in the exact format Google Calendar expects
+  // For an all-day event with time in Denver, we need:
+  // 1. Format the date as YYYYMMDD
+  // 2. Specify start/end times in the same day
+  // 3. Use America/Denver timezone explicitly
   
-  // Format date for display (for debugging)
-  const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  // Format as 20250401T190000 (April 1, 2025 at 7:00 PM)
+  const dateFormatted = `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`;
   
-  // Create the event specifically in Denver time (MDT/MST, UTC-6 or UTC-7)
-  // We'll hard-code the UTC-6 offset for now (Denver time during standard time)
-  // For a production app, we should determine if Denver is currently in daylight saving time
+  // Create start (7:00 PM) and end (10:00 PM) on the same day
+  const startTime = `${dateFormatted}T190000`;
+  const endTime = `${dateFormatted}T220000`;
   
-  // Create 7:00 PM Denver time event
-  // Format: YYYYMMDDTHHMMSS (in Denver time)
-  const denverStart = `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}T190000`;
-  const denverEnd = `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}T220000`;
-
-  // For Google Calendar, we need to specify the timezone
-  // Instead of converting to UTC which causes issues, we'll use Denver timezone directly
   const eventTitle = `${event.artist} @ ${event.venue}`;
   
-  // Google Calendar accepts two formats:
-  // 1. UTC format with Z suffix: YYYYMMDDTHHMMSSz
-  // 2. Local time with timezone: YYYYMMDDTHHMMSS (with "ctz" parameter for timezone)
-  
-  // We'll use the second format for better accuracy with Denver time
-  const startDateString = denverStart;
-  const endDateString = denverEnd;
-  
-  // Include the venue as the location and specify Denver timezone
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startDateString}/${endDateString}&details=Show%20organized%20by%20Setlist%20Social&location=${encodeURIComponent(event.venue)}&ctz=America/Denver`;
+  // Build the Google Calendar URL with explicit Denver timezone
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startTime}/${endTime}&details=Show%20organized%20by%20Setlist%20Social&location=${encodeURIComponent(event.venue)}&ctz=America/Denver`;
 }
 
 // Create Google search URL for venue and tickets
