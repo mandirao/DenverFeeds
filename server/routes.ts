@@ -451,6 +451,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to unschedule event" });
     }
   });
+  
+  // Manually decrease upvote count for an event
+  apiRouter.post("/events/:id/decrease-upvote", async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ message: "Invalid event ID" });
+      }
+
+      const event = await storage.getEventById(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      // Check if there are any upvotes to decrease
+      if (!event.upvotes || event.upvotes <= 0) {
+        return res.status(400).json({ message: "Event has no upvotes to decrease" });
+      }
+
+      // Decrease the upvote count by one
+      const updatedEvent = await storage.updateEvent(eventId, {
+        upvotes: Math.max(event.upvotes - 1, 0) // Ensure it doesn't go below 0
+      });
+      
+      res.json(updatedEvent);
+    } catch (error) {
+      console.error("Error decreasing upvote:", error);
+      res.status(500).json({ message: "Failed to decrease upvote" });
+    }
+  });
 
   app.use("/api", apiRouter);
 

@@ -34,6 +34,17 @@ function EventItem({ event }: EventItemProps) {
     }
   });
   
+  // Decrease upvote mutation (for admin use)
+  const decreaseUpvoteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/events/${event.id}/decrease-upvote`, undefined);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+    }
+  });
+  
   // Track if the user has voted for this event
   const [hasVoted, setHasVoted] = useState(false);
   
@@ -340,6 +351,17 @@ function EventItem({ event }: EventItemProps) {
                         className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                       >
                         Schedule
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {/* New Unvote option to manually decrease upvotes */}
+                    {(event.upvotes ?? 0) > 0 && (
+                      <DropdownMenuItem 
+                        onClick={() => decreaseUpvoteMutation.mutate()}
+                        disabled={decreaseUpvoteMutation.isPending}
+                        className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                      >
+                        Unvote (-1)
                       </DropdownMenuItem>
                     )}
                     <AlertDialog>
