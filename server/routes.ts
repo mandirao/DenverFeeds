@@ -249,20 +249,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get user ID from session
       // @ts-ignore - Session properties are added by express-session
-      const userId = req.session?.userId;
+      const sessionId = req.session?.userId;
+      
+      // Log the session ID for debugging
+      console.log(`Has upvoted check - Session ID: ${sessionId}`);
       
       // Create a database user entry if this is the first user action
-      let user = await storage.getUserBySessionId(userId);
+      let user = await storage.getUserBySessionId(sessionId);
       if (!user) {
+        console.log(`Creating new user for session ID: ${sessionId}`);
         user = await storage.createUser({
           username: `user-${Date.now()}`,
-          sessionId: userId
+          sessionId: sessionId
         });
+      } else {
+        console.log(`Found existing user ID: ${user.id} for session ID: ${sessionId}`);
       }
 
       const hasUpvoted = await storage.hasUserUpvoted(eventId, user.id);
+      console.log(`User ${user.id} has upvoted event ${eventId}: ${hasUpvoted}`);
       res.json({ hasUpvoted });
     } catch (error) {
+      console.error("Error checking upvote status:", error);
       res.status(500).json({ message: "Server error checking upvote status" });
     }
   });
@@ -279,13 +287,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // @ts-ignore - Session properties are added by express-session
       const sessionId = req.session?.userId;
       
+      console.log(`Upvote request - Session ID: ${sessionId}`);
+      
       // Get or create the user
       let user = await storage.getUserBySessionId(sessionId);
       if (!user) {
+        console.log(`Creating new user for session ID: ${sessionId}`);
         user = await storage.createUser({
           username: `user-${Date.now()}`,
           sessionId: sessionId
         });
+        console.log(`Created user with ID: ${user.id}`);
+      } else {
+        console.log(`Found existing user ID: ${user.id} for session ID: ${sessionId}`);
       }
 
       const event = await storage.getEventById(eventId);
@@ -298,15 +312,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const hasUpvoted = await storage.hasUserUpvoted(eventId, user.id);
+      console.log(`User ${user.id} has already upvoted event ${eventId}: ${hasUpvoted}`);
+      
       let success;
       
       if (hasUpvoted) {
         // User already voted, so remove the vote
+        console.log(`Removing upvote for user ${user.id} on event ${eventId}`);
         success = await storage.removeUpvote(eventId, user.id);
       } else {
         // User hasn't voted, add the vote
+        console.log(`Adding upvote for user ${user.id} on event ${eventId}`);
         success = await storage.upvoteEvent(eventId, user.id);
       }
+      
+      console.log(`Upvote operation success: ${success}`);
       
       if (success) {
         const updatedEvent = await storage.getEventById(eventId);
@@ -315,6 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json({ message: "Failed to process vote" });
       }
     } catch (error) {
+      console.error("Error processing vote:", error);
       res.status(500).json({ message: "Server error while processing vote" });
     }
   });

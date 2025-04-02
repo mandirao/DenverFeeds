@@ -30,10 +30,24 @@ app.use(session({
 
 // Add user ID to session if not present
 app.use((req: Request & { session: any }, res, next) => {
+  // Initialize the session with a UUID if it doesn't have one
   if (!req.session.userId) {
-    req.session.userId = randomUUID();
+    const newUserId = randomUUID();
+    console.log(`Creating new session with userId: ${newUserId}`);
+    req.session.userId = newUserId;
+    // Save the session immediately to ensure it's persisted
+    req.session.save((err: Error | null) => {
+      if (err) {
+        console.error('Error saving session:', err);
+      } else {
+        console.log(`Successfully saved session for userId: ${newUserId}`);
+      }
+      next();
+    });
+  } else {
+    console.log(`Using existing session userId: ${req.session.userId}`);
+    next();
   }
-  next();
 });
 
 app.use((req, res, next) => {
