@@ -59,29 +59,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUpcomingEvents(): Promise<Event[]> {
-    // In PostgreSQL, we can directly use date operations for correct handling
-    // We want to include all events from the beginning of the current day in Denver time
+    // Use the database's CURRENT_DATE directly for date comparison
+    // This is the most reliable way to get events from today forward
+    // without timezone conversion issues
     
-    // Let's use a direct database date comparison approach
-    // This explicitly casts events.date to DATE to remove time component
-    // And compares with CURRENT_DATE in the database's timezone
-    
-    // We need to account for the fact that we still need to show today's events
-    // Since database may be a day ahead, we'll use "yesterday or later" to include current day
-    
-    // Get events from the beginning of yesterday (to ensure we include today's events across timezones)
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    // Format as ISO string (YYYY-MM-DD)
-    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
-    
-    // Filter events that are from yesterday's date or later
+    // Query for events from today's date or later based on the database server's date
     return db.select()
       .from(events)
       .where(
-        // Use the ISO date strings for comparison, which automatically handles timezone differences
-        sql`DATE(${events.date}) >= DATE(${yesterdayStr})`
+        // This ensures we only get events from today (current_date) or later
+        sql`DATE(${events.date}) >= CURRENT_DATE`
       )
       .orderBy(events.date);
   }
