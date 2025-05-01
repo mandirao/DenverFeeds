@@ -130,7 +130,12 @@ function EventItem({ event }: EventItemProps) {
   };
   
   const handleDelete = () => {
-    deleteMutation.mutate();
+    deleteMutation.mutate(undefined, {
+      onSuccess: () => {
+        // Event deleted successfully
+        // No additional actions needed as the invalidateQueries will refresh the list
+      }
+    });
   };
 
   // Format date for display
@@ -376,10 +381,7 @@ function EventItem({ event }: EventItemProps) {
                         Unvote (-1)
                       </DropdownMenuItem>
                     )}
-                    <AlertDialog onOpenChange={(open) => {
-                      // Close the dropdown menu when the alert dialog closes
-                      if (!open) setIsMenuOpen(false);
-                    }}>
+                    <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <DropdownMenuItem 
                           className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
@@ -390,30 +392,18 @@ function EventItem({ event }: EventItemProps) {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <div className="absolute right-4 top-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 rounded-full hover:bg-gray-200"
-                            onClick={() => {
-                              // We need to notify the AlertDialog to close, which will also close the menu
-                              // due to our onOpenChange handler on the AlertDialog
-                              const cancelButton = document.querySelector('[data-radix-alert-dialog-cancel]');
-                              if (cancelButton instanceof HTMLElement) {
-                                cancelButton.click();
-                              }
-                            }}
-                          >
+                          <AlertDialogCancel className="h-6 w-6 p-0 rounded-full hover:bg-gray-200">
                             <X className="h-4 w-4" />
-                          </Button>
+                          </AlertDialogCancel>
                         </div>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Event</AlertDialogTitle>
                           <AlertDialogDescription>
                             Are you sure you want to delete this show? This can not be undone.
-                            <p className="mt-2">
-                              <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
-                            </p>
                           </AlertDialogDescription>
+                          <div className="pt-2 pb-4">
+                            <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
+                          </div>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Whoops, go back</AlertDialogCancel>
