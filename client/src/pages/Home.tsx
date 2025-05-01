@@ -9,6 +9,7 @@ import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
 import WeekDivider from "@/components/WeekDivider";
+import JustAddedView from "@/components/JustAddedView";
 import { groupEventsByMonth, groupEventsByCreationTime, isRecentlyAdded, getAddedTimeCategory } from "@/lib/utils";
 import { venueOptions, VenueOption, Event, genres as schemaGenres } from "@shared/schema";
 
@@ -147,7 +148,7 @@ export default function Home() {
       />
     );
   } else if (filters.status === "member-picks") {
-    // For member picks, we show a flat list without month/week grouping
+    // For member picks, we now use the WeekDivider component to group by week
     // Create subtitle if month or genre filters are applied
     let filterSubtitle = '';
     if (filters.month !== 'all' && filters.genre !== 'all') {
@@ -164,40 +165,15 @@ export default function Home() {
     };
     
     displayContent = (
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center">
-            <h2 className="text-xl font-black text-white uppercase">MEMBER PICKS</h2>
-            <button 
-              onClick={handleCloseClick}
-              className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
-              aria-label="Close filter view"
-              style={{ fontSize: '0.75rem' }}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-        {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
-        <ul className="list-none pl-0 space-y-2 mb-3">
-          {sortedEvents.map(event => (
-            <EventItem key={event.id} event={event} />
-          ))}
-        </ul>
-      </div>
+      <WeekDivider 
+        events={sortedEvents} 
+        title="MEMBER PICKS" 
+        subtitle={filterSubtitle} 
+        onClose={handleCloseClick} 
+      />
     );
   } else if (filters.status === "just-added") {
-    // Special case for 'Just Added' - we'll sort by creation date and group by time categories
-    // Sort events by creation date (newest first)
-    const sortedByCreationDate = [...filteredEvents].sort((a, b) => {
-      const dateA = new Date(a.createdAt || 0);
-      const dateB = new Date(b.createdAt || 0);
-      return dateB.getTime() - dateA.getTime(); // Newest first
-    });
-    
-    // Group events by creation time (today, this week, this month, older)
-    const groupedByCreationTime = groupEventsByCreationTime(sortedByCreationDate);
-    
+    // Special case for 'Just Added' - we now use the JustAddedView component
     // Create subtitle if month or genre filters are applied
     let filterSubtitle = '';
     if (filters.month !== 'all' && filters.genre !== 'all') {
@@ -214,97 +190,14 @@ export default function Home() {
     };
     
     displayContent = (
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center">
-            <h2 className="text-xl font-black text-white uppercase">JUST ADDED</h2>
-            <button 
-              onClick={handleCloseClick}
-              className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
-              aria-label="Close filter view"
-              style={{ fontSize: '0.75rem' }}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-        {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
-        
-        {/* Today's Additions */}
-        {groupedByCreationTime.today.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-white mb-2">Added Today</h3>
-            <ul className="list-none pl-0 space-y-2 mb-3">
-              {groupedByCreationTime.today.map(event => (
-                <EventItem key={event.id} event={event} />
-              ))}
-            </ul>
-          </div>
-        )}
-        
-        {/* This Week's Additions */}
-        {groupedByCreationTime.this_week.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-white mb-2">Added This Week</h3>
-            <ul className="list-none pl-0 space-y-2 mb-3">
-              {groupedByCreationTime.this_week.map(event => (
-                <EventItem key={event.id} event={event} />
-              ))}
-            </ul>
-          </div>
-        )}
-        
-        {/* Last Week's Additions */}
-        {groupedByCreationTime.last_week && groupedByCreationTime.last_week.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-white mb-2">Added Last Week</h3>
-            <ul className="list-none pl-0 space-y-2 mb-3">
-              {groupedByCreationTime.last_week.map(event => (
-                <EventItem key={event.id} event={event} />
-              ))}
-            </ul>
-          </div>
-        )}
-        
-        {/* This Month's Additions */}
-        {groupedByCreationTime.this_month.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-white mb-2">Added This Month</h3>
-            <ul className="list-none pl-0 space-y-2 mb-3">
-              {groupedByCreationTime.this_month.map(event => (
-                <EventItem key={event.id} event={event} />
-              ))}
-            </ul>
-          </div>
-        )}
-        
-        {/* Last Month's Additions */}
-        {groupedByCreationTime.last_month && groupedByCreationTime.last_month.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-white mb-2">Added Last Month</h3>
-            <ul className="list-none pl-0 space-y-2 mb-3">
-              {groupedByCreationTime.last_month.map(event => (
-                <EventItem key={event.id} event={event} />
-              ))}
-            </ul>
-          </div>
-        )}
-        
-        {/* Older Additions */}
-        {groupedByCreationTime.older.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-white mb-2">Added Earlier</h3>
-            <ul className="list-none pl-0 space-y-2 mb-3">
-              {groupedByCreationTime.older.map(event => (
-                <EventItem key={event.id} event={event} />
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
+      <JustAddedView 
+        events={filteredEvents} 
+        subtitle={filterSubtitle} 
+        onClose={handleCloseClick} 
+      />
     );
   } else if (filters.status === "cheap-thrills") {
-    // For cheap thrills events, we show a flat list without month/week grouping
+    // For cheap thrills events, we now use the WeekDivider component to group by week
     // Create subtitle if month or genre filters are applied
     let filterSubtitle = '';
     if (filters.month !== 'all' && filters.genre !== 'all') {
@@ -321,30 +214,15 @@ export default function Home() {
     };
     
     displayContent = (
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center">
-            <h2 className="text-xl font-black text-white uppercase">CHEAP THRILLS</h2>
-            <button 
-              onClick={handleCloseClick}
-              className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
-              aria-label="Close filter view"
-              style={{ fontSize: '0.75rem' }}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-        {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
-        <ul className="list-none pl-0 space-y-2 mb-3">
-          {sortedEvents.map(event => (
-            <EventItem key={event.id} event={event} />
-          ))}
-        </ul>
-      </div>
+      <WeekDivider 
+        events={sortedEvents} 
+        title="CHEAP THRILLS" 
+        subtitle={filterSubtitle} 
+        onClose={handleCloseClick} 
+      />
     );
   } else if (filters.status === "scheduled") {
-    // For scheduled events, we show a flat list without month/week grouping
+    // For scheduled events, we now use the WeekDivider component to group by week
     // Create subtitle if month or genre filters are applied
     let filterSubtitle = '';
     if (filters.month !== 'all' && filters.genre !== 'all') {
@@ -361,27 +239,12 @@ export default function Home() {
     };
     
     displayContent = (
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center">
-            <h2 className="text-xl font-black text-white uppercase">SCHEDULED</h2>
-            <button 
-              onClick={handleCloseClick}
-              className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
-              aria-label="Close filter view"
-              style={{ fontSize: '0.75rem' }}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-        {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
-        <ul className="list-none pl-0 space-y-2 mb-3">
-          {sortedEvents.map(event => (
-            <EventItem key={event.id} event={event} />
-          ))}
-        </ul>
-      </div>
+      <WeekDivider 
+        events={sortedEvents} 
+        title="SCHEDULED" 
+        subtitle={filterSubtitle} 
+        onClose={handleCloseClick} 
+      />
     );
   } else {
     // Standard view with events grouped by month
