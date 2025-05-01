@@ -314,15 +314,8 @@ export function groupEventsByMonth(events: any[]) {
 
 // Group events by their creation time (when they were added)
 export function groupEventsByCreationTime(events: any[]) {
-  // Define the structure of our result
-  const result: {
-    today: any[];
-    this_week: any[];
-    last_week: any[];
-    this_month: any[];
-    last_month: any[];
-    older: any[];
-  } = {
+  // Define the structure of our result with all possible categories
+  const result: Record<string, any[]> = {
     today: [],
     this_week: [],
     last_week: [],
@@ -334,12 +327,18 @@ export function groupEventsByCreationTime(events: any[]) {
   // Categorize each event by creation time first
   events.forEach(event => {
     const category = getAddedTimeCategory(event.createdAt);
-    result[category].push(event);
+    // Make sure the category exists in our result object
+    if (result[category]) {
+      result[category].push(event);
+    } else {
+      // Fallback to older if we don't recognize the category
+      result.older.push(event);
+    }
   });
   
   // Now sort each category by event date (chronologically)
   Object.keys(result).forEach(key => {
-    result[key as keyof typeof result].sort((a, b) => {
+    result[key].sort((a, b) => {
       const dateA = new Date(a.date || 0);
       const dateB = new Date(b.date || 0);
       return dateA.getTime() - dateB.getTime(); // Ascending (earliest first)

@@ -286,6 +286,18 @@ export default function Home() {
           </div>
         )}
         
+        {/* Last Month's Additions */}
+        {groupedByCreationTime.last_month && groupedByCreationTime.last_month.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-2">Added Last Month</h3>
+            <ul className="list-none pl-0 space-y-2 mb-3">
+              {groupedByCreationTime.last_month.map(event => (
+                <EventItem key={event.id} event={event} />
+              ))}
+            </ul>
+          </div>
+        )}
+        
         {/* Older Additions */}
         {groupedByCreationTime.older.length > 0 && (
           <div className="mb-6">
