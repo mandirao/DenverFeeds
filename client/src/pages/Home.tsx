@@ -54,8 +54,8 @@ export default function Home() {
         return false;
       }
     } else if (filters.status === "member-picks") {
-      // Only show events not added by Mandi and with the 🛎️ emoji (i.e., has a requester field)
-      if (!event.requester || event.requester === "Mandi") {
+      // Only show events not added by Mandi and with a requester field (for the 🛎️ emoji)
+      if (event.requester === "Mandi" || !event.requester || event.requester.trim() === "") {
         return false;
       }
     }
