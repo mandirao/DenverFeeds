@@ -161,6 +161,39 @@ export function isRecentlyAdded(createdAt: Date | string | null): boolean {
   return isAfter(dateObj, threeDaysAgo);
 }
 
+// Determine creation time category for an event
+export function getAddedTimeCategory(createdAt: Date | string | null): 'today' | 'this_week' | 'this_month' | 'older' {
+  if (!createdAt) return 'older';
+  
+  let createdDate: Date;
+  
+  if (typeof createdAt === 'string') {
+    createdDate = new Date(createdAt);
+  } else {
+    createdDate = createdAt;
+  }
+  
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = addDays(today, -1);
+  const oneWeekAgo = addDays(today, -7);
+  const oneMonthAgo = new Date(today);
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  
+  // Start of the created date (midnight)
+  const createdDay = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
+  
+  if (isAfter(createdDay, yesterday) || createdDay.getTime() === today.getTime()) {
+    return 'today';
+  } else if (isAfter(createdDay, oneWeekAgo)) {
+    return 'this_week';
+  } else if (isAfter(createdDay, oneMonthAgo)) {
+    return 'this_month';
+  } else {
+    return 'older';
+  }
+}
+
 // Get the UTC week start (Monday) and end (Sunday) dates for a given date
 export function getWeekRange(date: Date): { start: Date, end: Date, key: string } {
   // Create date from UTC components to avoid timezone shifts
@@ -270,6 +303,37 @@ export function groupEventsByMonth(events: any[]) {
   });
   
   return groupedEvents;
+}
+
+// Group events by their creation time (when they were added)
+export function groupEventsByCreationTime(events: any[]) {
+  // Define the structure of our result
+  const result: {
+    today: any[];
+    this_week: any[];
+    this_month: any[];
+    older: any[];
+  } = {
+    today: [],
+    this_week: [],
+    this_month: [],
+    older: []
+  };
+  
+  // Sort events by creation date (most recent first)
+  const sortedEvents = [...events].sort((a, b) => {
+    const dateA = new Date(a.createdAt || 0);
+    const dateB = new Date(b.createdAt || 0);
+    return dateB.getTime() - dateA.getTime(); // Descending (newest first)
+  });
+  
+  // Categorize each event
+  sortedEvents.forEach(event => {
+    const category = getAddedTimeCategory(event.createdAt);
+    result[category].push(event);
+  });
+  
+  return result;
 }
 
 // Format month for display

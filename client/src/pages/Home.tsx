@@ -7,7 +7,7 @@ import { getNextMonths, denverBoulderVenues } from "@/components/EventFilters";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
-import { groupEventsByMonth, isRecentlyAdded } from "@/lib/utils";
+import { groupEventsByMonth, groupEventsByCreationTime, isRecentlyAdded } from "@/lib/utils";
 import { venueOptions, VenueOption, Event, genres as schemaGenres } from "@shared/schema";
 
 export default function Home() {
@@ -46,9 +46,7 @@ export default function Home() {
     }
     
     // Status filter
-    if (filters.status === "just-added" && !isRecentlyAdded(event.createdAt)) {
-      return false;
-    } else if (filters.status === "scheduled" && !event.isScheduled) {
+    if (filters.status === "scheduled" && !event.isScheduled) {
       return false;
     } else if (filters.status === "top-voted") {
       // Only show unscheduled events with at least 1 vote
@@ -56,6 +54,7 @@ export default function Home() {
         return false;
       }
     }
+    // Note: we removed the just-added filter here, as we'll now show all events but sorted differently
     
     // Denver/Boulder area filter
     // Filter based on venue location
@@ -133,6 +132,82 @@ export default function Home() {
         </ul>
       </div>
     );
+  } else if (filters.status === "just-added") {
+    // Special case for 'Just Added' - we'll sort by creation date and group by time categories
+    // Sort events by creation date (newest first)
+    const sortedByCreationDate = [...filteredEvents].sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0);
+      const dateB = new Date(b.createdAt || 0);
+      return dateB.getTime() - dateA.getTime(); // Newest first
+    });
+    
+    // Group events by creation time (today, this week, this month, older)
+    const groupedByCreationTime = groupEventsByCreationTime(sortedByCreationDate);
+    
+    // Create subtitle if month or genre filters are applied
+    let filterSubtitle = '';
+    if (filters.month !== 'all' && filters.genre !== 'all') {
+      filterSubtitle = `${filters.genre} in ${filters.month}`;
+    } else if (filters.month !== 'all') {
+      filterSubtitle = filters.month;
+    } else if (filters.genre !== 'all') {
+      filterSubtitle = filters.genre;
+    }
+    
+    displayContent = (
+      <div className="p-4 mb-8">
+        <h2 className="text-xl font-black mb-1 text-white uppercase">RECENTLY ADDED</h2>
+        {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
+        
+        {/* Today's Additions */}
+        {groupedByCreationTime.today.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-2">Added Today</h3>
+            <ul className="list-none pl-0 space-y-2 mb-3">
+              {groupedByCreationTime.today.map(event => (
+                <EventItem key={event.id} event={event} />
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* This Week's Additions */}
+        {groupedByCreationTime.this_week.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-2">Added This Week</h3>
+            <ul className="list-none pl-0 space-y-2 mb-3">
+              {groupedByCreationTime.this_week.map(event => (
+                <EventItem key={event.id} event={event} />
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* This Month's Additions */}
+        {groupedByCreationTime.this_month.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-2">Added This Month</h3>
+            <ul className="list-none pl-0 space-y-2 mb-3">
+              {groupedByCreationTime.this_month.map(event => (
+                <EventItem key={event.id} event={event} />
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* Older Additions */}
+        {groupedByCreationTime.older.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-2">Added Earlier</h3>
+            <ul className="list-none pl-0 space-y-2 mb-3">
+              {groupedByCreationTime.older.map(event => (
+                <EventItem key={event.id} event={event} />
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
   } else {
     // Standard view with events grouped by month
     displayContent = (
@@ -150,7 +225,7 @@ export default function Home() {
   }
   
   // Check if we have events to display after filtering
-  const hasEvents = filters.status === "top-voted" 
+  const hasEvents = filters.status === "top-voted" || filters.status === "just-added"
     ? sortedEvents.length > 0 
     : Object.entries(groupedByMonthAndWeek).length > 0;
 
