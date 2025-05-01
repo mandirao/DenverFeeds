@@ -323,22 +323,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // User already voted, so remove the vote
         console.log(`Removing upvote for user ${user.id} on event ${eventId}`);
         // Bypass the double-check in removeUpvote by directly deleting the record
-        const removed = await db.delete(upvotes).where(
+        await db.delete(upvotes).where(
           and(
             eq(upvotes.eventId, eventId),
             eq(upvotes.userId, user.id)
           )
         );
         
-        if (removed.count > 0) {
-          // Update the event upvote count
-          await db.update(events)
-            .set({
-              upvotes: sql`GREATEST(${events.upvotes} - 1, 0)`
-            })
-            .where(eq(events.id, eventId));
-          success = true;
-        }
+        // Update the event upvote count regardless of delete result
+        // This ensures the count is synchronized
+        await db.update(events)
+          .set({
+            upvotes: sql`GREATEST(${events.upvotes} - 1, 0)`
+          })
+          .where(eq(events.id, eventId));
+        success = true;
       } else {
         // User hasn't voted, add the vote
         console.log(`Adding upvote for user ${user.id} on event ${eventId}`);

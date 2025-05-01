@@ -165,9 +165,9 @@ export default function Home() {
           <h2 className="text-xl font-black text-white uppercase">RECENTLY ADDED</h2>
           <button 
             onClick={handleCloseClick}
-            className="text-white hover:text-[#41F2EE] text-sm font-bold ml-10"
+            className="text-white hover:text-[#41F2EE] text-xs font-bold"
             aria-label="Close recently added view"
-            style={{ position: 'relative', top: '1px' }}
+            style={{ position: 'absolute', left: 'calc(100% - 40px)', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem' }}
           >
             ✕
           </button>

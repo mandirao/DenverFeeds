@@ -20,6 +20,7 @@ function EventItem({ event }: EventItemProps) {
   const [isHoveringVenue, setIsHoveringVenue] = useState(false);
   const [isHoveringDate, setIsHoveringDate] = useState(false);
   const [showUpvoteTooltip, setShowUpvoteTooltip] = useState(false);
+  const [showRequesterTooltip, setShowRequesterTooltip] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Upvote mutation
@@ -225,11 +226,20 @@ function EventItem({ event }: EventItemProps) {
               {event.requester && event.requester !== 'Mandi' && (
                 <span className="inline-block align-middle ml-2">
                   <TooltipProvider>
-                    <Tooltip>
+                    <Tooltip open={showRequesterTooltip}>
                       <TooltipTrigger asChild>
                         <span 
-                          className="text-base inline-flex items-center"
+                          className="text-base inline-flex items-center cursor-pointer"
                           style={{ position: 'relative', top: '-1px' }}
+                          onClick={() => {
+                            // Show tooltip for 2 seconds when clicked
+                            setShowRequesterTooltip(true);
+                            setTimeout(() => {
+                              setShowRequesterTooltip(false);
+                            }, 2000);
+                          }}
+                          onMouseEnter={() => setShowRequesterTooltip(true)}
+                          onMouseLeave={() => setShowRequesterTooltip(false)}
                         >
                           🛎️
                         </span>
