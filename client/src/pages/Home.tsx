@@ -425,7 +425,7 @@ export default function Home() {
         {/* Recent Events Banner - Only show in default view */}
         {!isLoading && !error && hasEvents && filters.status === "all" && (
           <div className="mb-6 text-left">
-            <p className="text-xl font-light text-black mb-4 lowercase">
+            <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '28px' }}>
               {(() => {
                 // Count events added in the last week (today + this_week)
                 const recentEvents = events.filter(event => {
@@ -437,7 +437,7 @@ export default function Home() {
                     {recentEvents.length} shows added in the last week. {' '}
                     <button 
                       onClick={() => setFilters({ ...filters, status: "just-added" })}
-                      className="text-[#41F2EE] hover:text-black underline font-light focus:outline-none"
+                      className="text-white hover:text-[#41F2EE] underline font-light focus:outline-none"
                     >
                       Review + vote
                     </button>
