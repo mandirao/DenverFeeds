@@ -108,9 +108,9 @@ function EventItem({ event }: EventItemProps) {
 
   const handleUpvote = () => {
     upvoteMutation.mutate(undefined, {
-      onSuccess: () => {
-        // Toggle the vote state
-        setHasVoted(!hasVoted);
+      onSuccess: (data) => {
+        // The actual state will be updated by the query invalidation and useEffect
+        // We don't need to manually toggle hasVoted here
         
         // Show the tooltip with appropriate message
         setShowUpvoteTooltip(true);
