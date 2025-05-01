@@ -73,6 +73,7 @@ export function Navbar({ showFilters = false, filterProps }: NavbarProps) {
                             <option value="just-added">Just Added</option>
                             <option value="scheduled">Scheduled</option>
                             <option value="member-picks">Member Picks</option>
+                            <option value="cheap-thrills">Cheap Thrills</option>
                           </select>
                         </div>
                         
