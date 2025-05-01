@@ -379,7 +379,6 @@ function EventItem({ event }: EventItemProps) {
                       <AlertDialogTrigger asChild>
                         <DropdownMenuItem 
                           className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
-                          onSelect={(e) => e.preventDefault()} // Prevent the dropdown from closing
                         >
                           Delete
                         </DropdownMenuItem>
@@ -389,9 +388,9 @@ function EventItem({ event }: EventItemProps) {
                           <AlertDialogTitle>Delete Event</AlertDialogTitle>
                           <AlertDialogDescription>
                             Are you sure you want to delete this show? This can not be undone.
-                            <p className="mt-2">
+                            <div className="mt-2">
                               <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
-                            </p>
+                            </div>
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
