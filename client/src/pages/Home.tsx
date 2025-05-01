@@ -7,7 +7,7 @@ import { getNextMonths, denverBoulderVenues } from "@/components/EventFilters";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
-import { groupEventsByMonth, groupEventsByCreationTime, isRecentlyAdded } from "@/lib/utils";
+import { groupEventsByMonth, groupEventsByCreationTime, isRecentlyAdded, getAddedTimeCategory } from "@/lib/utils";
 import { venueOptions, VenueOption, Event, genres as schemaGenres } from "@shared/schema";
 
 export default function Home() {
@@ -422,6 +422,32 @@ export default function Home() {
       />
       
       <main className="container mx-auto px-4 py-8">
+        {/* Recent Events Banner - Only show in default view */}
+        {!isLoading && !error && hasEvents && filters.status === "all" && (
+          <div className="mb-8 text-center">
+            <p className="text-4xl font-light text-white mb-6 lowercase">
+              {(() => {
+                // Count events added in the last week (today + this_week)
+                const recentEvents = events.filter(event => {
+                  const category = getAddedTimeCategory(event.createdAt);
+                  return category === 'today' || category === 'this_week';
+                });
+                return (
+                  <>
+                    {recentEvents.length} shows added in the last week. {' '}
+                    <button 
+                      onClick={() => setFilters({ ...filters, status: "just-added" })}
+                      className="text-white hover:text-[#41F2EE] underline font-light focus:outline-none"
+                    >
+                      review + vote
+                    </button>
+                  </>
+                );
+              })()}
+            </p>
+          </div>
+        )}
+        
         {/* Events Feed */}
         <div className="mb-8 min-h-[400px]">
           {isLoading ? (
