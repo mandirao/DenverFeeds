@@ -162,7 +162,7 @@ export function isRecentlyAdded(createdAt: Date | string | null): boolean {
 }
 
 // Determine creation time category for an event
-export function getAddedTimeCategory(createdAt: Date | string | null): 'today' | 'this_week' | 'last_week' | 'this_month' | 'older' {
+export function getAddedTimeCategory(createdAt: Date | string | null): 'today' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'older' {
   if (!createdAt) return 'older';
   
   let createdDate: Date;
@@ -180,6 +180,8 @@ export function getAddedTimeCategory(createdAt: Date | string | null): 'today' |
   const twoWeeksAgo = addDays(today, -14);
   const oneMonthAgo = new Date(today);
   oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  const twoMonthsAgo = new Date(today);
+  twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
   
   // Start of the created date (midnight)
   const createdDay = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
@@ -192,6 +194,8 @@ export function getAddedTimeCategory(createdAt: Date | string | null): 'today' |
     return 'last_week';
   } else if (isAfter(createdDay, oneMonthAgo)) {
     return 'this_month';
+  } else if (isAfter(createdDay, twoMonthsAgo)) {
+    return 'last_month';
   } else {
     return 'older';
   }
@@ -316,26 +320,30 @@ export function groupEventsByCreationTime(events: any[]) {
     this_week: any[];
     last_week: any[];
     this_month: any[];
+    last_month: any[];
     older: any[];
   } = {
     today: [],
     this_week: [],
     last_week: [],
     this_month: [],
+    last_month: [],
     older: []
   };
   
-  // Sort events by creation date (most recent first)
-  const sortedEvents = [...events].sort((a, b) => {
-    const dateA = new Date(a.createdAt || 0);
-    const dateB = new Date(b.createdAt || 0);
-    return dateB.getTime() - dateA.getTime(); // Descending (newest first)
-  });
-  
-  // Categorize each event
-  sortedEvents.forEach(event => {
+  // Categorize each event by creation time first
+  events.forEach(event => {
     const category = getAddedTimeCategory(event.createdAt);
     result[category].push(event);
+  });
+  
+  // Now sort each category by event date (chronologically)
+  Object.keys(result).forEach(key => {
+    result[key as keyof typeof result].sort((a, b) => {
+      const dateA = new Date(a.date || 0);
+      const dateB = new Date(b.date || 0);
+      return dateA.getTime() - dateB.getTime(); // Ascending (earliest first)
+    });
   });
   
   return result;
