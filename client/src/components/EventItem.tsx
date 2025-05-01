@@ -75,7 +75,8 @@ function EventItem({ event }: EventItemProps) {
       
       return () => clearTimeout(timer);
     }
-    else if (hasUpvotedQuery.data && !hasUpvotedQuery.data.hasUpvoted) {
+    else if (hasUpvotedQuery.data && !hasUpvotedQuery.data.hasUpvoted && !hasVoted) {
+      // Only set to false if we haven't already voted (initial state only)
       setHasVoted(false);
     }
   }, [hasUpvotedQuery.data]);
@@ -109,8 +110,8 @@ function EventItem({ event }: EventItemProps) {
   const handleUpvote = () => {
     upvoteMutation.mutate(undefined, {
       onSuccess: (data) => {
-        // The actual state will be updated by the query invalidation and useEffect
-        // We don't need to manually toggle hasVoted here
+        // Always set hasVoted to true when user clicks the upvote button
+        setHasVoted(true);
         
         // Show the tooltip with appropriate message
         setShowUpvoteTooltip(true);
@@ -297,7 +298,7 @@ function EventItem({ event }: EventItemProps) {
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>{hasVoted ? 'Click to remove your vote' : 'Upvote this show'}</p>
+                        <p>{hasVoted ? 'Vote again' : 'Upvote this show'}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
