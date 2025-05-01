@@ -121,9 +121,26 @@ export default function Home() {
       filterSubtitle = filters.genre;
     }
     
+    // Function to handle close button click (return to "Show All" view)
+    const handleCloseClick = () => {
+      setFilters({ ...filters, status: "all" });
+    };
+    
     displayContent = (
       <div className="p-4 mb-8">
-        <h2 className="text-xl font-black mb-1 text-white uppercase">TOP VOTED</h2>
+        <div className="flex justify-between items-center mb-1">
+          <div className="flex items-center">
+            <h2 className="text-xl font-black text-white uppercase">TOP VOTED</h2>
+            <button 
+              onClick={handleCloseClick}
+              className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
+              aria-label="Close filter view"
+              style={{ fontSize: '0.75rem' }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
         {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
         <ul className="list-none pl-0 space-y-2 mb-3">
           {sortedEvents.map(event => (
@@ -161,16 +178,18 @@ export default function Home() {
     
     displayContent = (
       <div className="p-4 mb-8">
-        <div className="flex items-center mb-1 relative">
-          <h2 className="text-xl font-black text-white uppercase">JUST ADDED</h2>
-          <button 
-            onClick={handleCloseClick}
-            className="text-white hover:text-[#41F2EE] text-xs font-bold"
-            aria-label="Close recently added view"
-            style={{ position: 'absolute', left: 'calc(100% + 20px)', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem' }}
-          >
-            ✕
-          </button>
+        <div className="flex justify-between items-center mb-1">
+          <div className="flex items-center">
+            <h2 className="text-xl font-black text-white uppercase">JUST ADDED</h2>
+            <button 
+              onClick={handleCloseClick}
+              className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
+              aria-label="Close filter view"
+              style={{ fontSize: '0.75rem' }}
+            >
+              ✕
+            </button>
+          </div>
         </div>
         {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
         
