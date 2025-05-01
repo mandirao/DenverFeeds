@@ -166,6 +166,7 @@ export function EventFilters({
             <option value="top-voted">Top Voted</option>
             <option value="just-added">Just Added</option>
             <option value="scheduled">Scheduled</option>
+            <option value="member-picks">Member Picks</option>
           </select>
         </div>
       </div>

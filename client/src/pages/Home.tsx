@@ -53,6 +53,11 @@ export default function Home() {
       if (event.isScheduled || !event.upvotes || event.upvotes < 1) {
         return false;
       }
+    } else if (filters.status === "member-picks") {
+      // Only show events not added by Mandi and with the 🛎️ emoji (i.e., has a requester field)
+      if (!event.requester || event.requester === "Mandi") {
+        return false;
+      }
     }
     // Note: we removed the just-added filter here, as we'll now show all events but sorted differently
     
@@ -131,6 +136,46 @@ export default function Home() {
         <div className="flex justify-between items-center mb-1">
           <div className="flex items-center">
             <h2 className="text-xl font-black text-white uppercase">TOP VOTED</h2>
+            <button 
+              onClick={handleCloseClick}
+              className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
+              aria-label="Close filter view"
+              style={{ fontSize: '0.75rem' }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
+        <ul className="list-none pl-0 space-y-2 mb-3">
+          {sortedEvents.map(event => (
+            <EventItem key={event.id} event={event} />
+          ))}
+        </ul>
+      </div>
+    );
+  } else if (filters.status === "member-picks") {
+    // For member picks, we show a flat list without month/week grouping
+    // Create subtitle if month or genre filters are applied
+    let filterSubtitle = '';
+    if (filters.month !== 'all' && filters.genre !== 'all') {
+      filterSubtitle = `${filters.genre} in ${filters.month}`;
+    } else if (filters.month !== 'all') {
+      filterSubtitle = filters.month;
+    } else if (filters.genre !== 'all') {
+      filterSubtitle = filters.genre;
+    }
+    
+    // Function to handle close button click (return to "Show All" view)
+    const handleCloseClick = () => {
+      setFilters({ ...filters, status: "all" });
+    };
+    
+    displayContent = (
+      <div className="p-4 mb-8">
+        <div className="flex justify-between items-center mb-1">
+          <div className="flex items-center">
+            <h2 className="text-xl font-black text-white uppercase">MEMBER PICKS</h2>
             <button 
               onClick={handleCloseClick}
               className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
@@ -254,6 +299,46 @@ export default function Home() {
         )}
       </div>
     );
+  } else if (filters.status === "scheduled") {
+    // For scheduled events, we show a flat list without month/week grouping
+    // Create subtitle if month or genre filters are applied
+    let filterSubtitle = '';
+    if (filters.month !== 'all' && filters.genre !== 'all') {
+      filterSubtitle = `${filters.genre} in ${filters.month}`;
+    } else if (filters.month !== 'all') {
+      filterSubtitle = filters.month;
+    } else if (filters.genre !== 'all') {
+      filterSubtitle = filters.genre;
+    }
+    
+    // Function to handle close button click (return to "Show All" view)
+    const handleCloseClick = () => {
+      setFilters({ ...filters, status: "all" });
+    };
+    
+    displayContent = (
+      <div className="p-4 mb-8">
+        <div className="flex justify-between items-center mb-1">
+          <div className="flex items-center">
+            <h2 className="text-xl font-black text-white uppercase">SCHEDULED</h2>
+            <button 
+              onClick={handleCloseClick}
+              className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
+              aria-label="Close filter view"
+              style={{ fontSize: '0.75rem' }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
+        <ul className="list-none pl-0 space-y-2 mb-3">
+          {sortedEvents.map(event => (
+            <EventItem key={event.id} event={event} />
+          ))}
+        </ul>
+      </div>
+    );
   } else {
     // Standard view with events grouped by month
     displayContent = (
@@ -271,7 +356,7 @@ export default function Home() {
   }
   
   // Check if we have events to display after filtering
-  const hasEvents = filters.status === "top-voted" || filters.status === "just-added"
+  const hasEvents = filters.status === "top-voted" || filters.status === "just-added" || filters.status === "member-picks" || filters.status === "scheduled"
     ? sortedEvents.length > 0 
     : Object.entries(groupedByMonthAndWeek).length > 0;
 
