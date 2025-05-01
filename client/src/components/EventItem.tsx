@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowUp, Check, Trash2, MoreVertical, Edit } from "lucide-react";
+import { ArrowUp, Check, Trash2, MoreVertical, Edit, X } from "lucide-react";
 import EditEventModal from "@/components/EditEventModal";
 
 interface EventItemProps {
@@ -22,6 +22,7 @@ function EventItem({ event }: EventItemProps) {
   const [showUpvoteTooltip, setShowUpvoteTooltip] = useState(false);
   const [showRequesterTooltip, setShowRequesterTooltip] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Upvote mutation
   const upvoteMutation = useMutation({
@@ -330,7 +331,7 @@ function EventItem({ event }: EventItemProps) {
             {/* Right-aligned 3-dot menu */}
             <div className="flex items-center">
               <div className="ml-auto pl-2" style={{ position: 'relative', top: '2px' }}>
-                <DropdownMenu>
+                <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
