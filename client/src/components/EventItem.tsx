@@ -22,6 +22,7 @@ function EventItem({ event }: EventItemProps) {
   const [showUpvoteTooltip, setShowUpvoteTooltip] = useState(false);
   const [showRequesterTooltip, setShowRequesterTooltip] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Upvote mutation
   const upvoteMutation = useMutation({
@@ -375,18 +376,14 @@ function EventItem({ event }: EventItemProps) {
                         Unvote (-1)
                       </DropdownMenuItem>
                     )}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <DropdownMenuItem 
-                          className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
-                          onSelect={(e) => {
-                            // This allows the dropdown to close but the dialog to open
-                            // We don't prevent the default behavior here
-                          }}
-                        >
-                          Delete
-                        </DropdownMenuItem>
-                      </AlertDialogTrigger>
+                    <DropdownMenuItem 
+                      className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                      Delete
+                    </DropdownMenuItem>
+
+                    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Event</AlertDialogTitle>
@@ -398,9 +395,12 @@ function EventItem({ event }: EventItemProps) {
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Whoops, go back</AlertDialogCancel>
+                          <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Whoops, go back</AlertDialogCancel>
                           <AlertDialogAction 
-                            onClick={handleDelete}
+                            onClick={() => {
+                              handleDelete();
+                              setIsDeleteDialogOpen(false);
+                            }}
                             className="bg-red-500 hover:bg-red-600"
                           >
                             Yes, delete
