@@ -122,7 +122,7 @@ export function createSpotifySearchUrl(artist: string): string {
   return `https://open.spotify.com/search/${encodeURIComponent(artist)}`;
 }
 
-// Check if event was added in the last three days
+// Check if event was added in the last week
 export function isRecentlyAdded(createdAt: Date | string | null): boolean {
   if (!createdAt) return false;
   
@@ -154,11 +154,11 @@ export function isRecentlyAdded(createdAt: Date | string | null): boolean {
   // Create a date object with the extracted parts
   const dateObj = new Date(year, month, day);
   
-  // Calculate three days ago from now
+  // Calculate one week ago from now
   const now = new Date();
-  const threeDaysAgo = addDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), -3);
+  const oneWeekAgo = addDays(new Date(now.getFullYear(), now.getMonth(), now.getDate()), -7);
   
-  return isAfter(dateObj, threeDaysAgo);
+  return isAfter(dateObj, oneWeekAgo);
 }
 
 // Determine creation time category for an event

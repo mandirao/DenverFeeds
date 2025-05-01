@@ -266,7 +266,7 @@ function EventItem({ event }: EventItemProps) {
                         </span>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Added within the last three days</p>
+                        <p>Added within the last week</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
