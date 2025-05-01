@@ -59,6 +59,11 @@ export default function Home() {
       if (event.requester === "Mandi" || !event.requester || event.requester.trim() === "") {
         return false;
       }
+    } else if (filters.status === "cheap-thrills") {
+      // Only show events at cheap thrills venues
+      if (!cheapThrillsVenues.some(venue => event.venue.toLowerCase() === venue.toLowerCase())) {
+        return false;
+      }
     }
     // Note: we removed the just-added filter here, as we'll now show all events but sorted differently
     
@@ -312,6 +317,46 @@ export default function Home() {
         )}
       </div>
     );
+  } else if (filters.status === "cheap-thrills") {
+    // For cheap thrills events, we show a flat list without month/week grouping
+    // Create subtitle if month or genre filters are applied
+    let filterSubtitle = '';
+    if (filters.month !== 'all' && filters.genre !== 'all') {
+      filterSubtitle = `${filters.genre} in ${filters.month}`;
+    } else if (filters.month !== 'all') {
+      filterSubtitle = filters.month;
+    } else if (filters.genre !== 'all') {
+      filterSubtitle = filters.genre;
+    }
+    
+    // Function to handle close button click (return to "Show All" view)
+    const handleCloseClick = () => {
+      setFilters({ ...filters, status: "all" });
+    };
+    
+    displayContent = (
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center">
+            <h2 className="text-xl font-black text-white uppercase">CHEAP THRILLS</h2>
+            <button 
+              onClick={handleCloseClick}
+              className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
+              aria-label="Close filter view"
+              style={{ fontSize: '0.75rem' }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
+        <ul className="list-none pl-0 space-y-2 mb-3">
+          {sortedEvents.map(event => (
+            <EventItem key={event.id} event={event} />
+          ))}
+        </ul>
+      </div>
+    );
   } else if (filters.status === "scheduled") {
     // For scheduled events, we show a flat list without month/week grouping
     // Create subtitle if month or genre filters are applied
@@ -369,7 +414,7 @@ export default function Home() {
   }
   
   // Check if we have events to display after filtering
-  const hasEvents = filters.status === "top-voted" || filters.status === "just-added" || filters.status === "member-picks" || filters.status === "scheduled"
+  const hasEvents = filters.status === "top-voted" || filters.status === "just-added" || filters.status === "member-picks" || filters.status === "scheduled" || filters.status === "cheap-thrills"
     ? sortedEvents.length > 0 
     : Object.entries(groupedByMonthAndWeek).length > 0;
 
