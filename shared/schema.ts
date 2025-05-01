@@ -69,7 +69,7 @@ export const venueOptions: VenueOption[] = [
   { value: "Gerald R Ford Amphitheater", label: "Gerald R Ford Amphitheater", group: "road_trip" },
   { value: "Gold Hill Inn", label: "Gold Hill Inn", group: "road_trip" },
   { value: "Greeley Stampede", label: "Greeley Stampede", group: "road_trip" },
-  { value: "LuLu's Downton", label: "LuLu's Downton", group: "road_trip" },
+  { value: "Lulu's Downtown", label: "Lulu's Downtown", group: "road_trip" },
   { value: "New Belgium Brewing Company", label: "New Belgium Brewing Company", group: "road_trip" },
   { value: "Sunset Amphitheater", label: "Sunset Amphitheater", group: "road_trip" },
   { value: "Surf Hotel", label: "Surf Hotel", group: "road_trip" },
