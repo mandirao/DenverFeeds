@@ -379,6 +379,10 @@ function EventItem({ event }: EventItemProps) {
                       <AlertDialogTrigger asChild>
                         <DropdownMenuItem 
                           className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                          onSelect={(e) => {
+                            // This allows the dropdown to close but the dialog to open
+                            // We don't prevent the default behavior here
+                          }}
                         >
                           Delete
                         </DropdownMenuItem>
@@ -386,11 +390,11 @@ function EventItem({ event }: EventItemProps) {
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Event</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this show? This can not be undone.
-                            <div className="mt-2">
+                          <AlertDialogDescription className="space-y-2">
+                            <span>Are you sure you want to delete this show? This can not be undone.</span>
+                            <span className="block">
                               <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
-                            </div>
+                            </span>
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
