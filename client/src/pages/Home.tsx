@@ -132,8 +132,8 @@ export default function Home() {
     };
     
     displayContent = (
-      <div className="p-4 mb-8">
-        <div className="flex justify-between items-center mb-1">
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-3">
           <div className="flex items-center">
             <h2 className="text-xl font-black text-white uppercase">TOP VOTED</h2>
             <button 
@@ -172,8 +172,8 @@ export default function Home() {
     };
     
     displayContent = (
-      <div className="p-4 mb-8">
-        <div className="flex justify-between items-center mb-1">
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-3">
           <div className="flex items-center">
             <h2 className="text-xl font-black text-white uppercase">MEMBER PICKS</h2>
             <button 
@@ -222,8 +222,8 @@ export default function Home() {
     };
     
     displayContent = (
-      <div className="p-4 mb-8">
-        <div className="flex justify-between items-center mb-1">
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-3">
           <div className="flex items-center">
             <h2 className="text-xl font-black text-white uppercase">JUST ADDED</h2>
             <button 
@@ -317,8 +317,8 @@ export default function Home() {
     };
     
     displayContent = (
-      <div className="p-4 mb-8">
-        <div className="flex justify-between items-center mb-1">
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-3">
           <div className="flex items-center">
             <h2 className="text-xl font-black text-white uppercase">SCHEDULED</h2>
             <button 
