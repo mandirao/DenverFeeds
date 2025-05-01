@@ -161,12 +161,13 @@ export default function Home() {
     
     displayContent = (
       <div className="p-4 mb-8">
-        <div className="flex justify-between items-center mb-1">
+        <div className="flex items-center mb-1 relative">
           <h2 className="text-xl font-black text-white uppercase">RECENTLY ADDED</h2>
           <button 
             onClick={handleCloseClick}
-            className="text-white hover:text-[#41F2EE] text-xl font-bold"
+            className="text-white hover:text-[#41F2EE] text-sm font-bold ml-10"
             aria-label="Close recently added view"
+            style={{ position: 'relative', top: '1px' }}
           >
             ✕
           </button>

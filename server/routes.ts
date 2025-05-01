@@ -1,10 +1,12 @@
 import express, { type Express, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertEventSchema } from "@shared/schema";
+import { insertEventSchema, events, upvotes } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 import { ZodError } from "zod";
 import { parse } from "date-fns";
+import { db } from "./db";
+import { eq, and, sql } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -311,15 +313,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Cannot vote on a scheduled event" });
       }
 
+      // Directly check in the database to ensure accurate results
       const hasUpvoted = await storage.hasUserUpvoted(eventId, user.id);
       console.log(`User ${user.id} has already upvoted event ${eventId}: ${hasUpvoted}`);
       
-      let success;
+      let success = false;
       
       if (hasUpvoted) {
         // User already voted, so remove the vote
         console.log(`Removing upvote for user ${user.id} on event ${eventId}`);
-        success = await storage.removeUpvote(eventId, user.id);
+        // Bypass the double-check in removeUpvote by directly deleting the record
+        const removed = await db.delete(upvotes).where(
+          and(
+            eq(upvotes.eventId, eventId),
+            eq(upvotes.userId, user.id)
+          )
+        );
+        
+        if (removed.count > 0) {
+          // Update the event upvote count
+          await db.update(events)
+            .set({
+              upvotes: sql`GREATEST(${events.upvotes} - 1, 0)`
+            })
+            .where(eq(events.id, eventId));
+          success = true;
+        }
       } else {
         // User hasn't voted, add the vote
         console.log(`Adding upvote for user ${user.id} on event ${eventId}`);
