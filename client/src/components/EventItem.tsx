@@ -376,7 +376,10 @@ function EventItem({ event }: EventItemProps) {
                         Unvote (-1)
                       </DropdownMenuItem>
                     )}
-                    <AlertDialog>
+                    <AlertDialog onOpenChange={(open) => {
+                      // Close the dropdown menu when the alert dialog closes
+                      if (!open) setIsMenuOpen(false);
+                    }}>
                       <AlertDialogTrigger asChild>
                         <DropdownMenuItem 
                           className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
@@ -386,6 +389,23 @@ function EventItem({ event }: EventItemProps) {
                         </DropdownMenuItem>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
+                        <div className="absolute right-4 top-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 rounded-full hover:bg-gray-200"
+                            onClick={() => {
+                              // We need to notify the AlertDialog to close, which will also close the menu
+                              // due to our onOpenChange handler on the AlertDialog
+                              const cancelButton = document.querySelector('[data-radix-alert-dialog-cancel]');
+                              if (cancelButton instanceof HTMLElement) {
+                                cancelButton.click();
+                              }
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Event</AlertDialogTitle>
                           <AlertDialogDescription>
