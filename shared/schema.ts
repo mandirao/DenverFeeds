@@ -86,6 +86,20 @@ export const getDenverBoulderVenues = (): string[] => {
     .map(venue => venue.value);
 };
 
+// Define the list of cheap thrills venues (smaller, more affordable venues)
+export const cheapThrillsVenues = [
+  "Hi-Dive", 
+  "Larimer Lounge", 
+  "Marquis Theater", 
+  "HQ", 
+  "Lost Lake Lounge",
+  "City Park Jazz", 
+  "Levitt Pavilion Denver",
+  "Globe Hall",
+  "Moe's Original BBQ",
+  "Skylark Lounge"
+];
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),

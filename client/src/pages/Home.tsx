@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getNextMonths, denverBoulderVenues } from "@/components/EventFilters";
+import { cheapThrillsVenues } from "@shared/schema";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";

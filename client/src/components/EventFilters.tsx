@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { getDenverBoulderVenues } from "@shared/schema";
+import { getDenverBoulderVenues, cheapThrillsVenues } from "@shared/schema";
 
 export interface MonthOption {
   key: string;
@@ -167,6 +167,7 @@ export function EventFilters({
             <option value="just-added">Just Added</option>
             <option value="scheduled">Scheduled</option>
             <option value="member-picks">Member Picks</option>
+            <option value="cheap-thrills">Cheap Thrills</option>
           </select>
         </div>
       </div>
