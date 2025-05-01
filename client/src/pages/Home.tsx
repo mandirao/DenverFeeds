@@ -424,8 +424,8 @@ export default function Home() {
       <main className="container mx-auto px-4 py-8">
         {/* Recent Events Banner - Only show in default view */}
         {!isLoading && !error && hasEvents && filters.status === "all" && (
-          <div className="mb-8 text-center">
-            <p className="text-4xl font-light text-white mb-6 lowercase">
+          <div className="mb-6 text-left">
+            <p className="text-xl font-light text-black mb-4 lowercase">
               {(() => {
                 // Count events added in the last week (today + this_week)
                 const recentEvents = events.filter(event => {
@@ -437,9 +437,9 @@ export default function Home() {
                     {recentEvents.length} shows added in the last week. {' '}
                     <button 
                       onClick={() => setFilters({ ...filters, status: "just-added" })}
-                      className="text-white hover:text-[#41F2EE] underline font-light focus:outline-none"
+                      className="text-[#41F2EE] hover:text-black underline font-light focus:outline-none"
                     >
-                      review + vote
+                      Review + vote
                     </button>
                   </>
                 );
