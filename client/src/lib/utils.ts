@@ -162,7 +162,7 @@ export function isRecentlyAdded(createdAt: Date | string | null): boolean {
 }
 
 // Determine creation time category for an event
-export function getAddedTimeCategory(createdAt: Date | string | null): 'today' | 'this_week' | 'this_month' | 'older' {
+export function getAddedTimeCategory(createdAt: Date | string | null): 'today' | 'this_week' | 'last_week' | 'this_month' | 'older' {
   if (!createdAt) return 'older';
   
   let createdDate: Date;
@@ -177,6 +177,7 @@ export function getAddedTimeCategory(createdAt: Date | string | null): 'today' |
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = addDays(today, -1);
   const oneWeekAgo = addDays(today, -7);
+  const twoWeeksAgo = addDays(today, -14);
   const oneMonthAgo = new Date(today);
   oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
   
@@ -187,6 +188,8 @@ export function getAddedTimeCategory(createdAt: Date | string | null): 'today' |
     return 'today';
   } else if (isAfter(createdDay, oneWeekAgo)) {
     return 'this_week';
+  } else if (isAfter(createdDay, twoWeeksAgo)) {
+    return 'last_week';
   } else if (isAfter(createdDay, oneMonthAgo)) {
     return 'this_month';
   } else {
@@ -311,11 +314,13 @@ export function groupEventsByCreationTime(events: any[]) {
   const result: {
     today: any[];
     this_week: any[];
+    last_week: any[];
     this_month: any[];
     older: any[];
   } = {
     today: [],
     this_week: [],
+    last_week: [],
     this_month: [],
     older: []
   };

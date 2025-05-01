@@ -154,9 +154,23 @@ export default function Home() {
       filterSubtitle = filters.genre;
     }
     
+    // Function to handle close button click (return to "Show All" view)
+    const handleCloseClick = () => {
+      setFilters({ ...filters, status: "all" });
+    };
+    
     displayContent = (
       <div className="p-4 mb-8">
-        <h2 className="text-xl font-black mb-1 text-white uppercase">RECENTLY ADDED</h2>
+        <div className="flex justify-between items-center mb-1">
+          <h2 className="text-xl font-black text-white uppercase">RECENTLY ADDED</h2>
+          <button 
+            onClick={handleCloseClick}
+            className="text-white hover:text-[#41F2EE] text-xl font-bold"
+            aria-label="Close recently added view"
+          >
+            ✕
+          </button>
+        </div>
         {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
         
         {/* Today's Additions */}
@@ -177,6 +191,18 @@ export default function Home() {
             <h3 className="text-lg font-semibold text-white mb-2">Added This Week</h3>
             <ul className="list-none pl-0 space-y-2 mb-3">
               {groupedByCreationTime.this_week.map(event => (
+                <EventItem key={event.id} event={event} />
+              ))}
+            </ul>
+          </div>
+        )}
+        
+        {/* Last Week's Additions */}
+        {groupedByCreationTime.last_week && groupedByCreationTime.last_week.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-2">Added Last Week</h3>
+            <ul className="list-none pl-0 space-y-2 mb-3">
+              {groupedByCreationTime.last_week.map(event => (
                 <EventItem key={event.id} event={event} />
               ))}
             </ul>
