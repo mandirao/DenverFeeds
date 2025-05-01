@@ -388,19 +388,19 @@ function EventItem({ event }: EventItemProps) {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Event</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to delete this event? This action cannot be undone.
+                            Are you sure you want to delete this show? This can not be undone.
                             <p className="mt-2">
                               <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
                             </p>
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>Whoops, go back</AlertDialogCancel>
                           <AlertDialogAction 
                             onClick={handleDelete}
                             className="bg-red-500 hover:bg-red-600"
                           >
-                            Delete
+                            Yes, delete
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
