@@ -425,7 +425,7 @@ export default function Home() {
         {/* Recent Events Banner - Only show in default view */}
         {!isLoading && !error && hasEvents && filters.status === "all" && (
           <div className="mb-6 text-left">
-            <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '28px' }}>
+            <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '24px' }}>
               {(() => {
                 // Count events added in the last week (today + this_week)
                 const recentEvents = events.filter(event => {
