@@ -22,7 +22,6 @@ function EventItem({ event }: EventItemProps) {
   const [showUpvoteTooltip, setShowUpvoteTooltip] = useState(false);
   const [showRequesterTooltip, setShowRequesterTooltip] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Upvote mutation
   const upvoteMutation = useMutation({
@@ -376,31 +375,29 @@ function EventItem({ event }: EventItemProps) {
                         Unvote (-1)
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem 
-                      className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
-                      onClick={() => setIsDeleteDialogOpen(true)}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-
-                    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <DropdownMenuItem 
+                          className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                          onSelect={(e) => e.preventDefault()} // Prevent the dropdown from closing
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Event</AlertDialogTitle>
-                          <AlertDialogDescription className="space-y-2">
-                            <span>Are you sure you want to delete this show? This can not be undone.</span>
-                            <span className="block">
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this show? This can not be undone.
+                            <p className="mt-2">
                               <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
-                            </span>
+                            </p>
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Whoops, go back</AlertDialogCancel>
+                          <AlertDialogCancel>Whoops, go back</AlertDialogCancel>
                           <AlertDialogAction 
-                            onClick={() => {
-                              handleDelete();
-                              setIsDeleteDialogOpen(false);
-                            }}
+                            onClick={handleDelete}
                             className="bg-red-500 hover:bg-red-600"
                           >
                             Yes, delete
