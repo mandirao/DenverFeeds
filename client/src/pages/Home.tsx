@@ -123,7 +123,10 @@ export default function Home() {
   let displayContent;
   
   if (filters.status === "top-voted") {
-    // For top-voted, we now use the WeekDivider component to group by week
+    // For top-voted, we show a flat list without month/week grouping
+    // Filter out events with 0 votes
+    const eventsWithVotes = sortedEvents.filter(event => (event.upvotes || 0) > 0);
+    
     // Create subtitle if month or genre filters are applied
     let filterSubtitle = '';
     if (filters.month !== 'all' && filters.genre !== 'all') {
@@ -140,12 +143,27 @@ export default function Home() {
     };
     
     displayContent = (
-      <WeekDivider 
-        events={sortedEvents} 
-        title="TOP VOTED" 
-        subtitle={filterSubtitle} 
-        onClose={handleCloseClick} 
-      />
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center">
+            <h2 className="text-xl font-black text-white uppercase">TOP VOTED</h2>
+            <button 
+              onClick={handleCloseClick}
+              className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
+              aria-label="Close filter view"
+              style={{ fontSize: '0.75rem' }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
+        <ul className="list-none pl-0 space-y-2 mb-3">
+          {eventsWithVotes.map(event => (
+            <EventItem key={event.id} event={event} />
+          ))}
+        </ul>
+      </div>
     );
   } else if (filters.status === "member-picks") {
     // For member picks, we now use the WeekDivider component to group by week
