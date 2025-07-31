@@ -366,14 +366,14 @@ export default function Home() {
                 Cheap Thrills
               </button>
               
-              {/* Filter modal moved to the right side of filter tabs */}
-              <div className="ml-2">
+              {/* Filter modal moved closer to other filter tabs */}
+              <div className="ml-1">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Dialog>
                         <DialogTrigger asChild>
-                          <button className="px-2 py-1 rounded-full font-medium transition-colors text-sm bg-[#FE6B41] text-black hover:bg-white focus:outline-none">
+                          <button className="px-2 py-1 rounded-full font-medium transition-colors text-sm bg-[#FE6B41] text-black hover:text-white focus:outline-none border border-black hover:border-black">
                             + More
                           </button>
                         </DialogTrigger>
