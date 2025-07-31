@@ -437,9 +437,8 @@ function AddPlaylistForm() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-black text-[#1DB954] hover:bg-black hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors">
-          <Plus className="h-4 w-4 mr-2" />
-          Spotify Playlist
+        <Button className="bg-black text-[#1DB954] hover:bg-black hover:text-[#41F2EE] rounded-full w-10 h-10 p-0 font-medium transition-colors">
+          <Plus className="h-5 w-5" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md bg-[#F5F3F0]">
@@ -551,15 +550,6 @@ export default function Playlists() {
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8 flex flex-col items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-black uppercase text-center">COMMUNITY PLAYLISTS</h1>
-          </div>
-          <div>
-            <AddPlaylistForm />
-          </div>
-        </div>
 
         {/* Loading State */}
         {isLoading && (
@@ -574,6 +564,11 @@ export default function Playlists() {
             <p className="text-red-500">Error loading playlists</p>
           </div>
         )}
+
+        {/* Add Playlist Button */}
+        <div className="mb-6 flex justify-start">
+          <AddPlaylistForm />
+        </div>
 
         {/* Queue Playlist - Always at Top */}
         {!isLoading && !error && queuePlaylist && (
