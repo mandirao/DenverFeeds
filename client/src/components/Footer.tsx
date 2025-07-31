@@ -200,7 +200,7 @@ export function Footer() {
               onClick={() => setCsvModalOpen(true)} 
               className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm"
             >
-              <Upload className="w-4 h-4 mr-1" /> UPLOAD CSV
+              <Upload className="w-4 h-4 mr-1" /> UPLOAD EVENTS CSV
             </button>
           )}
         </div>
