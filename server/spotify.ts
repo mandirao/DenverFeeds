@@ -135,8 +135,8 @@ export class SpotifyService {
     try {
       const token = await this.getAccessToken();
       
-      // Fetch first 50 tracks (sufficient for artist summary)
-      const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50&fields=items(track(artists(name)))`, {
+      // Fetch up to 100 tracks to get comprehensive artist coverage
+      const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100&fields=items(track(artists(name)))`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
