@@ -190,11 +190,23 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
                   </div>
                 </div>
 
-                {/* Description */}
-                {playlist.description && (
-                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                    {playlist.description}
-                  </p>
+                {/* Featured Artists */}
+                {playlist.featuredArtists && playlist.featuredArtists.length > 0 && (
+                  <div className="text-sm text-gray-600 mb-2 relative">
+                    <div className="flex flex-wrap gap-1 overflow-hidden max-h-10">
+                      {playlist.featuredArtists.slice(0, 8).map((artist, index) => (
+                        <span key={index} className="whitespace-nowrap">
+                          {artist}{index < Math.min(playlist.featuredArtists.length - 1, 7) ? ',' : ''}
+                        </span>
+                      ))}
+                      {playlist.featuredArtists.length > 8 && (
+                        <span className="text-gray-400">...</span>
+                      )}
+                    </div>
+                    {playlist.featuredArtists.length > 5 && (
+                      <div className="absolute bottom-0 right-0 w-8 h-5 bg-gradient-to-l from-[#F5F3F0] to-transparent pointer-events-none"></div>
+                    )}
+                  </div>
                 )}
 
                 {/* Track count and followers */}

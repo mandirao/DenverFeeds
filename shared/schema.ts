@@ -200,6 +200,7 @@ export const playlists = pgTable("playlists", {
   trackCount: integer("track_count"),
   duration: integer("duration"), // in milliseconds
   followerCount: integer("follower_count"),
+  featuredArtists: text("featured_artists").array(), // Array of artist names from tracks
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -215,6 +216,7 @@ export const insertPlaylistSchema = createInsertSchema(playlists)
     trackCount: true, // Auto-fetched from Spotify API
     duration: true, // Auto-fetched from Spotify API
     followerCount: true, // Auto-fetched from Spotify API
+    featuredArtists: true, // Auto-fetched from Spotify API
     isActive: true,
     createdAt: true,
     updatedAt: true,

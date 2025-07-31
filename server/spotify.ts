@@ -23,6 +23,19 @@ interface SpotifyPlaylistResponse {
   };
 }
 
+interface SpotifyTrackResponse {
+  items: Array<{
+    track: {
+      id: string;
+      name: string;
+      artists: Array<{
+        id: string;
+        name: string;
+      }>;
+    };
+  }>;
+}
+
 interface SpotifyAccessTokenResponse {
   access_token: string;
   token_type: string;
@@ -81,6 +94,7 @@ export class SpotifyService {
     trackCount: number;
     followerCount: number;
     ownerName: string;
+    featuredArtists: string[];
   }> {
     try {
       const token = await this.getAccessToken();
@@ -99,6 +113,9 @@ export class SpotifyService {
 
       const playlist: SpotifyPlaylistResponse = await response.json();
       
+      // Fetch track details to get artist information
+      const featuredArtists = await this.getPlaylistArtists(playlistId);
+      
       return {
         title: playlist.name,
         description: playlist.description || null,
@@ -106,10 +123,47 @@ export class SpotifyService {
         trackCount: playlist.tracks.total,
         followerCount: playlist.followers.total,
         ownerName: playlist.owner.display_name,
+        featuredArtists,
       };
     } catch (error) {
       console.error('Error fetching Spotify playlist details:', error);
       throw error;
+    }
+  }
+
+  private async getPlaylistArtists(playlistId: string): Promise<string[]> {
+    try {
+      const token = await this.getAccessToken();
+      
+      // Fetch first 50 tracks (sufficient for artist summary)
+      const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50&fields=items(track(artists(name)))`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        console.error(`Failed to fetch playlist tracks: ${response.status}`);
+        return [];
+      }
+
+      const trackData: SpotifyTrackResponse = await response.json();
+      
+      // Extract unique artist names
+      const artistSet = new Set<string>();
+      trackData.items.forEach(item => {
+        if (item.track?.artists) {
+          item.track.artists.forEach(artist => {
+            artistSet.add(artist.name);
+          });
+        }
+      });
+
+      return Array.from(artistSet);
+    } catch (error) {
+      console.error('Error fetching playlist artists:', error);
+      return [];
     }
   }
 

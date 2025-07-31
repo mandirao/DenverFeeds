@@ -263,6 +263,7 @@ export class DatabaseStorage implements IStorage {
           coverUrl: spotifyData.coverUrl,
           trackCount: spotifyData.trackCount,
           followerCount: spotifyData.followerCount,
+          featuredArtists: spotifyData.featuredArtists,
           // Keep the provided curator or use Spotify owner as fallback
           curator: insertPlaylist.curator !== 'Community Member' ? insertPlaylist.curator : spotifyData.ownerName
         };
