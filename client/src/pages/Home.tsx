@@ -8,7 +8,6 @@ import { cheapThrillsVenues } from "@shared/schema";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Filter } from "lucide-react";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
@@ -380,13 +379,13 @@ export default function Home() {
               <div className="ml-4">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <button className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#FE6B41] text-black border border-black hover:border-white transition-colors focus:outline-none">
-                      <Filter className="h-4 w-4" />
+                    <button className="px-2 py-1 rounded-full font-medium transition-colors border text-sm bg-[#FE6B41] text-black border-black hover:border-white focus:outline-none">
+                      + More
                     </button>
                   </DialogTrigger>
                   <DialogContent className="bg-white border-2 border-black max-w-md">
                     <DialogHeader>
-                      <DialogTitle className="text-black font-anton font-black uppercase">Filters</DialogTitle>
+                      <DialogTitle className="text-black font-anton font-black uppercase">More Filters</DialogTitle>
                     </DialogHeader>
                     <div className="grid grid-cols-1 gap-4 pt-4">
                       <div>
