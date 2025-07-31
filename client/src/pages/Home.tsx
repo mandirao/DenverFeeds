@@ -66,8 +66,12 @@ export default function Home() {
         return false;
       }
     } else if (filters.status === "cheap-thrills") {
-      // Only show events at cheap thrills venues
-      if (!cheapThrillsVenues.some(venue => event.venue.toLowerCase() === venue.toLowerCase())) {
+      // Show events at cheap thrills venues OR any event with "Free" in artist/description
+      const isAtCheapVenue = cheapThrillsVenues.some(venue => event.venue.toLowerCase() === venue.toLowerCase());
+      const hasFreeInText = event.artist.toLowerCase().includes("free") || 
+                           (event.description && event.description.toLowerCase().includes("free"));
+      
+      if (!isAtCheapVenue && !hasFreeInText) {
         return false;
       }
     }
