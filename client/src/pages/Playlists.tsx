@@ -459,26 +459,17 @@ export default function Playlists() {
     return new Date(year, monthIndex, day);
   };
 
-  // Sort playlists: episode playlists by date (newest first), then other playlists by creation date
+  // Sort playlists chronologically: episodes by their date, non-episodes by creation date
   const playlists = [...playlistsData].sort((a, b) => {
-    const aDate = parseEpisodeDate(a.title);
-    const bDate = parseEpisodeDate(b.title);
+    const aEpisodeDate = parseEpisodeDate(a.title);
+    const bEpisodeDate = parseEpisodeDate(b.title);
     
-    // Both are episodes - sort by episode date (newest first)
-    if (aDate && bDate) {
-      return bDate.getTime() - aDate.getTime();
-    }
+    // Get the effective date for sorting: episode date or creation date
+    const aEffectiveDate = aEpisodeDate || new Date(a.createdAt || 0);
+    const bEffectiveDate = bEpisodeDate || new Date(b.createdAt || 0);
     
-    // Only a is an episode - episodes go first
-    if (aDate && !bDate) return -1;
-    
-    // Only b is an episode - episodes go first
-    if (!aDate && bDate) return 1;
-    
-    // Neither are episodes - sort by creation date (newest first)
-    const aCreated = new Date(a.createdAt || 0);
-    const bCreated = new Date(b.createdAt || 0);
-    return bCreated.getTime() - aCreated.getTime();
+    // Sort by effective date (newest first)
+    return bEffectiveDate.getTime() - aEffectiveDate.getTime();
   });
 
   return (
