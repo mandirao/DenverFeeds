@@ -166,14 +166,6 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-32">
-                        <DropdownMenuItem onClick={(e) => {
-                          e.preventDefault();
-                          setIsEditModalOpen(true);
-                          setIsMenuOpen(false);
-                        }}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={(e) => {
                             e.preventDefault();
@@ -520,7 +512,7 @@ export default function Playlists() {
 
         {/* Playlists Grid */}
         {!isLoading && !error && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-12">
             {playlists.map((playlist) => (
               <PlaylistCard key={playlist.id} playlist={playlist} />
             ))}
