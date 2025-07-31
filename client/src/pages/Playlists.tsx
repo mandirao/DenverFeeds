@@ -120,10 +120,9 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
                   )}
                 </div>
 
-                {/* Curator and Date */}
+                {/* Curator */}
                 <div className="text-sm text-gray-500">
                   <p>By {playlist.curator}</p>
-                  <p>{formatDate(playlist.createdAt || new Date())}</p>
                 </div>
               </div>
             </a>
