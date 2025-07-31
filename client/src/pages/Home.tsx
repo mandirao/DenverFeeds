@@ -8,6 +8,7 @@ import { cheapThrillsVenues } from "@shared/schema";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
@@ -325,6 +326,16 @@ export default function Home() {
                 Show All
               </button>
               <button
+                onClick={() => setFilters({ ...filters, status: "just-added" })}
+                className={`px-2 py-1 rounded-full font-medium transition-colors border text-sm ${
+                  filters.status === "just-added" 
+                    ? "bg-white text-black border-white" 
+                    : "bg-[#FE6B41] text-black border-black hover:border-white"
+                }`}
+              >
+                Added
+              </button>
+              <button
                 onClick={() => setFilters({ ...filters, status: "top-voted", sortBy: "votes" })}
                 className={`px-2 py-1 rounded-full font-medium transition-colors border text-sm ${
                   filters.status === "top-voted" 
@@ -333,16 +344,6 @@ export default function Home() {
                 }`}
               >
                 Top Voted
-              </button>
-              <button
-                onClick={() => setFilters({ ...filters, status: "just-added" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border text-sm ${
-                  filters.status === "just-added" 
-                    ? "bg-white text-black border-white" 
-                    : "bg-[#FE6B41] text-black border-black hover:border-white"
-                }`}
-              >
-                Updated
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "scheduled" })}
@@ -377,13 +378,16 @@ export default function Home() {
               
               {/* Filter modal moved to the right side of filter tabs */}
               <div className="ml-2">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <button className="px-2 py-1 rounded-full font-medium transition-colors text-sm bg-[#FE6B41] text-black hover:bg-opacity-80 focus:outline-none">
-                      + More
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-white border-2 border-black max-w-md">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <button className="px-2 py-1 rounded-full font-medium transition-colors text-sm bg-[#FE6B41] text-black hover:bg-white focus:outline-none">
+                            + More
+                          </button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-white border-2 border-black max-w-md">
                     <DialogHeader>
                       <DialogTitle className="text-black font-anton font-black uppercase">More Filters</DialogTitle>
                     </DialogHeader>
@@ -433,8 +437,14 @@ export default function Home() {
                         </div>
                       </div>
                     </div>
-                  </DialogContent>
-                </Dialog>
+                        </DialogContent>
+                      </Dialog>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>More filters</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               </div>
             </div>
