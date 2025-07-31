@@ -628,6 +628,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Refresh playlist metadata from Spotify
+  apiRouter.post("/playlists/:id/refresh", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid playlist ID" });
+      }
+
+      const existingPlaylist = await storage.getPlaylistById(id);
+      if (!existingPlaylist) {
+        return res.status(404).json({ message: "Playlist not found" });
+      }
+
+      if (!existingPlaylist.spotifyId) {
+        return res.status(400).json({ message: "Playlist has no Spotify ID to refresh from" });
+      }
+
+      // Import the spotify service here to avoid circular dependencies
+      const { spotifyService } = await import("./spotify");
+      
+      try {
+        console.log(`Refreshing Spotify metadata for playlist ID: ${existingPlaylist.spotifyId}`);
+        const spotifyData = await spotifyService.getPlaylistDetails(existingPlaylist.spotifyId);
+        
+        const refreshedPlaylist = await storage.updatePlaylist(id, {
+          title: spotifyData.title,
+          description: spotifyData.description,
+          coverUrl: spotifyData.coverUrl,
+          trackCount: spotifyData.trackCount,
+          followerCount: spotifyData.followerCount,
+        });
+        
+        console.log(`Successfully refreshed playlist: ${spotifyData.title}`);
+        res.json(refreshedPlaylist);
+      } catch (spotifyError) {
+        console.error("Spotify API error during refresh:", spotifyError);
+        res.status(400).json({ message: "Failed to fetch updated data from Spotify" });
+      }
+    } catch (error) {
+      console.error("Error refreshing playlist:", error);
+      res.status(500).json({ message: "Server error refreshing playlist" });
+    }
+  });
+
   app.use("/api", apiRouter);
 
   const httpServer = createServer(app);

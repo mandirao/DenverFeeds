@@ -1,6 +1,7 @@
 import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, count, desc, gt } from "drizzle-orm";
+import { spotifyService } from "./spotify";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -234,14 +235,41 @@ export class DatabaseStorage implements IStorage {
 
   async createPlaylist(insertPlaylist: InsertPlaylist): Promise<Playlist> {
     // Extract Spotify ID from URL
-    const spotifyIdMatch = insertPlaylist.spotifyUrl.match(/playlist\/([a-zA-Z0-9]+)/);
-    const spotifyId = spotifyIdMatch ? spotifyIdMatch[1] : null;
+    const spotifyId = spotifyService.extractPlaylistId(insertPlaylist.spotifyUrl);
     
-    const result = await db.insert(playlists).values({
+    // Start with base data that matches the insert schema
+    let playlistData: any = {
       ...insertPlaylist,
       spotifyId,
       updatedAt: new Date()
-    }).returning();
+    };
+
+    // Try to fetch metadata from Spotify API
+    if (spotifyId) {
+      try {
+        console.log(`Fetching Spotify metadata for playlist ID: ${spotifyId}`);
+        const spotifyData = await spotifyService.getPlaylistDetails(spotifyId);
+        
+        // Add Spotify metadata to playlist data
+        playlistData = {
+          ...playlistData,
+          title: spotifyData.title,
+          description: spotifyData.description,
+          coverUrl: spotifyData.coverUrl,
+          trackCount: spotifyData.trackCount,
+          followerCount: spotifyData.followerCount,
+          // Keep the provided curator or use Spotify owner as fallback
+          curator: insertPlaylist.curator !== 'Community Member' ? insertPlaylist.curator : spotifyData.ownerName
+        };
+        
+        console.log(`Successfully fetched Spotify metadata: ${spotifyData.title} - ${spotifyData.trackCount} tracks`);
+      } catch (error) {
+        console.error('Failed to fetch Spotify metadata, using provided data:', error);
+        // Continue with the original data if Spotify API fails
+      }
+    }
+    
+    const result = await db.insert(playlists).values(playlistData).returning();
     return result[0];
   }
 

@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ExternalLink } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { ExternalLink, Plus } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 import type { Playlist } from "@shared/schema";
 
@@ -80,6 +87,23 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
                   {playlist.artist}
                 </p>
 
+                {/* Description */}
+                {playlist.description && (
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                    {playlist.description}
+                  </p>
+                )}
+
+                {/* Track count and followers */}
+                <div className="text-xs text-gray-500 mb-2 flex gap-3">
+                  {playlist.trackCount && (
+                    <span>{playlist.trackCount} tracks</span>
+                  )}
+                  {playlist.followerCount !== null && playlist.followerCount >= 0 && (
+                    <span>{playlist.followerCount} followers</span>
+                  )}
+                </div>
+
                 {/* Curator and Date */}
                 <div className="text-sm text-gray-500">
                   <p>By {playlist.curator}</p>
@@ -97,6 +121,141 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
   );
 }
 
+function AddPlaylistForm() {
+  const [open, setOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    artist: "",
+    curator: "",
+    genre: "MIXED",
+    spotifyUrl: ""
+  });
+  const { toast } = useToast();
+
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const res = await apiRequest("POST", "/api/playlists", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/playlists'] });
+      setOpen(false);
+      setFormData({
+        title: "",
+        artist: "",
+        curator: "",
+        genre: "MIXED",
+        spotifyUrl: ""
+      });
+      toast({
+        title: "Playlist added!",
+        description: "The playlist has been added with Spotify metadata.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error adding playlist",
+        description: error.message || "Failed to add playlist",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.spotifyUrl) {
+      toast({
+        title: "Spotify URL required",
+        description: "Please provide a valid Spotify playlist URL",
+        variant: "destructive",
+      });
+      return;
+    }
+    createMutation.mutate(formData);
+  };
+
+  const genreOptions = [
+    "ROCK", "RAP", "POP", "ELECTRONIC", "JAZZ", "CLASSICAL", "COUNTRY", "INDIE", "MIXED"
+  ];
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="bg-[#1DB954] hover:bg-[#1aa34a] text-white">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Playlist
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add New Playlist</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="spotifyUrl">Spotify Playlist URL *</Label>
+            <Input
+              id="spotifyUrl"
+              type="url"
+              placeholder="https://open.spotify.com/playlist/..."
+              value={formData.spotifyUrl}
+              onChange={(e) => setFormData({ ...formData, spotifyUrl: e.target.value })}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Title and details will be automatically fetched from Spotify
+            </p>
+          </div>
+          
+          <div>
+            <Label htmlFor="curator">Curator Name *</Label>
+            <Input
+              id="curator"
+              placeholder="Your name"
+              value={formData.curator}
+              onChange={(e) => setFormData({ ...formData, curator: e.target.value })}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="genre">Genre</Label>
+            <Select value={formData.genre} onValueChange={(value) => setFormData({ ...formData, genre: value })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {genreOptions.map((genre) => (
+                  <SelectItem key={genre} value={genre}>
+                    {genre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={createMutation.isPending}
+              className="flex-1 bg-[#1DB954] hover:bg-[#1aa34a] text-white"
+            >
+              {createMutation.isPending ? "Adding..." : "Add Playlist"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Playlists() {
   const { data: playlists = [], isLoading, error } = useQuery<Playlist[]>({
     queryKey: ['/api/playlists'],
@@ -109,11 +268,16 @@ export default function Playlists() {
       
       <main className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-black text-black mb-2">CURATED PLAYLISTS</h1>
-          <p className="text-gray-600 text-lg">
-            Discover handpicked music collections from our community contributors
-          </p>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-black text-black mb-2">CURATED PLAYLISTS</h1>
+            <p className="text-gray-600 text-lg">
+              Discover handpicked music collections from our community contributors
+            </p>
+          </div>
+          <div className="sm:flex-shrink-0">
+            <AddPlaylistForm />
+          </div>
         </div>
 
         {/* Loading State */}
