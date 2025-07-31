@@ -1,6 +1,6 @@
 import { Event } from "@shared/schema";
 import { getAddedTimeCategory } from "@/lib/utils";
-import WeekDivider from "@/components/WeekDivider";
+import EventItem from "@/components/EventItem";
 
 interface JustAddedViewProps {
   events: Event[];
@@ -71,9 +71,11 @@ export default function JustAddedView({ events, subtitle }: JustAddedViewProps) 
         return (
           <div key={category} className="mb-6">
             <h3 className="text-xl text-black mb-3 font-anton font-black">{categoryDisplayNames[typedCategory]}</h3>
-            <WeekDivider 
-              events={categoryEvents}
-            />
+            <ul className="list-none pl-0 space-y-2 mb-3">
+              {categoryEvents.map(event => (
+                <EventItem key={event.id} event={event} />
+              ))}
+            </ul>
           </div>
         );
       })}

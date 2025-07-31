@@ -1,6 +1,6 @@
 import { Event } from "@shared/schema";
 import EventItem from "@/components/EventItem";
-import { formatMonth } from "@/lib/utils";
+import { formatMonth, getWeekOfMonth } from "@/lib/utils";
 import { format } from "date-fns";
 
 interface MonthGroupProps {
@@ -18,9 +18,10 @@ interface MonthGroupProps {
 interface WeekProps {
   weekEvents: Event[];
   isLastWeek: boolean;
+  weekNumber: number;
 }
 
-function WeekGroup({ weekEvents, isLastWeek }: WeekProps) {
+function WeekGroup({ weekEvents, isLastWeek, weekNumber }: WeekProps) {
   if (weekEvents.length === 0) return null;
   
   return (
@@ -32,9 +33,9 @@ function WeekGroup({ weekEvents, isLastWeek }: WeekProps) {
       </ul>
       {!isLastWeek && (
         <div className="pt-5 pb-7">
-          <div 
-            className="w-[30px] h-[2px] bg-black ml-[3rem]"
-          />
+          <div className="ml-[3rem] text-black text-sm font-medium">
+            Week {weekNumber}
+          </div>
         </div>
       )}
     </div>
@@ -50,13 +51,22 @@ export function MonthGroup({ monthName, events }: MonthGroupProps) {
   return (
     <div className="mb-6">
       <h2 className="text-xl text-black mb-3 font-anton font-black">{formatMonth(monthName)}</h2>
-      {weekKeys.map((weekKey, index) => (
-        <WeekGroup 
-          key={weekKey}
-          weekEvents={events.weekGroups[weekKey].events}
-          isLastWeek={index === weekKeys.length - 1}
-        />
-      ))}
+      {weekKeys.map((weekKey, index) => {
+        const weekData = events.weekGroups[weekKey];
+        // Calculate week number from the first event in this week
+        const weekNumber = weekData.events.length > 0 
+          ? getWeekOfMonth(new Date(weekData.events[0].date)) 
+          : 1;
+        
+        return (
+          <WeekGroup 
+            key={weekKey}
+            weekEvents={weekData.events}
+            isLastWeek={index === weekKeys.length - 1}
+            weekNumber={weekNumber}
+          />
+        );
+      })}
     </div>
   );
 }

@@ -152,22 +152,18 @@ export default function Home() {
       </div>
     );
   } else if (filters.status === "member-picks") {
-    // For member picks, we now use the WeekDivider component to group by week
-    // Create subtitle if month or genre filters are applied
-    let filterSubtitle = '';
-    if (filters.month !== 'all' && filters.genre !== 'all') {
-      filterSubtitle = `${filters.genre} in ${filters.month}`;
-    } else if (filters.month !== 'all') {
-      filterSubtitle = filters.month;
-    } else if (filters.genre !== 'all') {
-      filterSubtitle = filters.genre;
-    }
-    
+    // For member picks, group by month with month headers
+    const groupedEvents = groupEventsByMonth(sortedEvents);
     displayContent = (
-      <WeekDivider 
-        events={sortedEvents} 
-        subtitle={filterSubtitle} 
-      />
+      <>
+        {Object.entries(groupedEvents).map(([month, monthEvents]) => (
+          <MonthGroup 
+            key={month} 
+            monthName={month} 
+            events={monthEvents} 
+          />
+        ))}
+      </>
     );
   } else if (filters.status === "just-added") {
     // Special case for 'Just Added' - we now use the JustAddedView component
@@ -188,40 +184,32 @@ export default function Home() {
       />
     );
   } else if (filters.status === "cheap-thrills") {
-    // For cheap thrills events, we now use the WeekDivider component to group by week
-    // Create subtitle if month or genre filters are applied
-    let filterSubtitle = '';
-    if (filters.month !== 'all' && filters.genre !== 'all') {
-      filterSubtitle = `${filters.genre} in ${filters.month}`;
-    } else if (filters.month !== 'all') {
-      filterSubtitle = filters.month;
-    } else if (filters.genre !== 'all') {
-      filterSubtitle = filters.genre;
-    }
-    
+    // For cheap thrills events, group by month with month headers
+    const groupedEvents = groupEventsByMonth(sortedEvents);
     displayContent = (
-      <WeekDivider 
-        events={sortedEvents} 
-        subtitle={filterSubtitle} 
-      />
+      <>
+        {Object.entries(groupedEvents).map(([month, monthEvents]) => (
+          <MonthGroup 
+            key={month} 
+            monthName={month} 
+            events={monthEvents} 
+          />
+        ))}
+      </>
     );
   } else if (filters.status === "scheduled") {
-    // For scheduled events, we now use the WeekDivider component to group by week
-    // Create subtitle if month or genre filters are applied
-    let filterSubtitle = '';
-    if (filters.month !== 'all' && filters.genre !== 'all') {
-      filterSubtitle = `${filters.genre} in ${filters.month}`;
-    } else if (filters.month !== 'all') {
-      filterSubtitle = filters.month;
-    } else if (filters.genre !== 'all') {
-      filterSubtitle = filters.genre;
-    }
-    
+    // For scheduled events, group by month with month headers
+    const groupedEvents = groupEventsByMonth(sortedEvents);
     displayContent = (
-      <WeekDivider 
-        events={sortedEvents} 
-        subtitle={filterSubtitle} 
-      />
+      <>
+        {Object.entries(groupedEvents).map(([month, monthEvents]) => (
+          <MonthGroup 
+            key={month} 
+            monthName={month} 
+            events={monthEvents} 
+          />
+        ))}
+      </>
     );
   } else {
     // Standard view with events grouped by month
@@ -240,8 +228,10 @@ export default function Home() {
   }
   
   // Check if we have events to display after filtering
-  const hasEvents = filters.status === "top-voted" || filters.status === "just-added" || filters.status === "member-picks" || filters.status === "scheduled" || filters.status === "cheap-thrills"
+  const hasEvents = filters.status === "top-voted" || filters.status === "just-added"
     ? sortedEvents.length > 0 
+    : filters.status === "member-picks" || filters.status === "scheduled" || filters.status === "cheap-thrills"
+    ? Object.entries(groupEventsByMonth(sortedEvents)).length > 0
     : Object.entries(groupedByMonthAndWeek).length > 0;
 
   // Handle individual filter changes
