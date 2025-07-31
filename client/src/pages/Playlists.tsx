@@ -110,7 +110,7 @@ function QueuePlaylistCard({ playlist }: { playlist: Playlist }) {
               href="https://open.spotify.com/playlist/65hepNEHQKF41ymtEqunGr?si=fe7ae61767784f12&pt=0771af0f5848a6f0e5d4651186f89c53"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-[#1DB954] hover:bg-[#1ed760] text-white font-bold py-3 px-6 rounded-full transition-colors"
+              className="bg-black text-[#FEABDA] hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors"
             >
               Collaborate on Spotify
             </a>
@@ -440,7 +440,7 @@ function AddPlaylistForm() {
         <Tooltip>
           <TooltipTrigger asChild>
             <DialogTrigger asChild>
-              <Button className="bg-[#FE6B41] text-black hover:bg-[#e85a35] border-2 border-black rounded-full w-10 h-10 p-0 font-medium transition-colors">
+              <Button className="bg-[#FE6B41] text-black hover:bg-[#e85a35] border border-black rounded-full w-10 h-10 p-0 font-medium transition-colors">
                 <Plus className="h-5 w-5" />
               </Button>
             </DialogTrigger>
