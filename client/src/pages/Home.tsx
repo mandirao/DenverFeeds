@@ -137,26 +137,8 @@ export default function Home() {
       filterSubtitle = filters.genre;
     }
     
-    // Function to handle close button click (return to "Show All" view)
-    const handleCloseClick = () => {
-      setFilters({ ...filters, status: "all" });
-    };
-    
     displayContent = (
       <div className="mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center">
-            <h2 className="text-xl font-black text-white uppercase">TOP VOTED</h2>
-            <button 
-              onClick={handleCloseClick}
-              className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
-              aria-label="Close filter view"
-              style={{ fontSize: '0.75rem' }}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
         {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
         <ul className="list-none pl-0 space-y-2 mb-3">
           {eventsWithVotes.map(event => (
@@ -177,17 +159,10 @@ export default function Home() {
       filterSubtitle = filters.genre;
     }
     
-    // Function to handle close button click (return to "Show All" view)
-    const handleCloseClick = () => {
-      setFilters({ ...filters, status: "all" });
-    };
-    
     displayContent = (
       <WeekDivider 
         events={sortedEvents} 
-        title="MEMBER PICKS" 
         subtitle={filterSubtitle} 
-        onClose={handleCloseClick} 
       />
     );
   } else if (filters.status === "just-added") {
@@ -202,16 +177,10 @@ export default function Home() {
       filterSubtitle = filters.genre;
     }
     
-    // Function to handle close button click (return to "Show All" view)
-    const handleCloseClick = () => {
-      setFilters({ ...filters, status: "all" });
-    };
-    
     displayContent = (
       <JustAddedView 
         events={filteredEvents} 
         subtitle={filterSubtitle} 
-        onClose={handleCloseClick} 
       />
     );
   } else if (filters.status === "cheap-thrills") {
@@ -226,17 +195,10 @@ export default function Home() {
       filterSubtitle = filters.genre;
     }
     
-    // Function to handle close button click (return to "Show All" view)
-    const handleCloseClick = () => {
-      setFilters({ ...filters, status: "all" });
-    };
-    
     displayContent = (
       <WeekDivider 
         events={sortedEvents} 
-        title="CHEAP THRILLS" 
         subtitle={filterSubtitle} 
-        onClose={handleCloseClick} 
       />
     );
   } else if (filters.status === "scheduled") {
@@ -251,17 +213,10 @@ export default function Home() {
       filterSubtitle = filters.genre;
     }
     
-    // Function to handle close button click (return to "Show All" view)
-    const handleCloseClick = () => {
-      setFilters({ ...filters, status: "all" });
-    };
-    
     displayContent = (
       <WeekDivider 
         events={sortedEvents} 
-        title="SCHEDULED" 
         subtitle={filterSubtitle} 
-        onClose={handleCloseClick} 
       />
     );
   } else {

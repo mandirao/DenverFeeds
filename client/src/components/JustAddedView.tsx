@@ -5,12 +5,11 @@ import WeekDivider from "@/components/WeekDivider";
 interface JustAddedViewProps {
   events: Event[];
   subtitle?: string;
-  onClose: () => void;
 }
 
 type TimeCategory = 'today' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'older';
 
-export default function JustAddedView({ events, subtitle, onClose }: JustAddedViewProps) {
+export default function JustAddedView({ events, subtitle }: JustAddedViewProps) {
   if (!events.length) return null;
   
   // Sort events by creation date (newest first)
@@ -62,19 +61,6 @@ export default function JustAddedView({ events, subtitle, onClose }: JustAddedVi
   
   return (
     <div className="mb-6">
-      <div className="flex justify-between items-center mb-3">
-        <div className="flex items-center">
-          <h2 className="text-xl font-black text-white uppercase">JUST ADDED</h2>
-          <button 
-            onClick={onClose}
-            className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
-            aria-label="Close filter view"
-            style={{ fontSize: '0.75rem' }}
-          >
-            ✕
-          </button>
-        </div>
-      </div>
       {subtitle && <p className="text-white text-sm mb-4 opacity-80">{subtitle}</p>}
       
       {/* Display events by time category */}
@@ -87,8 +73,6 @@ export default function JustAddedView({ events, subtitle, onClose }: JustAddedVi
             <h3 className="text-lg font-semibold text-white mb-2">{categoryDisplayNames[typedCategory]}</h3>
             <WeekDivider 
               events={categoryEvents}
-              title=""
-              subtitle=""
             />
           </div>
         );

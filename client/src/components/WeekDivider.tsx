@@ -4,16 +4,14 @@ import { getWeekRange } from "@/lib/utils";
 
 interface WeekDividerProps {
   events: Event[];
-  title: string;
   subtitle?: string;
-  onClose?: () => void;
 }
 
 /**
  * WeekDivider component displays events with week dividers
  * It groups events by week and adds a horizontal divider between weeks
  */
-export default function WeekDivider({ events, title, subtitle, onClose }: WeekDividerProps) {
+export default function WeekDivider({ events, subtitle }: WeekDividerProps) {
   if (!events.length) return null;
   
   // Sort events by date
@@ -41,22 +39,6 @@ export default function WeekDivider({ events, title, subtitle, onClose }: WeekDi
   
   return (
     <div className="mb-6">
-      <div className="flex justify-between items-center mb-3">
-        <div className="flex items-center">
-          <h2 className="text-xl font-black text-white uppercase">{title}</h2>
-          {onClose && (
-            <button 
-              onClick={onClose}
-              className="text-white hover:text-[#41F2EE] text-xs font-bold ml-5"
-              aria-label="Close filter view"
-              style={{ fontSize: '0.75rem' }}
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      </div>
-      
       {subtitle && <p className="text-white text-sm mb-4 opacity-80">{subtitle}</p>}
       
       {sortedWeekKeys.map((weekKey, index) => (
