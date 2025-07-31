@@ -193,7 +193,7 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
                 {/* Featured Artists */}
                 {playlist.featuredArtists && playlist.featuredArtists.length > 0 && (
                   <div className="text-sm text-gray-600 mb-4 relative">
-                    <div className="flex flex-wrap gap-x-1 gap-y-1 overflow-hidden max-h-16 leading-snug">
+                    <div className="flex flex-wrap gap-x-1 gap-y-0 overflow-hidden max-h-16 leading-tight">
                       {playlist.featuredArtists.slice(0, 15).map((artist, index) => (
                         <span key={index} className="whitespace-nowrap">
                           {artist}{index < Math.min((playlist.featuredArtists?.length || 0) - 1, 14) ? ',' : ''}
@@ -203,12 +203,12 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
                         <span className="text-gray-400">...</span>
                       )}
                     </div>
-                    <div className="absolute bottom-0 left-0 w-full h-6 bg-gradient-to-t from-[#F5F3F0] via-[#F5F3F0]/80 to-transparent pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-[#F5F3F0] via-[#F5F3F0]/80 to-transparent pointer-events-none"></div>
                   </div>
                 )}
 
                 {/* Track count and followers */}
-                <div className="text-xs text-gray-500 mb-1 flex gap-3">
+                <div className="text-xs text-gray-500 mb-0.5 flex gap-3">
                   {playlist.trackCount && (
                     <span>{playlist.trackCount} tracks</span>
                   )}
