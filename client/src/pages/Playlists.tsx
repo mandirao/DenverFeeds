@@ -450,13 +450,13 @@ function AddPlaylistForm() {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <DialogContent className="sm:max-w-md bg-[#F5F3F0]">
+      <DialogContent className="sm:max-w-md bg-[#F5F3F0] text-black">
         <DialogHeader>
-          <DialogTitle>Add New Playlist</DialogTitle>
+          <DialogTitle className="text-black">Add new playlist</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="spotifyUrl">Spotify Playlist URL *</Label>
+            <Label htmlFor="spotifyUrl" className="text-black">Spotify playlist URL *</Label>
             <Input
               id="spotifyUrl"
               type="url"
@@ -464,20 +464,22 @@ function AddPlaylistForm() {
               value={formData.spotifyUrl}
               onChange={(e) => setFormData({ ...formData, spotifyUrl: e.target.value })}
               required
+              className="text-black"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-black mt-1">
               Title and details will be automatically fetched from Spotify
             </p>
           </div>
           
           <div>
-            <Label htmlFor="curator">Curator Name *</Label>
+            <Label htmlFor="curator" className="text-black">Your name *</Label>
             <Input
               id="curator"
               placeholder="Your name"
               value={formData.curator}
               onChange={(e) => setFormData({ ...formData, curator: e.target.value })}
               required
+              className="text-black"
             />
           </div>
 
@@ -488,7 +490,7 @@ function AddPlaylistForm() {
               type="button" 
               variant="outline" 
               onClick={() => setOpen(false)}
-              className="flex-1"
+              className="flex-1 text-black"
             >
               Cancel
             </Button>
@@ -497,7 +499,7 @@ function AddPlaylistForm() {
               disabled={createMutation.isPending}
               className="flex-1 bg-black text-[#1DB954] hover:bg-black hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors"
             >
-              {createMutation.isPending ? "Adding..." : "Add Playlist"}
+              {createMutation.isPending ? "Adding..." : "Add playlist"}
             </Button>
           </div>
         </form>
