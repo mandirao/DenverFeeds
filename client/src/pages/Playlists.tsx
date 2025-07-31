@@ -360,7 +360,7 @@ function AddPlaylistForm() {
       <DialogTrigger asChild>
         <Button className="bg-black hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4 mr-2" />
-          + Spotify Playlist
+          Spotify Playlist
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md bg-[#F5F3F0]">
@@ -487,10 +487,7 @@ export default function Playlists() {
         {/* Header */}
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-black text-black mb-2">CURATED PLAYLISTS</h1>
-            <p className="text-gray-600 text-lg">
-              Discover handpicked music collections from our community contributors
-            </p>
+            <h1 className="text-2xl font-black text-black uppercase">COMMUNITY PLAYLISTS</h1>
           </div>
           <div className="sm:flex-shrink-0">
             <AddPlaylistForm />
