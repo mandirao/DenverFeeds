@@ -88,26 +88,26 @@ function QueuePlaylistCard({ playlist }: { playlist: Playlist }) {
             <h2 className="text-3xl font-black text-black uppercase">
               {playlist.title}
             </h2>
-            <span className="bg-[#FE6B41] text-white text-xs font-bold uppercase px-3 py-2 rounded">
+            <span className="bg-[#41F2EE] text-black text-xs font-bold uppercase px-3 py-2 rounded">
               LIVE
             </span>
           </div>
 
           <div className="mb-6">
             <h3 className="text-lg font-bold text-gray-800 mb-3">
-              We're collabing on a Mixed Tape
+              We're collabing on a mixed tape...
             </h3>
             <ul className="text-gray-700 space-y-1 text-sm">
-              <li>• Each person gets to add a max of 3 songs to the queue</li>
-              <li>• Everyone gets to reorder songs for flow</li>
-              <li>• Want to add a 4th? Remove one of <em>your</em> other songs + reorder for flow ✨</li>
-              <li>• In a week or two our finished work of art will be archived below.</li>
+              <li>• Each person adds <em>up to 3 tracks</em> to the queue</li>
+              <li>• Want to add a 4th? Remove one of <em>your</em> other songs ✨</li>
+              <li>• Everyone gets to reorder tracks for flow</li>
+              <li>• In a week or two our finished work of art is archived below</li>
             </ul>
           </div>
 
           <div className="flex gap-3">
             <a
-              href={playlist.spotifyUrl}
+              href="https://open.spotify.com/playlist/65hepNEHQKF41ymtEqunGr?si=fe7ae61767784f12&pt=0771af0f5848a6f0e5d4651186f89c53"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-[#1DB954] hover:bg-[#1ed760] text-white font-bold py-3 px-6 rounded-full transition-colors"
