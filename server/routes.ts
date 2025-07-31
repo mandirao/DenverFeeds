@@ -7,6 +7,7 @@ import { ZodError } from "zod";
 import { parse } from "date-fns";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
+import { spotifyService } from "./spotify";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -570,6 +571,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating playlist:", error);
       res.status(500).json({ message: "Failed to create playlist" });
+    }
+  });
+
+  // Refresh playlist data from Spotify
+  apiRouter.post("/playlists/:id/refresh", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid playlist ID" });
+      }
+
+      const existingPlaylist = await storage.getPlaylistById(id);
+      if (!existingPlaylist || !existingPlaylist.spotifyId) {
+        return res.status(404).json({ message: "Playlist not found or missing Spotify ID" });
+      }
+
+      // Fetch fresh data from Spotify
+      const spotifyData = await spotifyService.getPlaylistDetails(existingPlaylist.spotifyId);
+      
+      // Update the playlist with fresh data including featuredArtists
+      const updatedPlaylist = await storage.updatePlaylist(id, {
+        title: spotifyData.title,
+        description: spotifyData.description,
+        coverUrl: spotifyData.coverUrl,
+        trackCount: spotifyData.trackCount,
+        followerCount: spotifyData.followerCount,
+        featuredArtists: spotifyData.featuredArtists,
+        updatedAt: new Date()
+      });
+
+      res.json(updatedPlaylist);
+    } catch (error) {
+      console.error("Error refreshing playlist:", error);
+      res.status(500).json({ message: "Failed to refresh playlist data" });
     }
   });
 

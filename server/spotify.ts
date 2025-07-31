@@ -142,7 +142,7 @@ export class SpotifyService {
           'Content-Type': 'application/json',
         }
       });
-
+      
       if (!response.ok) {
         console.error(`Failed to fetch playlist tracks: ${response.status}`);
         return [];
