@@ -13,7 +13,7 @@ export function Navbar() {
               <h1 className="text-3xl md:text-4xl text-black hover:text-[#41F2EE] transition-colors font-black mb-2 sm:mb-0 cursor-pointer">SETLIST SOCIAL FEED</h1>
             </Link>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-6">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

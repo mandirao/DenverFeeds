@@ -358,7 +358,7 @@ function AddPlaylistForm() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-black hover:bg-gray-800 text-white">
+        <Button className="bg-black text-[#1DB954] hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors">
           <Plus className="h-4 w-4 mr-2" />
           Spotify Playlist
         </Button>
@@ -408,7 +408,7 @@ function AddPlaylistForm() {
             <Button 
               type="submit" 
               disabled={createMutation.isPending}
-              className="flex-1 bg-black hover:bg-gray-800 text-white"
+              className="flex-1 bg-black text-[#1DB954] hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors"
             >
               {createMutation.isPending ? "Adding..." : "Add Playlist"}
             </Button>
