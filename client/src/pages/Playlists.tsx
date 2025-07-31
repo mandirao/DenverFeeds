@@ -52,6 +52,80 @@ function getMonthTag(dateString: Date | string): { month: string; color: string 
   };
 }
 
+function QueuePlaylistCard({ playlist }: { playlist: Playlist }) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  return (
+    <div className="bg-[#F5F3F0] rounded-lg shadow-md overflow-hidden mb-8 border-2 border-[#FE6B41]">
+      <div className="flex flex-col md:flex-row">
+        {/* Cover Art - Left Side */}
+        <div className="w-full md:w-1/3 lg:w-1/4">
+          <div className="aspect-square bg-gray-100 overflow-hidden">
+            {playlist.coverUrl && !imageError ? (
+              <img
+                src={playlist.coverUrl}
+                alt={`${playlist.title} cover`}
+                className={`w-full h-full object-cover transition-opacity duration-200 ${
+                  imageLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-[#FE6B41] to-[#FEABDA] flex items-center justify-center">
+                <span className="text-white font-bold text-4xl">
+                  {playlist.title.charAt(0)}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Content - Right Side */}
+        <div className="flex-1 p-6 md:p-8">
+          <div className="flex items-start justify-between mb-4">
+            <h2 className="text-3xl font-black text-black uppercase">
+              {playlist.title}
+            </h2>
+            <span className="bg-[#FE6B41] text-white text-xs font-bold uppercase px-3 py-2 rounded">
+              COLLABORATIVE
+            </span>
+          </div>
+
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-3">
+              Create the perfect collaborative Mixed Tape
+            </h3>
+            <ul className="text-gray-700 space-y-1 text-sm">
+              <li>• Each person gets to add a max of 3 songs to the queue</li>
+              <li>• Everyone is allowed to reorder songs for flow</li>
+              <li>• Want to add a 4th? Remove one of your other songs + reorder for flow ✨</li>
+              <li>• Not in Spotify? Just give us a title or youtube link</li>
+              <li>• Wherever it lands by next Monday (or sometimes two Mondays) is our finished work of art</li>
+            </ul>
+          </div>
+
+          <div className="flex gap-3">
+            <a
+              href={playlist.spotifyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#1DB954] hover:bg-[#1ed760] text-white font-bold py-3 px-6 rounded-full transition-colors flex items-center gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Collaborate on Spotify
+            </a>
+            <button className="bg-black hover:bg-gray-800 text-[#FEABDA] font-bold py-3 px-6 rounded-full transition-colors">
+              Add to Queue
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PlaylistCard({ playlist }: { playlist: Playlist }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -467,12 +541,15 @@ export default function Playlists() {
     return new Date(year, monthIndex, day);
   };
 
-  // Sort playlists by creation date (newest first)
-  const playlists = [...playlistsData].sort((a, b) => {
-    const aCreated = new Date(a.createdAt || 0);
-    const bCreated = new Date(b.createdAt || 0);
-    return bCreated.getTime() - aCreated.getTime();
-  });
+  // Separate queue playlist from regular playlists
+  const queuePlaylist = playlistsData.find(p => p.title === "Queue it up");
+  const regularPlaylists = playlistsData
+    .filter(p => p.title !== "Queue it up")
+    .sort((a, b) => {
+      const aCreated = new Date(a.createdAt || 0);
+      const bCreated = new Date(b.createdAt || 0);
+      return bCreated.getTime() - aCreated.getTime();
+    });
 
   return (
     <div className="min-h-screen bg-[#FE6B41]">
@@ -503,17 +580,22 @@ export default function Playlists() {
           </div>
         )}
 
-        {/* Playlists Grid */}
-        {!isLoading && !error && (
+        {/* Queue Playlist - Always at Top */}
+        {!isLoading && !error && queuePlaylist && (
+          <QueuePlaylistCard playlist={queuePlaylist} />
+        )}
+
+        {/* Regular Playlists Grid */}
+        {!isLoading && !error && regularPlaylists.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-12">
-            {playlists.map((playlist) => (
+            {regularPlaylists.map((playlist) => (
               <PlaylistCard key={playlist.id} playlist={playlist} />
             ))}
           </div>
         )}
 
         {/* Empty State */}
-        {!isLoading && !error && playlists.length === 0 && (
+        {!isLoading && !error && playlistsData.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg mb-4">No playlists available yet</p>
             <p className="text-gray-400">Check back soon for curated music collections!</p>
