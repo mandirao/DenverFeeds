@@ -326,7 +326,8 @@ export default function Home() {
         {/* Filter Pills - Show on default view or when any filter is active */}
         {!isLoading && !error && hasEvents && (
           <div className="mb-6">
-            <div className="flex flex-wrap gap-2">
+            <div className="overflow-x-auto">
+              <div className="flex gap-2 min-w-max pb-2">
               <button
                 onClick={() => setFilters({ ...filters, status: "all" })}
                 className={`px-2 py-1 rounded-full font-medium transition-colors border text-sm ${
@@ -387,6 +388,7 @@ export default function Home() {
               >
                 Cheap Thrills
               </button>
+              </div>
             </div>
           </div>
         )}
