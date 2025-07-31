@@ -70,7 +70,7 @@ export default function JustAddedView({ events, subtitle }: JustAddedViewProps) 
         
         return (
           <div key={category} className="mb-6">
-            <h3 className="text-lg font-semibold text-white mb-2">{categoryDisplayNames[typedCategory]}</h3>
+            <h3 className="text-xl text-black mb-3 font-anton font-black">{categoryDisplayNames[typedCategory]}</h3>
             <WeekDivider 
               events={categoryEvents}
             />
