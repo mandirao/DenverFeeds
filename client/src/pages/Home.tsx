@@ -335,8 +335,15 @@ export default function Home() {
       />
       
       <main className="container mx-auto px-4 py-8">
-        {/* Recent Events Banner - Only show in default view */}
-        {!isLoading && !error && hasEvents && filters.status === "all" && (
+        {/* Recent Events Banner - Only show in default view and if there are recent events */}
+        {!isLoading && !error && hasEvents && filters.status === "all" && (() => {
+          // Count events added in the last week (today + this_week)
+          const recentEvents = events.filter(event => {
+            const category = getAddedTimeCategory(event.createdAt);
+            return category === 'today' || category === 'this_week';
+          });
+          return recentEvents.length > 0;
+        })() && (
           <div className="mb-6 text-left">
             <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '24px' }}>
               {(() => {
@@ -358,6 +365,74 @@ export default function Home() {
                 );
               })()}
             </p>
+          </div>
+        )}
+
+        {/* Filter Pills - Show on default view or when any filter is active */}
+        {!isLoading && !error && hasEvents && (
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setFilters({ ...filters, status: "all" })}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  filters.status === "all" 
+                    ? "bg-white text-black" 
+                    : "bg-black text-white hover:bg-gray-800"
+                }`}
+              >
+                Show All
+              </button>
+              <button
+                onClick={() => setFilters({ ...filters, status: "top-voted", sortBy: "votes" })}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  filters.status === "top-voted" 
+                    ? "bg-white text-black" 
+                    : "bg-black text-white hover:bg-gray-800"
+                }`}
+              >
+                Top Voted
+              </button>
+              <button
+                onClick={() => setFilters({ ...filters, status: "just-added" })}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  filters.status === "just-added" 
+                    ? "bg-white text-black" 
+                    : "bg-black text-white hover:bg-gray-800"
+                }`}
+              >
+                Just Added
+              </button>
+              <button
+                onClick={() => setFilters({ ...filters, status: "scheduled" })}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  filters.status === "scheduled" 
+                    ? "bg-white text-black" 
+                    : "bg-black text-white hover:bg-gray-800"
+                }`}
+              >
+                Scheduled
+              </button>
+              <button
+                onClick={() => setFilters({ ...filters, status: "member-picks" })}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  filters.status === "member-picks" 
+                    ? "bg-white text-black" 
+                    : "bg-black text-white hover:bg-gray-800"
+                }`}
+              >
+                Member Picks
+              </button>
+              <button
+                onClick={() => setFilters({ ...filters, status: "cheap-thrills" })}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  filters.status === "cheap-thrills" 
+                    ? "bg-white text-black" 
+                    : "bg-black text-white hover:bg-gray-800"
+                }`}
+              >
+                Cheap Thrills
+              </button>
+            </div>
           </div>
         )}
         
