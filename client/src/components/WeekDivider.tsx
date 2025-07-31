@@ -1,6 +1,6 @@
 import { Event } from "@shared/schema";
 import EventItem from "@/components/EventItem";
-import { getWeekRange } from "@/lib/utils";
+import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
 
 interface WeekDividerProps {
   events: Event[];
@@ -19,19 +19,21 @@ export default function WeekDivider({ events, subtitle }: WeekDividerProps) {
     return new Date(a.date).getTime() - new Date(b.date).getTime();
   });
   
-  // Group events by week
-  const weekGroups: Record<string, Event[]> = {};
+  // Group events by week with week number info
+  const weekGroups: Record<string, { events: Event[], weekNumber: number, monthName: string }> = {};
   
   sortedEvents.forEach(event => {
     const date = new Date(event.date);
     const weekInfo = getWeekRange(date);
     const weekKey = weekInfo.key;
+    const weekNumber = getWeekOfMonth(date);
+    const monthName = date.toLocaleDateString('en-US', { month: 'long' });
     
     if (!weekGroups[weekKey]) {
-      weekGroups[weekKey] = [];
+      weekGroups[weekKey] = { events: [], weekNumber, monthName };
     }
     
-    weekGroups[weekKey].push(event);
+    weekGroups[weekKey].events.push(event);
   });
   
   // Sort week keys chronologically
@@ -41,22 +43,25 @@ export default function WeekDivider({ events, subtitle }: WeekDividerProps) {
     <div className="mb-6">
       {subtitle && <p className="text-white text-sm mb-4 opacity-80">{subtitle}</p>}
       
-      {sortedWeekKeys.map((weekKey, index) => (
-        <div key={weekKey} className="relative">
-          <ul className="list-none pl-0 space-y-2 mb-3">
-            {weekGroups[weekKey].map(event => (
-              <EventItem key={event.id} event={event} />
-            ))}
-          </ul>
-          {index < sortedWeekKeys.length - 1 && (
-            <div className="pt-5 pb-7">
-              <div 
-                className="w-[30px] h-[2px] bg-black ml-[3rem]"
-              />
-            </div>
-          )}
-        </div>
-      ))}
+      {sortedWeekKeys.map((weekKey, index) => {
+        const weekGroup = weekGroups[weekKey];
+        return (
+          <div key={weekKey} className="relative">
+            <ul className="list-none pl-0 space-y-2 mb-3">
+              {weekGroup.events.map(event => (
+                <EventItem key={event.id} event={event} />
+              ))}
+            </ul>
+            {index < sortedWeekKeys.length - 1 && (
+              <div className="pt-5 pb-7">
+                <div className="ml-[3rem] text-black text-sm font-medium">
+                  Week {weekGroup.weekNumber}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

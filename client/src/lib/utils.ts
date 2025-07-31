@@ -224,6 +224,24 @@ export function getWeekRange(date: Date): { start: Date, end: Date, key: string 
   return { start, end, key };
 }
 
+// Get week number within a month (1-based)
+export function getWeekOfMonth(date: Date): number {
+  // Get the first day of the month
+  const firstDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+  
+  // Get the start of the week containing the first day of the month
+  const firstWeekStart = getWeekRange(firstDay).start;
+  
+  // Get the start of the week containing our date
+  const currentWeekStart = getWeekRange(date).start;
+  
+  // Calculate the difference in weeks
+  const diffInMs = currentWeekStart.getTime() - firstWeekStart.getTime();
+  const diffInWeeks = Math.floor(diffInMs / (7 * 24 * 60 * 60 * 1000));
+  
+  return diffInWeeks + 1;
+}
+
 // Extract UTC date components from various date formats
 export function extractUtcDateComponents(eventDate: string | Date): { year: number, month: number, day: number, date: Date } {
   let year: number;
