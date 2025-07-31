@@ -56,7 +56,7 @@ export default function JustAddedView({ events, subtitle }: JustAddedViewProps) 
     last_week: "NEW LAST WEEK",
     this_month: "NEW THIS MONTH",
     last_month: "NEW LAST MONTH",
-    older: "NEW EARLIER"
+    older: "OLD NEWS"
   };
   
   return (

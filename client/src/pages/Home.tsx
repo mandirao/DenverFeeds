@@ -441,7 +441,7 @@ export default function Home() {
                       </Dialog>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>More filters</p>
+                      <p>Add more filters</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
