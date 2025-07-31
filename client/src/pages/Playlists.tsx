@@ -58,7 +58,15 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const monthTag = getMonthTag(playlist.createdAt || new Date());
+  // Override month tag for specific playlists
+  const getPlaylistMonthTag = (playlist: Playlist) => {
+    if (playlist.title === "Ep. June '25") {
+      return { month: 'Jun', color: 'bg-yellow-500 text-black' };
+    }
+    return getMonthTag(playlist.createdAt || new Date());
+  };
+  
+  const monthTag = getPlaylistMonthTag(playlist);
   const { toast } = useToast();
 
   // Delete mutation
