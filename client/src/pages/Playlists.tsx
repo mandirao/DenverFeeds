@@ -485,11 +485,11 @@ export default function Playlists() {
       
       <main className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="mb-8 flex flex-col items-center gap-4">
           <div>
-            <h1 className="text-2xl font-black text-black uppercase">COMMUNITY PLAYLISTS</h1>
+            <h1 className="text-2xl font-black text-black uppercase text-center">COMMUNITY PLAYLISTS</h1>
           </div>
-          <div className="sm:flex-shrink-0">
+          <div>
             <AddPlaylistForm />
           </div>
         </div>
