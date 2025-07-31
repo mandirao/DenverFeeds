@@ -225,28 +225,7 @@ export class DatabaseStorage implements IStorage {
 
   // Playlist methods
   async getAllPlaylists(): Promise<Playlist[]> {
-    const playlists = await db.select().from(playlists).where(eq(playlists.isActive, true));
-    
-    // Sort by episode date extracted from title, falling back to creation date
-    return playlists.sort((a, b) => {
-      // Try to extract episode dates from titles like "Ep. Jul 7 '25"
-      const extractEpisodeDate = (title: string): Date | null => {
-        const episodeMatch = title.match(/Ep\.\s+(\w{3})\s+(\d+)\s+'(\d+)/i);
-        if (episodeMatch) {
-          const [, month, day, year] = episodeMatch;
-          const fullYear = parseInt('20' + year); // Convert '25' to 2025
-          const monthIndex = new Date(`${month} 1, 2000`).getMonth(); // Convert month name to index
-          return new Date(fullYear, monthIndex, parseInt(day));
-        }
-        return null;
-      };
-      
-      const dateA = extractEpisodeDate(a.title) || new Date(a.createdAt);
-      const dateB = extractEpisodeDate(b.title) || new Date(b.createdAt);
-      
-      // Sort in descending order (newest first)
-      return dateB.getTime() - dateA.getTime();
-    });
+    return db.select().from(playlists).where(eq(playlists.isActive, true)).orderBy(desc(playlists.createdAt));
   }
 
   async getPlaylistById(id: number): Promise<Playlist | undefined> {
