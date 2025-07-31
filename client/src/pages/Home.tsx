@@ -330,60 +330,60 @@ export default function Home() {
               <div className="flex gap-2 min-w-max pb-2">
               <button
                 onClick={() => setFilters({ ...filters, status: "all" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border text-sm ${
+                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
                   filters.status === "all" 
-                    ? "bg-white text-black border-white" 
-                    : "bg-[#FE6B41] text-black border-black hover:border-white"
+                    ? "bg-white text-black" 
+                    : "bg-[#FE6B41] text-black hover:border-white"
                 }`}
               >
                 Show All
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "just-added" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border text-sm ${
+                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
                   filters.status === "just-added" 
-                    ? "bg-white text-black border-white" 
-                    : "bg-[#FE6B41] text-black border-black hover:border-white"
+                    ? "bg-white text-black" 
+                    : "bg-[#FE6B41] text-black hover:border-white"
                 }`}
               >
                 New
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "top-voted", sortBy: "votes" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border text-sm ${
+                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
                   filters.status === "top-voted" 
-                    ? "bg-white text-black border-white" 
-                    : "bg-[#FE6B41] text-black border-black hover:border-white"
+                    ? "bg-white text-black" 
+                    : "bg-[#FE6B41] text-black hover:border-white"
                 }`}
               >
                 Top Voted
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "scheduled" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border text-sm ${
+                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
                   filters.status === "scheduled" 
-                    ? "bg-white text-black border-white" 
-                    : "bg-[#FE6B41] text-black border-black hover:border-white"
+                    ? "bg-white text-black" 
+                    : "bg-[#FE6B41] text-black hover:border-white"
                 }`}
               >
                 Scheduled
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "member-picks" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border text-sm ${
+                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
                   filters.status === "member-picks" 
-                    ? "bg-white text-black border-white" 
-                    : "bg-[#FE6B41] text-black border-black hover:border-white"
+                    ? "bg-white text-black" 
+                    : "bg-[#FE6B41] text-black hover:border-white"
                 }`}
               >
                 Member Adds
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "cheap-thrills" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border text-sm ${
+                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
                   filters.status === "cheap-thrills" 
-                    ? "bg-white text-black border-white" 
-                    : "bg-[#FE6B41] text-black border-black hover:border-white"
+                    ? "bg-white text-black" 
+                    : "bg-[#FE6B41] text-black hover:border-white"
                 }`}
               >
                 Cheap Thrills
