@@ -333,7 +333,7 @@ export default function Home() {
                     : "bg-[#FE6B41] text-black border-black hover:border-white"
                 }`}
               >
-                Added
+                New
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "top-voted", sortBy: "votes" })}
