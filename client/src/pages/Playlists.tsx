@@ -193,17 +193,17 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
                 {/* Featured Artists */}
                 {playlist.featuredArtists && playlist.featuredArtists.length > 0 && (
                   <div className="text-sm text-gray-600 mb-2 relative">
-                    <div className="flex flex-wrap gap-x-1 gap-y-0 overflow-hidden max-h-12 leading-tight">
-                      {playlist.featuredArtists.slice(0, 12).map((artist, index) => (
+                    <div className="flex flex-wrap gap-x-1 gap-y-1 overflow-hidden max-h-16 leading-snug">
+                      {playlist.featuredArtists.slice(0, 15).map((artist, index) => (
                         <span key={index} className="whitespace-nowrap">
-                          {artist}{index < Math.min((playlist.featuredArtists?.length || 0) - 1, 11) ? ',' : ''}
+                          {artist}{index < Math.min((playlist.featuredArtists?.length || 0) - 1, 14) ? ',' : ''}
                         </span>
                       ))}
-                      {(playlist.featuredArtists?.length || 0) > 12 && (
+                      {(playlist.featuredArtists?.length || 0) > 15 && (
                         <span className="text-gray-400">...</span>
                       )}
                     </div>
-                    <div className="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-t from-[#F5F3F0] via-[#F5F3F0] to-transparent pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 w-full h-6 bg-gradient-to-t from-[#F5F3F0] via-[#F5F3F0]/80 to-transparent pointer-events-none"></div>
                   </div>
                 )}
 
