@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
-import Navbar from "@/components/Navbar";
+import { Navbar } from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-[#FE6B41]">
-      <Navbar showFilters={false} />
+      <Navbar />
       
       <main className="container mx-auto px-4 py-16 flex items-center justify-center">
         <Card className="w-full max-w-md mx-4 border-2 border-black bg-[#FEABDA]">

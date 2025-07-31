@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import Navbar from "@/components/Navbar";
+import { Navbar } from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 import EventForm, { EventFormValues } from "@/components/EventForm";
@@ -58,7 +58,7 @@ export default function AddEvent() {
 
   return (
     <div className="min-h-screen bg-[#FE6B41]">
-      <Navbar showFilters={false} />
+      <Navbar />
       
       <main className="container mx-auto px-4 py-8">
         <div className="bg-[#FEABDA] rounded-lg p-6">

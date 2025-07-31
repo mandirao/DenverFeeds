@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import Navbar from "@/components/Navbar";
+import { Navbar } from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getNextMonths, denverBoulderVenues } from "@/components/EventFilters";
 import { cheapThrillsVenues } from "@shared/schema";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Filter, ChevronDown } from "lucide-react";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
@@ -270,24 +274,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#FE6B41]">
-      <Navbar 
-        showFilters={true}
-        filterProps={{
-          onFilterChange: setFilters,
-          genres,
-          months,
-          monthFilter: filters.month,
-          genreFilter: filters.genre,
-          statusFilter: filters.status,
-          denverAreaOnlyFilter: filters.denverAreaOnly,
-          sortByFilter: filters.sortBy,
-          onMonthChange: handleMonthChange,
-          onGenreChange: handleGenreChange,
-          onStatusChange: handleStatusChange,
-          onDenverAreaOnlyChange: handleDenverAreaOnlyChange,
-          onSortByChange: handleSortByChange
-        }}
-      />
+      <Navbar />
       
       <main className="container mx-auto px-4 py-8">
         {/* Recent Events Banner - Only show in default view and if there are recent events */}
@@ -388,6 +375,70 @@ export default function Home() {
               >
                 Cheap Thrills
               </button>
+              
+              {/* Filter dropdown moved to the right side of filter tabs */}
+              <div className="ml-4">
+                <Accordion type="single" collapsible defaultValue="">
+                  <AccordionItem value="filters" className="border-0">
+                    <AccordionTrigger className="py-1 hover:no-underline justify-start" hideChevron>
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#FE6B41] text-black border border-black hover:border-white transition-colors">
+                        <Filter className="h-4 w-4" />
+                        <ChevronDown className="h-3 w-3 transition-transform duration-200 chevron-icon" />
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="mt-2 p-3 bg-white border-2 border-black rounded-lg shadow-md">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-black mb-1">Month</label>
+                            <select 
+                              id="month-filter" 
+                              value={filters.month}
+                              onChange={(e) => setFilters({ ...filters, month: e.target.value })}
+                              className="w-full p-2 text-sm border border-black bg-white text-black rounded"
+                            >
+                              <option value="all">All Months</option>
+                              {months.map((m) => (
+                                <option key={m.key} value={m.key}>{m.display}</option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs font-medium text-black mb-1">Genre</label>
+                            <select 
+                              id="genre-filter" 
+                              value={filters.genre}
+                              onChange={(e) => setFilters({ ...filters, genre: e.target.value })}
+                              className="w-full p-2 text-sm border border-black bg-white text-black rounded"
+                            >
+                              <option value="all">All Genres</option>
+                              {genres.map((g) => (
+                                <option key={g} value={g}>{g}</option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs font-medium text-black mb-1">Location</label>
+                            <div className="flex items-center space-x-2">
+                              <Switch 
+                                id="denver-area-only" 
+                                checked={filters.denverAreaOnly}
+                                onCheckedChange={(checked) => setFilters({ ...filters, denverAreaOnly: checked })}
+                                className="bg-[#FE6B41] data-[state=checked]:bg-[#41F2EE]"
+                              />
+                              <Label htmlFor="denver-area-only" className="text-xs font-medium cursor-pointer">
+                                {filters.denverAreaOnly ? "Denver/Boulder Only" : "Include Roadtrips"}
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
               </div>
             </div>
           </div>
