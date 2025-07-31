@@ -21,7 +21,7 @@ export function Navbar() {
                     href="https://www.meetup.com/setlist-social-indie-denver/?eventOrigin=event_home_page" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="bg-black text-[#FE6B41] hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors flex items-center gap-1"
+                    className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1"
                   >
                     <Users className="h-4 w-4" />
                     <span>Meetup</span>
@@ -38,7 +38,7 @@ export function Navbar() {
                 <TooltipTrigger asChild>
                   <Link 
                     href="/playlists"
-                    className="bg-black text-[#1DB954] hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors flex items-center gap-1"
+                    className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1"
                   >
                     <Music className="h-4 w-4" />
                     <span>Playlists</span>
