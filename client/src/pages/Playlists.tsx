@@ -89,20 +89,19 @@ function QueuePlaylistCard({ playlist }: { playlist: Playlist }) {
               {playlist.title}
             </h2>
             <span className="bg-[#FE6B41] text-white text-xs font-bold uppercase px-3 py-2 rounded">
-              COLLABORATIVE
+              LIVE
             </span>
           </div>
 
           <div className="mb-6">
             <h3 className="text-lg font-bold text-gray-800 mb-3">
-              Create the perfect collaborative Mixed Tape
+              We're collabing on a Mixed Tape
             </h3>
             <ul className="text-gray-700 space-y-1 text-sm">
               <li>• Each person gets to add a max of 3 songs to the queue</li>
-              <li>• Everyone is allowed to reorder songs for flow</li>
-              <li>• Want to add a 4th? Remove one of your other songs + reorder for flow ✨</li>
-              <li>• Not in Spotify? Just give us a title or youtube link</li>
-              <li>• Wherever it lands by next Monday (or sometimes two Mondays) is our finished work of art</li>
+              <li>• Everyone gets to reorder songs for flow</li>
+              <li>• Want to add a 4th? Remove one of <em>your</em> other songs + reorder for flow ✨</li>
+              <li>• In a week or two our finished work of art will be archived below.</li>
             </ul>
           </div>
 
@@ -111,14 +110,10 @@ function QueuePlaylistCard({ playlist }: { playlist: Playlist }) {
               href={playlist.spotifyUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-[#1DB954] hover:bg-[#1ed760] text-white font-bold py-3 px-6 rounded-full transition-colors flex items-center gap-2"
+              className="bg-[#1DB954] hover:bg-[#1ed760] text-white font-bold py-3 px-6 rounded-full transition-colors"
             >
-              <ExternalLink className="h-4 w-4" />
               Collaborate on Spotify
             </a>
-            <button className="bg-black hover:bg-gray-800 text-[#FEABDA] font-bold py-3 px-6 rounded-full transition-colors">
-              Add to Queue
-            </button>
           </div>
         </div>
       </div>
