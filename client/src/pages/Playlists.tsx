@@ -23,9 +23,36 @@ function formatDate(dateString: Date | string): string {
   });
 }
 
+function getMonthTag(dateString: Date | string): { month: string; color: string } {
+  const date = new Date(dateString);
+  const month = date.toLocaleDateString('en-US', { month: 'short' });
+  
+  // Color palette for different months
+  const monthColors: Record<string, string> = {
+    'Jan': 'bg-red-500 text-white',
+    'Feb': 'bg-pink-500 text-white', 
+    'Mar': 'bg-green-500 text-white',
+    'Apr': 'bg-blue-500 text-white',
+    'May': 'bg-purple-500 text-white',
+    'Jun': 'bg-yellow-500 text-black',
+    'Jul': 'bg-orange-500 text-white',
+    'Aug': 'bg-teal-500 text-white',
+    'Sep': 'bg-indigo-500 text-white',
+    'Oct': 'bg-amber-500 text-black',
+    'Nov': 'bg-cyan-500 text-white',
+    'Dec': 'bg-rose-500 text-white'
+  };
+  
+  return {
+    month,
+    color: monthColors[month] || 'bg-gray-500 text-white'
+  };
+}
+
 function PlaylistCard({ playlist }: { playlist: Playlist }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const monthTag = getMonthTag(playlist.createdAt || new Date());
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
@@ -66,10 +93,15 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
 
               {/* Content */}
               <div className="p-4">
-                {/* Title */}
-                <h3 className="font-bold text-lg mb-3 line-clamp-2 group-hover:text-[#1DB954] transition-colors">
-                  {playlist.title}
-                </h3>
+                {/* Title and Month Tag */}
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="font-bold text-lg line-clamp-2 group-hover:text-[#1DB954] transition-colors flex-1">
+                    {playlist.title}
+                  </h3>
+                  <span className={`${monthTag.color} text-xs font-bold uppercase px-2 py-1 ml-2 flex-shrink-0`}>
+                    {monthTag.month}
+                  </span>
+                </div>
 
                 {/* Description */}
                 {playlist.description && (
