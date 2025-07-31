@@ -107,7 +107,7 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
   });
 
   return (
-    <div className="bg-[#F5F3F0] rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+    <div className="bg-[#F5F3F0] rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -358,7 +358,7 @@ function AddPlaylistForm() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-black text-[#1DB954] hover:bg-black hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors text-sm">
+        <Button className="bg-black text-[#1DB954] hover:bg-black hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors">
           <Plus className="h-4 w-4 mr-2" />
           Spotify Playlist
         </Button>
@@ -408,7 +408,7 @@ function AddPlaylistForm() {
             <Button 
               type="submit" 
               disabled={createMutation.isPending}
-              className="flex-1 bg-black text-[#1DB954] hover:bg-black hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors text-sm"
+              className="flex-1 bg-black text-[#1DB954] hover:bg-black hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors"
             >
               {createMutation.isPending ? "Adding..." : "Add Playlist"}
             </Button>
