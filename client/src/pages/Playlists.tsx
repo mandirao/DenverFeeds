@@ -203,7 +203,7 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
                         <span className="text-gray-400">...</span>
                       )}
                     </div>
-                    <div className="absolute bottom-0 left-0 w-full h-5 bg-gradient-to-t from-[#F5F3F0] via-[#F5F3F0]/80 to-transparent pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 w-full h-7 bg-gradient-to-t from-[#F5F3F0] via-[#F5F3F0]/80 to-transparent pointer-events-none"></div>
                   </div>
                 )}
 
