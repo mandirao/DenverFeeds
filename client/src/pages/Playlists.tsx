@@ -107,7 +107,7 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
   });
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+    <div className="bg-[#F5F3F0] rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -222,7 +222,7 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
 
       {/* Edit Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-[#F5F3F0]">
           <DialogHeader>
             <DialogTitle>Edit Playlist</DialogTitle>
           </DialogHeader>
@@ -278,7 +278,7 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
 
       {/* Delete Confirmation */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-[#F5F3F0]">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Playlist</AlertDialogTitle>
             <AlertDialogDescription>
@@ -363,7 +363,7 @@ function AddPlaylistForm() {
           Add Playlist
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-[#F5F3F0]">
         <DialogHeader>
           <DialogTitle>Add New Playlist</DialogTitle>
         </DialogHeader>

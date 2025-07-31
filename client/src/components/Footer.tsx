@@ -218,7 +218,7 @@ export function Footer() {
       
       {/* About Dialog */}
       <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
-        <DialogContent className="bg-[#F4F2EA] sm:max-w-md">
+        <DialogContent className="bg-[#F5F3F0] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-anton">ABOUT SETLIST SOCIAL</DialogTitle>
           </DialogHeader>

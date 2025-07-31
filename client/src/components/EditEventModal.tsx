@@ -117,7 +117,7 @@ export default function EditEventModal({ event, isOpen, onClose }: EditEventModa
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-[#FEABDA]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-[#F5F3F0]">
         <DialogHeader>
           <DialogTitle className="text-2xl text-black font-anton font-black uppercase">EDIT SHOW</DialogTitle>
           <DialogDescription className="sr-only">
@@ -141,7 +141,7 @@ export default function EditEventModal({ event, isOpen, onClose }: EditEventModa
                   Delete
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="bg-[#F5F3F0]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Event</AlertDialogTitle>
                   <AlertDialogDescription>
