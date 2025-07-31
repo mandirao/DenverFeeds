@@ -33,8 +33,8 @@ function WeekGroup({ weekEvents, isLastWeek, weekNumber }: WeekProps) {
       </ul>
       {!isLastWeek && (
         <div className="pt-5 pb-7">
-          <div className="ml-[3rem] text-black text-sm font-medium">
-            Week {weekNumber}
+          <div className="text-black text-sm font-bold uppercase">
+            WEEK {weekNumber + 1}
           </div>
         </div>
       )}
