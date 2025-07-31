@@ -318,12 +318,15 @@ function EventItem({ event }: EventItemProps) {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span 
-                          className="bg-[#f5f5f5] text-black text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5"
+                        <a
+                          href="https://www.meetup.com/setlist-social-indie-denver/?eventOrigin=event_home_page"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-[#f5f5f5] text-black text-xs font-bold uppercase px-1 py-0.5 inline-flex items-center h-5 hover:bg-[#41F2EE] transition-colors cursor-pointer"
                           style={{ position: 'relative', top: '-1px' }}
                         >
                           <Check className="mr-0.5 h-3 w-3" /> Scheduled
-                        </span>
+                        </a>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>Learn more at Meetup</p>
