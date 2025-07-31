@@ -414,16 +414,27 @@ export default function Home() {
                       
                       <div>
                         <label className="block text-sm font-medium text-black mb-2">Location</label>
-                        <div className="flex items-center space-x-3">
-                          <Switch 
-                            id="denver-area-only" 
-                            checked={filters.denverAreaOnly}
-                            onCheckedChange={(checked) => setFilters({ ...filters, denverAreaOnly: checked })}
-                            className="bg-[#FE6B41] data-[state=checked]:bg-[#41F2EE] [&>span]:data-[state=checked]:translate-x-6"
-                          />
-                          <Label htmlFor="denver-area-only" className="text-sm font-medium cursor-pointer">
-                            {filters.denverAreaOnly ? "Denver/Boulder Only" : "Roadtrips"}
-                          </Label>
+                        <div className="flex gap-4">
+                          <label className="flex items-center space-x-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="location"
+                              checked={filters.denverAreaOnly}
+                              onChange={() => setFilters({ ...filters, denverAreaOnly: true })}
+                              className="w-4 h-4 text-[#41F2EE] bg-white border-2 border-black focus:ring-[#41F2EE] focus:ring-2"
+                            />
+                            <span className="text-sm font-medium">Denver/Boulder</span>
+                          </label>
+                          <label className="flex items-center space-x-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="location"
+                              checked={!filters.denverAreaOnly}
+                              onChange={() => setFilters({ ...filters, denverAreaOnly: false })}
+                              className="w-4 h-4 text-[#41F2EE] bg-white border-2 border-black focus:ring-[#41F2EE] focus:ring-2"
+                            />
+                            <span className="text-sm font-medium">Roadtrips</span>
+                          </label>
                         </div>
                       </div>
                     </div>
