@@ -8,8 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ExternalLink, Plus } from "lucide-react";
+import { ExternalLink, Plus, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 import type { Playlist } from "@shared/schema";
@@ -52,7 +55,56 @@ function getMonthTag(dateString: Date | string): { month: string; color: string 
 function PlaylistCard({ playlist }: { playlist: Playlist }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const monthTag = getMonthTag(playlist.createdAt || new Date());
+  const { toast } = useToast();
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", `/api/playlists/${playlist.id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/playlists'] });
+      toast({
+        title: "Playlist deleted",
+        description: "The playlist has been removed successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Delete failed",
+        description: "Could not delete the playlist",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: async (data: { curator: string; description: string | null }) => {
+      const res = await apiRequest("PATCH", `/api/playlists/${playlist.id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/playlists'] });
+      setIsEditModalOpen(false);
+      toast({
+        title: "Playlist updated",
+        description: "The playlist has been updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update failed",
+        description: "Could not update the playlist",
+        variant: "destructive",
+      });
+    }
+  });
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
@@ -93,14 +145,49 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
 
               {/* Content */}
               <div className="p-4">
-                {/* Title and Month Tag */}
+                {/* Title, Month Tag, and Menu */}
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-bold text-lg line-clamp-2 group-hover:text-[#1DB954] transition-colors flex-1">
+                  <h3 className="font-bold text-lg line-clamp-2 group-hover:text-[#1DB954] transition-colors flex-1 pr-2">
                     {playlist.title}
                   </h3>
-                  <span className={`${monthTag.color} text-xs font-bold uppercase px-2 py-1 ml-2 flex-shrink-0`}>
-                    {monthTag.month}
-                  </span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`${monthTag.color} text-xs font-bold uppercase px-2 py-1`}>
+                      {monthTag.month}
+                    </span>
+                    <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => e.preventDefault()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-32">
+                        <DropdownMenuItem onClick={(e) => {
+                          e.preventDefault();
+                          setIsEditModalOpen(true);
+                          setIsMenuOpen(false);
+                        }}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowDeleteConfirm(true);
+                            setIsMenuOpen(false);
+                          }}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
 
                 {/* Description */}
@@ -132,6 +219,87 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Playlist</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            updateMutation.mutate({
+              curator: formData.get('curator') as string,
+              description: formData.get('description') as string || null,
+            });
+          }} className="space-y-4">
+            <div>
+              <Label htmlFor="curator">Curator Name</Label>
+              <Input
+                id="curator"
+                name="curator"
+                defaultValue={playlist.curator}
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                name="description"
+                defaultValue={playlist.description || ''}
+                placeholder="Optional description..."
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsEditModalOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={updateMutation.isPending}
+                className="flex-1"
+              >
+                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Playlist</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{playlist.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                deleteMutation.mutate();
+                setShowDeleteConfirm(false);
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
