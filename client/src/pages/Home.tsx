@@ -425,7 +425,7 @@ export default function Home() {
                             id="denver-area-only" 
                             checked={filters.denverAreaOnly}
                             onCheckedChange={(checked) => setFilters({ ...filters, denverAreaOnly: checked })}
-                            className="bg-[#FE6B41] data-[state=checked]:bg-[#41F2EE]"
+                            className="bg-[#FE6B41] data-[state=checked]:bg-[#41F2EE] [&>span]:data-[state=checked]:translate-x-5"
                           />
                           <Label htmlFor="denver-area-only" className="text-sm font-medium cursor-pointer">
                             {filters.denverAreaOnly ? "Denver/Boulder Only" : "Include Roadtrips"}
