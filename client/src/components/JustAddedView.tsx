@@ -51,12 +51,12 @@ export default function JustAddedView({ events, subtitle }: JustAddedViewProps) 
   
   // Category titles for display
   const categoryDisplayNames: Record<TimeCategory, string> = {
-    today: "Added Today",
-    this_week: "Added This Week",
-    last_week: "Added Last Week",
-    this_month: "Added This Month",
-    last_month: "Added Last Month",
-    older: "Added Earlier"
+    today: "ADDED TODAY",
+    this_week: "ADDED THIS WEEK",
+    last_week: "ADDED LAST WEEK",
+    this_month: "ADDED THIS MONTH",
+    last_month: "ADDED LAST MONTH",
+    older: "ADDED EARLIER"
   };
   
   return (
