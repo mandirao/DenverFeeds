@@ -66,26 +66,10 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
 
               {/* Content */}
               <div className="p-4">
-                {/* Genre Tag */}
-                <div className="mb-2">
-                  <span className={`inline-block text-xs font-bold uppercase px-2 py-1 rounded ${
-                    playlist.genre === 'ROCK' ? 'bg-red-100 text-red-800' :
-                    playlist.genre === 'RAP' ? 'bg-purple-100 text-purple-800' :
-                    'bg-blue-100 text-blue-800'
-                  }`}>
-                    {playlist.genre}
-                  </span>
-                </div>
-
                 {/* Title */}
-                <h3 className="font-bold text-lg mb-1 line-clamp-2 group-hover:text-[#1DB954] transition-colors">
+                <h3 className="font-bold text-lg mb-3 line-clamp-2 group-hover:text-[#1DB954] transition-colors">
                   {playlist.title}
                 </h3>
-
-                {/* Artist */}
-                <p className="text-gray-600 mb-2 font-medium">
-                  {playlist.artist}
-                </p>
 
                 {/* Description */}
                 {playlist.description && (
@@ -125,9 +109,7 @@ function AddPlaylistForm() {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
-    artist: "",
     curator: "",
-    genre: "MIXED",
     spotifyUrl: ""
   });
   const { toast } = useToast();
@@ -142,9 +124,7 @@ function AddPlaylistForm() {
       setOpen(false);
       setFormData({
         title: "",
-        artist: "",
         curator: "",
-        genre: "MIXED",
         spotifyUrl: ""
       });
       toast({
@@ -174,9 +154,7 @@ function AddPlaylistForm() {
     createMutation.mutate(formData);
   };
 
-  const genreOptions = [
-    "ROCK", "RAP", "POP", "ELECTRONIC", "JAZZ", "CLASSICAL", "COUNTRY", "INDIE", "MIXED"
-  ];
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -217,21 +195,7 @@ function AddPlaylistForm() {
             />
           </div>
 
-          <div>
-            <Label htmlFor="genre">Genre</Label>
-            <Select value={formData.genre} onValueChange={(value) => setFormData({ ...formData, genre: value })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {genreOptions.map((genre) => (
-                  <SelectItem key={genre} value={genre}>
-                    {genre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+
 
           <div className="flex gap-2 pt-4">
             <Button 

@@ -241,6 +241,9 @@ export class DatabaseStorage implements IStorage {
     let playlistData: any = {
       ...insertPlaylist,
       spotifyId,
+      title: 'Loading...', // Will be overwritten by Spotify data
+      artist: 'Various Artists', // Default value
+      genre: 'MIXED', // Default value
       updatedAt: new Date()
     };
 
@@ -254,6 +257,8 @@ export class DatabaseStorage implements IStorage {
         playlistData = {
           ...playlistData,
           title: spotifyData.title,
+          artist: 'Various Artists', // Keep the default value
+          genre: 'MIXED', // Keep the default value  
           description: spotifyData.description,
           coverUrl: spotifyData.coverUrl,
           trackCount: spotifyData.trackCount,

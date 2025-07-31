@@ -192,9 +192,7 @@ export type Upvote = typeof upvotes.$inferSelect;
 export const playlists = pgTable("playlists", {
   id: serial("id").primaryKey(),
   title: varchar("title", { length: 100 }).notNull(),
-  artist: varchar("artist", { length: 100 }).notNull(),
   curator: varchar("curator", { length: 50 }).notNull(),
-  genre: varchar("genre", { length: 30 }).notNull(),
   spotifyUrl: varchar("spotify_url", { length: 200 }).notNull(),
   spotifyId: varchar("spotify_id", { length: 50 }), // Extracted from URL for API calls
   coverUrl: varchar("cover_url", { length: 300 }), // Auto-fetched from Spotify
@@ -210,11 +208,14 @@ export const playlists = pgTable("playlists", {
 export const insertPlaylistSchema = createInsertSchema(playlists)
   .omit({
     id: true,
+    title: true, // Auto-fetched from Spotify API
     spotifyId: true, // Auto-extracted from URL
     coverUrl: true, // Auto-fetched from Spotify API
+    description: true, // Auto-fetched from Spotify API
     trackCount: true, // Auto-fetched from Spotify API
     duration: true, // Auto-fetched from Spotify API
     followerCount: true, // Auto-fetched from Spotify API
+    isActive: true,
     createdAt: true,
     updatedAt: true,
   })
