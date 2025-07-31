@@ -1,7 +1,7 @@
 import express, { type Express, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertEventSchema, events, upvotes } from "@shared/schema";
+import { insertEventSchema, events, upvotes, insertPlaylistSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 import { ZodError } from "zod";
 import { parse } from "date-fns";
@@ -518,6 +518,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error decreasing upvote:", error);
       res.status(500).json({ message: "Failed to decrease upvote" });
+    }
+  });
+
+  // Playlist routes
+  
+  // Get all playlists
+  apiRouter.get("/playlists", async (req, res) => {
+    try {
+      const playlists = await storage.getAllPlaylists();
+      res.json(playlists);
+    } catch (error) {
+      console.error("Error fetching playlists:", error);
+      res.status(500).json({ message: "Failed to fetch playlists" });
+    }
+  });
+
+  // Get a single playlist by ID
+  apiRouter.get("/playlists/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid playlist ID" });
+      }
+
+      const playlist = await storage.getPlaylistById(id);
+      if (!playlist) {
+        return res.status(404).json({ message: "Playlist not found" });
+      }
+
+      res.json(playlist);
+    } catch (error) {
+      console.error("Error fetching playlist:", error);
+      res.status(500).json({ message: "Failed to fetch playlist" });
+    }
+  });
+
+  // Create a new playlist
+  apiRouter.post("/playlists", async (req, res) => {
+    try {
+      const playlistData = insertPlaylistSchema.parse(req.body);
+      const newPlaylist = await storage.createPlaylist(playlistData);
+      res.status(201).json(newPlaylist);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        console.error("ZodError creating playlist:", error);
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: `Validation error: ${validationError.message}`
+        });
+      }
+      console.error("Error creating playlist:", error);
+      res.status(500).json({ message: "Failed to create playlist" });
+    }
+  });
+
+  // Update a playlist
+  apiRouter.patch("/playlists/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid playlist ID" });
+      }
+
+      const existingPlaylist = await storage.getPlaylistById(id);
+      if (!existingPlaylist) {
+        return res.status(404).json({ message: "Playlist not found" });
+      }
+
+      const playlistData = insertPlaylistSchema.partial().parse(req.body);
+      const updatedPlaylist = await storage.updatePlaylist(id, playlistData);
+      res.json(updatedPlaylist);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        console.error("ZodError updating playlist:", error);
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: `Validation error: ${validationError.message}`
+        });
+      }
+      console.error("Error updating playlist:", error);
+      res.status(500).json({ message: "Failed to update playlist" });
+    }
+  });
+
+  // Delete a playlist (soft delete)
+  apiRouter.delete("/playlists/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid playlist ID" });
+      }
+
+      const playlist = await storage.getPlaylistById(id);
+      if (!playlist) {
+        return res.status(404).json({ message: "Playlist not found" });
+      }
+
+      const deleted = await storage.deletePlaylist(id);
+      
+      if (deleted) {
+        res.status(200).json({ message: "Playlist deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete playlist" });
+      }
+    } catch (error) {
+      console.error("Error deleting playlist:", error);
+      res.status(500).json({ message: "Server error deleting playlist" });
     }
   });
 

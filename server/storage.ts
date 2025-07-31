@@ -1,4 +1,4 @@
-import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser } from "@shared/schema";
+import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, count, desc, gt } from "drizzle-orm";
 
@@ -25,6 +25,13 @@ export interface IStorage {
   removeUpvote(eventId: number, userId: number): Promise<boolean>;
   hasUserUpvoted(eventId: number, userId: number): Promise<boolean>;
   setEventScheduled(eventId: number, scheduled: boolean): Promise<Event | undefined>;
+  
+  // Playlist methods
+  getAllPlaylists(): Promise<Playlist[]>;
+  getPlaylistById(id: number): Promise<Playlist | undefined>;
+  createPlaylist(playlist: InsertPlaylist): Promise<Playlist>;
+  updatePlaylist(id: number, data: Partial<Playlist>): Promise<Playlist | undefined>;
+  deletePlaylist(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -211,6 +218,50 @@ export class DatabaseStorage implements IStorage {
       return result.length > 0;
     } catch (error) {
       console.error("Error deleting event:", error);
+      return false;
+    }
+  }
+
+  // Playlist methods
+  async getAllPlaylists(): Promise<Playlist[]> {
+    return db.select().from(playlists).where(eq(playlists.isActive, true)).orderBy(desc(playlists.createdAt));
+  }
+
+  async getPlaylistById(id: number): Promise<Playlist | undefined> {
+    const result = await db.select().from(playlists).where(eq(playlists.id, id));
+    return result[0];
+  }
+
+  async createPlaylist(insertPlaylist: InsertPlaylist): Promise<Playlist> {
+    // Extract Spotify ID from URL
+    const spotifyIdMatch = insertPlaylist.spotifyUrl.match(/playlist\/([a-zA-Z0-9]+)/);
+    const spotifyId = spotifyIdMatch ? spotifyIdMatch[1] : null;
+    
+    const result = await db.insert(playlists).values({
+      ...insertPlaylist,
+      spotifyId,
+      updatedAt: new Date()
+    }).returning();
+    return result[0];
+  }
+
+  async updatePlaylist(id: number, data: Partial<Playlist>): Promise<Playlist | undefined> {
+    const result = await db.update(playlists)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(playlists.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deletePlaylist(id: number): Promise<boolean> {
+    try {
+      const result = await db.update(playlists)
+        .set({ isActive: false })
+        .where(eq(playlists.id, id))
+        .returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error deleting playlist:", error);
       return false;
     }
   }

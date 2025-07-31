@@ -36,18 +36,16 @@ export function Navbar() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <a 
-                    href="https://open.spotify.com/playlist/65hepNEHQKF41ymtEqunGr?si=x_8SYxZyRUWJNhZRG4wvhQ" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
+                  <Link 
+                    href="/playlists"
                     className="bg-black text-[#1DB954] hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors flex items-center gap-1"
                   >
                     <Music className="h-4 w-4" />
-                    <span>Playlist</span>
-                  </a>
+                    <span>Playlists</span>
+                  </Link>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Join our monthly Spotify playlist</p>
+                  <p>Browse our curated playlists</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
