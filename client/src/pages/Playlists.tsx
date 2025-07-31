@@ -420,9 +420,63 @@ function AddPlaylistForm() {
 }
 
 export default function Playlists() {
-  const { data: playlists = [], isLoading, error } = useQuery<Playlist[]>({
+  const { data: playlistsData = [], isLoading, error } = useQuery<Playlist[]>({
     queryKey: ['/api/playlists'],
     // The default queryFn will automatically make the API call
+  });
+
+  // Function to parse episode date from title
+  const parseEpisodeDate = (title: string): Date | null => {
+    const episodeRegex = /^Ep\.\s+([A-Za-z]+)\s+(\d+)\s+'(\d{2})$/;
+    const match = title.match(episodeRegex);
+    
+    if (!match) return null;
+    
+    const [, monthStr, dayStr, yearStr] = match;
+    const monthMap: { [key: string]: number } = {
+      'jan': 0, 'january': 0,
+      'feb': 1, 'february': 1,
+      'mar': 2, 'march': 2,
+      'apr': 3, 'april': 3,
+      'may': 4,
+      'jun': 5, 'june': 5,
+      'jul': 6, 'july': 6,
+      'aug': 7, 'august': 7,
+      'sep': 8, 'september': 8,
+      'oct': 9, 'october': 9,
+      'nov': 10, 'november': 10,
+      'dec': 11, 'december': 11
+    };
+    
+    const monthIndex = monthMap[monthStr.toLowerCase()];
+    if (monthIndex === undefined) return null;
+    
+    const day = parseInt(dayStr, 10);
+    const year = parseInt('20' + yearStr, 10); // Convert '25 to 2025
+    
+    return new Date(year, monthIndex, day);
+  };
+
+  // Sort playlists: episode playlists by date (newest first), then other playlists by creation date
+  const playlists = [...playlistsData].sort((a, b) => {
+    const aDate = parseEpisodeDate(a.title);
+    const bDate = parseEpisodeDate(b.title);
+    
+    // Both are episodes - sort by episode date (newest first)
+    if (aDate && bDate) {
+      return bDate.getTime() - aDate.getTime();
+    }
+    
+    // Only a is an episode - episodes go first
+    if (aDate && !bDate) return -1;
+    
+    // Only b is an episode - episodes go first
+    if (!aDate && bDate) return 1;
+    
+    // Neither are episodes - sort by creation date (newest first)
+    const aCreated = new Date(a.createdAt || 0);
+    const bCreated = new Date(b.createdAt || 0);
+    return bCreated.getTime() - aCreated.getTime();
   });
 
   return (
