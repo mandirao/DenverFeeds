@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
+import Footer from "@/components/Footer";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -259,7 +259,7 @@ export default function Playlists() {
   });
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8]">
+    <div className="min-h-screen bg-[#FE6B41]">
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
@@ -307,20 +307,7 @@ export default function Playlists() {
           </div>
         )}
 
-        {/* Spotify Integration Note */}
-        <div className="mt-12 p-6 bg-white rounded-lg border border-gray-200">
-          <h3 className="font-bold text-lg mb-2">🎵 Enhanced Spotify Integration</h3>
-          <p className="text-gray-600 mb-4">
-            To automatically pull cover art, track counts, and other metadata from Spotify playlists, 
-            we'll need a Spotify API key. This will enable:
-          </p>
-          <ul className="text-gray-600 space-y-1 ml-4">
-            <li>• Automatic cover art retrieval</li>
-            <li>• Real-time track counts and duration</li>
-            <li>• Playlist descriptions and followers</li>
-            <li>• Recently updated playlists</li>
-          </ul>
-        </div>
+
       </main>
       
       <Footer />
