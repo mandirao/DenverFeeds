@@ -436,11 +436,20 @@ function AddPlaylistForm() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-black text-[#1DB954] hover:bg-black hover:text-[#41F2EE] rounded-full w-10 h-10 p-0 font-medium transition-colors">
-          <Plus className="h-5 w-5" />
-        </Button>
-      </DialogTrigger>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button className="bg-[#FE6B41] text-black hover:bg-[#e85a35] border-2 border-black rounded-full w-10 h-10 p-0 font-medium transition-colors">
+                <Plus className="h-5 w-5" />
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Add a Spotify playlist</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <DialogContent className="sm:max-w-md bg-[#F5F3F0]">
         <DialogHeader>
           <DialogTitle>Add New Playlist</DialogTitle>
