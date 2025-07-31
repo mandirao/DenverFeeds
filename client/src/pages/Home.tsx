@@ -329,7 +329,7 @@ export default function Home() {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setFilters({ ...filters, status: "all" })}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border-2 ${
+                className={`px-3 py-1.5 rounded-full font-medium transition-colors border ${
                   filters.status === "all" 
                     ? "bg-white text-black border-white" 
                     : "bg-[#FE6B41] text-black border-black hover:border-white"
@@ -339,7 +339,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "top-voted", sortBy: "votes" })}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border-2 ${
+                className={`px-3 py-1.5 rounded-full font-medium transition-colors border ${
                   filters.status === "top-voted" 
                     ? "bg-white text-black border-white" 
                     : "bg-[#FE6B41] text-black border-black hover:border-white"
@@ -349,7 +349,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "just-added" })}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border-2 ${
+                className={`px-3 py-1.5 rounded-full font-medium transition-colors border ${
                   filters.status === "just-added" 
                     ? "bg-white text-black border-white" 
                     : "bg-[#FE6B41] text-black border-black hover:border-white"
@@ -359,7 +359,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "scheduled" })}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border-2 ${
+                className={`px-3 py-1.5 rounded-full font-medium transition-colors border ${
                   filters.status === "scheduled" 
                     ? "bg-white text-black border-white" 
                     : "bg-[#FE6B41] text-black border-black hover:border-white"
@@ -369,7 +369,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "member-picks" })}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border-2 ${
+                className={`px-3 py-1.5 rounded-full font-medium transition-colors border ${
                   filters.status === "member-picks" 
                     ? "bg-white text-black border-white" 
                     : "bg-[#FE6B41] text-black border-black hover:border-white"
@@ -379,7 +379,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "cheap-thrills" })}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border-2 ${
+                className={`px-3 py-1.5 rounded-full font-medium transition-colors border ${
                   filters.status === "cheap-thrills" 
                     ? "bg-white text-black border-white" 
                     : "bg-[#FE6B41] text-black border-black hover:border-white"
