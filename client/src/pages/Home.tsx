@@ -123,6 +123,29 @@ export default function Home() {
   // For standard view, group by month and week
   const groupedByMonthAndWeek = groupEventsByMonth(sortedEvents);
   
+  // Count active filters (excluding defaults)
+  const countActiveFilters = () => {
+    let count = 0;
+    if (filters.month !== "all") count++;
+    if (filters.genre !== "all") count++;
+    if (!filters.denverAreaOnly) count++; // Road trips is non-default
+    return count;
+  };
+  
+  const activeFilterCount = countActiveFilters();
+  const hasActiveFilters = activeFilterCount > 0;
+  
+  // Reset filters to defaults
+  const resetFilters = () => {
+    setFilters({
+      month: "all",
+      genre: "all", 
+      status: "all",
+      denverAreaOnly: true,
+      sortBy: "date"
+    });
+  };
+  
   // Determine if we should group by month/week or show a flat list
   let displayContent;
   
@@ -366,15 +389,19 @@ export default function Home() {
                 Cheap Thrills
               </button>
               
-              {/* Filter modal moved very close to other filter tabs */}
-              <div className="ml-0.5">
+              {/* Dynamic filter count and clear button */}
+              <div className="ml-0.5 flex items-center gap-1">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Dialog>
                         <DialogTrigger asChild>
-                          <button className="px-2 py-1 rounded-full font-medium transition-colors text-sm bg-[#FE6B41] text-black hover:text-white focus:outline-none">
-                            + More
+                          <button className={`px-2 py-1 rounded-full font-medium transition-colors text-sm focus:outline-none ${
+                            hasActiveFilters 
+                              ? "bg-white text-black border border-black" 
+                              : "bg-[#FE6B41] text-black hover:text-white"
+                          }`}>
+                            {hasActiveFilters ? `${activeFilterCount} More` : "+ More"}
                           </button>
                         </DialogTrigger>
                         <DialogContent className="bg-white border-2 border-black max-w-md">
@@ -446,6 +473,25 @@ export default function Home() {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                
+                {/* Clear filters button - only show when filters are active */}
+                {hasActiveFilters && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button 
+                          onClick={resetFilters}
+                          className="px-2 py-1 rounded-full font-medium transition-colors text-sm bg-white text-black border border-black hover:bg-red-50 focus:outline-none"
+                        >
+                          ✕
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Clear all filters</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
               </div>
             </div>
