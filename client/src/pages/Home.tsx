@@ -342,7 +342,7 @@ export default function Home() {
                     : "bg-[#FE6B41] text-black border-black hover:border-white"
                 }`}
               >
-                Updates
+                Updated
               </button>
               <button
                 onClick={() => setFilters({ ...filters, status: "scheduled" })}
@@ -376,10 +376,10 @@ export default function Home() {
               </button>
               
               {/* Filter modal moved to the right side of filter tabs */}
-              <div className="ml-4">
+              <div className="ml-2">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <button className="px-2 py-1 rounded-full font-medium transition-colors border text-sm bg-[#FE6B41] text-black border-black hover:border-white focus:outline-none">
+                    <button className="px-2 py-1 rounded-full font-medium transition-colors text-sm bg-[#FE6B41] text-black hover:bg-opacity-80 focus:outline-none">
                       + More
                     </button>
                   </DialogTrigger>

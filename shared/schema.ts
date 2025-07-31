@@ -94,7 +94,6 @@ export const cheapThrillsVenues = [
   "HQ", 
   "Lost Lake Lounge",
   "City Park Jazz", 
-  "Levitt Pavilion Denver",
   "Globe Hall",
   "Moe's Original BBQ",
   "Skylark Lounge"
