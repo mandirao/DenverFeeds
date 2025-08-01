@@ -1,5 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+interface VenueOption {
+  venue: string;
+  date: string;
+  source?: string;
+}
+
 interface ArtistAnalysis {
   emoji: string;
   summary: string;
@@ -7,6 +13,7 @@ interface ArtistAnalysis {
   genre: string;
   suggestedVenue?: string;
   suggestedDate?: string;
+  venueOptions?: VenueOption[];
 }
 
 interface SearchResult {
@@ -126,6 +133,7 @@ TONE: Casual, descriptive, compelling but never forced hype. Confident without e
 4. GENRE: Pick from this list: Rock & Alternative, Folk, Country & Americana, Pop & Indie Pop, Electronic & Experimental, Funk, Soul & Jazz, Classical & Orchestral, Hip Hop & R&B
 5. VENUE: Based on their popularity/scale, suggest from: ${denverVenues.join(', ')}
 6. DATE: Extract from search results or suggest plausible 2025 date (YYYY-MM-DD)
+7. VENUE OPTIONS: If multiple Denver dates found in search results, provide up to 3 as array of objects with "venue", "date", and "source" fields
 
 ${artistContext}${concertContext}
 
@@ -136,7 +144,11 @@ JSON format:
   "soundsLike": "Beach House, Slowdive",
   "genre": "Pop & Indie Pop",
   "suggestedVenue": "Gothic Theatre",
-  "suggestedDate": "2025-06-20"
+  "suggestedDate": "2025-06-20",
+  "venueOptions": [
+    {"venue": "Red Rocks Amphitheatre", "date": "2025-08-15", "source": "Ticketmaster"},
+    {"venue": "Mission Ballroom", "date": "2025-09-20", "source": "AXS"}
+  ]
 }`;
 
     try {
@@ -162,7 +174,8 @@ JSON format:
           soundsLike: (result.soundsLike || '').substring(0, 75),
           genre: this.validateGenre(result.genre),
           suggestedVenue: result.suggestedVenue || '',
-          suggestedDate: this.validateDate(result.suggestedDate) || ''
+          suggestedDate: this.validateDate(result.suggestedDate) || '',
+          venueOptions: this.validateVenueOptions(result.venueOptions || [])
         };
       } else {
         throw new Error('Unexpected response format');
@@ -208,6 +221,19 @@ JSON format:
     } catch {
       return null;
     }
+  }
+
+  private validateVenueOptions(options: any[]): VenueOption[] {
+    if (!Array.isArray(options)) return [];
+    
+    return options
+      .filter(option => option && option.venue && option.date)
+      .map(option => ({
+        venue: option.venue,
+        date: this.validateDate(option.date) || option.date,
+        source: option.source || ''
+      }))
+      .slice(0, 3); // Limit to 3 options
   }
 }
 

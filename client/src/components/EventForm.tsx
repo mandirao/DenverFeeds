@@ -23,6 +23,7 @@ import {
 import { Loader2, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { VenueSelectionModal } from "./VenueSelectionModal";
 
 // Function to check if string contains only emoji characters
 function containsOnlyEmoji(str: string) {
@@ -85,6 +86,8 @@ export default function EventForm({
   const [searchValue, setSearchValue] = useState("");
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [artistValue, setArtistValue] = useState(initialData?.artist || "");
+  const [showVenueModal, setShowVenueModal] = useState(false);
+  const [venueOptions, setVenueOptions] = useState<any[]>([]);
   const { toast } = useToast();
 
   // Format the date for input field (YYYY-MM-DD format)
@@ -171,26 +174,36 @@ export default function EventForm({
         form.setValue("soundsLike", response.soundsLike);
         form.setValue("genre", response.genre);
         
-        // Auto-fill venue if suggested
-        if (response.suggestedVenue) {
-          form.setValue("venue", response.suggestedVenue);
-          form.clearErrors("venue");
-          setCustomVenueMode(false);
-        }
-        
-        // Auto-fill date if suggested
-        if (response.suggestedDate) {
-          const date = new Date(response.suggestedDate);
-          if (!isNaN(date.getTime())) {
-            form.setValue("date", date);
-            form.clearErrors("date");
+        // Check if multiple venue options are available
+        if (response.venueOptions && response.venueOptions.length > 1) {
+          setVenueOptions(response.venueOptions);
+          setShowVenueModal(true);
+          toast({
+            title: "AI analysis complete!",
+            description: "Multiple shows found - choose your preferred venue and date.",
+          });
+        } else {
+          // Auto-fill venue if suggested (single option)
+          if (response.suggestedVenue) {
+            form.setValue("venue", response.suggestedVenue);
+            form.clearErrors("venue");
+            setCustomVenueMode(false);
           }
+          
+          // Auto-fill date if suggested
+          if (response.suggestedDate) {
+            const date = new Date(response.suggestedDate);
+            if (!isNaN(date.getTime())) {
+              form.setValue("date", date);
+              form.clearErrors("date");
+            }
+          }
+          
+          toast({
+            title: "AI-generated content applied!",
+            description: "Check the fields and make any necessary edits.",
+          });
         }
-        
-        toast({
-          title: "AI-generated content applied!",
-          description: "Check the fields and make any necessary edits.",
-        });
       } else {
         toast({
           title: "Error generating content",
@@ -212,6 +225,24 @@ export default function EventForm({
     }
   };
 
+
+  // Handle venue selection from modal
+  const handleVenueSelection = (option: any) => {
+    form.setValue("venue", option.venue);
+    form.clearErrors("venue");
+    setCustomVenueMode(false);
+    
+    const date = new Date(option.date);
+    if (!isNaN(date.getTime())) {
+      form.setValue("date", date);
+      form.clearErrors("date");
+    }
+    
+    toast({
+      title: "Show details applied!",
+      description: `Set ${option.venue} on ${new Date(option.date).toLocaleDateString()}`,
+    });
+  };
 
   // Handle form submission
   const handleSubmit = (data: EventFormValues) => {
@@ -253,7 +284,7 @@ export default function EventForm({
             ) : (
               <Sparkles className="h-4 w-4 mr-1" />
             )}
-            AI
+            Fill w/ AI
           </Button>
         </div>
       </div>
@@ -541,6 +572,14 @@ export default function EventForm({
           <div className="whitespace-pre-line mt-1">{duplicateError}</div>
         </div>
       )}
+
+      <VenueSelectionModal
+        isOpen={showVenueModal}
+        onClose={() => setShowVenueModal(false)}
+        venueOptions={venueOptions}
+        onSelect={handleVenueSelection}
+        artistName={artistValue}
+      />
     </form>
   );
 }
