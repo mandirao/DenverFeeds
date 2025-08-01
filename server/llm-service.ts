@@ -21,7 +21,7 @@ export class LLMService {
 
   constructor() {
     this.apiKey = process.env.ANTHROPIC_API_KEY || '';
-    this.searchApiKey = process.env.SERP_API_KEY || '';
+    this.searchApiKey = process.env.SERPER_API_KEY || '';
     
     if (!this.apiKey) {
       throw new Error('Anthropic API key not found in environment variables');
