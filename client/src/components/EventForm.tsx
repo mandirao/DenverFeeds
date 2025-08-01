@@ -84,6 +84,7 @@ export default function EventForm({
   const [customVenueMode, setCustomVenueMode] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [artistValue, setArtistValue] = useState(initialData?.artist || "");
   const { toast } = useToast();
 
   // Format the date for input field (YYYY-MM-DD format)
@@ -110,6 +111,8 @@ export default function EventForm({
       requester: initialData?.requester || "",
     },
   });
+
+
 
   // Set custom venue mode if initial venue doesn't match any venue option
   useEffect(() => {
@@ -209,6 +212,10 @@ export default function EventForm({
               {...form.register("artist")}
               maxLength={75}
               placeholder="Beach House"
+              onChange={(e) => {
+                form.setValue("artist", e.target.value);
+                setArtistValue(e.target.value);
+              }}
               className="border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[300px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
             />
             <Label htmlFor="artist" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">ARTIST NAME</Label>
@@ -221,7 +228,7 @@ export default function EventForm({
             variant="outline"
             size="sm"
             onClick={generateWithAI}
-            disabled={isGeneratingAI || !form.getValues("artist")}
+            disabled={isGeneratingAI || !artistValue || artistValue.trim().length === 0}
             className="shrink-0 h-10 px-3 text-sm border-black hover:bg-gray-100 z-10"
           >
             {isGeneratingAI ? (
