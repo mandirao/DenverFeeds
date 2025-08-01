@@ -23,8 +23,8 @@ export function Footer() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
   
-  // Determine if we're on the Add Show page
-  const isAddPage = location === "/add";
+  // Determine if we're on the Add Show or Playlists page
+  const isAddPage = location === "/add" || location === "/playlists";
   
   // Add multiple events (CSV) mutation
   const addEventsBulkMutation = useMutation({
