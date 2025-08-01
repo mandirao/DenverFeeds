@@ -20,6 +20,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Loader2, Sparkles } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 // Function to check if string contains only emoji characters
 function containsOnlyEmoji(str: string) {
@@ -80,14 +83,16 @@ export default function EventForm({
   const [venueSearchOpen, setVenueSearchOpen] = useState(false);
   const [customVenueMode, setCustomVenueMode] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const { toast } = useToast();
 
   // Format the date for input field (YYYY-MM-DD format)
   const formatDateForInput = (dateString?: string | Date): string => {
     if (!dateString) return '';
-    
+
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return '';
-    
+
     return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD
   };
 
@@ -123,7 +128,7 @@ export default function EventForm({
       setCustomVenueMode(true);
       form.setValue("venue", ""); // Empty field for user to type
       setVenueSearchOpen(false);
-      
+
       // Focus the input after a short delay to allow the UI to update
       setTimeout(() => {
         const venueInput = document.getElementById("venue");
@@ -139,13 +144,56 @@ export default function EventForm({
       setCustomVenueMode(false);
     }
   };
-  
+
   // Handle exiting custom venue mode
   const exitCustomVenueMode = () => {
     setCustomVenueMode(false);
     form.setValue("venue", "");
     form.clearErrors("venue"); // Clear any venue validation errors
   };
+
+    const generateWithAI = async () => {
+    setIsGeneratingAI(true);
+    try {
+      const artistName = form.getValues("artist");
+      const response = await apiRequest<{
+        emoji: string;
+        summary: string;
+        soundsLike: string;
+      }>("/api/generate-event-data", {
+        method: "POST",
+        body: JSON.stringify({ artistName }),
+      });
+
+      if (response) {
+        form.setValue("emoji", response.emoji);
+        form.setValue("summary", response.summary);
+        form.setValue("soundsLike", response.soundsLike);
+        toast({
+          title: "AI-generated content applied!",
+          description: "Check the fields and make any necessary edits.",
+        });
+      } else {
+        toast({
+          title: "Error generating content",
+          description:
+            "Failed to generate event data. Please try again or enter manually.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating event data:", error);
+      toast({
+        title: "Error generating content",
+        description:
+          "An unexpected error occurred. Please try again or enter manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
 
   // Handle form submission
   const handleSubmit = (data: EventFormValues) => {
@@ -170,7 +218,7 @@ export default function EventForm({
             <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.emoji.message}</p>
           )}
         </div>
-        
+
         {/* Artist Field */}
         <div className="inline-flex flex-col relative">
           <Input
@@ -180,14 +228,29 @@ export default function EventForm({
             placeholder="Beach House"
             className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[135px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
           />
+         <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={generateWithAI}
+                      disabled={isGeneratingAI || !form.getValues("artist")}
+                      className="shrink-0"
+                    >
+                      {isGeneratingAI ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
+                      AI
+                    </Button>
           <Label htmlFor="artist" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">ARTIST NAME</Label>
           {form.formState.errors.artist && (
             <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.artist.message}</p>
           )}
         </div>
-        
+
         <span className="flex-none text-xl text-black">@</span>
-        
+
         {/* Venue Field - Searchable Dropdown */}
         <div className="inline-flex flex-col relative">
           {customVenueMode ? (
@@ -251,7 +314,7 @@ export default function EventForm({
                         Other/Festival (custom)
                       </CommandItem>
                     )}
-                    
+
                     <CommandGroup heading="Denver/Boulder Area">
                       {venueOptions
                         .filter(venue => 
@@ -299,7 +362,7 @@ export default function EventForm({
             <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.venue.message}</p>
           )}
         </div>
-        
+
         {/* Date Field with attached parentheses */}
         <div className="inline-flex flex-nowrap items-baseline">
           <span className="flex-none text-xl text-black mr-0 pr-0">(</span>
@@ -342,7 +405,7 @@ export default function EventForm({
           </div>
           <span className="flex-none text-xl text-black ml-0 pl-0">).</span>
         </div>
-        
+
         {/* Summary Field */}
         <div className="inline-flex flex-col relative">
           <Input
@@ -357,9 +420,9 @@ export default function EventForm({
             <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.summary.message}</p>
           )}
         </div>
-        
+
         <span className="flex-none text-xl text-black">like</span>
-        
+
         {/* Sounds Like Field with attached period */}
         <div className="inline-flex flex-nowrap items-baseline">
           <div className="inline-flex flex-col relative mr-0 pr-0">
@@ -377,7 +440,7 @@ export default function EventForm({
           </div>
           <span className="flex-none text-xl text-black ml-0 pl-0">.</span>
         </div>
-        
+
         {/* Genre Field */}
         <div className="inline-flex flex-col relative">
           <select
@@ -396,7 +459,7 @@ export default function EventForm({
           )}
           <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 pointer-events-none text-black" />
         </div>
-        
+
         {/* Requester (Your Name) Field */}
         <div className="inline-flex flex-col relative mt-6 mb-6">
           <Input
@@ -411,7 +474,7 @@ export default function EventForm({
             <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.requester.message}</p>
           )}
         </div>
-        
+
         {/* Action Buttons */}
         <div className="inline-flex items-baseline space-x-2 ml-1 mt-4">
           <Button 
@@ -422,7 +485,7 @@ export default function EventForm({
           >
             {isPending ? "SAVING..." : submitButtonText}
           </Button>
-          
+
           {onCancel && (
             <>
               <Button 
@@ -438,10 +501,10 @@ export default function EventForm({
           )}
         </div>
       </div>
-      
+
       {/* Extra spacing to account for error messages */}
       <div className="h-16"></div>
-      
+
       {/* Duplicate event error message */}
       {duplicateError && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4">

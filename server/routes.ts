@@ -8,6 +8,7 @@ import { parse } from "date-fns";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
 import { spotifyService } from "./spotify";
+import { llmService } from "./llm-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -704,6 +705,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error refreshing playlist:", error);
       res.status(500).json({ message: "Server error refreshing playlist" });
+    }
+  });
+
+  // AI artist analysis endpoint
+  apiRouter.post("/ai/analyze-artist", async (req, res) => {
+    try {
+      const { artist } = req.body;
+      
+      if (!artist || typeof artist !== 'string') {
+        return res.status(400).json({ message: "Artist name is required" });
+      }
+
+      console.log(`Analyzing artist: ${artist}`);
+      const analysis = await llmService.analyzeArtist(artist);
+      
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error analyzing artist:", error);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('API key')) {
+          return res.status(500).json({ message: "AI service not configured properly" });
+        } else if (error.message.includes('JSON')) {
+          return res.status(500).json({ message: "AI service returned invalid response" });
+        }
+      }
+      
+      res.status(500).json({ message: "Failed to analyze artist" });
     }
   });
 
