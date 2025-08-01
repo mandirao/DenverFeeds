@@ -122,7 +122,7 @@ TONE: Casual, descriptive, compelling but never forced hype. Confident without e
    - "Seattle duo crafting dreamy indie rock with crystalline vocals"
    - "Brooklyn producer mixing jazz samples with trap beats"
    - "Former Arcade Fire member's solo venture into folk territory"
-3. SOUNDS LIKE: Two specific, helpful comparisons that set real expectations
+3. SOUNDS LIKE: Two artists separated by comma only (format: "Artist One, Artist Two")
 4. GENRE: Pick from this list: Rock & Alternative, Folk, Country & Americana, Pop & Indie Pop, Electronic & Experimental, Funk, Soul & Jazz, Classical & Orchestral, Hip Hop & R&B
 5. VENUE: Based on their popularity/scale, suggest from: ${denverVenues.join(', ')}
 6. DATE: Extract from search results or suggest plausible 2025 date (YYYY-MM-DD)
@@ -133,7 +133,7 @@ JSON format:
 {
   "emoji": "🌙",
   "summary": "Seattle duo crafting dreamy indie rock with crystalline vocals",
-  "soundsLike": "Beach House & Slowdive",
+  "soundsLike": "Beach House, Slowdive",
   "genre": "Pop & Indie Pop",
   "suggestedVenue": "Gothic Theatre",
   "suggestedDate": "2025-06-20"
