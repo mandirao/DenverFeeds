@@ -6,7 +6,9 @@ This is a concert feed/newsletter application designed for an exclusive meetup g
 
 ## User Preferences
 
-Preferred communication style: Simple, everyday language.
+**Communication Style**: Simple, everyday language.
+
+**Content Voice & Tone**: Casual cool style inspired by Oh My Rockness and Pitchfork. Casual and descriptive but compelling—no forced hype. Describe sound with confidence, not exaggeration (no "mind-blowing" or "life-changing" unless it actually is). Include brief unfussy history/origin/bio when relevant. Keep it tight, direct, and useful. Describe signature sound & style in a relatable and slightly wry way, rather than breathless and over-the-top. Avoid over-explaining genres; describe their vibe instead.
 
 ## System Architecture
 

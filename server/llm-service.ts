@@ -113,25 +113,30 @@ export class LLMService {
       'Summit Music Hall', 'Marquis Theater'
     ];
 
-    const prompt = `Analyze the musical artist "${artistName}" and provide the following information:
+    const prompt = `You're writing for a casual cool music newsletter inspired by Oh My Rockness and Pitchfork. Analyze "${artistName}" with this specific style:
 
-1. An emoji that represents their musical vibe (just one emoji, no text)
-2. A brief 1-2 sentence description of their sound (max 75 characters)
-3. Two similar artists they sound like, formatted as "Artist A & Artist B" (max 75 characters)
-4. Their primary genre from this exact list: Rock & Alternative, Folk, Country & Americana, Pop & Indie Pop, Electronic & Experimental, Funk, Soul & Jazz, Classical & Orchestral, Hip Hop & R&B
-5. Based on the tour information and artist popularity, suggest the most likely Denver venue from this list: ${denverVenues.join(', ')}
-6. If there's specific date information in the search results, extract it. Otherwise, suggest a plausible date in 2025 (format: YYYY-MM-DD)
+TONE: Casual, descriptive, compelling but never forced hype. Confident without exaggeration. A little wry, never breathless. Direct and useful.
+
+1. EMOJI: One emoji that captures their actual vibe (not generic music symbols)
+2. SUMMARY (max 75 chars): Describe their signature sound in a relatable way. Focus on vibe over genre. Include brief unfussy history/origin if relevant. No "mind-blowing" unless it actually is. Examples:
+   - "Seattle duo crafting dreamy indie rock with crystalline vocals"
+   - "Brooklyn producer mixing jazz samples with trap beats"
+   - "Former Arcade Fire member's solo venture into folk territory"
+3. SOUNDS LIKE: Two specific, helpful comparisons that set real expectations
+4. GENRE: Pick from this list: Rock & Alternative, Folk, Country & Americana, Pop & Indie Pop, Electronic & Experimental, Funk, Soul & Jazz, Classical & Orchestral, Hip Hop & R&B
+5. VENUE: Based on their popularity/scale, suggest from: ${denverVenues.join(', ')}
+6. DATE: Extract from search results or suggest plausible 2025 date (YYYY-MM-DD)
 
 ${artistContext}${concertContext}
 
-Respond in JSON format:
+JSON format:
 {
-  "emoji": "🎸",
-  "summary": "Dream pop duo with ethereal soundscapes",
-  "soundsLike": "Cocteau Twins & Mazzy Star",
+  "emoji": "🌙",
+  "summary": "Seattle duo crafting dreamy indie rock with crystalline vocals",
+  "soundsLike": "Beach House & Slowdive",
   "genre": "Pop & Indie Pop",
-  "suggestedVenue": "Red Rocks Amphitheatre",
-  "suggestedDate": "2025-08-15"
+  "suggestedVenue": "Gothic Theatre",
+  "suggestedDate": "2025-06-20"
 }`;
 
     try {
