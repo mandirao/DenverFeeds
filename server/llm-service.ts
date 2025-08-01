@@ -1,3 +1,4 @@
+import Anthropic from '@anthropic-ai/sdk';
 
 interface ArtistAnalysis {
   emoji: string;
@@ -17,11 +18,11 @@ export class LLMService {
   private searchApiKey: string;
 
   constructor() {
-    this.apiKey = process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || '';
-    this.searchApiKey = process.env.SERPER_API_KEY || '';
+    this.apiKey = process.env.ANTHROPIC_API_KEY || '';
+    this.searchApiKey = process.env.SERP_API_KEY || '';
     
     if (!this.apiKey) {
-      throw new Error('LLM API key not found in environment variables');
+      throw new Error('Anthropic API key not found in environment variables');
     }
   }
 
@@ -68,89 +69,68 @@ export class LLMService {
 1. An emoji that represents their musical vibe (just one emoji, no text)
 2. A brief 1-2 sentence description of their sound (max 75 characters)
 3. Two similar artists they sound like, formatted as "Artist A & Artist B" (max 75 characters)
-4. Their primary genre from this exact list: Rock & Alternative, Folk Country & Americana, Pop & Indie Pop, Electronic & Experimental, Funk Soul & Jazz, Classical & Orchestral, Hip Hop & R&B
+4. Their primary genre from this exact list: Rock & Alternative, Folk, Country & Americana, Pop & Indie Pop, Electronic & Experimental, Funk, Soul & Jazz, Classical & Orchestral, Hip Hop & R&B
 
 ${searchContext}
 
 Respond in JSON format:
 {
   "emoji": "🎸",
-  "summary": "Brief description of sound",
-  "soundsLike": "Similar Artist 1 & Similar Artist 2",
-  "genre": "Rock & Alternative"
+  "summary": "Dream pop duo with ethereal soundscapes",
+  "soundsLike": "Cocteau Twins & Mazzy Star",
+  "genre": "Pop & Indie Pop"
 }`;
 
-    if (process.env.ANTHROPIC_API_KEY) {
-      return this.callClaude(prompt);
-    } else if (process.env.OPENAI_API_KEY) {
-      return this.callOpenAI(prompt);
-    } else {
-      throw new Error('No supported LLM API key found');
+    try {
+      // Use Anthropic API
+      const anthropic = new Anthropic({
+        apiKey: this.apiKey,
+      });
+
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: prompt }],
+      });
+
+      const content = response.content[0];
+      if (content.type === 'text') {
+        const result = JSON.parse(content.text);
+        
+        // Validate and clean the response
+        return {
+          emoji: result.emoji || '🎵',
+          summary: (result.summary || '').substring(0, 75),
+          soundsLike: (result.soundsLike || '').substring(0, 75),
+          genre: this.validateGenre(result.genre)
+        };
+      } else {
+        throw new Error('Unexpected response format');
+      }
+    } catch (error) {
+      console.error('LLM API error:', error);
+      // Return fallback values
+      return {
+        emoji: '🎵',
+        summary: 'Innovative musical artist',
+        soundsLike: 'Various Artists',
+        genre: 'Rock & Alternative'
+      };
     }
   }
 
-  private async callClaude(prompt: string): Promise<ArtistAnalysis> {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': this.apiKey,
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 300,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.content[0].text;
+  private validateGenre(genre: string): string {
+    const validGenres = [
+      'Rock & Alternative',
+      'Folk, Country & Americana', 
+      'Pop & Indie Pop',
+      'Electronic & Experimental',
+      'Funk, Soul & Jazz',
+      'Classical & Orchestral',
+      'Hip Hop & R&B'
+    ];
     
-    try {
-      return JSON.parse(content);
-    } catch (error) {
-      throw new Error('Failed to parse LLM response as JSON');
-    }
-  }
-
-  private async callOpenAI(prompt: string): Promise<ArtistAnalysis> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [{
-          role: 'user',
-          content: prompt
-        }],
-        max_tokens: 300,
-        temperature: 0.7
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0].message.content;
-    
-    try {
-      return JSON.parse(content);
-    } catch (error) {
-      throw new Error('Failed to parse LLM response as JSON');
-    }
+    return validGenres.includes(genre) ? genre : 'Rock & Alternative';
   }
 }
 

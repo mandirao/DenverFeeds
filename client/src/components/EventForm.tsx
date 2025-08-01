@@ -152,23 +152,21 @@ export default function EventForm({
     form.clearErrors("venue"); // Clear any venue validation errors
   };
 
-    const generateWithAI = async () => {
+  const generateWithAI = async () => {
     setIsGeneratingAI(true);
     try {
-      const artistName = form.getValues("artist");
-      const response = await apiRequest<{
-        emoji: string;
-        summary: string;
-        soundsLike: string;
-      }>("/api/generate-event-data", {
+      const artist = form.getValues("artist");
+      const response = await apiRequest({
+        endpoint: "/api/ai/analyze-artist",
         method: "POST",
-        body: JSON.stringify({ artistName }),
+        data: { artist }
       });
 
       if (response) {
         form.setValue("emoji", response.emoji);
         form.setValue("summary", response.summary);
         form.setValue("soundsLike", response.soundsLike);
+        form.setValue("genre", response.genre);
         toast({
           title: "AI-generated content applied!",
           description: "Check the fields and make any necessary edits.",

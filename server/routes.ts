@@ -523,6 +523,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Artist Analysis route
+  apiRouter.post("/ai/analyze-artist", async (req, res) => {
+    try {
+      const { artist } = req.body;
+      
+      if (!artist || typeof artist !== 'string') {
+        return res.status(400).json({ message: "Artist name is required" });
+      }
+
+      console.log(`Analyzing artist: ${artist}`);
+      
+      const analysis = await llmService.analyzeArtist(artist);
+      
+      console.log(`AI Analysis result for ${artist}:`, analysis);
+      
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error analyzing artist:", error);
+      res.status(500).json({ 
+        message: "Failed to analyze artist",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Playlist routes
   
   // Get all playlists
