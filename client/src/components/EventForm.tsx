@@ -170,6 +170,23 @@ export default function EventForm({
         form.setValue("summary", response.summary);
         form.setValue("soundsLike", response.soundsLike);
         form.setValue("genre", response.genre);
+        
+        // Auto-fill venue if suggested
+        if (response.suggestedVenue) {
+          form.setValue("venue", response.suggestedVenue);
+          form.clearErrors("venue");
+          setCustomVenueMode(false);
+        }
+        
+        // Auto-fill date if suggested
+        if (response.suggestedDate) {
+          const date = new Date(response.suggestedDate);
+          if (!isNaN(date.getTime())) {
+            form.setValue("date", date);
+            form.clearErrors("date");
+          }
+        }
+        
         toast({
           title: "AI-generated content applied!",
           description: "Check the fields and make any necessary edits.",

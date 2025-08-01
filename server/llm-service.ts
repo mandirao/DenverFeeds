@@ -5,6 +5,8 @@ interface ArtistAnalysis {
   summary: string;
   soundsLike: string;
   genre: string;
+  suggestedVenue?: string;
+  suggestedDate?: string;
 }
 
 interface SearchResult {
@@ -57,12 +59,59 @@ export class LLMService {
     }
   }
 
+  async searchUpcomingShows(artistName: string): Promise<SearchResult[]> {
+    if (!this.searchApiKey) {
+      console.warn('No search API key found, skipping concert search');
+      return [];
+    }
+
+    try {
+      const response = await fetch('https://google.serper.dev/search', {
+        method: 'POST',
+        headers: {
+          'X-API-KEY': this.searchApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          q: `"${artistName}" concert tour dates 2025 Denver Colorado tickets`,
+          num: 8
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Concert search API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.organic?.slice(0, 5) || [];
+    } catch (error) {
+      console.error('Concert search API error:', error);
+      return [];
+    }
+  }
+
   async analyzeArtist(artistName: string): Promise<ArtistAnalysis> {
-    // First, search for artist information
-    const searchResults = await this.searchArtistInfo(artistName);
-    const searchContext = searchResults.length > 0 
-      ? `\n\nWeb search results about ${artistName}:\n${searchResults.map(r => `- ${r.title}: ${r.snippet}`).join('\n')}`
+    // Search for both artist info and upcoming shows
+    const [artistResults, concertResults] = await Promise.all([
+      this.searchArtistInfo(artistName),
+      this.searchUpcomingShows(artistName)
+    ]);
+
+    const artistContext = artistResults.length > 0 
+      ? `\n\nWeb search results about ${artistName}:\n${artistResults.map(r => `- ${r.title}: ${r.snippet}`).join('\n')}`
       : '';
+
+    const concertContext = concertResults.length > 0 
+      ? `\n\nUpcoming tour/concert information:\n${concertResults.map(r => `- ${r.title}: ${r.snippet}`).join('\n')}`
+      : '';
+
+    // Denver area venues from our venue list
+    const denverVenues = [
+      'Red Rocks Amphitheatre', 'Mission Ballroom', 'Fillmore Auditorium', 'Ogden Theatre',
+      'Gothic Theatre', 'Fox Theatre', 'Paramount Theatre', 'Ball Arena', 'Bluebird Theater',
+      'Oriental Theater', 'Hi-Dive', 'Globe Hall', 'Larimer Lounge', 'Lost Lake Lounge',
+      'Summit Music Hall', 'Marquis Theater'
+    ];
 
     const prompt = `Analyze the musical artist "${artistName}" and provide the following information:
 
@@ -70,15 +119,19 @@ export class LLMService {
 2. A brief 1-2 sentence description of their sound (max 75 characters)
 3. Two similar artists they sound like, formatted as "Artist A & Artist B" (max 75 characters)
 4. Their primary genre from this exact list: Rock & Alternative, Folk, Country & Americana, Pop & Indie Pop, Electronic & Experimental, Funk, Soul & Jazz, Classical & Orchestral, Hip Hop & R&B
+5. Based on the tour information and artist popularity, suggest the most likely Denver venue from this list: ${denverVenues.join(', ')}
+6. If there's specific date information in the search results, extract it. Otherwise, suggest a plausible date in 2025 (format: YYYY-MM-DD)
 
-${searchContext}
+${artistContext}${concertContext}
 
 Respond in JSON format:
 {
   "emoji": "🎸",
   "summary": "Dream pop duo with ethereal soundscapes",
   "soundsLike": "Cocteau Twins & Mazzy Star",
-  "genre": "Pop & Indie Pop"
+  "genre": "Pop & Indie Pop",
+  "suggestedVenue": "Red Rocks Amphitheatre",
+  "suggestedDate": "2025-08-15"
 }`;
 
     try {
@@ -102,7 +155,9 @@ Respond in JSON format:
           emoji: result.emoji || '🎵',
           summary: (result.summary || '').substring(0, 75),
           soundsLike: (result.soundsLike || '').substring(0, 75),
-          genre: this.validateGenre(result.genre)
+          genre: this.validateGenre(result.genre),
+          suggestedVenue: result.suggestedVenue || '',
+          suggestedDate: this.validateDate(result.suggestedDate) || ''
         };
       } else {
         throw new Error('Unexpected response format');
@@ -131,6 +186,23 @@ Respond in JSON format:
     ];
     
     return validGenres.includes(genre) ? genre : 'Rock & Alternative';
+  }
+
+  private validateDate(dateString: string): string | null {
+    if (!dateString) return null;
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return null;
+      
+      // Ensure the date is in 2025 and in the future
+      const year = date.getFullYear();
+      if (year < 2025 || year > 2026) return null;
+      
+      return date.toISOString().split('T')[0]; // Return YYYY-MM-DD format
+    } catch {
+      return null;
+    }
   }
 }
 
