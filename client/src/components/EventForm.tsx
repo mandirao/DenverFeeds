@@ -202,6 +202,40 @@ export default function EventForm({
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      {/* Artist Field with AI Button - Separate line */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3">
+          <div className="inline-flex flex-col relative">
+            <Input
+              id="artist"
+              {...form.register("artist")}
+              maxLength={75}
+              placeholder="Beach House"
+              className="border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[300px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
+            />
+            <Label htmlFor="artist" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">ARTIST NAME</Label>
+            {form.formState.errors.artist && (
+              <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.artist.message}</p>
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={generateWithAI}
+            disabled={isGeneratingAI || !form.getValues("artist")}
+            className="shrink-0 h-10 px-3 text-sm border-black hover:bg-gray-100 z-10"
+          >
+            {isGeneratingAI ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+            ) : (
+              <Sparkles className="h-4 w-4 mr-1" />
+            )}
+            AI
+          </Button>
+        </div>
+      </div>
+
       {/* Madlib-style form layout */}
       <div className="flex flex-wrap gap-3 gap-y-8 items-baseline text-xl font-medium leading-loose">
         {/* Emoji Field */}
@@ -219,39 +253,7 @@ export default function EventForm({
           )}
         </div>
 
-        {/* Artist Field with AI Button */}
-        <div className="inline-flex items-baseline gap-2">
-          <div className="inline-flex flex-col relative">
-            <Input
-              id="artist"
-              {...form.register("artist")}
-              maxLength={75}
-              placeholder="Beach House"
-              className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[135px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
-            />
-            <Label htmlFor="artist" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">ARTIST NAME</Label>
-            {form.formState.errors.artist && (
-              <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.artist.message}</p>
-            )}
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={generateWithAI}
-            disabled={isGeneratingAI || !form.getValues("artist")}
-            className="shrink-0 h-8 px-2 text-xs border-black hover:bg-gray-100 relative top-[-2px]"
-          >
-            {isGeneratingAI ? (
-              <Loader2 className="h-3 w-3 animate-spin mr-1" />
-            ) : (
-              <Sparkles className="h-3 w-3 mr-1" />
-            )}
-            AI
-          </Button>
-        </div>
-
-        <span className="flex-none text-xl text-black">@</span>
+        <span className="flex-none text-xl text-black">playing @</span>
 
         {/* Venue Field - Searchable Dropdown */}
         <div className="inline-flex flex-col relative">
