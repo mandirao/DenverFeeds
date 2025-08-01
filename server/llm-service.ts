@@ -124,8 +124,8 @@ TONE: Casual, descriptive, compelling but never forced hype. Confident without e
    - "Former Arcade Fire member's solo venture into folk territory"
 3. SOUNDS LIKE: Two artists separated by comma only (format: "Artist One, Artist Two")
 4. GENRE: Pick from this list: Rock & Alternative, Folk, Country & Americana, Pop & Indie Pop, Electronic & Experimental, Funk, Soul & Jazz, Classical & Orchestral, Hip Hop & R&B
-5. VENUE: Based on their popularity/scale, suggest from: ${denverVenues.join(', ')}
-6. DATE: Extract from search results or suggest plausible 2025 date (YYYY-MM-DD)
+5. VENUE: Based on tour info and artist scale, suggest most realistic venue from: ${denverVenues.join(', ')}
+6. DATE: ONLY use dates from search results if found. Otherwise suggest realistic future date in 2025-2026 that's after today (${new Date().toISOString().split('T')[0]}) in format YYYY-MM-DD
 
 ${artistContext}${concertContext}
 
@@ -200,7 +200,13 @@ JSON format:
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return null;
       
-      // Ensure the date is in 2025 and in the future
+      // Ensure the date is in the future (after today)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to start of today
+      
+      if (date <= today) return null;
+      
+      // Ensure the date is within reasonable future (2025-2026)
       const year = date.getFullYear();
       if (year < 2025 || year > 2026) return null;
       
