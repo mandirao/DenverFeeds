@@ -6,6 +6,9 @@ import { randomUUID } from "crypto";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 
+// Start the concert discovery scheduler
+import "./scheduler";
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

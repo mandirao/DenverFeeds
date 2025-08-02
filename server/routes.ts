@@ -761,6 +761,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual trigger for weekly concert discovery
+  apiRouter.post("/discover-concerts", async (req, res) => {
+    try {
+      const { concertDiscovery } = await import('./concert-discovery');
+      await concertDiscovery.runWeeklyDiscovery();
+      res.json({ success: true, message: "Concert discovery completed" });
+    } catch (error) {
+      console.error("Concert discovery error:", error);
+      res.status(500).json({ 
+        error: "Concert discovery failed",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   app.use("/api", apiRouter);
 
   const httpServer = createServer(app);

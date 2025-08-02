@@ -46,6 +46,8 @@ This is a concert feed/newsletter application designed for an exclusive meetup g
 - **Real-time Updates**: Optimistic UI updates with TanStack Query cache invalidation
 - **Responsive Design**: Mobile-first approach with custom breakpoints
 - **Empty States**: Contextual messaging for filtered results
+- **Automated Concert Discovery**: Weekly AI-powered discovery from multiple sources with scheduling system
+- **Manual Discovery**: On-demand concert search through web interface
 
 ## External Dependencies
 
@@ -70,6 +72,37 @@ This is a concert feed/newsletter application designed for an exclusive meetup g
 - **Vite**: Fast development server with HMR support
 - **ESBuild**: Production bundling for server-side code
 - **Drizzle Kit**: Database schema management and migrations
+
+## Automated Concert Discovery System
+
+### Overview
+Weekly automated system that discovers and adds relevant concerts to the feed using AI analysis and multiple data sources. Runs every Monday at 9 AM with manual trigger available.
+
+### Data Sources
+- **Oh My Rockness**: RSS feeds and web scraping for NYC, Chicago, LA recommended shows
+- **Bandsintown API**: Artist-specific tour date searches for trending artists from database
+- **Ticketmaster Discovery API**: Denver metro area venue events and comprehensive concert data
+- **SERPER API**: Web search integration for real-time concert discovery
+
+### AI Integration
+- **Claude 4.0 Sonnet**: Artist analysis with "casual cool" tone matching Oh My Rockness/Pitchfork style
+- **Automatic Enhancement**: Genre classification, "sounds like" comparisons, and event descriptions
+- **Duplicate Detection**: Smart filtering to prevent duplicate event entries
+- **Date Validation**: Only future concerts with verified show dates
+
+### Architecture Components
+- **ConcertDiscoveryService**: Main service orchestrating all discovery methods
+- **ConcertScheduler**: Weekly automation with Monday 9 AM scheduling
+- **Manual Trigger**: `/api/discover-concerts` endpoint with UI button in Add Event page
+- **Database Integration**: Trend analysis based on user upvote patterns
+
+### Weekly Discovery Process
+1. Scrape Oh My Rockness for recommended shows across three cities
+2. Identify trending artists from recent database upvotes
+3. Search Bandsintown for Denver area shows by trending artists
+4. Query Ticketmaster for comprehensive Denver venue events
+5. AI-enhance all discovered events with proper tone and formatting
+6. Filter duplicates and add to database automatically
 
 ### Form Handling & Validation
 - **React Hook Form**: Performant form state management
