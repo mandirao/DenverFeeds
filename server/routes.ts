@@ -685,6 +685,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Venue-first discovery endpoints
+  apiRouter.get("/discovery/venues", async (req, res) => {
+    try {
+      const { venueDiscoveryService } = await import('./venue-discovery-service');
+      const venues = venueDiscoveryService.getActiveVenues();
+      res.json(venues);
+    } catch (error) {
+      console.error("Error getting venues:", error);
+      res.status(500).json({ error: "Failed to get venues" });
+    }
+  });
+
+  apiRouter.post("/discovery/venue-scan", async (req, res) => {
+    try {
+      const { venueLimit = 10, priority, dryRun = false } = req.body;
+      
+      console.log(`Starting venue-first discovery with limit: ${venueLimit}, priority: ${priority}, dryRun: ${dryRun}`);
+      
+      const { venueDiscoveryService } = await import('./venue-discovery-service');
+      const result = await venueDiscoveryService.runVenueDiscovery({
+        venueLimit,
+        priority,
+        dryRun
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Venue discovery error:", error);
+      res.status(500).json({ 
+        error: "Venue discovery failed", 
+        message: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  apiRouter.get("/discovery/venue-stats", async (req, res) => {
+    try {
+      const { venueDiscoveryService } = await import('./venue-discovery-service');
+      const stats = venueDiscoveryService.getStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting venue stats:", error);
+      res.status(500).json({ error: "Failed to get venue stats" });
+    }
+  });
+
   // AI Artist Analysis route
   apiRouter.post("/ai/analyze-artist", async (req, res) => {
     try {

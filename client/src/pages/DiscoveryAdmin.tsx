@@ -86,6 +86,8 @@ export default function DiscoveryAdmin() {
   const [newArtistGenre, setNewArtistGenre] = useState("");
   const [newArtistPriority, setNewArtistPriority] = useState<'high' | 'medium' | 'low'>('medium');
   const [searchLimit, setSearchLimit] = useState(5);
+  const [venueLimit, setVenueLimit] = useState(10);
+  const [venuePriority, setVenuePriority] = useState('all');
   const [addArtistOpen, setAddArtistOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -246,6 +248,31 @@ export default function DiscoveryAdmin() {
     }
   });
 
+  // Venue discovery mutation
+  const runVenueDiscoveryMutation = useMutation({
+    mutationFn: async ({ venueLimit, priority, dryRun }: { venueLimit: number; priority?: string; dryRun?: boolean }) => {
+      return apiRequest({
+        endpoint: "/api/discovery/venue-scan",
+        method: "POST",
+        data: { venueLimit, priority, dryRun }
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/discovered-events"] });
+      toast({
+        title: "Venue Discovery Complete",
+        description: data.message || "Venue scan completed successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Venue Discovery Failed",
+        description: error.message || "Failed to scan venues",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleAddArtist = () => {
     if (!newArtistName?.trim() || !newArtistGenre?.trim()) {
       toast({
@@ -315,6 +342,31 @@ export default function DiscoveryAdmin() {
 
           {/* Discovery Control Tab */}
           <TabsContent value="discovery" className="space-y-6">
+            {/* Discovery Method Toggle */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <h2 className="text-xl font-semibold mb-4">Discovery Method</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="border rounded-lg p-4 bg-blue-50">
+                  <h3 className="font-medium text-blue-900 mb-2">🎤 Artist-First Discovery</h3>
+                  <p className="text-sm text-blue-700 mb-3">Search each artist individually across venues</p>
+                  <div className="text-xs text-blue-600">
+                    • 360+ API calls (one per artist)<br/>
+                    • More comprehensive but expensive<br/>
+                    • May miss venue-exclusive announcements
+                  </div>
+                </div>
+                <div className="border rounded-lg p-4 bg-green-50">
+                  <h3 className="font-medium text-green-900 mb-2">🏟️ Venue-First Discovery</h3>
+                  <p className="text-sm text-green-700 mb-3">Monitor 20 key Denver venues, cross-reference our artists</p>
+                  <div className="text-xs text-green-600">
+                    • ~20 API calls (one per venue)<br/>
+                    • Much more efficient (94% fewer calls)<br/>
+                    • Catches all venue announcements first
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Discovery Stats */}
             <div className="bg-white rounded-lg p-6 shadow-sm border">
               <div className="flex items-center justify-between mb-4">
@@ -369,9 +421,9 @@ export default function DiscoveryAdmin() {
               )}
             </div>
 
-            {/* Discovery Controls */}
+            {/* Artist-First Discovery Controls */}
             <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <h2 className="text-xl font-semibold mb-4">Manual Discovery</h2>
+              <h3 className="text-lg font-semibold mb-4">🎤 Artist-First Discovery</h3>
               <div className="flex items-end space-x-4">
                 <div className="flex-1">
                   <label className="block text-sm font-medium mb-2">Number of Artists to Search</label>
@@ -396,20 +448,85 @@ export default function DiscoveryAdmin() {
                   <Button
                     onClick={() => runDiscoveryMutation.mutate({ limit: searchLimit })}
                     disabled={discoveryStatus?.isRunning || runDiscoveryMutation.isPending}
-                    className="bg-[#FE6B41] hover:bg-[#FE6B41]/90"
+                    className="bg-blue-600 hover:bg-blue-700"
                   >
                     <Play className="w-4 h-4 mr-2" />
-                    Run Discovery
+                    Run Artist Discovery
                   </Button>
                 </div>
               </div>
-              <div className="mt-3 p-3 bg-yellow-50 rounded border border-yellow-200">
-                <div className="flex items-start">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-yellow-800">
-                    <div className="font-medium">Research Mode Active</div>
-                    <div>Discovery finds potential events but requires manual verification before adding to prevent false information. Use the Add Show form to verify and add discovered events.</div>
-                  </div>
+            </div>
+
+            {/* Venue-First Discovery Controls */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <h3 className="text-lg font-semibold mb-4">🏟️ Venue-First Discovery</h3>
+              <div className="flex items-end space-x-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium mb-2">Number of Venues to Scan</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={venueLimit}
+                    onChange={(e) => setVenueLimit(parseInt(e.target.value) || 10)}
+                    className="w-20"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium mb-2">Venue Priority</label>
+                  <Select value={venuePriority} onValueChange={setVenuePriority}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Venues</SelectItem>
+                      <SelectItem value="high">High Priority</SelectItem>
+                      <SelectItem value="medium">Medium Priority</SelectItem>
+                      <SelectItem value="low">Low Priority</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={() => runVenueDiscoveryMutation.mutate({ 
+                      venueLimit: venueLimit,
+                      priority: venuePriority === 'all' ? undefined : venuePriority,
+                      dryRun: true 
+                    })}
+                    disabled={runVenueDiscoveryMutation.isPending}
+                    variant="outline"
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    Test Scan
+                  </Button>
+                  <Button
+                    onClick={() => runVenueDiscoveryMutation.mutate({ 
+                      venueLimit: venueLimit,
+                      priority: venuePriority === 'all' ? undefined : venuePriority,
+                      dryRun: false 
+                    })}
+                    disabled={runVenueDiscoveryMutation.isPending}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Scan Venues
+                  </Button>
+                </div>
+              </div>
+              <div className="mt-3 p-3 bg-green-50 rounded border border-green-200">
+                <div className="text-sm text-green-700">
+                  <strong>Efficiency:</strong> Scanning {venueLimit} venues vs {artists.length || 360} artists = ~{Math.max(0, (artists.length || 360) - venueLimit)} fewer API calls ({Math.round((1 - venueLimit / (artists.length || 360)) * 100)}% reduction)
+                </div>
+              </div>
+            </div>
+
+            {/* Research Mode Notice */}
+            <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-yellow-800">
+                  <div className="font-medium">Research Mode Active</div>
+                  <div>Discovery finds potential events but requires manual verification in the Event Review tab before adding to the main feed.</div>
                 </div>
               </div>
             </div>
