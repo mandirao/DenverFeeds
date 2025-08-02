@@ -28,23 +28,42 @@ export class ConcertDiscoveryService {
 
     const discoveredEvents: ConcertData[] = [];
 
-    // 1. Get Oh My Rockness recommended shows
-    const omrEvents = await this.getOhMyRocknessEvents();
-    discoveredEvents.push(...omrEvents);
+    try {
+      // 1. Get Oh My Rockness recommended shows
+      console.log('📱 Checking Oh My Rockness...');
+      const omrEvents = await this.getOhMyRocknessEvents();
+      console.log(`Found ${omrEvents.length} events from Oh My Rockness`);
+      discoveredEvents.push(...omrEvents);
 
-    // 2. Search for trending artists from our existing database
-    const trendingArtists = await this.getTrendingArtistsFromDatabase();
-    const artistEvents = await this.searchArtistEvents(trendingArtists);
-    discoveredEvents.push(...artistEvents);
+      // 2. Search for trending artists from our existing database
+      console.log('📊 Analyzing trending artists...');
+      const trendingArtists = await this.getTrendingArtistsFromDatabase();
+      console.log(`Found ${trendingArtists.length} trending artists: ${trendingArtists.slice(0, 5).join(', ')}`);
+      
+      const artistEvents = await this.searchArtistEvents(trendingArtists);
+      console.log(`Found ${artistEvents.length} events from trending artists`);
+      discoveredEvents.push(...artistEvents);
 
-    // 3. Get local Denver venue events via Ticketmaster
-    const denverEvents = await this.getDenverVenueEvents();
-    discoveredEvents.push(...denverEvents);
+      // 3. Get local Denver venue events via Ticketmaster
+      console.log('🎫 Checking Ticketmaster...');
+      const denverEvents = await this.getDenverVenueEvents();
+      console.log(`Found ${denverEvents.length} events from Ticketmaster`);
+      discoveredEvents.push(...denverEvents);
 
-    // 4. Process and add events with AI enhancement
-    await this.processAndAddEvents(discoveredEvents);
+      console.log(`📋 Total discovered events: ${discoveredEvents.length}`);
 
-    console.log(`✅ Weekly discovery complete. Found ${discoveredEvents.length} potential events.`);
+      // 4. Process and add events with AI enhancement
+      if (discoveredEvents.length > 0) {
+        await this.processAndAddEvents(discoveredEvents);
+      } else {
+        console.log('⚠️ No events discovered from any source');
+      }
+
+      console.log(`✅ Weekly discovery complete. Found ${discoveredEvents.length} potential events.`);
+    } catch (error) {
+      console.error('❌ Error during discovery:', error);
+      throw error;
+    }
   }
 
   // Scrape Oh My Rockness for recommended shows
