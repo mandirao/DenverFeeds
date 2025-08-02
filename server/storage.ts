@@ -1,4 +1,4 @@
-import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist } from "@shared/schema";
+import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, count, desc, gt } from "drizzle-orm";
 import { spotifyService } from "./spotify";
@@ -33,6 +33,16 @@ export interface IStorage {
   createPlaylist(playlist: InsertPlaylist): Promise<Playlist>;
   updatePlaylist(id: number, data: Partial<Playlist>): Promise<Playlist | undefined>;
   deletePlaylist(id: number): Promise<boolean>;
+
+  // Artist methods for automated discovery
+  getAllArtists(): Promise<Artist[]>;
+  getArtistById(id: number): Promise<Artist | undefined>;
+  getArtistByName(name: string): Promise<Artist | undefined>;
+  createArtist(artist: InsertArtist): Promise<Artist>;
+  updateArtist(id: number, data: Partial<Artist>): Promise<Artist | undefined>;
+  deleteArtist(id: number): Promise<boolean>;
+  getArtistsForSearch(priority?: string, limit?: number): Promise<Artist[]>;
+  updateArtistSearchDate(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -298,6 +308,57 @@ export class DatabaseStorage implements IStorage {
       console.error("Error deleting playlist:", error);
       return false;
     }
+  }
+
+  // Artist methods implementation
+  async getAllArtists(): Promise<Artist[]> {
+    return await db.select().from(artists).orderBy(artists.name);
+  }
+
+  async getArtistById(id: number): Promise<Artist | undefined> {
+    const [artist] = await db.select().from(artists).where(eq(artists.id, id));
+    return artist || undefined;
+  }
+
+  async getArtistByName(name: string): Promise<Artist | undefined> {
+    const [artist] = await db.select().from(artists).where(eq(artists.name, name));
+    return artist || undefined;
+  }
+
+  async createArtist(artist: InsertArtist): Promise<Artist> {
+    const [newArtist] = await db.insert(artists).values(artist).returning();
+    return newArtist;
+  }
+
+  async updateArtist(id: number, data: Partial<Artist>): Promise<Artist | undefined> {
+    const [updatedArtist] = await db
+      .update(artists)
+      .set(data)
+      .where(eq(artists.id, id))
+      .returning();
+    return updatedArtist || undefined;
+  }
+
+  async deleteArtist(id: number): Promise<boolean> {
+    const result = await db.delete(artists).where(eq(artists.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getArtistsForSearch(priority?: string, limit: number = 50): Promise<Artist[]> {
+    let query = db.select().from(artists).where(eq(artists.isActive, true));
+    
+    if (priority) {
+      query = query.where(and(eq(artists.isActive, true), eq(artists.searchPriority, priority)));
+    }
+    
+    return await query.orderBy(artists.lastSearched).limit(limit);
+  }
+
+  async updateArtistSearchDate(id: number): Promise<void> {
+    await db
+      .update(artists)
+      .set({ lastSearched: new Date() })
+      .where(eq(artists.id, id));
   }
 }
 

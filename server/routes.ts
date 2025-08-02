@@ -523,6 +523,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Artist management endpoints
+  apiRouter.get("/artists", async (req, res) => {
+    try {
+      const artists = await storage.getAllArtists();
+      res.json(artists);
+    } catch (error) {
+      console.error("Error fetching artists:", error);
+      res.status(500).json({ error: "Failed to fetch artists" });
+    }
+  });
+
+  apiRouter.post("/artists", async (req, res) => {
+    try {
+      const artistData = req.body;
+      const newArtist = await storage.createArtist(artistData);
+      res.status(201).json(newArtist);
+    } catch (error) {
+      console.error("Error creating artist:", error);
+      res.status(500).json({ error: "Failed to create artist" });
+    }
+  });
+
+  apiRouter.get("/artists/seed", async (req, res) => {
+    try {
+      // Import the seeding function
+      const { seedArtistsFromEvents } = await import('../scripts/seed-artists.js');
+      await seedArtistsFromEvents();
+      res.json({ message: "Artist database seeded successfully" });
+    } catch (error) {
+      console.error("Error seeding artists:", error);
+      res.status(500).json({ error: "Failed to seed artists" });
+    }
+  });
+
+  // Event discovery endpoints
+  apiRouter.post("/discovery/run", async (req, res) => {
+    try {
+      const { discoveryService } = await import('./discovery-service-simple');
+      
+      if (discoveryService.isDiscoveryRunning()) {
+        return res.status(409).json({ error: "Discovery already running" });
+      }
+
+      const options = {
+        priority: req.body.priority || undefined,
+        limit: req.body.limit || 5, // Smaller limit for testing
+        dryRun: req.body.dryRun || false
+      };
+
+      const stats = await discoveryService.runDiscovery(options);
+      res.json({ message: "Discovery completed", stats });
+    } catch (error) {
+      console.error("Error running discovery:", error);
+      res.status(500).json({ error: "Failed to run discovery" });
+    }
+  });
+
+  apiRouter.get("/discovery/status", async (req, res) => {
+    try {
+      const { discoveryService } = await import('./discovery-service-simple');
+      res.json({
+        isRunning: discoveryService.isDiscoveryRunning(),
+        stats: discoveryService.getStats()
+      });
+    } catch (error) {
+      console.error("Error getting discovery status:", error);
+      res.status(500).json({ error: "Failed to get discovery status" });
+    }
+  });
+
   // AI Artist Analysis route
   apiRouter.post("/ai/analyze-artist", async (req, res) => {
     try {

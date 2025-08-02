@@ -230,3 +230,31 @@ export const insertPlaylistSchema = createInsertSchema(playlists)
 
 export type InsertPlaylist = z.infer<typeof insertPlaylistSchema>;
 export type Playlist = typeof playlists.$inferSelect;
+
+// Artists table for automated event discovery
+export const artists = pgTable("artists", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  genre: varchar("genre", { length: 50 }),
+  source: varchar("source", { length: 50 }).notNull(), // 'existing', 'pitchfork', 'ohmyrockness', 'manual'
+  searchPriority: varchar("search_priority", { length: 20 }).default('medium'), // 'high', 'medium', 'low'
+  lastSearched: timestamp("last_searched"),
+  lastFoundEvent: timestamp("last_found_event"),
+  isActive: boolean("is_active").default(true),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertArtistSchema = createInsertSchema(artists)
+  .omit({
+    id: true,
+    createdAt: true,
+  })
+  .extend({
+    name: z.string().min(1, "Artist name is required").max(100, "Artist name must be 100 characters or less"),
+    source: z.enum(['existing', 'pitchfork', 'ohmyrockness', 'manual']),
+    searchPriority: z.enum(['high', 'medium', 'low']).default('medium'),
+  });
+
+export type InsertArtist = z.infer<typeof insertArtistSchema>;
+export type Artist = typeof artists.$inferSelect;

@@ -30,6 +30,7 @@ This is a concert feed/newsletter application designed for an exclusive meetup g
 ### Data Storage
 - **Primary Database**: PostgreSQL with Neon serverless driver
 - **Schema**: Events table with fields for artist, venue, date, genre, upvotes, and scheduling status
+- **Artist Database**: 362+ artists with tracking fields for search history, discovery source, and priority
 - **Session Storage**: PostgreSQL-backed session table for user state persistence
 - **Migrations**: Drizzle migrations for schema management
 
@@ -46,6 +47,9 @@ This is a concert feed/newsletter application designed for an exclusive meetup g
 - **Real-time Updates**: Optimistic UI updates with TanStack Query cache invalidation
 - **Responsive Design**: Mobile-first approach with custom breakpoints
 - **Empty States**: Contextual messaging for filtered results
+- **Automated Discovery**: AI-powered system that searches for Denver area concerts using artist database
+- **Artist Database**: 362+ artists from existing events plus manual additions, organized by genre and source
+- **Discovery Admin UI**: Real-time monitoring and control interface for automated event discovery
 
 ## External Dependencies
 
