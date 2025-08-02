@@ -112,49 +112,19 @@ class SimpleEventDiscoveryService {
       this.currentStats.eventsFound += denverResults.length;
       console.log(`   Found ${denverResults.length} potential Denver events for ${artist.name}`);
 
-      // Use AI to analyze artist and generate event
-      const artistAnalysis = await llmService.analyzeArtist(artist.name);
-      
       if (dryRun) {
-        console.log(`   🔍 [DRY RUN] Would add event for ${artist.name} based on search results`);
+        console.log(`   🔍 [DRY RUN] Found ${denverResults.length} potential events for ${artist.name}`);
         this.currentStats.newEventsAdded++;
         return;
       }
 
-      // Check if we already have a recent event for this artist
-      const isDuplicate = await storage.checkDuplicateEvent({
-        emoji: artistAnalysis.emoji,
-        artist: artist.name,
-        venue: artistAnalysis.suggestedVenue || 'TBD Venue',
-        date: new Date(artistAnalysis.suggestedDate || '2025-06-01'),
-        summary: artistAnalysis.summary,
-        soundsLike: artistAnalysis.soundsLike,
-        genre: artistAnalysis.genre,
-        requester: 'Automated Discovery'
-      });
-
-      if (isDuplicate) {
-        console.log(`   ⚠️  Similar event already exists for ${artist.name}`);
-        return;
-      }
-
-      // Create the event
-      await storage.createEvent({
-        emoji: artistAnalysis.emoji,
-        artist: artist.name,
-        venue: artistAnalysis.suggestedVenue || 'TBD Venue',
-        date: new Date(artistAnalysis.suggestedDate || '2025-06-01'),
-        summary: artistAnalysis.summary,
-        soundsLike: artistAnalysis.soundsLike,
-        genre: artistAnalysis.genre,
-        requester: 'Automated Discovery'
-      });
+      // For now, just log the findings without creating events
+      // The system needs better validation before auto-creating events
+      console.log(`   ⚠️  VALIDATION NEEDED: Found ${denverResults.length} potential events for ${artist.name}`);
+      console.log(`   📋 Search results preview:`, denverResults.slice(0, 2).map(r => r.title));
       
-      // Update artist's last found event timestamp
-      await storage.updateArtist(artist.id, { lastFoundEvent: new Date() });
-      
-      this.currentStats.newEventsAdded++;
-      console.log(`   ✅ Added event: ${artist.name} at ${artistAnalysis.suggestedVenue} on ${artistAnalysis.suggestedDate}`);
+      // Don't create events automatically until we can verify they're real
+      // this.currentStats.newEventsAdded++;
 
     } catch (error) {
       console.error(`Failed to search events for ${artist.name}:`, error);
