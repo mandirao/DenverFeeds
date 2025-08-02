@@ -534,16 +534,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  apiRouter.get("/artists", async (req, res) => {
-    try {
-      const artists = await storage.getAllArtists();
-      res.json({ data: artists });
-    } catch (error) {
-      console.error("Get artists error:", error);
-      res.status(500).json({ error: "Failed to fetch artists" });
-    }
-  });
-
   apiRouter.post("/artists", async (req, res) => {
     try {
       const { name, genre, priority, source } = req.body;

@@ -93,7 +93,7 @@ export default function DiscoveryAdmin() {
     queryKey: ["/api/artists"],
     queryFn: async () => {
       const response = await apiRequest({ endpoint: "/api/artists", method: "GET" });
-      return response.data || [];
+      return response;
     }
   });
 
