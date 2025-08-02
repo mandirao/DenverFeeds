@@ -556,8 +556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: name.trim(),
         genre: genre.trim(),
         searchPriority: priority || 'medium',
-        source: source || 'manual',
-        searchHistory: 0
+        source: source || 'manual'
       });
 
       res.status(201).json(artist);

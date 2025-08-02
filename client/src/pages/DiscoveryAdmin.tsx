@@ -186,7 +186,7 @@ export default function DiscoveryAdmin() {
   });
 
   const handleAddArtist = () => {
-    if (!newArtistName.trim() || !newArtistGenre.trim()) {
+    if (!newArtistName?.trim() || !newArtistGenre?.trim()) {
       toast({
         title: "Validation Error",
         description: "Please fill in both artist name and genre",

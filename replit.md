@@ -50,6 +50,8 @@ This is a concert feed/newsletter application designed for an exclusive meetup g
 - **Automated Discovery**: AI-powered system that searches for Denver area concerts using artist database
 - **Artist Database**: 362+ artists from existing events plus manual additions, organized by genre and source
 - **Discovery Admin UI**: Real-time monitoring and control interface for automated event discovery
+- **Discovery Link**: Hidden admin panel access through Upload CSV modal for privileged users
+- **Research Mode**: Discovery system operates in research-only mode to prevent false event creation
 
 ## External Dependencies
 
