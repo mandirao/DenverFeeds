@@ -1,4 +1,4 @@
-import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist } from "@shared/schema";
+import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, count, desc, gt } from "drizzle-orm";
 import { spotifyService } from "./spotify";
@@ -43,6 +43,14 @@ export interface IStorage {
   deleteArtist(id: number): Promise<boolean>;
   getArtistsForSearch(priority?: string, limit?: number): Promise<Artist[]>;
   updateArtistSearchDate(id: number): Promise<void>;
+
+  // Discovered Events methods for review queue
+  getAllDiscoveredEvents(): Promise<DiscoveredEvent[]>;
+  getDiscoveredEventById(id: number): Promise<DiscoveredEvent | undefined>;
+  createDiscoveredEvent(event: InsertDiscoveredEvent): Promise<DiscoveredEvent>;
+  updateDiscoveredEventStatus(id: number, status: 'approved' | 'rejected'): Promise<DiscoveredEvent | undefined>;
+  approveDiscoveredEvent(id: number): Promise<Event | undefined>; // Converts to real event
+  deleteDiscoveredEvent(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -359,6 +367,57 @@ export class DatabaseStorage implements IStorage {
       .update(artists)
       .set({ lastSearched: new Date() })
       .where(eq(artists.id, id));
+  }
+
+  // Discovered Events methods
+  async getAllDiscoveredEvents(): Promise<DiscoveredEvent[]> {
+    const result = await db.select().from(discoveredEvents).orderBy(desc(discoveredEvents.discoveredAt));
+    return result;
+  }
+
+  async getDiscoveredEventById(id: number): Promise<DiscoveredEvent | undefined> {
+    const result = await db.select().from(discoveredEvents).where(eq(discoveredEvents.id, id));
+    return result[0];
+  }
+
+  async createDiscoveredEvent(event: InsertDiscoveredEvent): Promise<DiscoveredEvent> {
+    const result = await db.insert(discoveredEvents).values(event).returning();
+    return result[0];
+  }
+
+  async updateDiscoveredEventStatus(id: number, status: 'approved' | 'rejected'): Promise<DiscoveredEvent | undefined> {
+    const result = await db.update(discoveredEvents)
+      .set({ status })
+      .where(eq(discoveredEvents.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async approveDiscoveredEvent(id: number): Promise<Event | undefined> {
+    const discoveredEvent = await this.getDiscoveredEventById(id);
+    if (!discoveredEvent) return undefined;
+
+    // Create the real event
+    const newEvent = await this.createEvent({
+      emoji: "🎵", // Default emoji for discovered events
+      artist: discoveredEvent.artist,
+      venue: discoveredEvent.venue,
+      date: discoveredEvent.date,
+      summary: discoveredEvent.summary || `${discoveredEvent.artist} at ${discoveredEvent.venue}`,
+      soundsLike: discoveredEvent.soundsLike || "TBD",
+      genre: discoveredEvent.genre,
+      requester: 'Discovery AI'
+    });
+
+    // Update the discovered event status
+    await this.updateDiscoveredEventStatus(id, 'approved');
+
+    return newEvent;
+  }
+
+  async deleteDiscoveredEvent(id: number): Promise<boolean> {
+    const result = await db.delete(discoveredEvents).where(eq(discoveredEvents.id, id));
+    return result.rowCount > 0;
   }
 }
 

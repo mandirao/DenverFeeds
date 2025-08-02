@@ -258,3 +258,28 @@ export const insertArtistSchema = createInsertSchema(artists)
 
 export type InsertArtist = z.infer<typeof insertArtistSchema>;
 export type Artist = typeof artists.$inferSelect;
+
+// Discovered Events table for review queue
+export const discoveredEvents = pgTable("discovered_events", {
+  id: serial("id").primaryKey(),
+  artist: varchar("artist", { length: 75 }).notNull(),
+  venue: varchar("venue", { length: 75 }).notNull(),
+  date: timestamp("date").notNull(),
+  summary: varchar("summary", { length: 75 }),
+  soundsLike: varchar("sounds_like", { length: 75 }),
+  genre: varchar("genre", { length: 30 }).notNull(),
+  status: varchar("status", { length: 20 }).default('pending'), // 'pending', 'approved', 'rejected'
+  discoveredAt: timestamp("discovered_at").defaultNow(),
+  discoverySource: varchar("discovery_source", { length: 50 }).default('automated'),
+  confidence: integer("confidence"), // AI confidence score 1-100
+  rawData: text("raw_data"), // Original discovery data for reference
+});
+
+export const insertDiscoveredEventSchema = createInsertSchema(discoveredEvents)
+  .omit({
+    id: true,
+    discoveredAt: true,
+  });
+
+export type InsertDiscoveredEvent = z.infer<typeof insertDiscoveredEventSchema>;
+export type DiscoveredEvent = typeof discoveredEvents.$inferSelect;

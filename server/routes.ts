@@ -581,6 +581,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Discovered Events endpoints for review queue
+  apiRouter.get("/discovered-events", async (req, res) => {
+    try {
+      const discoveredEvents = await storage.getAllDiscoveredEvents();
+      res.json(discoveredEvents);
+    } catch (error) {
+      console.error("Error fetching discovered events:", error);
+      res.status(500).json({ error: "Failed to fetch discovered events" });
+    }
+  });
+
+  apiRouter.post("/discovered-events/:id/approve", async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ error: "Invalid event ID" });
+      }
+
+      const newEvent = await storage.approveDiscoveredEvent(eventId);
+      if (!newEvent) {
+        return res.status(404).json({ error: "Discovered event not found" });
+      }
+
+      res.json({ message: "Event approved and added to main feed", event: newEvent });
+    } catch (error) {
+      console.error("Error approving discovered event:", error);
+      res.status(500).json({ error: "Failed to approve event" });
+    }
+  });
+
+  apiRouter.post("/discovered-events/:id/reject", async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ error: "Invalid event ID" });
+      }
+
+      const updatedEvent = await storage.updateDiscoveredEventStatus(eventId, 'rejected');
+      if (!updatedEvent) {
+        return res.status(404).json({ error: "Discovered event not found" });
+      }
+
+      res.json({ message: "Event rejected", event: updatedEvent });
+    } catch (error) {
+      console.error("Error rejecting discovered event:", error);
+      res.status(500).json({ error: "Failed to reject event" });
+    }
+  });
+
+  apiRouter.delete("/discovered-events/:id", async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ error: "Invalid event ID" });
+      }
+
+      const deleted = await storage.deleteDiscoveredEvent(eventId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Discovered event not found" });
+      }
+
+      res.json({ message: "Discovered event deleted" });
+    } catch (error) {
+      console.error("Error deleting discovered event:", error);
+      res.status(500).json({ error: "Failed to delete event" });
+    }
+  });
+
   // Event discovery endpoints
   apiRouter.post("/discovery/run", async (req, res) => {
     try {

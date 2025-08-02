@@ -42,7 +42,9 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Check,
+  X
 } from "lucide-react";
 
 interface Artist {
@@ -93,6 +95,15 @@ export default function DiscoveryAdmin() {
     queryKey: ["/api/artists"],
     queryFn: async () => {
       const response = await apiRequest({ endpoint: "/api/artists", method: "GET" });
+      return response;
+    }
+  });
+
+  // Fetch discovered events for review
+  const { data: discoveredEvents = [], isLoading: discoveredEventsLoading } = useQuery({
+    queryKey: ["/api/discovered-events"],
+    queryFn: async () => {
+      const response = await apiRequest({ endpoint: "/api/discovered-events", method: "GET" });
       return response;
     }
   });
@@ -171,6 +182,7 @@ export default function DiscoveryAdmin() {
     },
     onSuccess: (data) => {
       refetchStatus();
+      queryClient.invalidateQueries({ queryKey: ["/api/discovered-events"] });
       toast({
         title: "Discovery Complete",
         description: data.message || "Discovery session completed",
@@ -180,6 +192,55 @@ export default function DiscoveryAdmin() {
       toast({
         title: "Discovery Error",
         description: error.message || "Failed to run discovery",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Approve discovered event mutation
+  const approveEventMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      return apiRequest({
+        endpoint: `/api/discovered-events/${eventId}/approve`,
+        method: "POST"
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/discovered-events"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      toast({
+        title: "Event Approved",
+        description: "Event has been added to the main feed",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message || "Failed to approve event",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Reject discovered event mutation
+  const rejectEventMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      return apiRequest({
+        endpoint: `/api/discovered-events/${eventId}/reject`,
+        method: "POST"
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/discovered-events"] });
+      toast({
+        title: "Event Rejected",
+        description: "Event has been marked as rejected",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Rejection Failed",
+        description: error.message || "Failed to reject event",
         variant: "destructive",
       });
     }
@@ -246,8 +307,9 @@ export default function DiscoveryAdmin() {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="discovery" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="discovery">Discovery Control</TabsTrigger>
+            <TabsTrigger value="review">Event Review</TabsTrigger>
             <TabsTrigger value="artists">Artist Database</TabsTrigger>
           </TabsList>
 
@@ -350,6 +412,97 @@ export default function DiscoveryAdmin() {
                   </div>
                 </div>
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Event Review Tab */}
+          <TabsContent value="review" className="space-y-6">
+            <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold">Discovered Events Review Queue</h2>
+                <Badge variant="secondary">
+                  {discoveredEvents.filter((e: any) => e.status === 'pending').length} pending
+                </Badge>
+              </div>
+              <p className="text-gray-600 mb-6">
+                Events discovered by the AI system are queued here for manual review before being added to the main feed.
+              </p>
+              
+              {discoveredEventsLoading ? (
+                <div className="text-center py-8">
+                  <div className="inline-flex items-center">
+                    <span className="mr-2">Loading discovered events...</span>
+                  </div>
+                </div>
+              ) : discoveredEvents.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  No discovered events pending review.
+                  <br />
+                  <span className="text-sm">Run a discovery session to find new events for review.</span>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {discoveredEvents.map((event: any) => (
+                    <div key={event.id} className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-lg">{event.artist}</h3>
+                            <Badge 
+                              variant={event.status === 'pending' ? 'default' : event.status === 'approved' ? 'secondary' : 'destructive'}
+                            >
+                              {event.status}
+                            </Badge>
+                            {event.confidence && (
+                              <Badge variant="outline">{event.confidence}% confidence</Badge>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                            <div><strong>Venue:</strong> {event.venue}</div>
+                            <div><strong>Date:</strong> {new Date(event.date).toLocaleDateString()}</div>
+                            <div><strong>Genre:</strong> {event.genre}</div>
+                            <div><strong>Discovered:</strong> {new Date(event.discoveredAt).toLocaleDateString()}</div>
+                          </div>
+                          {event.summary && (
+                            <p className="text-sm text-gray-700 mb-2">
+                              <strong>Summary:</strong> {event.summary}
+                            </p>
+                          )}
+                          {event.soundsLike && (
+                            <p className="text-sm text-gray-700">
+                              <strong>Sounds Like:</strong> {event.soundsLike}
+                            </p>
+                          )}
+                        </div>
+                        
+                        {event.status === 'pending' && (
+                          <div className="flex items-center gap-2 ml-4">
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => approveEventMutation.mutate(event.id)}
+                              disabled={approveEventMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <Check className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => rejectEventMutation.mutate(event.id)}
+                              disabled={rejectEventMutation.isPending}
+                            >
+                              <X className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 
