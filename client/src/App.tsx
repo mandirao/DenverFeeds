@@ -6,6 +6,7 @@ import Home from "@/pages/Home";
 import AddEvent from "@/pages/AddEvent";
 import Playlists from "@/pages/Playlists";
 import Discovery from "@/pages/Discovery";
+import DiscoveryAdmin from "@/pages/DiscoveryAdmin";
 import NotFound from "@/pages/not-found";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -15,7 +16,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/add" component={AddEvent} />
       <Route path="/playlists" component={Playlists} />
-      <Route path="/discovery" component={Discovery} />
+      <Route path="/discovery" component={DiscoveryAdmin} />
       <Route component={NotFound} />
     </Switch>
   );

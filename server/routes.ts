@@ -534,23 +534,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  apiRouter.get("/artists", async (req, res) => {
+    try {
+      const artists = await storage.getAllArtists();
+      res.json({ data: artists });
+    } catch (error) {
+      console.error("Get artists error:", error);
+      res.status(500).json({ error: "Failed to fetch artists" });
+    }
+  });
+
   apiRouter.post("/artists", async (req, res) => {
     try {
-      const artistData = req.body;
-      const newArtist = await storage.createArtist(artistData);
-      res.status(201).json(newArtist);
+      const { name, genre, priority, source } = req.body;
+      
+      if (!name || !genre) {
+        return res.status(400).json({ error: "Name and genre are required" });
+      }
+
+      const artist = await storage.createArtist({
+        name: name.trim(),
+        genre: genre.trim(),
+        searchPriority: priority || 'medium',
+        source: source || 'manual',
+        searchHistory: 0
+      });
+
+      res.status(201).json(artist);
     } catch (error) {
-      console.error("Error creating artist:", error);
+      console.error("Create artist error:", error);
       res.status(500).json({ error: "Failed to create artist" });
+    }
+  });
+
+  apiRouter.delete("/artists/:id", async (req, res) => {
+    try {
+      const artistId = parseInt(req.params.id);
+      if (isNaN(artistId)) {
+        return res.status(400).json({ error: "Invalid artist ID" });
+      }
+
+      await storage.deleteArtist(artistId);
+      res.json({ message: "Artist deleted successfully" });
+    } catch (error) {
+      console.error("Delete artist error:", error);
+      res.status(500).json({ error: "Failed to delete artist" });
     }
   });
 
   apiRouter.get("/artists/seed", async (req, res) => {
     try {
-      // Import the seeding function
-      const { seedArtistsFromEvents } = await import('../scripts/seed-artists.js');
-      await seedArtistsFromEvents();
-      res.json({ message: "Artist database seeded successfully" });
+      // For now, return success without actually seeding
+      res.json({ message: "Artist database seeding not implemented yet" });
     } catch (error) {
       console.error("Error seeding artists:", error);
       res.status(500).json({ error: "Failed to seed artists" });

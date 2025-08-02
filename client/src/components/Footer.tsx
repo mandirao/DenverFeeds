@@ -260,6 +260,16 @@ export function Footer() {
                 <code className="block">artist,venue,date,emoji,summary,sounds_like,genre,requester</code>
                 <code className="block">Khruangbin,Red Rocks,2025-07-15,🎸,Psychedelic trio,Tame Impala,Funk/Soul & Jazz,Sarah</code>
               </div>
+              <div className="mt-3 pt-3 border-t border-black/20">
+                <Link 
+                  href="/discovery" 
+                  className="inline-flex items-center text-black hover:text-white transition-colors font-medium text-sm underline"
+                  onClick={() => setCsvModalOpen(false)}
+                >
+                  🔍 Discovery Admin Panel
+                </Link>
+                <div className="text-xs mt-1 opacity-70">Manage artist database and automated discovery</div>
+              </div>
             </div>
             
             {csvError && (
