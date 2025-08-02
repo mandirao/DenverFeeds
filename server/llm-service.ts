@@ -124,8 +124,8 @@ TONE: Casual, descriptive, compelling but never forced hype. Confident without e
    - "Former Arcade Fire member's solo venture into folk territory"
 3. SOUNDS LIKE: Two artists separated by comma only (format: "Artist One, Artist Two")
 4. GENRE: Pick from this list: Rock & Alternative, Folk, Country & Americana, Pop & Indie Pop, Electronic & Experimental, Funk, Soul & Jazz, Classical & Orchestral, Hip Hop & R&B
-5. VENUE: Based on tour info and artist scale, suggest most realistic venue from: ${denverVenues.join(', ')}
-6. DATE: ONLY use dates from search results if found. Otherwise suggest realistic future date in 2025-2026 that's after today (${new Date().toISOString().split('T')[0]}) in format YYYY-MM-DD
+5. VENUE: ONLY suggest venue if you find CONFIRMED Denver/Colorado tour dates in the search results. Must be exact venue match from: ${denverVenues.join(', ')}. If no confirmed Denver dates found, return empty string.
+6. DATE: ONLY use EXACT dates from search results if Denver/Colorado show is confirmed. Must be verifiable from search results. If no confirmed date found, return empty string. Format: YYYY-MM-DD
 
 ${artistContext}${concertContext}
 
@@ -161,8 +161,8 @@ JSON format:
           summary: (result.summary || '').substring(0, 75),
           soundsLike: (result.soundsLike || '').substring(0, 75),
           genre: this.validateGenre(result.genre),
-          suggestedVenue: result.suggestedVenue || '',
-          suggestedDate: this.validateDate(result.suggestedDate) || ''
+          suggestedVenue: result.suggestedVenue || '', // Only valid if confirmed from search
+          suggestedDate: this.validateDate(result.suggestedDate) || '' // Only valid if confirmed from search
         };
       } else {
         throw new Error('Unexpected response format');

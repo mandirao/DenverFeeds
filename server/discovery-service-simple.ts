@@ -88,42 +88,45 @@ class SimpleEventDiscoveryService {
     console.log(`🎵 Searching for ${artist.name} events...`);
 
     try {
-      // Search for upcoming shows using the existing LLM service
-      const searchResults = await llmService.searchUpcomingShows(artist.name);
+      // Use the improved AI analysis that validates real tour data
+      const artistAnalysis = await llmService.analyzeArtist(artist.name);
       
-      if (searchResults.length === 0) {
-        console.log(`   No events found for ${artist.name}`);
+      // Only create events if we have valid venue and date information
+      if (!artistAnalysis.suggestedVenue || !artistAnalysis.suggestedDate) {
+        console.log(`   No confirmed shows found for ${artist.name}`);
         return;
       }
 
-      // Look for Denver-related results
-      const denverResults = searchResults.filter(result => {
-        const text = `${result.title} ${result.snippet}`.toLowerCase();
-        return text.includes('denver') || text.includes('colorado') || 
-               text.includes('red rocks') || text.includes('mission ballroom') ||
-               text.includes('boulder') || text.includes('fort collins');
-      });
+      // Check if the suggested venue is actually a Denver area venue
+      const denverVenues = [
+        'Red Rocks Amphitheatre', 'Mission Ballroom', 'Fillmore Auditorium', 'Ogden Theatre',
+        'Gothic Theatre', 'Fox Theatre', 'Paramount Theatre', 'Ball Arena', 'Bluebird Theater',
+        'Oriental Theater', 'Hi-Dive', 'Globe Hall', 'Larimer Lounge', 'Lost Lake Lounge',
+        'Summit Music Hall', 'Marquis Theater'
+      ];
 
-      if (denverResults.length === 0) {
-        console.log(`   No Denver area events found for ${artist.name}`);
+      if (!denverVenues.some(venue => venue.toLowerCase() === artistAnalysis.suggestedVenue?.toLowerCase())) {
+        console.log(`   No Denver area venue found for ${artist.name} (suggested: ${artistAnalysis.suggestedVenue})`);
         return;
       }
 
-      this.currentStats.eventsFound += denverResults.length;
-      console.log(`   Found ${denverResults.length} potential Denver events for ${artist.name}`);
+      this.currentStats.eventsFound++;
+      console.log(`   ⚠️  DISCOVERY NEEDS MANUAL REVIEW: ${artist.name} at ${artistAnalysis.suggestedVenue} on ${artistAnalysis.suggestedDate}`);
+      console.log(`   📝 Summary: ${artistAnalysis.summary}`);
+      console.log(`   🎵 Sounds like: ${artistAnalysis.soundsLike}`);
 
       if (dryRun) {
-        console.log(`   🔍 [DRY RUN] Found ${denverResults.length} potential events for ${artist.name}`);
+        console.log(`   🔍 [DRY RUN] Would require manual review: ${artist.name} at ${artistAnalysis.suggestedVenue} on ${artistAnalysis.suggestedDate}`);
         this.currentStats.newEventsAdded++;
         return;
       }
 
-      // For now, just log the findings without creating events
-      // The system needs better validation before auto-creating events
-      console.log(`   ⚠️  VALIDATION NEEDED: Found ${denverResults.length} potential events for ${artist.name}`);
-      console.log(`   📋 Search results preview:`, denverResults.slice(0, 2).map(r => r.title));
+      // For now, don't auto-create events due to data accuracy issues
+      // Store findings for manual review instead
+      console.log(`   🚫 AUTO-CREATION DISABLED: Events require manual verification to prevent false information`);
+      console.log(`   💡 Suggestion: Use Add Show form to manually verify and add this event if it exists`);
       
-      // Don't create events automatically until we can verify they're real
+      // Don't increment newEventsAdded since we're not creating anything
       // this.currentStats.newEventsAdded++;
 
     } catch (error) {
