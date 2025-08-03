@@ -97,8 +97,15 @@ export default function Home() {
     }
     
     // Venue filter
-    if (filters.venue !== "all" && event.venue !== filters.venue) {
-      return false;
+    if (filters.venue !== "all") {
+      if (filters.venue === "Other") {
+        // Show only events with venues not in our defined list
+        if (definedVenueValues.includes(event.venue)) {
+          return false;
+        }
+      } else if (event.venue !== filters.venue) {
+        return false;
+      }
     }
     
     return true;
@@ -126,8 +133,18 @@ export default function Home() {
   // For standard view, group by month and week
   const groupedByMonthAndWeek = groupEventsByMonth(sortedEvents);
   
-  // Get unique venues from events for the venue filter dropdown
-  const uniqueVenues = Array.from(new Set(events.map(event => event.venue))).sort();
+  // Get defined venue options from schema plus "Other" for manually entered venues
+  const definedVenueValues = venueOptions.map(option => option.value);
+  const definedVenues = definedVenueValues.filter(venue => venue !== "other" && venue !== "TBD").sort();
+  
+  // Check if there are any events with venues not in our defined list
+  const hasOtherVenues = events.some(event => !definedVenueValues.includes(event.venue));
+  
+  // Create final venue list for dropdown
+  const venueFilterOptions = [...definedVenues];
+  if (hasOtherVenues) {
+    venueFilterOptions.push("Other");
+  }
   
   // Count active filters (excluding defaults)
   const countActiveFilters = () => {
@@ -444,7 +461,7 @@ export default function Home() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Venues</SelectItem>
-                    {uniqueVenues.map((venue) => (
+                    {venueFilterOptions.map((venue) => (
                       <SelectItem key={venue} value={venue}>{venue}</SelectItem>
                     ))}
                   </SelectContent>
