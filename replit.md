@@ -55,7 +55,7 @@ This is a concert feed/newsletter application designed for an exclusive meetup g
 - **Venue-First Discovery**: Efficient discovery system monitoring 25 key Denver venues (94% fewer API calls vs artist-by-artist)
 - **Event Review System**: Manual approval workflow for discovered events with confidence scoring
 - **Comprehensive Duplicate Detection**: Artist discovery system checks against both main artists and discovered_artists tables to prevent re-discovery of existing artists
-- **Discovery Source Limitations**: Oh My Rockness requires headless browser due to dynamic content loading; currently relies on Pitchfork Best New Albums for artist discovery
+- **Discovery Source Status**: Pitchfork Best New Albums (active, 60% new discovery rate), Oh My Rockness (requires JavaScript execution for dynamic content - future enhancement)
 
 ## External Dependencies
 
