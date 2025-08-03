@@ -37,7 +37,14 @@ const DENVER_VENUES: VenueSource[] = [
   { name: "Aggie Theatre", url: "https://www.z2ent.com/venues/aggie-theatre", type: "website", location: "Fort Collins, CO", capacity: "650", priority: "low", isActive: true },
   { name: "Boulder Theater", url: "https://www.bouldertheater.com/events", type: "website", location: "Boulder, CO", capacity: "800", priority: "low", isActive: true },
   { name: "Fox Theatre Boulder", url: "https://www.foxtheatre.com/events", type: "website", location: "Boulder, CO", capacity: "625", priority: "low", isActive: true },
-  { name: "The Mishawaka", url: "https://www.themishawaka.com/events", type: "website", location: "Bellvue, CO", capacity: "300", priority: "low", isActive: true }
+  { name: "The Mishawaka", url: "https://www.themishawaka.com/events", type: "website", location: "Bellvue, CO", capacity: "300", priority: "low", isActive: true },
+  
+  // Additional requested venues
+  { name: "Hi-Dive", url: "https://www.hi-dive.com/events", type: "website", location: "Denver, CO", capacity: "200", priority: "medium", isActive: true },
+  { name: "Skylark Lounge", url: "https://www.skylarklounge.com/events", type: "website", location: "Denver, CO", capacity: "150", priority: "medium", isActive: true },
+  { name: "Ball Arena", url: "https://www.ballarena.com/events", type: "website", location: "Denver, CO", capacity: "20,000", priority: "high", isActive: true },
+  { name: "Surf Hotel", url: "https://www.surfhotelbuena.com/events", type: "website", location: "Buena Vista, CO", capacity: "varies", priority: "low", isActive: true },
+  { name: "Dillon Amphitheatre", url: "https://www.townofbreckenridge.com/dillon-amphitheatre", type: "website", location: "Dillon, CO", capacity: "750", priority: "medium", isActive: true }
 ];
 
 interface VenueDiscoveryStats {
