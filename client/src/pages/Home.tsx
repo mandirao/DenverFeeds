@@ -432,21 +432,6 @@ export default function Home() {
                     ))}
                   </SelectContent>
                 </Select>
-                
-                {/* Location Filter Dropdown */}
-                <Select value={filters.location} onValueChange={(value) => setFilters({ ...filters, location: value })}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
-                    filters.location !== "denver" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
-                  }`} style={{ width: "145px" }}>
-                    <SelectValue placeholder="Location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="denver">Denver/Boulder</SelectItem>
-                    <SelectItem value="roadtrips">Roadtrips</SelectItem>
-                  </SelectContent>
-                </Select>
 
                 {/* Venue Filter Dropdown */}
                 <Select value={filters.venue} onValueChange={(value) => setFilters({ ...filters, venue: value })}>
@@ -462,6 +447,24 @@ export default function Home() {
                     {uniqueVenues.map((venue) => (
                       <SelectItem key={venue} value={venue}>{venue}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Vertical separator before Location filter */}
+                <div className="h-6 w-px bg-black opacity-40 mx-2 flex-shrink-0"></div>
+                
+                {/* Location Filter Dropdown - moved to the right */}
+                <Select value={filters.location} onValueChange={(value) => setFilters({ ...filters, location: value })}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filters.location !== "denver" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`} style={{ width: "145px" }}>
+                    <SelectValue placeholder="Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="denver">Denver/Boulder</SelectItem>
+                    <SelectItem value="roadtrips">Roadtrips</SelectItem>
                   </SelectContent>
                 </Select>
                 
