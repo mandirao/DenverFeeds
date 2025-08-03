@@ -644,7 +644,7 @@ export default function DiscoveryAdmin() {
                 </div>
                 
                 <div className="text-sm text-purple-700 bg-purple-50 p-3 rounded">
-                  <strong>Sources:</strong> Pitchfork Best New Albums and Oh My Rockness recommendations will be scraped for new artists to add to your database.
+                  <strong>Smart Discovery:</strong> Prioritizes highest-rated Pitchfork artists first, then Oh My Rockness recommendations. Automatically skips duplicates and finds exactly the number you specify.
                 </div>
               </div>
             </div>

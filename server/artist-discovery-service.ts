@@ -86,25 +86,55 @@ class ArtistDiscoveryService {
 
       this.stats.artistsFound = allDiscoveredArtists.length;
 
-      // Filter out duplicates and add new artists
+      // Filter out duplicates and add new artists with smart prioritization
       const finalArtists: DiscoveredArtist[] = [];
       
+      // Sort discovered artists by priority (Pitchfork rating first, then alphabetical)
+      allDiscoveredArtists.sort((a, b) => {
+        // Pitchfork artists with higher ratings first
+        if (a.source === 'pitchfork' && b.source === 'pitchfork') {
+          return (b.rating || 0) - (a.rating || 0);
+        }
+        // Pitchfork artists before Oh My Rockness
+        if (a.source === 'pitchfork' && b.source === 'oh_my_rockness') return -1;
+        if (a.source === 'oh_my_rockness' && b.source === 'pitchfork') return 1;
+        // Within same source, alphabetical
+        return a.name.localeCompare(b.name);
+      });
+      
       for (const artist of allDiscoveredArtists) {
-        const artistNameLower = artist.name.toLowerCase();
+        if (finalArtists.length >= (options.limit || 20)) break;
         
-        // Check if artist already exists in database
-        if (existingArtistNames.includes(artistNameLower)) {
-          console.log(`⏭️  Skipping duplicate: ${artist.name}`);
+        const artistNameLower = artist.name.toLowerCase().trim();
+        
+        // Skip invalid names
+        if (!artist.name || artist.name.length < 2 || artist.name.length > 100) {
+          continue;
+        }
+        
+        // Check if artist already exists in database (fuzzy matching)
+        const isDatabaseDuplicate = existingArtistNames.some(existing => {
+          const existingLower = existing.toLowerCase().trim();
+          return existingLower === artistNameLower || 
+                 existingLower.includes(artistNameLower) ||
+                 artistNameLower.includes(existingLower);
+        });
+        
+        if (isDatabaseDuplicate) {
+          console.log(`⏭️  Skipping database duplicate: ${artist.name}`);
           this.stats.duplicatesSkipped++;
           continue;
         }
 
         // Check if we already found this artist in this session
-        const alreadyFound = finalArtists.some(a => 
-          a.name.toLowerCase() === artistNameLower
-        );
+        const isSessionDuplicate = finalArtists.some(a => {
+          const aNameLower = a.name.toLowerCase().trim();
+          return aNameLower === artistNameLower ||
+                 aNameLower.includes(artistNameLower) ||
+                 artistNameLower.includes(aNameLower);
+        });
         
-        if (alreadyFound) {
+        if (isSessionDuplicate) {
           this.stats.duplicatesSkipped++;
           continue;
         }
@@ -163,52 +193,75 @@ class ArtistDiscoveryService {
     const artists: DiscoveredArtist[] = [];
     
     try {
-      const response = await fetch('https://pitchfork.com/reviews/best/albums/', {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; Concert Discovery Bot)'
-        }
-      });
+      // Try multiple pages to get more diverse results
+      const pages = ['https://pitchfork.com/reviews/best/albums/', 'https://pitchfork.com/reviews/best/albums/?page=2'];
+      const maxPerPage = Math.ceil(limit / pages.length);
+      
+      for (const pageUrl of pages) {
+        if (artists.length >= limit) break;
+        
+        console.log(`📰 Scraping Pitchfork page: ${pageUrl}`);
+        const response = await fetch(pageUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; Concert Discovery Bot)'
+          }
+        });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) {
+          console.warn(`Failed to fetch ${pageUrl}: HTTP ${response.status}`);
+          continue;
+        }
+
+        const html = await response.text();
+        const $ = cheerio.load(html);
+
+        // Pitchfork uses specific selectors for album reviews
+        $('.review').each((index, element) => {
+          if (artists.length >= limit) return false;
+
+          try {
+            const $review = $(element);
+            const artistAlbum = $review.find('.review__title-album').text().trim();
+            const rating = parseFloat($review.find('.score').text().trim()) || 0;
+            
+            // Extract artist name (usually before the colon or em-dash)
+            const artistMatch = artistAlbum.match(/^([^:—]+)/);
+            if (!artistMatch) return;
+            
+            const artistName = artistMatch[1].trim();
+            const albumTitle = artistAlbum.replace(artistMatch[0], '').replace(/^[:\s—]+/, '').trim();
+
+            if (artistName && artistName.length > 1) {
+              // Check for duplicates within this scraping session
+              const isDuplicate = artists.some(a => 
+                a.name.toLowerCase() === artistName.toLowerCase()
+              );
+              
+              if (!isDuplicate) {
+                artists.push({
+                  name: artistName,
+                  genre: 'Indie Rock', // Will be refined by AI analysis
+                  source: 'pitchfork',
+                  albumTitle,
+                  rating,
+                  description: $review.find('.review__abstract').text().trim().substring(0, 200)
+                });
+              }
+            }
+          } catch (error) {
+            console.error(`Error parsing Pitchfork review ${index}:`, error);
+          }
+        });
+        
+        // Small delay between pages
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      const html = await response.text();
-      const $ = cheerio.load(html);
+      // Sort by rating (highest first) to prioritize better-reviewed artists
+      artists.sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
-      // Pitchfork uses specific selectors for album reviews
-      $('.review').each((index, element) => {
-        if (artists.length >= limit) return false;
-
-        try {
-          const $review = $(element);
-          const artistAlbum = $review.find('.review__title-album').text().trim();
-          const rating = parseFloat($review.find('.score').text().trim()) || 0;
-          
-          // Extract artist name (usually before the colon or em-dash)
-          const artistMatch = artistAlbum.match(/^([^:—]+)/);
-          if (!artistMatch) return;
-          
-          const artistName = artistMatch[1].trim();
-          const albumTitle = artistAlbum.replace(artistMatch[0], '').replace(/^[:\s—]+/, '').trim();
-
-          if (artistName && artistName.length > 1) {
-            artists.push({
-              name: artistName,
-              genre: 'Indie Rock', // Will be refined by AI analysis
-              source: 'pitchfork',
-              albumTitle,
-              rating,
-              description: $review.find('.review__abstract').text().trim().substring(0, 200)
-            });
-          }
-        } catch (error) {
-          console.error(`Error parsing Pitchfork review ${index}:`, error);
-        }
-      });
-
-      console.log(`📰 Found ${artists.length} artists from Pitchfork`);
-      return artists;
+      console.log(`📰 Found ${artists.length} unique artists from Pitchfork (sorted by rating)`);
+      return artists.slice(0, limit);
 
     } catch (error) {
       console.error('Pitchfork scraping error:', error);
@@ -220,50 +273,109 @@ class ArtistDiscoveryService {
     const artists: DiscoveredArtist[] = [];
     
     try {
-      const response = await fetch('https://www.ohmyrockness.com/recommended', {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; Concert Discovery Bot)'
-        }
-      });
+      // Try multiple sections for more diversity
+      const urls = [
+        'https://www.ohmyrockness.com/recommended',
+        'https://www.ohmyrockness.com/artists',
+        'https://www.ohmyrockness.com/featured'
+      ];
+      
+      for (const url of urls) {
+        if (artists.length >= limit) break;
+        
+        console.log(`🎸 Scraping Oh My Rockness: ${url}`);
+        try {
+          const response = await fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; Concert Discovery Bot)'
+            }
+          });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+          if (!response.ok) {
+            console.warn(`Failed to fetch ${url}: HTTP ${response.status}`);
+            continue;
+          }
+
+          const html = await response.text();
+          const $ = cheerio.load(html);
+
+          // Try multiple selectors for different page layouts
+          const selectors = [
+            '.artist-entry', '.recommendation', '.featured-artist',
+            '.artist-card', '.band-entry', '.artist-listing',
+            'article', '.post', '.entry'
+          ];
+
+          for (const selector of selectors) {
+            $(selector).each((index, element) => {
+              if (artists.length >= limit) return false;
+
+              try {
+                const $entry = $(element);
+                
+                // Try multiple ways to extract artist name
+                let artistName = '';
+                const nameSelectors = ['.artist-name', 'h1', 'h2', 'h3', '.title', '.name', '.band-name'];
+                
+                for (const nameSelector of nameSelectors) {
+                  const name = $entry.find(nameSelector).first().text().trim();
+                  if (name && name.length > 1 && name.length < 100) {
+                    artistName = name;
+                    break;
+                  }
+                }
+                
+                if (!artistName) {
+                  // Try the element's direct text
+                  artistName = $entry.text().trim().split('\n')[0].substring(0, 50);
+                }
+
+                const description = $entry.find('.description, .bio, .excerpt, p').text().trim();
+                
+                // Extract genre from description or use default
+                let genre = 'Indie Rock';
+                const genreMatch = description.match(/(indie|rock|pop|electronic|folk|punk|metal|hip.hop|r&b|alternative|experimental)/i);
+                if (genreMatch) {
+                  genre = genreMatch[0].charAt(0).toUpperCase() + genreMatch[0].slice(1);
+                }
+
+                if (artistName && artistName.length > 1 && artistName.length < 100) {
+                  // Check for duplicates within this scraping session
+                  const isDuplicate = artists.some(a => 
+                    a.name.toLowerCase() === artistName.toLowerCase()
+                  );
+                  
+                  if (!isDuplicate) {
+                    artists.push({
+                      name: artistName,
+                      genre,
+                      source: 'oh_my_rockness',
+                      description: description.substring(0, 200),
+                      url
+                    });
+                  }
+                }
+              } catch (error) {
+                console.error(`Error parsing OMR entry ${index}:`, error);
+              }
+            });
+            
+            if (artists.length > 0) break; // Found some artists with this selector
+          }
+          
+          // Small delay between URLs
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+        } catch (error) {
+          console.warn(`Error scraping ${url}:`, error);
+        }
       }
 
-      const html = await response.text();
-      const $ = cheerio.load(html);
+      // Sort alphabetically for consistent ordering
+      artists.sort((a, b) => a.name.localeCompare(b.name));
 
-      // Oh My Rockness uses specific selectors for recommended artists
-      $('.artist-entry, .recommendation, .featured-artist').each((index, element) => {
-        if (artists.length >= limit) return false;
-
-        try {
-          const $entry = $(element);
-          const artistName = $entry.find('.artist-name, h3, .title').first().text().trim();
-          const description = $entry.find('.description, .bio').text().trim();
-          
-          // Extract genre from description or use default
-          let genre = 'Indie Rock';
-          const genreMatch = description.match(/(indie|rock|pop|electronic|folk|punk|metal|hip.hop|r&b)/i);
-          if (genreMatch) {
-            genre = genreMatch[0].charAt(0).toUpperCase() + genreMatch[0].slice(1);
-          }
-
-          if (artistName && artistName.length > 1) {
-            artists.push({
-              name: artistName,
-              genre,
-              source: 'oh_my_rockness',
-              description: description.substring(0, 200)
-            });
-          }
-        } catch (error) {
-          console.error(`Error parsing OMR entry ${index}:`, error);
-        }
-      });
-
-      console.log(`🎸 Found ${artists.length} artists from Oh My Rockness`);
-      return artists;
+      console.log(`🎸 Found ${artists.length} unique artists from Oh My Rockness`);
+      return artists.slice(0, limit);
 
     } catch (error) {
       console.error('Oh My Rockness scraping error:', error);
