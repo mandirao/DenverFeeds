@@ -43,16 +43,20 @@ export default function Home() {
 
   // Get defined venue options from schema plus "Other" for manually entered venues
   const definedVenueValues = venueOptions.map(option => option.value);
-  const definedVenues = definedVenueValues.filter(venue => venue !== "other" && venue !== "TBD").sort();
+  
+  // Separate venues by group
+  const denverBoulderVenues = venueOptions
+    .filter(venue => venue.group === "denver_boulder" && venue.value !== "other" && venue.value !== "TBD")
+    .map(venue => venue.value)
+    .sort();
+    
+  const roadTripVenues = venueOptions
+    .filter(venue => venue.group === "road_trip")
+    .map(venue => venue.value)
+    .sort();
   
   // Check if there are any events with venues not in our defined list
   const hasOtherVenues = events.some(event => !definedVenueValues.includes(event.venue));
-  
-  // Create final venue list for dropdown
-  const venueFilterOptions = [...definedVenues];
-  if (hasOtherVenues) {
-    venueFilterOptions.push("Other");
-  }
 
   // Filter events based on selected filters
   const filteredEvents = events.filter(event => {
@@ -461,9 +465,33 @@ export default function Home() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Venues</SelectItem>
-                    {venueFilterOptions.map((venue) => (
+                    
+                    {/* Denver/Boulder Area venues */}
+                    {denverBoulderVenues.map((venue) => (
                       <SelectItem key={venue} value={venue}>{venue}</SelectItem>
                     ))}
+                    
+                    {/* Show "Other" option if there are custom venues */}
+                    {hasOtherVenues && (
+                      <SelectItem value="Other">Other</SelectItem>
+                    )}
+                    
+                    {/* Separator and Road Trip venues */}
+                    {roadTripVenues.length > 0 && (
+                      <>
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-gray-300" />
+                          </div>
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-white px-2 text-gray-500">Road Trips</span>
+                          </div>
+                        </div>
+                        {roadTripVenues.map((venue) => (
+                          <SelectItem key={venue} value={venue}>{venue}</SelectItem>
+                        ))}
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 
