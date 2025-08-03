@@ -32,7 +32,7 @@ export const venueOptions: VenueOption[] = [
   { value: "Club Vinyl", label: "Club Vinyl", group: "denver_boulder" },
   { value: "Dick's Sporting Goods Park", label: "Dick's Sporting Goods Park", group: "denver_boulder" },
   { value: "Empower Field at Mile High", label: "Empower Field at Mile High", group: "denver_boulder" },
-  { value: "Fiddler's Green Amphitheatre", label: "Fiddler's Green Amphitheatre", group: "denver_boulder" },
+  { value: "Fiddlers Green Amphitheatre", label: "Fiddlers Green Amphitheatre", group: "denver_boulder" },
   { value: "Fillmore Auditorium", label: "Fillmore Auditorium", group: "denver_boulder" },
   { value: "Fox Theatre", label: "Fox Theatre", group: "denver_boulder" },
   { value: "Globe Hall", label: "Globe Hall", group: "denver_boulder" },
@@ -57,6 +57,7 @@ export const venueOptions: VenueOption[] = [
   { value: "Summit Music Hall", label: "Summit Music Hall", group: "denver_boulder" },
   { value: "The Church", label: "The Church", group: "denver_boulder" },
   { value: "The Meadowlark", label: "The Meadowlark", group: "denver_boulder" },
+  { value: "Swallow Hill", label: "Swallow Hill", group: "denver_boulder" },
   
   // Road Trip venues
   { value: "Aggie Theatre", label: "Aggie Theatre", group: "road_trip" },
