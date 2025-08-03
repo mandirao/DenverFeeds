@@ -144,7 +144,7 @@ function EventItem({ event }: EventItemProps) {
   
   // Create URLs for interactive elements
   const calendarUrl = createGoogleCalendarUrl(event);
-  const mapsUrl = createGoogleMapsUrl(event.venue, event.artist);
+  const mapsUrl = createGoogleMapsUrl(event.venue, event.artist, event.date);
   const spotifyUrl = createSpotifySearchUrl(event.artist);
   
   // Check if the event was added in the last week

@@ -103,10 +103,19 @@ export function createGoogleCalendarUrl(event: {
 }
 
 // Create Google search URL for venue and tickets
-export function createGoogleMapsUrl(venue: string, artist?: string): string {
-  // For all venues, create a Google search for the artist + venue + Colorado + Tickets
+export function createGoogleMapsUrl(venue: string, artist?: string, date?: Date | string): string {
+  // For all venues, create a Google search for the artist + venue + date + Colorado + Tickets
   if (artist) {
-    return createGoogleSearchUrl(`${artist} ${venue} Colorado Tickets`);
+    let searchQuery = `${artist} ${venue}`;
+    
+    // Add formatted date if provided
+    if (date) {
+      const formattedDate = formatDate(date);
+      searchQuery += ` ${formattedDate}`;
+    }
+    
+    searchQuery += ` Colorado Tickets`;
+    return createGoogleSearchUrl(searchQuery);
   }
   // Fallback to standard maps URL if no artist provided
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue)}`;
