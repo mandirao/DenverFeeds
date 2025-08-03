@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -283,3 +283,28 @@ export const insertDiscoveredEventSchema = createInsertSchema(discoveredEvents)
 
 export type InsertDiscoveredEvent = z.infer<typeof insertDiscoveredEventSchema>;
 export type DiscoveredEvent = typeof discoveredEvents.$inferSelect;
+
+// Discovered Artists schema
+export const discoveredArtists = pgTable("discovered_artists", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  genre: text("genre").notNull(),
+  source: text("source").notNull(), // 'pitchfork_best_new', 'oh_my_rockness_nyc', etc.
+  description: text("description"),
+  albumTitle: text("album_title"),
+  rating: real("rating"),
+  confidence: real("confidence").notNull().default(0.8),
+  rawData: jsonb("raw_data"), // Store original scraped data
+  isReviewed: boolean("is_reviewed").default(false),
+  isApproved: boolean("is_approved"),
+  reviewNotes: text("review_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertDiscoveredArtistSchema = createInsertSchema(discoveredArtists).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertDiscoveredArtist = z.infer<typeof insertDiscoveredArtistSchema>;
+export type DiscoveredArtist = typeof discoveredArtists.$inferSelect;

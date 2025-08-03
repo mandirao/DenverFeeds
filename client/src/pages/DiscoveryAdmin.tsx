@@ -70,6 +70,21 @@ interface DiscoveredEvent {
   discoveredAt: string;
 }
 
+interface DiscoveredArtist {
+  id: number;
+  name: string;
+  genre: string;
+  source: string;
+  description?: string;
+  albumTitle?: string;
+  rating?: number;
+  confidence: number;
+  isReviewed: boolean;
+  isApproved?: boolean;
+  reviewNotes?: string;
+  createdAt: string;
+}
+
 interface DiscoveryStats {
   isRunning: boolean;
   stats: {
@@ -338,6 +353,59 @@ export default function DiscoveryAdmin() {
       default: return 'bg-gray-500';
     }
   };
+
+  // Discovered artists mutations
+  const approveArtistMutation = useMutation({
+    mutationFn: async (artistId: number) => {
+      return apiRequest({
+        endpoint: `/api/discovered-artists/${artistId}/approve`,
+        method: "POST"
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/discovered-artists"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/artists"] });
+      toast({
+        title: "Artist Approved",
+        description: "Artist has been added to the database",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message || "Failed to approve artist",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const rejectArtistMutation = useMutation({
+    mutationFn: async (artistId: number) => {
+      return apiRequest({
+        endpoint: `/api/discovered-artists/${artistId}/reject`,
+        method: "POST"
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/discovered-artists"] });
+      toast({
+        title: "Artist Rejected",
+        description: "Artist has been marked as rejected",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Rejection Failed",
+        description: error.message || "Failed to reject artist",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const { data: discoveredArtists = [] } = useQuery({
+    queryKey: ["/api/discovered-artists"],
+    queryFn: () => apiRequest({ endpoint: "/api/discovered-artists" }),
+  });
 
   return (
     <div className="min-h-screen bg-[#F5F3F0]">
@@ -714,6 +782,75 @@ export default function DiscoveryAdmin() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+
+            {/* Artist Review Queue */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <Music className="w-5 h-5 mr-2" />
+                Artist Review Queue
+              </h2>
+              {discoveredArtists.filter(artist => !artist.isReviewed).length === 0 ? (
+                <p className="text-gray-500">No artists awaiting review</p>
+              ) : (
+                <div className="space-y-4">
+                  {discoveredArtists
+                    .filter(artist => !artist.isReviewed)
+                    .map(artist => (
+                      <div key={artist.id} className="border rounded-lg p-4 bg-blue-50">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h3 className="font-medium text-lg">{artist.name}</h3>
+                            <p className="text-gray-600">{artist.genre}</p>
+                            {artist.albumTitle && (
+                              <p className="text-sm text-blue-700 font-medium">Album: {artist.albumTitle}</p>
+                            )}
+                            {artist.description && (
+                              <p className="text-sm text-gray-600 mt-1">{artist.description}</p>
+                            )}
+                            <div className="flex items-center space-x-3 mt-2">
+                              <Badge variant="outline" className="bg-blue-100">
+                                {artist.source.replace(/_/g, ' ').toUpperCase()}
+                              </Badge>
+                              {artist.rating && (
+                                <span className="text-sm text-blue-600">
+                                  Rating: {artist.rating}/10
+                                </span>
+                              )}
+                              <span className="text-sm text-gray-500">
+                                Confidence: {Math.round(artist.confidence * 100)}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2 ml-4">
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => approveArtistMutation.mutate(artist.id)}
+                              disabled={approveArtistMutation.isPending}
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-red-500 text-red-500 hover:bg-red-50"
+                              onClick={() => rejectArtistMutation.mutate(artist.id)}
+                              disabled={rejectArtistMutation.isPending}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Discovered: {formatDate(artist.createdAt)}
+                        </div>
+                      </div>
+                    ))}
                 </div>
               )}
             </div>

@@ -1,4 +1,4 @@
-import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent } from "@shared/schema";
+import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent, discoveredArtists, type DiscoveredArtist, type InsertDiscoveredArtist } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, count, desc, gt } from "drizzle-orm";
 import { spotifyService } from "./spotify";
@@ -51,6 +51,14 @@ export interface IStorage {
   updateDiscoveredEventStatus(id: number, status: 'approved' | 'rejected'): Promise<DiscoveredEvent | undefined>;
   approveDiscoveredEvent(id: number): Promise<Event | undefined>; // Converts to real event
   deleteDiscoveredEvent(id: number): Promise<boolean>;
+
+  // Discovered Artists methods for review queue
+  getAllDiscoveredArtists(): Promise<DiscoveredArtist[]>;
+  getDiscoveredArtistById(id: number): Promise<DiscoveredArtist | undefined>;
+  createDiscoveredArtist(artist: InsertDiscoveredArtist): Promise<DiscoveredArtist>;
+  updateDiscoveredArtistStatus(id: number, status: 'approved' | 'rejected'): Promise<DiscoveredArtist | undefined>;
+  approveDiscoveredArtist(id: number): Promise<Artist | undefined>; // Converts to real artist
+  deleteDiscoveredArtist(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -418,6 +426,62 @@ export class DatabaseStorage implements IStorage {
   async deleteDiscoveredEvent(id: number): Promise<boolean> {
     const result = await db.delete(discoveredEvents).where(eq(discoveredEvents.id, id));
     return result.rowCount > 0;
+  }
+
+  // Discovered Artists methods
+  async getAllDiscoveredArtists(): Promise<DiscoveredArtist[]> {
+    return await db.select().from(discoveredArtists).orderBy(desc(discoveredArtists.createdAt));
+  }
+
+  async getDiscoveredArtistById(id: number): Promise<DiscoveredArtist | undefined> {
+    const [artist] = await db.select().from(discoveredArtists).where(eq(discoveredArtists.id, id));
+    return artist || undefined;
+  }
+
+  async createDiscoveredArtist(artist: InsertDiscoveredArtist): Promise<DiscoveredArtist> {
+    const [newArtist] = await db.insert(discoveredArtists).values(artist).returning();
+    return newArtist;
+  }
+
+  async updateDiscoveredArtistStatus(id: number, status: 'approved' | 'rejected'): Promise<DiscoveredArtist | undefined> {
+    const [updatedArtist] = await db
+      .update(discoveredArtists)
+      .set({ 
+        isReviewed: true, 
+        isApproved: status === 'approved' 
+      })
+      .where(eq(discoveredArtists.id, id))
+      .returning();
+    
+    return updatedArtist || undefined;
+  }
+
+  async approveDiscoveredArtist(id: number): Promise<Artist | undefined> {
+    const discoveredArtist = await this.getDiscoveredArtistById(id);
+    if (!discoveredArtist) return undefined;
+
+    // Create new artist from discovered artist
+    const newArtist = await this.createArtist({
+      name: discoveredArtist.name,
+      genre: discoveredArtist.genre,
+      source: discoveredArtist.source,
+      priority: 'medium'
+    });
+
+    // Mark discovered artist as approved
+    await this.updateDiscoveredArtistStatus(id, 'approved');
+
+    return newArtist;
+  }
+
+  async deleteDiscoveredArtist(id: number): Promise<boolean> {
+    try {
+      const [deletedArtist] = await db.delete(discoveredArtists).where(eq(discoveredArtists.id, id)).returning();
+      return !!deletedArtist;
+    } catch (error) {
+      console.error("Failed to delete discovered artist:", error);
+      return false;
+    }
   }
 }
 

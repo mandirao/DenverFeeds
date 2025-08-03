@@ -1006,6 +1006,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.use("/api", apiRouter);
 
+  // Discovered Artists API routes
+  app.get("/api/discovered-artists", async (req, res) => {
+    try {
+      const discoveredArtists = await storage.getAllDiscoveredArtists();
+      res.json(discoveredArtists);
+    } catch (error) {
+      console.error("Failed to fetch discovered artists:", error);
+      res.status(500).json({ error: "Failed to fetch discovered artists" });
+    }
+  });
+
+  app.post("/api/discovered-artists/:id/approve", async (req, res) => {
+    try {
+      const artistId = parseInt(req.params.id);
+      const approvedArtist = await storage.approveDiscoveredArtist(artistId);
+      res.json(approvedArtist);
+    } catch (error) {
+      console.error("Failed to approve discovered artist:", error);
+      res.status(500).json({ error: "Failed to approve discovered artist" });
+    }
+  });
+
+  app.post("/api/discovered-artists/:id/reject", async (req, res) => {
+    try {
+      const artistId = parseInt(req.params.id);
+      await storage.updateDiscoveredArtistStatus(artistId, 'rejected');
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to reject discovered artist:", error);
+      res.status(500).json({ error: "Failed to reject discovered artist" });
+    }
+  });
+
+  app.delete("/api/discovered-artists/:id", async (req, res) => {
+    try {
+      const artistId = parseInt(req.params.id);
+      const deleted = await storage.deleteDiscoveredArtist(artistId);
+      res.json({ success: deleted });
+    } catch (error) {
+      console.error("Failed to delete discovered artist:", error);
+      res.status(500).json({ error: "Failed to delete discovered artist" });
+    }
+  });
+
+  // Add sample discovered artist for testing
+  app.post("/api/test-add-sample-artist", async (req, res) => {
+    try {
+      const sampleArtist = await storage.createDiscoveredArtist({
+        name: "Test Discovery Artist",
+        genre: "Rock & Alternative",
+        source: "pitchfork_best_new",
+        description: "A sample artist discovered from Pitchfork's Best New Albums for testing the review system",
+        albumTitle: "Sample Album Title",
+        rating: 8.2,
+        confidence: 0.85,
+        rawData: { 
+          url: "https://pitchfork.com/reviews/albums/test",
+          reviewText: "Sample review text for testing"
+        },
+        isReviewed: false
+      });
+      res.json(sampleArtist);
+    } catch (error) {
+      console.error("Failed to create sample artist:", error);
+      res.status(500).json({ error: "Failed to create sample artist" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
