@@ -265,14 +265,13 @@ export const discoveredEvents = pgTable("discovered_events", {
   artist: varchar("artist", { length: 75 }).notNull(),
   venue: varchar("venue", { length: 75 }).notNull(),
   date: timestamp("date").notNull(),
-  summary: varchar("summary", { length: 75 }),
-  soundsLike: varchar("sounds_like", { length: 75 }),
   genre: varchar("genre", { length: 30 }).notNull(),
   status: varchar("status", { length: 20 }).default('pending'), // 'pending', 'approved', 'rejected'
   discoveredAt: timestamp("discovered_at").defaultNow(),
   discoverySource: varchar("discovery_source", { length: 50 }).default('automated'),
   confidence: integer("confidence"), // AI confidence score 1-100
   rawData: text("raw_data"), // Original discovery data for reference
+  isHidden: boolean("is_hidden").default(false), // Hide rejected events from view
 });
 
 export const insertDiscoveredEventSchema = createInsertSchema(discoveredEvents)
@@ -291,8 +290,6 @@ export const discoveredArtists = pgTable("discovered_artists", {
   genre: text("genre").notNull(),
   source: text("source").notNull(), // 'pitchfork_best_new', 'oh_my_rockness_nyc', etc.
   description: text("description"),
-  albumTitle: text("album_title"),
-  rating: real("rating"),
   confidence: real("confidence").notNull().default(0.8),
   rawData: jsonb("raw_data"), // Store original scraped data
   isReviewed: boolean("is_reviewed").default(false),

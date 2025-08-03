@@ -618,12 +618,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid event ID" });
       }
 
-      const updatedEvent = await storage.updateDiscoveredEventStatus(eventId, 'rejected');
+      const updatedEvent = await storage.rejectAndHideDiscoveredEvent(eventId);
       if (!updatedEvent) {
         return res.status(404).json({ error: "Discovered event not found" });
       }
 
-      res.json({ message: "Event rejected", event: updatedEvent });
+      res.json({ message: "Event rejected and hidden", event: updatedEvent });
     } catch (error) {
       console.error("Error rejecting discovered event:", error);
       res.status(500).json({ error: "Failed to reject event" });

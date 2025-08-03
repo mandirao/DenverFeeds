@@ -63,11 +63,10 @@ interface DiscoveredEvent {
   artist: string;
   venue: string;
   date: string;
-  summary: string;
-  soundsLike: string;
   genre: string;
   status: 'pending' | 'approved' | 'rejected';
   discoveredAt: string;
+  confidence?: number;
 }
 
 interface DiscoveredArtist {
@@ -76,8 +75,6 @@ interface DiscoveredArtist {
   genre: string;
   source: string;
   description?: string;
-  albumTitle?: string;
-  rating?: number;
   confidence: number;
   isReviewed: boolean;
   isApproved?: boolean;
@@ -249,8 +246,8 @@ export default function DiscoveryAdmin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/discovered-events"] });
       toast({
-        title: "Event Rejected",
-        description: "Event has been marked as rejected",
+        title: "Event Removed",
+        description: "Event has been successfully rejected and removed from view",
       });
     },
     onError: (error: any) => {
@@ -517,9 +514,6 @@ export default function DiscoveryAdmin() {
                           <div className="flex-1">
                             <h3 className="font-medium text-lg">{artist.name}</h3>
                             <p className="text-gray-600">{artist.genre}</p>
-                            {artist.albumTitle && (
-                              <p className="text-sm text-blue-700 font-medium">Album: {artist.albumTitle}</p>
-                            )}
                             {artist.description && (
                               <p className="text-sm text-gray-600 mt-1">{artist.description}</p>
                             )}
@@ -527,11 +521,6 @@ export default function DiscoveryAdmin() {
                               <Badge variant="outline" className="bg-blue-100">
                                 {artist.source.replace(/_/g, ' ').toUpperCase()}
                               </Badge>
-                              {artist.rating && (
-                                <span className="text-sm text-blue-600">
-                                  Rating: {artist.rating}/10
-                                </span>
-                              )}
                               <span className="text-sm text-gray-500">
                                 Confidence: {Math.round(artist.confidence * 100)}%
                               </span>
@@ -617,16 +606,6 @@ export default function DiscoveryAdmin() {
                             <div><strong>Genre:</strong> {event.genre}</div>
                             <div><strong>Discovered:</strong> {new Date(event.discoveredAt).toLocaleDateString()}</div>
                           </div>
-                          {event.summary && (
-                            <p className="text-sm text-gray-700 mb-2">
-                              <strong>Summary:</strong> {event.summary}
-                            </p>
-                          )}
-                          {event.soundsLike && (
-                            <p className="text-sm text-gray-700">
-                              <strong>Sounds Like:</strong> {event.soundsLike}
-                            </p>
-                          )}
                         </div>
                         
                         {event.status === 'pending' && (

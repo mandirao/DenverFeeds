@@ -379,7 +379,9 @@ export class DatabaseStorage implements IStorage {
 
   // Discovered Events methods
   async getAllDiscoveredEvents(): Promise<DiscoveredEvent[]> {
-    const result = await db.select().from(discoveredEvents).orderBy(desc(discoveredEvents.discoveredAt));
+    const result = await db.select().from(discoveredEvents)
+      .where(eq(discoveredEvents.isHidden, false))
+      .orderBy(desc(discoveredEvents.discoveredAt));
     return result;
   }
 
@@ -401,18 +403,26 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async rejectAndHideDiscoveredEvent(id: number): Promise<DiscoveredEvent | undefined> {
+    const result = await db.update(discoveredEvents)
+      .set({ status: 'rejected', isHidden: true })
+      .where(eq(discoveredEvents.id, id))
+      .returning();
+    return result[0];
+  }
+
   async approveDiscoveredEvent(id: number): Promise<Event | undefined> {
     const discoveredEvent = await this.getDiscoveredEventById(id);
     if (!discoveredEvent) return undefined;
 
-    // Create the real event
+    // Create the real event - summary and sounds like will be auto-generated later
     const newEvent = await this.createEvent({
       emoji: "🎵", // Default emoji for discovered events
       artist: discoveredEvent.artist,
       venue: discoveredEvent.venue,
       date: discoveredEvent.date,
-      summary: discoveredEvent.summary || `${discoveredEvent.artist} at ${discoveredEvent.venue}`,
-      soundsLike: discoveredEvent.soundsLike || "TBD",
+      summary: `${discoveredEvent.artist} at ${discoveredEvent.venue}`, // Simple summary for now
+      soundsLike: "TBD", // Will be auto-generated after approval
       genre: discoveredEvent.genre,
       requester: 'Discovery AI'
     });
