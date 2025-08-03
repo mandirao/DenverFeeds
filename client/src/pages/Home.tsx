@@ -502,7 +502,8 @@ export default function Home() {
                       <TooltipTrigger asChild>
                         <button 
                           onClick={resetFilters}
-                          className="ml-2 w-8 h-8 rounded-full border border-black bg-white text-black hover:bg-red-50 focus:outline-none flex items-center justify-center flex-shrink-0"
+                          className="ml-1 w-8 h-8 rounded-full border border-black bg-white text-black hover:bg-red-50 focus:outline-none flex items-center justify-center flex-shrink-0 text-lg leading-none"
+                          style={{ fontFamily: 'monospace' }}
                         >
                           ×
                         </button>
