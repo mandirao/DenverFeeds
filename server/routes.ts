@@ -791,6 +791,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Venue tracking routes
+  
+  // Get all venues
+  apiRouter.get("/venues", async (req, res) => {
+    try {
+      const venues = await storage.getAllVenues();
+      res.json(venues);
+    } catch (error) {
+      console.error("Error fetching venues:", error);
+      res.status(500).json({ message: "Failed to fetch venues" });
+    }
+  });
+
+  // Get a single venue by ID
+  apiRouter.get("/venues/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid venue ID" });
+      }
+
+      const venue = await storage.getVenueById(id);
+      if (!venue) {
+        return res.status(404).json({ message: "Venue not found" });
+      }
+
+      res.json(venue);
+    } catch (error) {
+      console.error("Error fetching venue:", error);
+      res.status(500).json({ message: "Failed to fetch venue" });
+    }
+  });
+
+  // Update venue tracking information
+  apiRouter.put("/venues/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid venue ID" });
+      }
+
+      const updatedVenue = await storage.updateVenue(id, req.body);
+      if (!updatedVenue) {
+        return res.status(404).json({ message: "Venue not found" });
+      }
+
+      res.json(updatedVenue);
+    } catch (error) {
+      console.error("Error updating venue:", error);
+      res.status(500).json({ message: "Failed to update venue" });
+    }
+  });
+
   // Playlist routes
   
   // Get all playlists
@@ -1058,12 +1111,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         genre: "Rock & Alternative",
         source: "pitchfork_best_new",
         description: "A sample artist discovered from Pitchfork's Best New Albums for testing the review system",
-        albumTitle: "Sample Album Title",
-        rating: 8.2,
         confidence: 0.85,
         rawData: { 
           url: "https://pitchfork.com/reviews/albums/test",
-          reviewText: "Sample review text for testing"
+          reviewText: "Sample review text for testing",
+          albumTitle: "Sample Album Title",
+          rating: 8.2
         },
         isReviewed: false
       });

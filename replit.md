@@ -56,6 +56,9 @@ This is a concert feed/newsletter application designed for an exclusive meetup g
 - **Event Review System**: Manual approval workflow for discovered events with confidence scoring
 - **Comprehensive Duplicate Detection**: Artist discovery system checks against both main artists and discovered_artists tables to prevent re-discovery of existing artists
 - **Discovery Source Status**: Pitchfork Best New Albums (active, 60% new discovery rate), Oh My Rockness (requires JavaScript execution for dynamic content - future enhancement)
+- **Automatic Artist & Venue Tracking**: New artists and venues automatically added to scraping database when events are created, with intelligent priority scoring (high: 10+ events, medium: 3-10 events, low: <3 events)
+- **Venues Database**: Complete venue tracking system with scraping configuration storage, event counts, and API endpoints for venue management
+- **Auto-Detection Workflow**: Events created through any method (manual entry, CSV import, discovery approval) automatically expand the scraping database for future automated discovery
 
 ## External Dependencies
 

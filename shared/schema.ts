@@ -305,3 +305,38 @@ export const insertDiscoveredArtistSchema = createInsertSchema(discoveredArtists
 
 export type InsertDiscoveredArtist = z.infer<typeof insertDiscoveredArtistSchema>;
 export type DiscoveredArtist = typeof discoveredArtists.$inferSelect;
+
+// Venues table for tracking all venues for potential scraping
+export const venues = pgTable("venues", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  location: varchar("location", { length: 100 }),
+  capacity: varchar("capacity", { length: 50 }),
+  website: varchar("website", { length: 200 }),
+  scrapingConfig: jsonb("scraping_config"), // Store scraper configuration
+  lastScraped: timestamp("last_scraped"),
+  isScrapable: boolean("is_scrapable").default(false),
+  priority: varchar("priority", { length: 20 }).default('medium'), // 'high', 'medium', 'low'
+  source: varchar("source", { length: 50 }).notNull(), // 'existing', 'manual', 'auto_detected'
+  eventCount: integer("event_count").default(0),
+  lastEventDate: timestamp("last_event_date"),
+  isActive: boolean("is_active").default(true),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertVenueSchema = createInsertSchema(venues)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    name: z.string().min(1, "Venue name is required").max(100, "Venue name must be 100 characters or less"),
+    source: z.enum(['existing', 'manual', 'auto_detected']),
+    priority: z.enum(['high', 'medium', 'low']).default('medium'),
+  });
+
+export type InsertVenue = z.infer<typeof insertVenueSchema>;
+export type Venue = typeof venues.$inferSelect;

@@ -1,4 +1,4 @@
-import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent, discoveredArtists, type DiscoveredArtist, type InsertDiscoveredArtist } from "@shared/schema";
+import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent, discoveredArtists, type DiscoveredArtist, type InsertDiscoveredArtist, venues, type Venue, type InsertVenue } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, count, desc, gt } from "drizzle-orm";
 import { spotifyService } from "./spotify";
@@ -59,6 +59,15 @@ export interface IStorage {
   updateDiscoveredArtistStatus(id: number, status: 'approved' | 'rejected'): Promise<DiscoveredArtist | undefined>;
   approveDiscoveredArtist(id: number): Promise<Artist | undefined>; // Converts to real artist
   deleteDiscoveredArtist(id: number): Promise<boolean>;
+
+  // Venues methods for tracking and scraping
+  getAllVenues(): Promise<Venue[]>;
+  getVenueById(id: number): Promise<Venue | undefined>;
+  getVenueByName(name: string): Promise<Venue | undefined>;
+  createVenue(venue: InsertVenue): Promise<Venue>;
+  updateVenue(id: number, data: Partial<Venue>): Promise<Venue | undefined>;
+  updateVenueEventCount(venueName: string): Promise<void>;
+  autoTrackArtistAndVenue(artist: string, venue: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -144,7 +153,16 @@ export class DatabaseStorage implements IStorage {
       upvotes: 0,
       createdAt: new Date()
     }).returning();
-    return result[0];
+    const newEvent = result[0];
+
+    // Auto-track artist and venue when event is created
+    try {
+      await this.autoTrackArtistAndVenue(insertEvent.artist, insertEvent.venue);
+    } catch (error) {
+      console.error("Auto-tracking failed but event created successfully:", error);
+    }
+
+    return newEvent;
   }
 
   async updateEvent(id: number, data: Partial<Event>): Promise<Event | undefined> {
@@ -492,6 +510,95 @@ export class DatabaseStorage implements IStorage {
       console.error("Failed to delete discovered artist:", error);
       return false;
     }
+  }
+
+  // Venues methods
+  async getAllVenues(): Promise<Venue[]> {
+    return await db.select().from(venues).orderBy(desc(venues.eventCount), venues.name);
+  }
+
+  async getVenueById(id: number): Promise<Venue | undefined> {
+    const [venue] = await db.select().from(venues).where(eq(venues.id, id));
+    return venue || undefined;
+  }
+
+  async getVenueByName(name: string): Promise<Venue | undefined> {
+    const [venue] = await db.select().from(venues).where(eq(venues.name, name));
+    return venue || undefined;
+  }
+
+  async createVenue(venue: InsertVenue): Promise<Venue> {
+    const [newVenue] = await db.insert(venues).values(venue).returning();
+    return newVenue;
+  }
+
+  async updateVenue(id: number, data: Partial<Venue>): Promise<Venue | undefined> {
+    const [updatedVenue] = await db
+      .update(venues)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(venues.id, id))
+      .returning();
+    return updatedVenue || undefined;
+  }
+
+  async updateVenueEventCount(venueName: string): Promise<void> {
+    // Get current event count for this venue
+    const [countResult] = await db
+      .select({ count: count() })
+      .from(events)
+      .where(eq(events.venue, venueName));
+
+    // Get most recent event date for this venue
+    const [recentEvent] = await db
+      .select({ date: events.date })
+      .from(events)
+      .where(eq(events.venue, venueName))
+      .orderBy(desc(events.date))
+      .limit(1);
+
+    // Update or create venue record
+    const existingVenue = await this.getVenueByName(venueName);
+    
+    if (existingVenue) {
+      await this.updateVenue(existingVenue.id, {
+        eventCount: countResult.count,
+        lastEventDate: recentEvent?.date || null,
+        updatedAt: new Date()
+      });
+    } else {
+      // Auto-create venue if it doesn't exist
+      await this.createVenue({
+        name: venueName,
+        source: 'auto_detected',
+        eventCount: countResult.count,
+        lastEventDate: recentEvent?.date || null,
+        priority: countResult.count > 10 ? 'high' : countResult.count > 3 ? 'medium' : 'low'
+      });
+    }
+  }
+
+  async autoTrackArtistAndVenue(artist: string, venue: string): Promise<void> {
+    console.log(`🔄 Auto-tracking artist: ${artist}, venue: ${venue}`);
+    
+    // Auto-track artist
+    const existingArtist = await this.getArtistByName(artist);
+    if (!existingArtist) {
+      try {
+        await this.createArtist({
+          name: artist,
+          source: 'auto_detected',
+          searchPriority: 'medium',
+          notes: `Auto-detected from event creation: ${new Date().toISOString()}`
+        });
+        console.log(`✅ Auto-added artist: ${artist}`);
+      } catch (error) {
+        console.log(`⚠️ Artist ${artist} may already exist or failed to create:`, error.message);
+      }
+    }
+
+    // Auto-track venue and update event count
+    await this.updateVenueEventCount(venue);
+    console.log(`✅ Updated venue tracking: ${venue}`);
   }
 }
 
