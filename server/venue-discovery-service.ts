@@ -1,5 +1,6 @@
 import { storage } from "./storage";
 import { llmService } from "./llm-service";
+import VenueScraper, { ScrapedEvent } from "./venue-scraper";
 
 interface VenueSource {
   name: string;
@@ -167,23 +168,74 @@ class VenueDiscoveryService {
     console.log(`🔍 Scanning ${venue.name} for real events...`);
     
     try {
-      // For now, we'll implement a research-only mode that returns empty results
-      // to prevent false event creation. In a production system, this would:
-      // 1. Scrape the venue's event calendar
-      // 2. Parse event listings for artist names, dates, venues
-      // 3. Cross-reference against our artist database
-      // 4. Return only verified matches
+      const scraper = new VenueScraper();
+      const scrapedEvents = await scraper.scrapeVenue(venue.name);
       
-      console.log(`📅 Would scrape: ${venue.url}`);
-      console.log(`🎯 Looking for ${artistNames.length} tracked artists`);
+      console.log(`📅 Found ${scrapedEvents.length} events at ${venue.name}`);
+      console.log(`🎯 Cross-referencing against ${artistNames.length} tracked artists...`);
       
-      // Return empty array to prevent false data
-      return [];
+      // Cross-reference scraped events against our artist database
+      const matchedEvents = scrapedEvents.filter(event => {
+        const eventArtist = event.artist.toLowerCase();
+        return artistNames.some(trackedArtist => {
+          // Check for exact match or close variations
+          return eventArtist.includes(trackedArtist) || 
+                 trackedArtist.includes(eventArtist) ||
+                 this.fuzzyMatch(eventArtist, trackedArtist);
+        });
+      });
+
+      console.log(`✅ Found ${matchedEvents.length} matches for tracked artists`);
+
+      // Convert to our event format
+      return matchedEvents.map(event => ({
+        artist: event.artist,
+        date: event.date,
+        summary: event.description || `Live performance at ${venue.name}`,
+        soundsLike: "", // Will be filled by AI analysis if needed
+        genre: "", // Will be determined from artist database
+        confidence: this.calculateConfidence(event, artistNames)
+      }));
       
     } catch (error) {
       console.error(`❌ Error scanning ${venue.name}:`, error);
       return [];
     }
+  }
+
+  private fuzzyMatch(str1: string, str2: string): boolean {
+    // Simple fuzzy matching for artist names
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const norm1 = normalize(str1);
+    const norm2 = normalize(str2);
+    
+    // Check if one is contained in the other (for cases like "The National" vs "National")
+    return norm1.includes(norm2) || norm2.includes(norm1);
+  }
+
+  private calculateConfidence(event: ScrapedEvent, artistNames: string[]): number {
+    const eventArtist = event.artist.toLowerCase();
+    
+    // Higher confidence for exact matches
+    if (artistNames.includes(eventArtist)) {
+      return 95;
+    }
+    
+    // Medium confidence for partial matches
+    const hasPartialMatch = artistNames.some(artist => 
+      eventArtist.includes(artist) || artist.includes(eventArtist)
+    );
+    
+    if (hasPartialMatch) {
+      return 85;
+    }
+    
+    // Lower confidence for fuzzy matches
+    const hasFuzzyMatch = artistNames.some(artist => 
+      this.fuzzyMatch(eventArtist, artist)
+    );
+    
+    return hasFuzzyMatch ? 75 : 50;
   }
 
   getStats(): VenueDiscoveryStats {
