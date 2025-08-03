@@ -54,6 +54,7 @@ This is a concert feed/newsletter application designed for an exclusive meetup g
 - **Research Mode**: Discovery system operates in research-only mode to prevent false event creation
 - **Venue-First Discovery**: Efficient discovery system monitoring 25 key Denver venues (94% fewer API calls vs artist-by-artist)
 - **Event Review System**: Manual approval workflow for discovered events with confidence scoring
+- **Comprehensive Duplicate Detection**: Artist discovery system checks against both main artists and discovered_artists tables to prevent re-discovery of existing artists
 
 ## External Dependencies
 

@@ -8,9 +8,8 @@ interface DiscoveredArtist {
   genre: string;
   source: string;
   description?: string;
-  albumTitle?: string;
-  rating?: number;
-  url?: string;
+  confidence: number;
+  rawData?: any;
 }
 
 interface ArtistDiscoveryStats {
@@ -53,6 +52,13 @@ class ArtistDiscoveryService {
       // Get existing artists to avoid duplicates
       const existingArtists = await storage.getAllArtists();
       const existingArtistNames = existingArtists.map(a => a.name.toLowerCase());
+      
+      // Also get already discovered artists to avoid re-discovery
+      const existingDiscoveredArtists = await storage.getAllDiscoveredArtists();
+      const existingDiscoveredNames = existingDiscoveredArtists.map(a => a.name.toLowerCase());
+      
+      // Combine both lists for comprehensive duplicate checking
+      const allExistingNames = [...existingArtistNames, ...existingDiscoveredNames];
 
       this.stats.artistsFound = 0;
       this.stats.newArtistsAdded = 0;
@@ -91,11 +97,11 @@ class ArtistDiscoveryService {
       // Filter out duplicates and add new artists with smart prioritization
       const finalArtists: DiscoveredArtist[] = [];
       
-      // Sort discovered artists by priority (Pitchfork rating first, then alphabetical)
+      // Sort discovered artists by priority (Pitchfork confidence first, then alphabetical)
       allDiscoveredArtists.sort((a, b) => {
-        // Pitchfork artists with higher ratings first
+        // Pitchfork artists with higher confidence first
         if (a.source === 'pitchfork' && b.source === 'pitchfork') {
-          return (b.rating || 0) - (a.rating || 0);
+          return (b.confidence || 0) - (a.confidence || 0);
         }
         // Pitchfork artists before Oh My Rockness
         if (a.source === 'pitchfork' && b.source === 'oh_my_rockness') return -1;
@@ -114,16 +120,16 @@ class ArtistDiscoveryService {
           continue;
         }
         
-        // Check if artist already exists in database (fuzzy matching)
-        const isDatabaseDuplicate = existingArtistNames.some(existing => {
+        // Check if artist already exists in database or discovered artists (fuzzy matching)
+        const isDuplicate = allExistingNames.some(existing => {
           const existingLower = existing.toLowerCase().trim();
           return existingLower === artistNameLower || 
                  existingLower.includes(artistNameLower) ||
                  artistNameLower.includes(existingLower);
         });
         
-        if (isDatabaseDuplicate) {
-          console.log(`⏭️  Skipping database duplicate: ${artist.name}`);
+        if (isDuplicate) {
+          console.log(`⏭️  Skipping duplicate: ${artist.name} (already exists in database or discovered)`);
           this.stats.duplicatesSkipped++;
           continue;
         }
@@ -145,19 +151,21 @@ class ArtistDiscoveryService {
 
         if (!options.dryRun) {
           try {
-            // Add artist to database
-            await storage.createArtist({
+            // Add artist to discovered artists table for review
+            await storage.createDiscoveredArtist({
               name: artist.name,
               genre: artist.genre,
-              priority: 'medium',
               source: artist.source,
-              searchHistory: 0
+              description: artist.description,
+              confidence: artist.confidence,
+              rawData: artist.rawData,
+              isReviewed: false
             });
 
-            console.log(`✅ Added new artist: ${artist.name} (${artist.genre})`);
+            console.log(`✅ Added discovered artist for review: ${artist.name} (${artist.genre})`);
             this.stats.newArtistsAdded++;
           } catch (error) {
-            console.error(`❌ Failed to add artist ${artist.name}:`, error);
+            console.error(`❌ Failed to add discovered artist ${artist.name}:`, error);
             this.stats.errors++;
           }
         }
@@ -336,10 +344,12 @@ class ArtistDiscoveryService {
                 name: artistName,
                 genre,
                 source: 'pitchfork_best_new',
-                albumTitle: albumTitle || undefined,
-                rating: 8.0,
                 description: `Featured on Pitchfork's Best New Albums`,
-                url: `https://pitchfork.com${href}`
+                confidence: 0.85,
+                rawData: {
+                  url: `https://pitchfork.com${href}`,
+                  albumTitle: albumTitle || undefined
+                }
               });
             }
           }
@@ -438,7 +448,12 @@ class ArtistDiscoveryService {
                 genre: 'Indie Rock', // Default genre
                 source: `oh_my_rockness_${city}`,
                 description: `Recommended show in ${city.toUpperCase()}${venue ? ` at ${venue}` : ''}${date ? ` on ${date}` : ''}`.substring(0, 200),
-                url
+                confidence: 0.75,
+                rawData: {
+                  url,
+                  venue,
+                  date
+                }
               });
             }
           }
