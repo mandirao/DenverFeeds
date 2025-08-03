@@ -466,7 +466,7 @@ export default function DiscoveryAdmin() {
                   <Input
                     type="number"
                     min="1"
-                    max="20"
+                    max="25"
                     value={venueLimit}
                     onChange={(e) => setVenueLimit(parseInt(e.target.value) || 10)}
                     className="w-20"
@@ -516,6 +516,11 @@ export default function DiscoveryAdmin() {
               <div className="mt-3 p-3 bg-green-50 rounded border border-green-200">
                 <div className="text-sm text-green-700">
                   <strong>Efficiency:</strong> Scanning {venueLimit} venues vs {artists.length || 360} artists = ~{Math.max(0, (artists.length || 360) - venueLimit)} fewer API calls ({Math.round((1 - venueLimit / (artists.length || 360)) * 100)}% reduction)
+                </div>
+              </div>
+              <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
+                <div className="text-sm text-blue-700">
+                  <strong>Status:</strong> Currently in research-only mode to prevent false data. Real venue scraping would require implementing web scraping for each venue's calendar system.
                 </div>
               </div>
             </div>

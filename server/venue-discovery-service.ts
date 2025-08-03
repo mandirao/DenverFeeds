@@ -102,15 +102,14 @@ class VenueDiscoveryService {
       this.stats.eventsFound = 0;
       this.stats.artistMatches = 0;
 
-      // In a real implementation, we would scrape each venue's calendar
-      // For demo purposes, we'll simulate finding events at key venues
-      for (const venue of venuesToScan.slice(0, 3)) { // Limit to 3 for demo
+      // Scan each venue for real events
+      for (const venue of venuesToScan) {
         console.log(`🔍 Scanning ${venue.name}...`);
         
-        // Simulate finding events that match our artists
-        const mockEventsFound = await this.simulateVenueScan(venue, artistNames);
+        // Scan venue for real events (currently returns empty to prevent false data)
+        const eventsFound = await this.scanVenueForEvents(venue, artistNames);
         
-        for (const event of mockEventsFound) {
+        for (const event of eventsFound) {
           if (!options.dryRun) {
             // Create discovered event for review
             const discoveredEvent = await storage.createDiscoveredEvent({
@@ -164,31 +163,27 @@ class VenueDiscoveryService {
     }
   }
 
-  private async simulateVenueScan(venue: VenueSource, artistNames: string[]): Promise<any[]> {
-    // Simulate finding events that match our artist database
-    const mockEvents = [
-      {
-        artist: "Waxahatchee",
-        date: new Date("2025-10-15T20:00:00Z"),
-        summary: "Indie rock showcase with special guests",
-        soundsLike: "Dreamy indie rock with confessional lyrics", 
-        genre: "Indie Rock",
-        confidence: 92
-      },
-      {
-        artist: "Whitney", 
-        date: new Date("2025-11-02T19:30:00Z"),
-        summary: "Light Upon the Lake anniversary tour",
-        soundsLike: "Falsetto-driven indie pop with horn arrangements",
-        genre: "Indie Pop", 
-        confidence: 88
-      }
-    ];
-
-    // Only return events for artists we actually track
-    return mockEvents.filter(event => 
-      artistNames.includes(event.artist.toLowerCase())
-    );
+  private async scanVenueForEvents(venue: VenueSource, artistNames: string[]): Promise<any[]> {
+    console.log(`🔍 Scanning ${venue.name} for real events...`);
+    
+    try {
+      // For now, we'll implement a research-only mode that returns empty results
+      // to prevent false event creation. In a production system, this would:
+      // 1. Scrape the venue's event calendar
+      // 2. Parse event listings for artist names, dates, venues
+      // 3. Cross-reference against our artist database
+      // 4. Return only verified matches
+      
+      console.log(`📅 Would scrape: ${venue.url}`);
+      console.log(`🎯 Looking for ${artistNames.length} tracked artists`);
+      
+      // Return empty array to prevent false data
+      return [];
+      
+    } catch (error) {
+      console.error(`❌ Error scanning ${venue.name}:`, error);
+      return [];
+    }
   }
 
   getStats(): VenueDiscoveryStats {
