@@ -425,204 +425,19 @@ export default function DiscoveryAdmin() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="discovery" className="space-y-6">
+        <Tabs defaultValue="artist-review" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="discovery">Discovery Control</TabsTrigger>
+            <TabsTrigger value="artist-review">Artist Review</TabsTrigger>
             <TabsTrigger value="review">Event Review</TabsTrigger>
             <TabsTrigger value="artists">Artist Database</TabsTrigger>
           </TabsList>
 
-          {/* Discovery Control Tab */}
-          <TabsContent value="discovery" className="space-y-6">
-            {/* Discovery Method Toggle */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <h2 className="text-xl font-semibold mb-4">Discovery Method</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="border rounded-lg p-4 bg-blue-50">
-                  <h3 className="font-medium text-blue-900 mb-2">🎤 Artist-First Discovery</h3>
-                  <p className="text-sm text-blue-700 mb-3">Search each artist individually across venues</p>
-                  <div className="text-xs text-blue-600">
-                    • 360+ API calls (one per artist)<br/>
-                    • More comprehensive but expensive<br/>
-                    • May miss venue-exclusive announcements
-                  </div>
-                </div>
-                <div className="border rounded-lg p-4 bg-green-50">
-                  <h3 className="font-medium text-green-900 mb-2">🏟️ Venue-First Discovery</h3>
-                  <p className="text-sm text-green-700 mb-3">Monitor 20 key Denver venues, cross-reference our artists</p>
-                  <div className="text-xs text-green-600">
-                    • ~20 API calls (one per venue)<br/>
-                    • Much more efficient (94% fewer calls)<br/>
-                    • Catches all venue announcements first
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Discovery Stats */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold flex items-center">
-                  {discoveryStatus?.isRunning ? (
-                    <>
-                      <Play className="w-5 h-5 mr-2 text-green-500" />
-                      Discovery Running...
-                    </>
-                  ) : (
-                    <>
-                      <Pause className="w-5 h-5 mr-2 text-gray-500" />
-                      Discovery Idle
-                    </>
-                  )}
-                </h2>
-                {discoveryStatus?.isRunning && (
-                  <Badge variant="secondary" className="animate-pulse">
-                    Running
-                  </Badge>
-                )}
-              </div>
-              
-              {discoveryStatus?.stats && (
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <div className="text-center p-3 bg-gray-50 rounded">
-                    <Users className="w-6 h-6 mx-auto mb-1 text-gray-600" />
-                    <div className="text-2xl font-bold">{discoveryStatus.stats.artistsSearched}</div>
-                    <div className="text-sm text-gray-600">Artists Searched</div>
-                  </div>
-                  <div className="text-center p-3 bg-blue-50 rounded">
-                    <Music className="w-6 h-6 mx-auto mb-1 text-blue-600" />
-                    <div className="text-2xl font-bold">{discoveryStatus.stats.eventsFound}</div>
-                    <div className="text-sm text-gray-600">Events Found</div>
-                  </div>
-                  <div className="text-center p-3 bg-green-50 rounded">
-                    <CheckCircle className="w-6 h-6 mx-auto mb-1 text-green-600" />
-                    <div className="text-2xl font-bold">{discoveryStatus.stats.newEventsAdded}</div>
-                    <div className="text-sm text-gray-600">Events Added</div>
-                  </div>
-                  <div className="text-center p-3 bg-red-50 rounded">
-                    <XCircle className="w-6 h-6 mx-auto mb-1 text-red-600" />
-                    <div className="text-2xl font-bold">{discoveryStatus.stats.errors}</div>
-                    <div className="text-sm text-gray-600">Errors</div>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded">
-                    <Clock className="w-6 h-6 mx-auto mb-1 text-gray-600" />
-                    <div className="text-2xl font-bold">{formatDuration(discoveryStatus.stats.duration)}</div>
-                    <div className="text-sm text-gray-600">Duration</div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Manual Search Tools */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <h3 className="text-lg font-semibold mb-4">🔍 Manual Search Tools</h3>
-              <p className="text-sm text-gray-600 mb-4">Direct, controlled searches for specific artists or venues</p>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="border rounded-lg p-4">
-                    <h4 className="font-medium mb-3">🎤 Single Artist Search</h4>
-                    <div className="space-y-3">
-                      <Input placeholder="Enter artist name..." className="w-full" />
-                      <Button variant="outline" className="w-full">
-                        <Search className="w-4 h-4 mr-2" />
-                        Search Artist Events
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="border rounded-lg p-4">
-                    <h4 className="font-medium mb-3">🏟️ Single Venue Check</h4>
-                    <div className="space-y-3">
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose venue..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="red-rocks">Red Rocks Amphitheatre</SelectItem>
-                          <SelectItem value="mission-ballroom">Mission Ballroom</SelectItem>
-                          <SelectItem value="fillmore">Fillmore Auditorium</SelectItem>
-                          <SelectItem value="ogden">Ogden Theatre</SelectItem>
-                          <SelectItem value="hi-dive">Hi-Dive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button variant="outline" className="w-full">
-                        <Search className="w-4 h-4 mr-2" />
-                        Check Venue Calendar
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="text-sm text-blue-700 bg-blue-50 p-3 rounded">
-                  <strong>Manual Mode:</strong> These tools let you test venue scraping and artist searches one at a time with full visibility into results.
-                </div>
-              </div>
-            </div>
-
-            {/* Venue Scraping Test */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <h3 className="text-lg font-semibold mb-4">🏟️ Venue Scraping Test</h3>
-              <p className="text-sm text-gray-600 mb-4">Test venue calendar scraping one venue at a time to verify accuracy</p>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Select Venue</label>
-                    <Select value={venuePriority} onValueChange={setVenuePriority}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose venue..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="red-rocks">Red Rocks Amphitheatre</SelectItem>
-                        <SelectItem value="mission-ballroom">Mission Ballroom</SelectItem>
-                        <SelectItem value="fillmore">Fillmore Auditorium</SelectItem>
-                        <SelectItem value="ogden">Ogden Theatre</SelectItem>
-                        <SelectItem value="hi-dive">Hi-Dive</SelectItem>
-                        <SelectItem value="skylark">Skylark Lounge</SelectItem>
-                        <SelectItem value="ball-arena">Ball Arena</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Date Range</label>
-                    <Select defaultValue="next-30">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="next-30">Next 30 days</SelectItem>
-                        <SelectItem value="next-60">Next 60 days</SelectItem>
-                        <SelectItem value="next-90">Next 90 days</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-end">
-                    <Button
-                      onClick={() => runVenueDiscoveryMutation.mutate({ 
-                        venueLimit: 1,
-                        priority: venuePriority,
-                        dryRun: true 
-                      })}
-                      disabled={runVenueDiscoveryMutation.isPending}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                    >
-                      <Search className="w-4 h-4 mr-2" />
-                      Test Venue Scraping
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="text-sm text-blue-700 bg-blue-50 p-3 rounded">
-                  <strong>Test Mode:</strong> This will scrape the selected venue's calendar and show you exactly what events are found and how they're parsed.
-                </div>
-              </div>
-            </div>
-
+          {/* Artist Review Tab */}
+          <TabsContent value="artist-review" className="space-y-6">
             {/* Artist Research Tools */}
             <div className="bg-white rounded-lg p-6 shadow-sm border">
               <h3 className="text-lg font-semibold mb-4">🎤 Artist Research Tools</h3>
-              <p className="text-sm text-gray-600 mb-4">Manually research and add individual artists to your database</p>
+              <p className="text-sm text-gray-600 mb-4">Manually research and discover new artists to add to your database</p>
               
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -684,15 +499,73 @@ export default function DiscoveryAdmin() {
               </div>
             </div>
 
-            {/* Research Mode Notice */}
-            <div className="mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
-              <div className="flex items-start">
-                <AlertCircle className="w-5 h-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-yellow-800">
-                  <div className="font-medium">Research Mode Active</div>
-                  <div>Discovery finds potential events but requires manual verification in the Event Review tab before adding to the main feed.</div>
+            {/* Artist Review Queue */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <Music className="w-5 h-5 mr-2" />
+                Artist Review Queue
+              </h2>
+              {discoveredArtists.filter(artist => !artist.isReviewed).length === 0 ? (
+                <p className="text-gray-500">No artists awaiting review</p>
+              ) : (
+                <div className="space-y-4">
+                  {discoveredArtists
+                    .filter(artist => !artist.isReviewed)
+                    .map(artist => (
+                      <div key={artist.id} className="border rounded-lg p-4 bg-blue-50">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h3 className="font-medium text-lg">{artist.name}</h3>
+                            <p className="text-gray-600">{artist.genre}</p>
+                            {artist.albumTitle && (
+                              <p className="text-sm text-blue-700 font-medium">Album: {artist.albumTitle}</p>
+                            )}
+                            {artist.description && (
+                              <p className="text-sm text-gray-600 mt-1">{artist.description}</p>
+                            )}
+                            <div className="flex items-center space-x-3 mt-2">
+                              <Badge variant="outline" className="bg-blue-100">
+                                {artist.source.replace(/_/g, ' ').toUpperCase()}
+                              </Badge>
+                              {artist.rating && (
+                                <span className="text-sm text-blue-600">
+                                  Rating: {artist.rating}/10
+                                </span>
+                              )}
+                              <span className="text-sm text-gray-500">
+                                Confidence: {Math.round(artist.confidence * 100)}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2 ml-4">
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => approveArtistMutation.mutate(artist.id)}
+                              disabled={approveArtistMutation.isPending}
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-red-500 text-red-500 hover:bg-red-50"
+                              onClick={() => rejectArtistMutation.mutate(artist.id)}
+                              disabled={rejectArtistMutation.isPending}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Discovered: {formatDate(artist.createdAt)}
+                        </div>
+                      </div>
+                    ))}
                 </div>
-              </div>
+              )}
             </div>
           </TabsContent>
 
@@ -786,73 +659,80 @@ export default function DiscoveryAdmin() {
               )}
             </div>
 
-            {/* Artist Review Queue */}
+            {/* Venue Discovery Tools */}
             <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                <Music className="w-5 h-5 mr-2" />
-                Artist Review Queue
-              </h2>
-              {discoveredArtists.filter(artist => !artist.isReviewed).length === 0 ? (
-                <p className="text-gray-500">No artists awaiting review</p>
-              ) : (
-                <div className="space-y-4">
-                  {discoveredArtists
-                    .filter(artist => !artist.isReviewed)
-                    .map(artist => (
-                      <div key={artist.id} className="border rounded-lg p-4 bg-blue-50">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex-1">
-                            <h3 className="font-medium text-lg">{artist.name}</h3>
-                            <p className="text-gray-600">{artist.genre}</p>
-                            {artist.albumTitle && (
-                              <p className="text-sm text-blue-700 font-medium">Album: {artist.albumTitle}</p>
-                            )}
-                            {artist.description && (
-                              <p className="text-sm text-gray-600 mt-1">{artist.description}</p>
-                            )}
-                            <div className="flex items-center space-x-3 mt-2">
-                              <Badge variant="outline" className="bg-blue-100">
-                                {artist.source.replace(/_/g, ' ').toUpperCase()}
-                              </Badge>
-                              {artist.rating && (
-                                <span className="text-sm text-blue-600">
-                                  Rating: {artist.rating}/10
-                                </span>
-                              )}
-                              <span className="text-sm text-gray-500">
-                                Confidence: {Math.round(artist.confidence * 100)}%
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2 ml-4">
-                            <Button
-                              size="sm"
-                              className="bg-green-600 hover:bg-green-700"
-                              onClick={() => approveArtistMutation.mutate(artist.id)}
-                              disabled={approveArtistMutation.isPending}
-                            >
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-red-500 text-red-500 hover:bg-red-50"
-                              onClick={() => rejectArtistMutation.mutate(artist.id)}
-                              disabled={rejectArtistMutation.isPending}
-                            >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Reject
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Discovered: {formatDate(artist.createdAt)}
-                        </div>
-                      </div>
-                    ))}
+              <h3 className="text-lg font-semibold mb-4">🏟️ Venue Discovery Tools</h3>
+              <p className="text-sm text-gray-600 mb-4">Test venue calendar scraping and search for events at specific venues</p>
+              
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium mb-3">🏟️ Single Venue Check</h4>
+                    <div className="space-y-3">
+                      <Select value={venuePriority} onValueChange={setVenuePriority}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose venue..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="red-rocks">Red Rocks Amphitheatre</SelectItem>
+                          <SelectItem value="mission-ballroom">Mission Ballroom</SelectItem>
+                          <SelectItem value="fillmore">Fillmore Auditorium</SelectItem>
+                          <SelectItem value="ogden">Ogden Theatre</SelectItem>
+                          <SelectItem value="hi-dive">Hi-Dive</SelectItem>
+                          <SelectItem value="skylark">Skylark Lounge</SelectItem>
+                          <SelectItem value="ball-arena">Ball Arena</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        onClick={() => runVenueDiscoveryMutation.mutate({ 
+                          venueLimit: 1,
+                          priority: venuePriority,
+                          dryRun: true 
+                        })}
+                        disabled={runVenueDiscoveryMutation.isPending}
+                        variant="outline" 
+                        className="w-full"
+                      >
+                        <Search className="w-4 h-4 mr-2" />
+                        Check Venue Calendar
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium mb-3">🔍 Venue Scraping Test</h4>
+                    <div className="space-y-3">
+                      <p className="text-sm text-gray-600">Test venue calendar scraping with detailed results</p>
+                      <Select defaultValue="next-30">
+                        <SelectTrigger>
+                          <SelectValue placeholder="Date range..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="next-30">Next 30 days</SelectItem>
+                          <SelectItem value="next-60">Next 60 days</SelectItem>
+                          <SelectItem value="next-90">Next 90 days</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        onClick={() => runVenueDiscoveryMutation.mutate({ 
+                          venueLimit: 1,
+                          priority: venuePriority,
+                          dryRun: true 
+                        })}
+                        disabled={runVenueDiscoveryMutation.isPending}
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Search className="w-4 h-4 mr-2" />
+                        Test Venue Scraping
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              )}
+                
+                <div className="text-sm text-blue-700 bg-blue-50 p-3 rounded">
+                  <strong>Test Mode:</strong> These tools let you test venue scraping one venue at a time with full visibility into results and event parsing.
+                </div>
+              </div>
             </div>
           </TabsContent>
 
