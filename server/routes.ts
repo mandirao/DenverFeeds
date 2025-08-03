@@ -731,6 +731,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Artist discovery endpoints
+  apiRouter.post("/discovery/artist-scan", async (req, res) => {
+    try {
+      const { sources = ['pitchfork', 'oh_my_rockness'], limit = 20, dryRun = false } = req.body;
+      
+      console.log(`Starting artist discovery with sources: ${sources.join(', ')}, limit: ${limit}, dryRun: ${dryRun}`);
+      
+      const { artistDiscoveryService } = await import('./artist-discovery-service');
+      const result = await artistDiscoveryService.runArtistDiscovery({
+        sources,
+        limit,
+        dryRun
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Artist discovery error:", error);
+      res.status(500).json({ 
+        error: "Artist discovery failed", 
+        message: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+
+  apiRouter.get("/discovery/artist-stats", async (req, res) => {
+    try {
+      const { artistDiscoveryService } = await import('./artist-discovery-service');
+      const stats = artistDiscoveryService.getStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting artist discovery stats:", error);
+      res.status(500).json({ error: "Failed to get artist discovery stats" });
+    }
+  });
+
   // AI Artist Analysis route
   apiRouter.post("/ai/analyze-artist", async (req, res) => {
     try {

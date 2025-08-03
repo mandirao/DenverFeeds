@@ -88,6 +88,8 @@ export default function DiscoveryAdmin() {
   const [searchLimit, setSearchLimit] = useState(5);
   const [venueLimit, setVenueLimit] = useState(10);
   const [venuePriority, setVenuePriority] = useState('all');
+  const [artistDiscoveryLimit, setArtistDiscoveryLimit] = useState(20);
+  const [artistDiscoverySources, setArtistDiscoverySources] = useState<string[]>(['pitchfork', 'oh_my_rockness']);
   const [addArtistOpen, setAddArtistOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -268,6 +270,31 @@ export default function DiscoveryAdmin() {
       toast({
         title: "Venue Discovery Failed",
         description: error.message || "Failed to scan venues",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Artist discovery mutation
+  const runArtistDiscoveryMutation = useMutation({
+    mutationFn: async ({ sources, limit, dryRun }: { sources: string[]; limit: number; dryRun?: boolean }) => {
+      return apiRequest({
+        endpoint: "/api/discovery/artist-scan",
+        method: "POST",
+        data: { sources, limit, dryRun }
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/artists"] });
+      toast({
+        title: "Artist Discovery Complete",
+        description: data.message || "Artist discovery completed successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Artist Discovery Failed",
+        description: error.message || "Failed to discover new artists",
         variant: "destructive",
       });
     }
@@ -521,6 +548,103 @@ export default function DiscoveryAdmin() {
               <div className="mt-3 p-3 bg-green-50 rounded border border-green-200">
                 <div className="text-sm text-green-700">
                   <strong>Status:</strong> Real venue scraping active! System will scrape actual venue calendars and cross-reference against your artist database.
+                </div>
+              </div>
+            </div>
+
+            {/* Artist Discovery Controls */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <h3 className="text-lg font-semibold mb-4">🎤 Artist Discovery</h3>
+              <p className="text-sm text-gray-600 mb-4">Discover new artists from music publications and add them to your database</p>
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-2">Number of Artists to Find</label>
+                    <Input
+                      type="number"
+                      min="5"
+                      max="50"
+                      value={artistDiscoveryLimit}
+                      onChange={(e) => setArtistDiscoveryLimit(parseInt(e.target.value) || 20)}
+                      className="w-20"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium mb-2">Sources</label>
+                    <div className="flex items-center space-x-4">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={artistDiscoverySources.includes('pitchfork')}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setArtistDiscoverySources([...artistDiscoverySources, 'pitchfork']);
+                            } else {
+                              setArtistDiscoverySources(artistDiscoverySources.filter(s => s !== 'pitchfork'));
+                            }
+                          }}
+                          className="mr-2"
+                        />
+                        Pitchfork
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={artistDiscoverySources.includes('oh_my_rockness')}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setArtistDiscoverySources([...artistDiscoverySources, 'oh_my_rockness']);
+                            } else {
+                              setArtistDiscoverySources(artistDiscoverySources.filter(s => s !== 'oh_my_rockness'));
+                            }
+                          }}
+                          className="mr-2"
+                        />
+                        Oh My Rockness
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <Button
+                    onClick={() => runArtistDiscoveryMutation.mutate({ 
+                      sources: artistDiscoverySources,
+                      limit: artistDiscoveryLimit,
+                      dryRun: true 
+                    })}
+                    disabled={runArtistDiscoveryMutation.isPending || artistDiscoverySources.length === 0}
+                    variant="outline"
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    Research Artists
+                  </Button>
+                  <Button
+                    onClick={() => runArtistDiscoveryMutation.mutate({ 
+                      sources: artistDiscoverySources,
+                      limit: artistDiscoveryLimit,
+                      dryRun: false 
+                    })}
+                    disabled={runArtistDiscoveryMutation.isPending || artistDiscoverySources.length === 0}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    {runArtistDiscoveryMutation.isPending ? (
+                      <>
+                        <Search className="w-4 h-4 mr-2 animate-spin" />
+                        Discovering Artists...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Discover & Add Artists
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                <div className="text-sm text-purple-700 bg-purple-50 p-3 rounded">
+                  <strong>Sources:</strong> Pitchfork Best New Albums and Oh My Rockness recommendations will be scraped for new artists to add to your database.
                 </div>
               </div>
             </div>
