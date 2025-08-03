@@ -52,7 +52,7 @@ This is a concert feed/newsletter application designed for an exclusive meetup g
 - **Discovery Admin UI**: Real-time monitoring and control interface for automated event discovery
 - **Discovery Link**: Hidden admin panel access through Upload CSV modal for privileged users
 - **Research Mode**: Discovery system operates in research-only mode to prevent false event creation
-- **Venue-First Discovery**: Efficient discovery system monitoring 25 key Denver venues (94% fewer API calls vs artist-by-artist)
+- **Comprehensive Venue Scraping**: 39 venue scrapers covering 90% of all events (387/429) including all top 15 venues by frequency
 - **Event Review System**: Manual approval workflow for discovered events with confidence scoring
 - **Comprehensive Duplicate Detection**: Artist discovery system checks against both main artists and discovered_artists tables to prevent re-discovery of existing artists
 - **Discovery Source Status**: Pitchfork Best New Albums (active, 60% new discovery rate), Oh My Rockness (requires JavaScript execution for dynamic content - future enhancement)

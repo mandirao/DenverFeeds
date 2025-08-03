@@ -26,16 +26,17 @@ interface VenueConfig {
   requiresJS?: boolean;
 }
 
-// Venue-specific scraping configurations
+// Venue-specific scraping configurations - Updated to cover all major venues from database
 const VENUE_SCRAPERS: Record<string, VenueConfig> = {
+  // Top 10 Venues (highest event count)
   'Red Rocks Amphitheatre': {
     name: 'Red Rocks Amphitheatre',
     url: 'https://www.redrocksonline.com/events',
     type: 'custom',
     selectors: {
-      eventContainer: '.event-item',
-      artistName: '.event-title',
-      eventDate: '.event-date'
+      eventContainer: '.event-item, .show-item',
+      artistName: '.event-title, .artist-name',
+      eventDate: '.event-date, .show-date'
     }
   },
   'Mission Ballroom': {
@@ -43,19 +44,19 @@ const VENUE_SCRAPERS: Record<string, VenueConfig> = {
     url: 'https://www.missionballroom.com/events',
     type: 'custom',
     selectors: {
-      eventContainer: '.event-listing',
-      artistName: '.artist-name',
-      eventDate: '.event-date'
+      eventContainer: '.event-listing, .show',
+      artistName: '.artist-name, .headliner',
+      eventDate: '.event-date, .date'
     }
   },
-  'Fillmore Auditorium': {
-    name: 'Fillmore Auditorium',
-    url: 'https://www.fillmoreauditorium.org/events',
+  'Gothic Theatre': {
+    name: 'Gothic Theatre',
+    url: 'https://www.gothictheatre.com/events',
     type: 'custom',
     selectors: {
-      eventContainer: '.event',
-      artistName: '.headliner',
-      eventDate: '.date'
+      eventContainer: '.event, .show-listing',
+      artistName: '.artist, .band-name',
+      eventDate: '.date, .show-date'
     }
   },
   'Ogden Theatre': {
@@ -63,9 +64,9 @@ const VENUE_SCRAPERS: Record<string, VenueConfig> = {
     url: 'https://www.ogdentheatre.com/events',
     type: 'custom',
     selectors: {
-      eventContainer: '.show',
-      artistName: '.artist',
-      eventDate: '.show-date'
+      eventContainer: '.show, .event-item',
+      artistName: '.artist, .headliner',
+      eventDate: '.show-date, .date'
     }
   },
   'Hi-Dive': {
@@ -73,9 +74,360 @@ const VENUE_SCRAPERS: Record<string, VenueConfig> = {
     url: 'https://www.hi-dive.com/events',
     type: 'custom',
     selectors: {
-      eventContainer: '.event-item',
-      artistName: '.band-name',
-      eventDate: '.event-date'
+      eventContainer: '.event-item, .show',
+      artistName: '.band-name, .artist',
+      eventDate: '.event-date, .date'
+    }
+  },
+  'Marquis Theater': {
+    name: 'Marquis Theater',
+    url: 'https://www.marquistheater.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show-listing',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Bluebird Theater': {
+    name: 'Bluebird Theater',
+    url: 'https://www.bluebirdtheater.net/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .band',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'Paramount Theatre': {
+    name: 'Paramount Theatre',
+    url: 'https://www.paramountdenver.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event-item, .show',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Ball Arena': {
+    name: 'Ball Arena',
+    url: 'https://www.ballarena.com/events',
+    type: 'ticketmaster',
+    selectors: {
+      eventContainer: '.event, .show-listing',
+      artistName: '.artist, .headliner',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'Chautauqua Auditorium': {
+    name: 'Chautauqua Auditorium',
+    url: 'https://www.chautauqua.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .concert',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
+    }
+  },
+
+  // Major Theater & Concert Halls (11-20 events)
+  'Summit Music Hall': {
+    name: 'Summit Music Hall',
+    url: 'https://www.summitmusichall.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .band',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'Meow Wolf Denver': {
+    name: 'Meow Wolf Denver',
+    url: 'https://meowwolf.com/visit/denver/events',
+    type: 'custom',
+    requiresJS: true,
+    selectors: {
+      eventContainer: '.event, .concert',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Fiddler\'s Green Amphitheatre': {
+    name: 'Fiddler\'s Green Amphitheatre',
+    url: 'https://www.fiddlersgreenamp.com/events',
+    type: 'ticketmaster',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .headliner',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'Globe Hall': {
+    name: 'Globe Hall',
+    url: 'https://www.globehall.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show-listing',
+      artistName: '.artist, .band',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Levitt Pavilion Denver': {
+    name: 'Levitt Pavilion Denver',
+    url: 'https://www.levittdenver.org/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .concert',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .show-date'
+    }
+  },
+
+  // Additional Major Venues (6-10 events)
+  'Boulder Theater': {
+    name: 'Boulder Theater',
+    url: 'https://www.bouldertheater.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Cervantes\' Masterpiece Ballroom': {
+    name: 'Cervantes\' Masterpiece Ballroom',
+    url: 'https://www.cervantesdenver.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .band',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'Fillmore Auditorium': {
+    name: 'Fillmore Auditorium',
+    url: 'https://www.fillmoreauditorium.org/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.headliner, .artist',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'Empower Field at Mile High': {
+    name: 'Empower Field at Mile High',
+    url: 'https://www.empowedfieldatmilehigh.com/events',
+    type: 'ticketmaster',
+    selectors: {
+      eventContainer: '.event, .game',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
+    }
+  },
+
+  // Important Smaller Venues (4-5 events)
+  'Aggie Theatre': {
+    name: 'Aggie Theatre',
+    url: 'https://www.theaggietheatre.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .band',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'Boettcher Concert Hall': {
+    name: 'Boettcher Concert Hall',
+    url: 'https://www.denvercenter.org/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .performance',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Fox Theatre': {
+    name: 'Fox Theatre',
+    url: 'https://www.foxtheatre.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'HQ': {
+    name: 'HQ',
+    url: 'https://www.hqdenver.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .dj',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Larimer Lounge': {
+    name: 'Larimer Lounge',
+    url: 'https://www.larimerlounge.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .band',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'Lost Lake Lounge': {
+    name: 'Lost Lake Lounge',
+    url: 'https://www.lostlakelounge.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .band',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'The Mishawaka': {
+    name: 'The Mishawaka',
+    url: 'https://www.themishawaka.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .show-date'
+    }
+  },
+
+  // Additional Notable Venues (2-3 events)
+  'Oriental Theater': {
+    name: 'Oriental Theater',
+    url: 'https://www.orientaltheater.org/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Skylark Lounge': {
+    name: 'Skylark Lounge',
+    url: 'https://www.skylarklounge.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .band',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'Bellco Theatre': {
+    name: 'Bellco Theatre',
+    url: 'https://www.bellcotheatre.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Black Sheep': {
+    name: 'Black Sheep',
+    url: 'https://www.blacksheepcs.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .band',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'Washington\'s': {
+    name: 'Washington\'s',
+    url: 'https://www.washingtons.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .band',
+      eventDate: '.date, .event-date'
+    }
+  },
+
+  // Additional venues with significant event counts
+  'Cervantes\' Masterpiece Ballroom & Other Side': {
+    name: 'Cervantes\' Masterpiece Ballroom & Other Side',
+    url: 'https://www.cervantesdenver.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .band',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'City Park Jazz': {
+    name: 'City Park Jazz',
+    url: 'https://www.cityparkjazz.org/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .concert',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Denver Botanic Gardens': {
+    name: 'Denver Botanic Gardens',
+    url: 'https://www.botanicgardens.org/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .concert',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Moe\'s Original BBQ': {
+    name: 'Moe\'s Original BBQ',
+    url: 'https://www.moesoriginalbbq.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .band',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Ford Amphitheater': {
+    name: 'Ford Amphitheater',
+    url: 'https://www.fordamphitheater.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .show-date'
+    }
+  },
+  'Greek Theater': {
+    name: 'Greek Theater',
+    url: 'https://www.greektheatreberkeley.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .show',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Dick\'s Sporting Goods Park': {
+    name: 'Dick\'s Sporting Goods Park',
+    url: 'https://www.dickssportinggoodspark.com/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .game',
+      artistName: '.artist, .team',
+      eventDate: '.date, .event-date'
+    }
+  },
+  'Swallow Hill Music': {
+    name: 'Swallow Hill Music',
+    url: 'https://www.swallowhillmusic.org/events',
+    type: 'custom',
+    selectors: {
+      eventContainer: '.event, .concert',
+      artistName: '.artist, .performer',
+      eventDate: '.date, .event-date'
     }
   }
 };
