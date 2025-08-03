@@ -355,7 +355,7 @@ class ArtistDiscoveryService {
             }
           }
         } catch (error) {
-          console.error(`Error parsing Pitchfork URL ${href}:`, error);
+          console.error(`Error parsing Pitchfork URL:`, error);
         }
       });
 

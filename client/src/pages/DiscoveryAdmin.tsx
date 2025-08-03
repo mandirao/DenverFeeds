@@ -455,6 +455,18 @@ export default function DiscoveryAdmin() {
                         <Search className="w-4 h-4 mr-2" />
                         Preview Pitchfork Artists
                       </Button>
+                      <Button
+                        onClick={() => runArtistDiscoveryMutation.mutate({ 
+                          sources: ['pitchfork'],
+                          limit: 10,
+                          dryRun: false 
+                        })}
+                        disabled={runArtistDiscoveryMutation.isPending}
+                        className="w-full"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Discover & Queue Pitchfork Artists
+                      </Button>
                     </div>
                   </div>
                   
@@ -485,6 +497,19 @@ export default function DiscoveryAdmin() {
                       >
                         <Search className="w-4 h-4 mr-2" />
                         Preview OMR {omrCity.toUpperCase()} Artists
+                      </Button>
+                      <Button
+                        onClick={() => runArtistDiscoveryMutation.mutate({ 
+                          sources: ['oh_my_rockness'],
+                          limit: 10,
+                          dryRun: false,
+                          city: omrCity
+                        })}
+                        disabled={runArtistDiscoveryMutation.isPending}
+                        className="w-full"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Discover & Queue OMR {omrCity.toUpperCase()} Artists
                       </Button>
                     </div>
                   </div>
