@@ -85,11 +85,8 @@ export default function DiscoveryAdmin() {
   const [newArtistName, setNewArtistName] = useState("");
   const [newArtistGenre, setNewArtistGenre] = useState("");
   const [newArtistPriority, setNewArtistPriority] = useState<'high' | 'medium' | 'low'>('medium');
-  const [searchLimit, setSearchLimit] = useState(5);
-  const [venueLimit, setVenueLimit] = useState(10);
-  const [venuePriority, setVenuePriority] = useState('all');
-  const [artistDiscoveryLimit, setArtistDiscoveryLimit] = useState(20);
-  const [artistDiscoverySources, setArtistDiscoverySources] = useState<string[]>(['pitchfork', 'oh_my_rockness']);
+  const [venuePriority, setVenuePriority] = useState('red-rocks');
+  const [omrCity, setOmrCity] = useState('nyc');
   const [addArtistOpen, setAddArtistOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -448,203 +445,173 @@ export default function DiscoveryAdmin() {
               )}
             </div>
 
-            {/* Artist-First Discovery Controls */}
+            {/* Manual Search Tools */}
             <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <h3 className="text-lg font-semibold mb-4">🎤 Artist-First Discovery</h3>
-              <div className="flex items-end space-x-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-2">Number of Artists to Search</label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={searchLimit}
-                    onChange={(e) => setSearchLimit(parseInt(e.target.value) || 5)}
-                    className="w-20"
-                  />
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={() => runDiscoveryMutation.mutate({ limit: searchLimit, dryRun: true })}
-                    disabled={discoveryStatus?.isRunning || runDiscoveryMutation.isPending}
-                    variant="outline"
-                  >
-                    <Search className="w-4 h-4 mr-2" />
-                    Test Run
-                  </Button>
-                  <Button
-                    onClick={() => runDiscoveryMutation.mutate({ limit: searchLimit })}
-                    disabled={discoveryStatus?.isRunning || runDiscoveryMutation.isPending}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Run Artist Discovery
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Venue-First Discovery Controls */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <h3 className="text-lg font-semibold mb-4">🏟️ Venue-First Discovery</h3>
-              <div className="flex items-end space-x-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-2">Number of Venues to Scan</label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="25"
-                    value={venueLimit}
-                    onChange={(e) => setVenueLimit(parseInt(e.target.value) || 10)}
-                    className="w-20"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-2">Venue Priority</label>
-                  <Select value={venuePriority} onValueChange={setVenuePriority}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Venues</SelectItem>
-                      <SelectItem value="high">High Priority</SelectItem>
-                      <SelectItem value="medium">Medium Priority</SelectItem>
-                      <SelectItem value="low">Low Priority</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={() => runVenueDiscoveryMutation.mutate({ 
-                      venueLimit: venueLimit,
-                      priority: venuePriority === 'all' ? undefined : venuePriority,
-                      dryRun: true 
-                    })}
-                    disabled={runVenueDiscoveryMutation.isPending}
-                    variant="outline"
-                  >
-                    <Search className="w-4 h-4 mr-2" />
-                    Test Scan
-                  </Button>
-                  <Button
-                    onClick={() => runVenueDiscoveryMutation.mutate({ 
-                      venueLimit: venueLimit,
-                      priority: venuePriority === 'all' ? undefined : venuePriority,
-                      dryRun: false 
-                    })}
-                    disabled={runVenueDiscoveryMutation.isPending}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Scan Venues
-                  </Button>
-                </div>
-              </div>
-              <div className="mt-3 p-3 bg-green-50 rounded border border-green-200">
-                <div className="text-sm text-green-700">
-                  <strong>Efficiency:</strong> Scanning {venueLimit} venues vs {artists.length || 360} artists = ~{Math.max(0, (artists.length || 360) - venueLimit)} fewer API calls ({Math.round((1 - venueLimit / (artists.length || 360)) * 100)}% reduction)
-                </div>
-              </div>
-              <div className="mt-3 p-3 bg-green-50 rounded border border-green-200">
-                <div className="text-sm text-green-700">
-                  <strong>Status:</strong> Real venue scraping active! System will scrape actual venue calendars and cross-reference against your artist database.
-                </div>
-              </div>
-            </div>
-
-            {/* Artist Discovery Controls */}
-            <div className="bg-white rounded-lg p-6 shadow-sm border">
-              <h3 className="text-lg font-semibold mb-4">🎤 Artist Discovery</h3>
-              <p className="text-sm text-gray-600 mb-4">Discover new artists from music publications and add them to your database</p>
+              <h3 className="text-lg font-semibold mb-4">🔍 Manual Search Tools</h3>
+              <p className="text-sm text-gray-600 mb-4">Direct, controlled searches for specific artists or venues</p>
               
               <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium mb-2">Number of Artists to Find</label>
-                    <Input
-                      type="number"
-                      min="5"
-                      max="50"
-                      value={artistDiscoveryLimit}
-                      onChange={(e) => setArtistDiscoveryLimit(parseInt(e.target.value) || 20)}
-                      className="w-20"
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium mb-3">🎤 Single Artist Search</h4>
+                    <div className="space-y-3">
+                      <Input placeholder="Enter artist name..." className="w-full" />
+                      <Button variant="outline" className="w-full">
+                        <Search className="w-4 h-4 mr-2" />
+                        Search Artist Events
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium mb-2">Sources</label>
-                    <div className="flex items-center space-x-4">
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={artistDiscoverySources.includes('pitchfork')}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setArtistDiscoverySources([...artistDiscoverySources, 'pitchfork']);
-                            } else {
-                              setArtistDiscoverySources(artistDiscoverySources.filter(s => s !== 'pitchfork'));
-                            }
-                          }}
-                          className="mr-2"
-                        />
-                        Pitchfork
-                      </label>
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={artistDiscoverySources.includes('oh_my_rockness')}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setArtistDiscoverySources([...artistDiscoverySources, 'oh_my_rockness']);
-                            } else {
-                              setArtistDiscoverySources(artistDiscoverySources.filter(s => s !== 'oh_my_rockness'));
-                            }
-                          }}
-                          className="mr-2"
-                        />
-                        Oh My Rockness
-                      </label>
+                  
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium mb-3">🏟️ Single Venue Check</h4>
+                    <div className="space-y-3">
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose venue..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="red-rocks">Red Rocks Amphitheatre</SelectItem>
+                          <SelectItem value="mission-ballroom">Mission Ballroom</SelectItem>
+                          <SelectItem value="fillmore">Fillmore Auditorium</SelectItem>
+                          <SelectItem value="ogden">Ogden Theatre</SelectItem>
+                          <SelectItem value="hi-dive">Hi-Dive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button variant="outline" className="w-full">
+                        <Search className="w-4 h-4 mr-2" />
+                        Check Venue Calendar
+                      </Button>
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-4">
-                  <Button
-                    onClick={() => runArtistDiscoveryMutation.mutate({ 
-                      sources: artistDiscoverySources,
-                      limit: artistDiscoveryLimit,
-                      dryRun: true 
-                    })}
-                    disabled={runArtistDiscoveryMutation.isPending || artistDiscoverySources.length === 0}
-                    variant="outline"
-                  >
-                    <Search className="w-4 h-4 mr-2" />
-                    Research Artists
-                  </Button>
-                  <Button
-                    onClick={() => runArtistDiscoveryMutation.mutate({ 
-                      sources: artistDiscoverySources,
-                      limit: artistDiscoveryLimit,
-                      dryRun: false 
-                    })}
-                    disabled={runArtistDiscoveryMutation.isPending || artistDiscoverySources.length === 0}
-                    className="bg-purple-600 hover:bg-purple-700"
-                  >
-                    {runArtistDiscoveryMutation.isPending ? (
-                      <>
-                        <Search className="w-4 h-4 mr-2 animate-spin" />
-                        Discovering Artists...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Discover & Add Artists
-                      </>
-                    )}
-                  </Button>
+                <div className="text-sm text-blue-700 bg-blue-50 p-3 rounded">
+                  <strong>Manual Mode:</strong> These tools let you test venue scraping and artist searches one at a time with full visibility into results.
+                </div>
+              </div>
+            </div>
+
+            {/* Venue Scraping Test */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <h3 className="text-lg font-semibold mb-4">🏟️ Venue Scraping Test</h3>
+              <p className="text-sm text-gray-600 mb-4">Test venue calendar scraping one venue at a time to verify accuracy</p>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Select Venue</label>
+                    <Select value={venuePriority} onValueChange={setVenuePriority}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose venue..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="red-rocks">Red Rocks Amphitheatre</SelectItem>
+                        <SelectItem value="mission-ballroom">Mission Ballroom</SelectItem>
+                        <SelectItem value="fillmore">Fillmore Auditorium</SelectItem>
+                        <SelectItem value="ogden">Ogden Theatre</SelectItem>
+                        <SelectItem value="hi-dive">Hi-Dive</SelectItem>
+                        <SelectItem value="skylark">Skylark Lounge</SelectItem>
+                        <SelectItem value="ball-arena">Ball Arena</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Date Range</label>
+                    <Select defaultValue="next-30">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="next-30">Next 30 days</SelectItem>
+                        <SelectItem value="next-60">Next 60 days</SelectItem>
+                        <SelectItem value="next-90">Next 90 days</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      onClick={() => runVenueDiscoveryMutation.mutate({ 
+                        venueLimit: 1,
+                        priority: venuePriority,
+                        dryRun: true 
+                      })}
+                      disabled={runVenueDiscoveryMutation.isPending}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Search className="w-4 h-4 mr-2" />
+                      Test Venue Scraping
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="text-sm text-blue-700 bg-blue-50 p-3 rounded">
+                  <strong>Test Mode:</strong> This will scrape the selected venue's calendar and show you exactly what events are found and how they're parsed.
+                </div>
+              </div>
+            </div>
+
+            {/* Artist Research Tools */}
+            <div className="bg-white rounded-lg p-6 shadow-sm border">
+              <h3 className="text-lg font-semibold mb-4">🎤 Artist Research Tools</h3>
+              <p className="text-sm text-gray-600 mb-4">Manually research and add individual artists to your database</p>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium mb-3">📰 Check Pitchfork</h4>
+                    <div className="space-y-3">
+                      <p className="text-sm text-gray-600">See the latest highly-rated artists from Pitchfork Best New Albums</p>
+                      <Button
+                        onClick={() => runArtistDiscoveryMutation.mutate({ 
+                          sources: ['pitchfork'],
+                          limit: 10,
+                          dryRun: true 
+                        })}
+                        disabled={runArtistDiscoveryMutation.isPending}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <Search className="w-4 h-4 mr-2" />
+                        Preview Pitchfork Artists
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium mb-3">🎸 Check Oh My Rockness</h4>
+                    <div className="space-y-3">
+                      <p className="text-sm text-gray-600">See recommended artists from Oh My Rockness shows feed</p>
+                      <Select value={omrCity} onValueChange={setOmrCity}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select city..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="nyc">NYC (ohmyrockness.com)</SelectItem>
+                          <SelectItem value="chicago">Chicago (chicago.ohmyrockness.com)</SelectItem>
+                          <SelectItem value="la">LA (losangeles.ohmyrockness.com)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        onClick={() => runArtistDiscoveryMutation.mutate({ 
+                          sources: ['oh_my_rockness'],
+                          limit: 10,
+                          dryRun: true,
+                          city: omrCity
+                        })}
+                        disabled={runArtistDiscoveryMutation.isPending}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <Search className="w-4 h-4 mr-2" />
+                        Preview OMR {omrCity.toUpperCase()} Artists
+                      </Button>
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="text-sm text-purple-700 bg-purple-50 p-3 rounded">
-                  <strong>Smart Discovery:</strong> Prioritizes highest-rated Pitchfork artists first, then Oh My Rockness recommendations. Automatically skips duplicates and finds exactly the number you specify.
+                  <strong>Research Mode:</strong> Preview artists before adding them. Review results and manually add the ones you want to track.
                 </div>
               </div>
             </div>

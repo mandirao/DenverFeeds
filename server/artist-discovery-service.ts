@@ -6,7 +6,7 @@ import { llmService } from "./llm-service";
 interface DiscoveredArtist {
   name: string;
   genre: string;
-  source: 'pitchfork' | 'oh_my_rockness';
+  source: string;
   description?: string;
   albumTitle?: string;
   rating?: number;
@@ -36,6 +36,7 @@ class ArtistDiscoveryService {
     sources?: ('pitchfork' | 'oh_my_rockness')[];
     limit?: number;
     dryRun?: boolean;
+    city?: string;
   } = {}): Promise<{
     success: boolean;
     message: string;
@@ -74,12 +75,13 @@ class ArtistDiscoveryService {
 
       // Scrape Oh My Rockness recommendations
       if (sources.includes('oh_my_rockness')) {
-        console.log("🎸 Scraping Oh My Rockness recommendations...");
+        const city = options.city || 'nyc';
+        console.log(`🎸 Scraping Oh My Rockness ${city.toUpperCase()} recommendations...`);
         try {
-          const omrArtists = await this.scrapeOhMyRockness(limit / sources.length);
+          const omrArtists = await this.scrapeOhMyRockness(limit / sources.length, city);
           allDiscoveredArtists.push(...omrArtists);
         } catch (error) {
-          console.error("❌ Oh My Rockness scraping failed:", error);
+          console.error(`❌ Oh My Rockness ${city} scraping failed:`, error);
           this.stats.errors++;
         }
       }
@@ -193,192 +195,201 @@ class ArtistDiscoveryService {
     const artists: DiscoveredArtist[] = [];
     
     try {
-      // Try multiple pages to get more diverse results
-      const pages = ['https://pitchfork.com/reviews/best/albums/', 'https://pitchfork.com/reviews/best/albums/?page=2'];
-      const maxPerPage = Math.ceil(limit / pages.length);
+      const url = 'https://pitchfork.com/reviews/best/albums/';
+      console.log(`📰 Scraping Pitchfork Best New Albums: ${url}`);
       
-      for (const pageUrl of pages) {
-        if (artists.length >= limit) break;
-        
-        console.log(`📰 Scraping Pitchfork page: ${pageUrl}`);
-        const response = await fetch(pageUrl, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; Concert Discovery Bot)'
-          }
-        });
-
-        if (!response.ok) {
-          console.warn(`Failed to fetch ${pageUrl}: HTTP ${response.status}`);
-          continue;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; Concert Discovery Bot)'
         }
+      });
 
-        const html = await response.text();
-        const $ = cheerio.load(html);
-
-        // Pitchfork uses specific selectors for album reviews
-        $('.review').each((index, element) => {
-          if (artists.length >= limit) return false;
-
-          try {
-            const $review = $(element);
-            const artistAlbum = $review.find('.review__title-album').text().trim();
-            const rating = parseFloat($review.find('.score').text().trim()) || 0;
-            
-            // Extract artist name (usually before the colon or em-dash)
-            const artistMatch = artistAlbum.match(/^([^:—]+)/);
-            if (!artistMatch) return;
-            
-            const artistName = artistMatch[1].trim();
-            const albumTitle = artistAlbum.replace(artistMatch[0], '').replace(/^[:\s—]+/, '').trim();
-
-            if (artistName && artistName.length > 1) {
-              // Check for duplicates within this scraping session
-              const isDuplicate = artists.some(a => 
-                a.name.toLowerCase() === artistName.toLowerCase()
-              );
-              
-              if (!isDuplicate) {
-                artists.push({
-                  name: artistName,
-                  genre: 'Indie Rock', // Will be refined by AI analysis
-                  source: 'pitchfork',
-                  albumTitle,
-                  rating,
-                  description: $review.find('.review__abstract').text().trim().substring(0, 200)
-                });
-              }
-            }
-          } catch (error) {
-            console.error(`Error parsing Pitchfork review ${index}:`, error);
-          }
-        });
-        
-        // Small delay between pages
-        await new Promise(resolve => setTimeout(resolve, 500));
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
 
-      // Sort by rating (highest first) to prioritize better-reviewed artists
+      const html = await response.text();
+      const $ = cheerio.load(html);
+
+      // Focus specifically on Best New Album reviews
+      $('.review, .album-review, .best-new-album').each((index, element) => {
+        if (artists.length >= limit) return false;
+
+        try {
+          const $review = $(element);
+          
+          // Try multiple selectors for artist/album title
+          let artistAlbum = '';
+          const titleSelectors = [
+            '.review__title-album',
+            '.album-title', 
+            '.review-title',
+            'h3',
+            'h2',
+            '.title'
+          ];
+          
+          for (const selector of titleSelectors) {
+            const title = $review.find(selector).text().trim();
+            if (title && title.length > 0) {
+              artistAlbum = title;
+              break;
+            }
+          }
+          
+          if (!artistAlbum) return;
+          
+          // Extract rating
+          const ratingText = $review.find('.score, .rating, .review-score').text().trim();
+          const rating = parseFloat(ratingText) || 0;
+          
+          // Extract artist name (usually before the colon, em-dash, or "by")
+          const artistMatch = artistAlbum.match(/^([^:—]+?)(?:\s*[:—]\s*|\s+by\s+)/i) || 
+                              artistAlbum.match(/^([^:—]+)/);
+          
+          if (!artistMatch) return;
+          
+          let artistName = artistMatch[1].trim();
+          
+          // Clean up artist name
+          artistName = artistName.replace(/^(the\s+)?(.+)/i, '$1$2').trim();
+          
+          const albumTitle = artistAlbum.replace(artistMatch[0], '').replace(/^[:\s—]+/, '').trim();
+
+          if (artistName && artistName.length > 1 && artistName.length < 100) {
+            // Check for duplicates within this scraping session
+            const isDuplicate = artists.some(a => 
+              a.name.toLowerCase() === artistName.toLowerCase()
+            );
+            
+            if (!isDuplicate) {
+              const description = $review.find('.review__abstract, .abstract, .review-text, p').first().text().trim();
+              
+              artists.push({
+                name: artistName,
+                genre: 'Indie Rock',
+                source: 'pitchfork_best_new',
+                albumTitle,
+                rating,
+                description: description.substring(0, 200)
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Error parsing Pitchfork review ${index}:`, error);
+        }
+      });
+
+      // Sort by rating (highest first) to prioritize better-reviewed albums
       artists.sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
-      console.log(`📰 Found ${artists.length} unique artists from Pitchfork (sorted by rating)`);
+      console.log(`📰 Found ${artists.length} unique artists from Pitchfork Best New Albums (sorted by rating)`);
       return artists.slice(0, limit);
 
     } catch (error) {
-      console.error('Pitchfork scraping error:', error);
+      console.error('Pitchfork Best New Albums scraping error:', error);
       return [];
     }
   }
 
-  private async scrapeOhMyRockness(limit: number): Promise<DiscoveredArtist[]> {
+  private async scrapeOhMyRockness(limit: number, city: string = 'nyc'): Promise<DiscoveredArtist[]> {
     const artists: DiscoveredArtist[] = [];
     
     try {
-      // Try multiple sections for more diversity
-      const urls = [
-        'https://www.ohmyrockness.com/recommended',
-        'https://www.ohmyrockness.com/artists',
-        'https://www.ohmyrockness.com/featured'
-      ];
+      // Map city codes to URLs
+      const cityUrls = {
+        'nyc': 'https://www.ohmyrockness.com/shows/recommended',
+        'chicago': 'https://chicago.ohmyrockness.com/shows/recommended', 
+        'la': 'https://losangeles.ohmyrockness.com/shows/recommended'
+      };
       
-      for (const url of urls) {
-        if (artists.length >= limit) break;
-        
-        console.log(`🎸 Scraping Oh My Rockness: ${url}`);
-        try {
-          const response = await fetch(url, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (compatible; Concert Discovery Bot)'
-            }
-          });
-
-          if (!response.ok) {
-            console.warn(`Failed to fetch ${url}: HTTP ${response.status}`);
-            continue;
-          }
-
-          const html = await response.text();
-          const $ = cheerio.load(html);
-
-          // Try multiple selectors for different page layouts
-          const selectors = [
-            '.artist-entry', '.recommendation', '.featured-artist',
-            '.artist-card', '.band-entry', '.artist-listing',
-            'article', '.post', '.entry'
-          ];
-
-          for (const selector of selectors) {
-            $(selector).each((index, element) => {
-              if (artists.length >= limit) return false;
-
-              try {
-                const $entry = $(element);
-                
-                // Try multiple ways to extract artist name
-                let artistName = '';
-                const nameSelectors = ['.artist-name', 'h1', 'h2', 'h3', '.title', '.name', '.band-name'];
-                
-                for (const nameSelector of nameSelectors) {
-                  const name = $entry.find(nameSelector).first().text().trim();
-                  if (name && name.length > 1 && name.length < 100) {
-                    artistName = name;
-                    break;
-                  }
-                }
-                
-                if (!artistName) {
-                  // Try the element's direct text
-                  artistName = $entry.text().trim().split('\n')[0].substring(0, 50);
-                }
-
-                const description = $entry.find('.description, .bio, .excerpt, p').text().trim();
-                
-                // Extract genre from description or use default
-                let genre = 'Indie Rock';
-                const genreMatch = description.match(/(indie|rock|pop|electronic|folk|punk|metal|hip.hop|r&b|alternative|experimental)/i);
-                if (genreMatch) {
-                  genre = genreMatch[0].charAt(0).toUpperCase() + genreMatch[0].slice(1);
-                }
-
-                if (artistName && artistName.length > 1 && artistName.length < 100) {
-                  // Check for duplicates within this scraping session
-                  const isDuplicate = artists.some(a => 
-                    a.name.toLowerCase() === artistName.toLowerCase()
-                  );
-                  
-                  if (!isDuplicate) {
-                    artists.push({
-                      name: artistName,
-                      genre,
-                      source: 'oh_my_rockness',
-                      description: description.substring(0, 200),
-                      url
-                    });
-                  }
-                }
-              } catch (error) {
-                console.error(`Error parsing OMR entry ${index}:`, error);
-              }
-            });
-            
-            if (artists.length > 0) break; // Found some artists with this selector
-          }
-          
-          // Small delay between URLs
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-        } catch (error) {
-          console.warn(`Error scraping ${url}:`, error);
+      const url = cityUrls[city as keyof typeof cityUrls] || cityUrls.nyc;
+      
+      console.log(`🎸 Scraping Oh My Rockness ${city.toUpperCase()} recommended shows: ${url}`);
+      
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; Concert Discovery Bot)'
         }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
+
+      const html = await response.text();
+      const $ = cheerio.load(html);
+
+      // Focus on show listings in the recommended feed
+      $('.show-listing, .show-entry, .recommended-show, .event-listing, .show').each((index, element) => {
+        if (artists.length >= limit) return false;
+
+        try {
+          const $show = $(element);
+          
+          // Extract artist name from show listings
+          let artistName = '';
+          const nameSelectors = [
+            '.artist-name', 
+            '.band-name', 
+            '.headliner',
+            'h3', 
+            'h2',
+            '.show-title .artist',
+            '.artist'
+          ];
+          
+          for (const selector of nameSelectors) {
+            const name = $show.find(selector).first().text().trim();
+            if (name && name.length > 1 && name.length < 100) {
+              artistName = name;
+              break;
+            }
+          }
+          
+          // If no specific selector worked, try parsing from title/header
+          if (!artistName) {
+            const titleText = $show.find('h1, h2, h3, .title').first().text().trim();
+            // Split on common separators and take first part as artist name
+            const possibleName = titleText.split(/\s+at\s+|\s+@\s+|\s+-\s+/i)[0].trim();
+            if (possibleName && possibleName.length > 1 && possibleName.length < 100) {
+              artistName = possibleName;
+            }
+          }
+
+          if (artistName && artistName.length > 1 && artistName.length < 100) {
+            // Check for duplicates within this scraping session
+            const isDuplicate = artists.some(a => 
+              a.name.toLowerCase() === artistName.toLowerCase()
+            );
+            
+            if (!isDuplicate) {
+              // Extract venue and date info if available
+              const venue = $show.find('.venue, .location').text().trim();
+              const date = $show.find('.date, .show-date').text().trim();
+              
+              artists.push({
+                name: artistName,
+                genre: 'Indie Rock', // Default genre
+                source: `oh_my_rockness_${city}`,
+                description: `Recommended show in ${city.toUpperCase()}${venue ? ` at ${venue}` : ''}${date ? ` on ${date}` : ''}`.substring(0, 200),
+                url
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Error parsing OMR show entry ${index}:`, error);
+        }
+      });
 
       // Sort alphabetically for consistent ordering
       artists.sort((a, b) => a.name.localeCompare(b.name));
 
-      console.log(`🎸 Found ${artists.length} unique artists from Oh My Rockness`);
+      console.log(`🎸 Found ${artists.length} unique artists from Oh My Rockness ${city.toUpperCase()}`);
       return artists.slice(0, limit);
 
     } catch (error) {
-      console.error('Oh My Rockness scraping error:', error);
+      console.error(`Oh My Rockness ${city} scraping error:`, error);
       return [];
     }
   }
