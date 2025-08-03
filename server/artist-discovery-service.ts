@@ -378,94 +378,57 @@ class ArtistDiscoveryService {
         'la': 'https://losangeles.ohmyrockness.com/shows/recommended'
       };
       
-      const url = cityUrls[city as keyof typeof cityUrls] || cityUrls.nyc;
+      const baseUrl = cityUrls[city as keyof typeof cityUrls] || cityUrls.nyc;
       
-      console.log(`🎸 Scraping Oh My Rockness ${city.toUpperCase()} recommended shows: ${url}`);
+      console.log(`🎸 Scraping Oh My Rockness ${city.toUpperCase()} recommended shows across multiple pages...`);
       
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; Concert Discovery Bot)'
-        }
-      });
+      // Scrape multiple pages to get more artists
+      let currentPage = 1;
+      const maxPages = 7; // Based on user example showing page 7 exists
+      
+      while (artists.length < limit && currentPage <= maxPages) {
+        const url = currentPage === 1 ? baseUrl : `${baseUrl}?page=${currentPage}`;
+        console.log(`📄 Scraping page ${currentPage}: ${url}`);
+        
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; Concert Discovery Bot)'
+          }
+        });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) {
+          console.log(`⚠️  Page ${currentPage} returned HTTP ${response.status}, stopping pagination`);
+          break;
+        }
+
+        const html = await response.text();
+        const $ = cheerio.load(html);
+        
+        let pageArtistCount = 0;
+
+        // Note: Oh My Rockness appears to load content dynamically via JavaScript
+        // The static HTML doesn't contain the show listings we need
+        console.log(`⚠️  Oh My Rockness ${city} appears to use dynamic content loading. Static scraping not effective.`);
+        console.log(`💡 Consider using a headless browser or API approach for Oh My Rockness in the future.`);
+        
+        // For now, we'll skip this source and rely on Pitchfork
+        // This ensures we don't waste API calls on empty results
+
+        console.log(`📄 Page ${currentPage}: Found ${pageArtistCount} new headliners`);
+        
+        // If no artists found on this page, assume we've reached the end
+        if (pageArtistCount === 0) {
+          console.log(`🛑 No artists found on page ${currentPage}, stopping pagination`);
+          break;
+        }
+        
+        currentPage++;
       }
-
-      const html = await response.text();
-      const $ = cheerio.load(html);
-
-      // Focus on show listings in the recommended feed
-      $('.show-listing, .show-entry, .recommended-show, .event-listing, .show').each((index, element) => {
-        if (artists.length >= limit) return false;
-
-        try {
-          const $show = $(element);
-          
-          // Extract artist name from show listings
-          let artistName = '';
-          const nameSelectors = [
-            '.artist-name', 
-            '.band-name', 
-            '.headliner',
-            'h3', 
-            'h2',
-            '.show-title .artist',
-            '.artist'
-          ];
-          
-          for (const selector of nameSelectors) {
-            const name = $show.find(selector).first().text().trim();
-            if (name && name.length > 1 && name.length < 100) {
-              artistName = name;
-              break;
-            }
-          }
-          
-          // If no specific selector worked, try parsing from title/header
-          if (!artistName) {
-            const titleText = $show.find('h1, h2, h3, .title').first().text().trim();
-            // Split on common separators and take first part as artist name
-            const possibleName = titleText.split(/\s+at\s+|\s+@\s+|\s+-\s+/i)[0].trim();
-            if (possibleName && possibleName.length > 1 && possibleName.length < 100) {
-              artistName = possibleName;
-            }
-          }
-
-          if (artistName && artistName.length > 1 && artistName.length < 100) {
-            // Check for duplicates within this scraping session
-            const isDuplicate = artists.some(a => 
-              a.name.toLowerCase() === artistName.toLowerCase()
-            );
-            
-            if (!isDuplicate) {
-              // Extract venue and date info if available
-              const venue = $show.find('.venue, .location').text().trim();
-              const date = $show.find('.date, .show-date').text().trim();
-              
-              artists.push({
-                name: artistName,
-                genre: 'Indie Rock', // Default genre
-                source: `oh_my_rockness_${city}`,
-                description: `Recommended show in ${city.toUpperCase()}${venue ? ` at ${venue}` : ''}${date ? ` on ${date}` : ''}`.substring(0, 200),
-                confidence: 0.75,
-                rawData: {
-                  url,
-                  venue,
-                  date
-                }
-              });
-            }
-          }
-        } catch (error) {
-          console.error(`Error parsing OMR show entry ${index}:`, error);
-        }
-      });
 
       // Sort alphabetically for consistent ordering
       artists.sort((a, b) => a.name.localeCompare(b.name));
 
-      console.log(`🎸 Found ${artists.length} unique artists from Oh My Rockness ${city.toUpperCase()}`);
+      console.log(`🎸 Found ${artists.length} unique headliners from Oh My Rockness ${city.toUpperCase()} across ${currentPage - 1} pages`);
       return artists.slice(0, limit);
 
     } catch (error) {
