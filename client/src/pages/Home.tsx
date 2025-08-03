@@ -318,7 +318,7 @@ export default function Home() {
       
       <main className="container mx-auto px-4 py-8">
         {/* Recent Events Banner - Only show in default view and if there are recent events */}
-        {!isLoading && !error && hasEvents && filters.status === "all" && (() => {
+        {!isLoading && !error && events.length > 0 && filters.status === "all" && (() => {
           // Count events added in the last week (today + this_week)
           const recentEvents = events.filter(event => {
             const category = getAddedTimeCategory(event.createdAt);
@@ -351,7 +351,7 @@ export default function Home() {
         )}
 
         {/* Filter Pills - Horizontal scrolling to prevent line wrapping */}
-        {!isLoading && !error && hasEvents && (
+        {!isLoading && !error && events.length > 0 && (
           <div className="mb-6">
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
