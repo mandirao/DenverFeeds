@@ -23,7 +23,8 @@ export default function Home() {
     month: "all",
     genre: "all",
     status: "all",
-    denverAreaOnly: true,
+    location: "denver", // "denver" or "roadtrips"
+    venue: "all",
     sortBy: "date"
   });
 
@@ -70,7 +71,7 @@ export default function Home() {
       // Show events at cheap thrills venues OR any event with "Free" in artist/description
       const isAtCheapVenue = cheapThrillsVenues.some(venue => event.venue.toLowerCase() === venue.toLowerCase());
       const hasFreeInText = event.artist.toLowerCase().includes("free") || 
-                           (event.description && event.description.toLowerCase().includes("free"));
+                           (event.summary && event.summary.toLowerCase().includes("free"));
       
       if (!isAtCheapVenue && !hasFreeInText) {
         return false;
@@ -78,29 +79,26 @@ export default function Home() {
     }
     // Note: we removed the just-added filter here, as we'll now show all events but sorted differently
     
-    // Denver/Boulder area filter
-    // Filter based on venue location
-    // Get all the road trip venues for easier checking
+    // Location filter (Denver/Boulder vs Roadtrips)
     const roadTripVenues = venueOptions
       .filter(venue => venue.group === "road_trip")
       .map(venue => venue.value);
       
-    if (filters.denverAreaOnly) {
-      // When ON: Show only Denver/Boulder venues
-      // A venue is considered Denver/Boulder if:
-      // 1. It's in the denverBoulderVenues list, OR
-      // 2. It starts with "Other:", OR
-      // 3. It's a custom venue not in our road trip list
+    if (filters.location === "denver") {
+      // Show only Denver/Boulder venues
       if (roadTripVenues.includes(event.venue)) {
         return false; // Filter out road trip venues
       }
-    } else {
-      // When OFF: Show only roadtrip venues
-      // A venue is considered a road trip if:
-      // It's explicitly in our road trip venues list
+    } else if (filters.location === "roadtrips") {
+      // Show only roadtrip venues
       if (!roadTripVenues.includes(event.venue)) {
         return false; // Filter out Denver/Boulder and custom venues
       }
+    }
+    
+    // Venue filter
+    if (filters.venue !== "all" && event.venue !== filters.venue) {
+      return false;
     }
     
     return true;
@@ -128,12 +126,16 @@ export default function Home() {
   // For standard view, group by month and week
   const groupedByMonthAndWeek = groupEventsByMonth(sortedEvents);
   
+  // Get unique venues from events for the venue filter dropdown
+  const uniqueVenues = Array.from(new Set(events.map(event => event.venue))).sort();
+  
   // Count active filters (excluding defaults)
   const countActiveFilters = () => {
     let count = 0;
     if (filters.month !== "all") count++;
     if (filters.genre !== "all") count++;
-    if (!filters.denverAreaOnly) count++; // Road trips is non-default
+    if (filters.location !== "denver") count++; // Denver is default
+    if (filters.venue !== "all") count++;
     return count;
   };
   
@@ -146,7 +148,8 @@ export default function Home() {
       month: "all",
       genre: "all", 
       status: "all",
-      denverAreaOnly: true,
+      location: "denver",
+      venue: "all",
       sortBy: "date"
     });
   };
@@ -282,9 +285,7 @@ export default function Home() {
     }
   };
   
-  const handleDenverAreaOnlyChange = (checked: boolean) => {
-    setFilters({ ...filters, denverAreaOnly: checked });
-  };
+
   
   const handleSortByChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilters({ ...filters, sortBy: e.target.value });
@@ -328,141 +329,162 @@ export default function Home() {
           </div>
         )}
 
-        {/* Filter Pills - Show on default view or when any filter is active */}
+        {/* Filter Pills - Horizontal scrolling to prevent line wrapping */}
         {!isLoading && !error && hasEvents && (
           <div className="mb-6">
-            <div className="overflow-x-auto">
-              <div className="flex gap-2 min-w-max pb-2 items-center">
-              <button
-                onClick={() => setFilters({ ...filters, status: "all" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
-                  filters.status === "all" 
-                    ? "bg-white text-black" 
-                    : "bg-[#FE6B41] text-black hover:border-white"
-                }`}
-              >
-                Show All
-              </button>
-              <button
-                onClick={() => setFilters({ ...filters, status: "just-added" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
-                  filters.status === "just-added" 
-                    ? "bg-white text-black" 
-                    : "bg-[#FE6B41] text-black hover:border-white"
-                }`}
-              >
-                New
-              </button>
-              <button
-                onClick={() => setFilters({ ...filters, status: "top-voted", sortBy: "votes" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
-                  filters.status === "top-voted" 
-                    ? "bg-white text-black" 
-                    : "bg-[#FE6B41] text-black hover:border-white"
-                }`}
-              >
-                Top Voted
-              </button>
-              <button
-                onClick={() => setFilters({ ...filters, status: "scheduled" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
-                  filters.status === "scheduled" 
-                    ? "bg-white text-black" 
-                    : "bg-[#FE6B41] text-black hover:border-white"
-                }`}
-              >
-                Scheduled
-              </button>
-              <button
-                onClick={() => setFilters({ ...filters, status: "member-picks" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
-                  filters.status === "member-picks" 
-                    ? "bg-white text-black" 
-                    : "bg-[#FE6B41] text-black hover:border-white"
-                }`}
-              >
-                Member Adds
-              </button>
-              <button
-                onClick={() => setFilters({ ...filters, status: "cheap-thrills" })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
-                  filters.status === "cheap-thrills" 
-                    ? "bg-white text-black" 
-                    : "bg-[#FE6B41] text-black hover:border-white"
-                }`}
-              >
-                Cheap Thrills
-              </button>
-              
-              {/* Vertical separator */}
-              <div className="h-6 w-px bg-black opacity-40 mx-1"></div>
-              
-              {/* Month Filter Dropdown */}
-              <Select value={filters.month} onValueChange={(value) => setFilters({ ...filters, month: value })}>
-                <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-2 min-w-[100px] ${
-                  filters.month !== "all" 
-                    ? "bg-white text-black" 
-                    : "bg-[#FE6B41] text-black hover:border-white"
-                }`}>
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Months</SelectItem>
-                  {months.map((month) => (
-                    <SelectItem key={month.key} value={month.key}>{month.display}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
+                {/* Status Filters */}
+                <button
+                  onClick={() => setFilters({ ...filters, status: "all" })}
+                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
+                    filters.status === "all" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`}
+                >
+                  Show All
+                </button>
+                <button
+                  onClick={() => setFilters({ ...filters, status: "just-added" })}
+                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
+                    filters.status === "just-added" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`}
+                >
+                  New
+                </button>
+                <button
+                  onClick={() => setFilters({ ...filters, status: "top-voted", sortBy: "votes" })}
+                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
+                    filters.status === "top-voted" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`}
+                >
+                  Top Voted
+                </button>
+                <button
+                  onClick={() => setFilters({ ...filters, status: "scheduled" })}
+                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
+                    filters.status === "scheduled" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`}
+                >
+                  Scheduled
+                </button>
+                <button
+                  onClick={() => setFilters({ ...filters, status: "member-picks" })}
+                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
+                    filters.status === "member-picks" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`}
+                >
+                  Member Adds
+                </button>
+                <button
+                  onClick={() => setFilters({ ...filters, status: "cheap-thrills" })}
+                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
+                    filters.status === "cheap-thrills" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`}
+                >
+                  Cheap Thrills
+                </button>
+                
+                {/* Vertical separator */}
+                <div className="h-6 w-px bg-black opacity-40 mx-2 flex-shrink-0"></div>
+                
+                {/* Month Filter Dropdown */}
+                <Select value={filters.month} onValueChange={(value) => setFilters({ ...filters, month: value })}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filters.month !== "all" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`} style={{ minWidth: "100px" }}>
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Months</SelectItem>
+                    {months.map((month) => (
+                      <SelectItem key={month.key} value={month.key}>{month.display}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              {/* Genre Filter Dropdown */}
-              <Select value={filters.genre} onValueChange={(value) => setFilters({ ...filters, genre: value })}>
-                <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-2 min-w-[120px] ${
-                  filters.genre !== "all" 
-                    ? "bg-white text-black" 
-                    : "bg-[#FE6B41] text-black hover:border-white"
-                }`}>
-                  <SelectValue placeholder="Genre" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Genres</SelectItem>
-                  {genres.map((genre) => (
-                    <SelectItem key={genre} value={genre}>{genre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              {/* Vertical separator */}
-              <div className="h-6 w-px bg-black opacity-40 mx-1"></div>
-              
-              {/* Location Filter Toggle */}
-              <button
-                onClick={() => setFilters({ ...filters, denverAreaOnly: !filters.denverAreaOnly })}
-                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
-                  !filters.denverAreaOnly 
-                    ? "bg-white text-black" 
-                    : "bg-[#FE6B41] text-black hover:border-white"
-                }`}
-              >
-                {filters.denverAreaOnly ? "Denver/Boulder" : "Roadtrips"}
-              </button>
+                {/* Genre Filter Dropdown */}
+                <Select value={filters.genre} onValueChange={(value) => setFilters({ ...filters, genre: value })}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filters.genre !== "all" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`} style={{ minWidth: "110px" }}>
+                    <SelectValue placeholder="Genre" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Genres</SelectItem>
+                    {genres.map((genre) => (
+                      <SelectItem key={genre} value={genre}>{genre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Location Filter Dropdown */}
+                <Select value={filters.location} onValueChange={(value) => setFilters({ ...filters, location: value })}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filters.location !== "denver" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`} style={{ minWidth: "130px" }}>
+                    <SelectValue placeholder="Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="denver">Denver/Boulder</SelectItem>
+                    <SelectItem value="roadtrips">Roadtrips</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Venue Filter Dropdown */}
+                <Select value={filters.venue} onValueChange={(value) => setFilters({ ...filters, venue: value })}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filters.venue !== "all" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`} style={{ minWidth: "120px" }}>
+                    <SelectValue placeholder="Venue" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Venues</SelectItem>
+                    {uniqueVenues.map((venue) => (
+                      <SelectItem key={venue} value={venue}>{venue}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 
                 {/* Clear filters button - only show when filters are active */}
                 {hasActiveFilters && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button 
-                          onClick={resetFilters}
-                          className="px-2 py-1 rounded-full font-medium transition-colors text-sm bg-white text-black border border-black hover:bg-red-50 focus:outline-none"
-                        >
-                          ✕
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Clear all filters</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <>
+                    <div className="h-6 w-px bg-black opacity-40 mx-2 flex-shrink-0"></div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button 
+                            onClick={resetFilters}
+                            className="px-3 py-1 rounded-full font-medium transition-colors text-sm bg-white text-black border border-black hover:bg-red-50 focus:outline-none whitespace-nowrap flex-shrink-0"
+                          >
+                            Clear All
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Clear all filters</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </>
                 )}
               </div>
             </div>
