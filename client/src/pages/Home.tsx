@@ -405,7 +405,7 @@ export default function Home() {
                     filters.month !== "all" 
                       ? "bg-white text-black" 
                       : "bg-[#FE6B41] text-black hover:border-white"
-                  }`} style={{ width: "105px" }}>
+                  }`} style={{ width: "120px" }}>
                     <SelectValue placeholder="Month" />
                   </SelectTrigger>
                   <SelectContent>
@@ -422,7 +422,7 @@ export default function Home() {
                     filters.genre !== "all" 
                       ? "bg-white text-black" 
                       : "bg-[#FE6B41] text-black hover:border-white"
-                  }`} style={{ width: "100px" }}>
+                  }`} style={{ width: "115px" }}>
                     <SelectValue placeholder="Genre" />
                   </SelectTrigger>
                   <SelectContent>
@@ -439,7 +439,7 @@ export default function Home() {
                     filters.location !== "denver" 
                       ? "bg-white text-black" 
                       : "bg-[#FE6B41] text-black hover:border-white"
-                  }`} style={{ width: "135px" }}>
+                  }`} style={{ width: "145px" }}>
                     <SelectValue placeholder="Location" />
                   </SelectTrigger>
                   <SelectContent>
@@ -454,7 +454,7 @@ export default function Home() {
                     filters.venue !== "all" 
                       ? "bg-white text-black" 
                       : "bg-[#FE6B41] text-black hover:border-white"
-                  }`} style={{ width: "105px" }}>
+                  }`} style={{ width: "115px" }}>
                     <SelectValue placeholder="Venue" />
                   </SelectTrigger>
                   <SelectContent>
