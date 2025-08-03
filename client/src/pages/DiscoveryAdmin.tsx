@@ -295,6 +295,7 @@ export default function DiscoveryAdmin() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/artists"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/discovered-artists"] });
       toast({
         title: "Artist Discovery Complete",
         description: data.message || "Artist discovery completed successfully",
