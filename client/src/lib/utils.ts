@@ -55,6 +55,8 @@ export function createGoogleCalendarUrl(event: {
   artist: string;
   venue: string;
   date: Date | string;
+  summary?: string;
+  soundsLike?: string;
 }): string {
   // Get the date components directly from the date string or object
   let year: number;
@@ -98,8 +100,21 @@ export function createGoogleCalendarUrl(event: {
   
   const eventTitle = `${event.artist} @ ${event.venue}`;
   
+  // Build event details with artist description
+  let eventDetails = 'Show organized by Setlist Social';
+  
+  if (event.summary || event.soundsLike) {
+    eventDetails += '\n\nArtist Description:';
+    if (event.summary) {
+      eventDetails += `\n${event.summary}`;
+    }
+    if (event.soundsLike) {
+      eventDetails += `\nSounds like: ${event.soundsLike}`;
+    }
+  }
+  
   // Build the Google Calendar URL with explicit Denver timezone
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startTime}/${endTime}&details=Show%20organized%20by%20Setlist%20Social&location=${encodeURIComponent(event.venue)}&ctz=America/Denver`;
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventTitle)}&dates=${startTime}/${endTime}&details=${encodeURIComponent(eventDetails)}&location=${encodeURIComponent(event.venue)}&ctz=America/Denver`;
 }
 
 // Create Google search URL for venue and tickets

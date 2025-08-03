@@ -143,7 +143,13 @@ function EventItem({ event }: EventItemProps) {
   const formattedDate = formatDate(event.date);
   
   // Create URLs for interactive elements
-  const calendarUrl = createGoogleCalendarUrl(event);
+  const calendarUrl = createGoogleCalendarUrl({
+    artist: event.artist,
+    venue: event.venue,
+    date: event.date,
+    summary: event.summary,
+    soundsLike: event.soundsLike
+  });
   const mapsUrl = createGoogleMapsUrl(event.venue, event.artist, event.date);
   const spotifyUrl = createSpotifySearchUrl(event.artist);
   
