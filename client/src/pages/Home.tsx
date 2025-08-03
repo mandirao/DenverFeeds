@@ -41,6 +41,19 @@ export default function Home() {
   // Get unique months, ensuring no duplicates for the filter dropdown
   const months = getNextMonths();
 
+  // Get defined venue options from schema plus "Other" for manually entered venues
+  const definedVenueValues = venueOptions.map(option => option.value);
+  const definedVenues = definedVenueValues.filter(venue => venue !== "other" && venue !== "TBD").sort();
+  
+  // Check if there are any events with venues not in our defined list
+  const hasOtherVenues = events.some(event => !definedVenueValues.includes(event.venue));
+  
+  // Create final venue list for dropdown
+  const venueFilterOptions = [...definedVenues];
+  if (hasOtherVenues) {
+    venueFilterOptions.push("Other");
+  }
+
   // Filter events based on selected filters
   const filteredEvents = events.filter(event => {
     // Month filter (now applied for all views including top-voted)
@@ -132,19 +145,6 @@ export default function Home() {
   
   // For standard view, group by month and week
   const groupedByMonthAndWeek = groupEventsByMonth(sortedEvents);
-  
-  // Get defined venue options from schema plus "Other" for manually entered venues
-  const definedVenueValues = venueOptions.map(option => option.value);
-  const definedVenues = definedVenueValues.filter(venue => venue !== "other" && venue !== "TBD").sort();
-  
-  // Check if there are any events with venues not in our defined list
-  const hasOtherVenues = events.some(event => !definedVenueValues.includes(event.venue));
-  
-  // Create final venue list for dropdown
-  const venueFilterOptions = [...definedVenues];
-  if (hasOtherVenues) {
-    venueFilterOptions.push("Other");
-  }
   
   // Count active filters (excluding defaults)
   const countActiveFilters = () => {
