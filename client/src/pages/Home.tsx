@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
@@ -331,7 +332,7 @@ export default function Home() {
         {!isLoading && !error && hasEvents && (
           <div className="mb-6">
             <div className="overflow-x-auto">
-              <div className="flex gap-2 min-w-max pb-2">
+              <div className="flex gap-2 min-w-max pb-2 items-center">
               <button
                 onClick={() => setFilters({ ...filters, status: "all" })}
                 className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
@@ -393,90 +394,57 @@ export default function Home() {
                 Cheap Thrills
               </button>
               
-              {/* Dynamic filter count and clear button */}
-              <div className="ml-0.5 flex items-center gap-1">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <button className={`px-2 py-1 rounded-full font-medium transition-colors text-sm focus:outline-none ${
-                            hasActiveFilters 
-                              ? "bg-white text-black border border-black" 
-                              : "bg-[#FE6B41] text-black hover:text-white"
-                          }`}>
-                            {hasActiveFilters ? `${activeFilterCount} More` : "+ More"}
-                          </button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-white border-2 border-black max-w-md">
-                    <DialogHeader>
-                      <DialogTitle className="text-black font-anton font-black uppercase">More Filters</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid grid-cols-1 gap-4 pt-4">
-                      <div>
-                        <label className="block text-sm font-medium text-black mb-2">Month</label>
-                        <select 
-                          id="month-filter" 
-                          value={filters.month}
-                          onChange={(e) => setFilters({ ...filters, month: e.target.value })}
-                          className="w-full p-2 text-sm border border-black bg-white text-black rounded focus:outline-none focus:border-[#41F2EE]"
-                        >
-                          <option value="all">All Months</option>
-                          {months.map((m) => (
-                            <option key={m.key} value={m.key}>{m.display}</option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-black mb-2">Genre</label>
-                        <select 
-                          id="genre-filter" 
-                          value={filters.genre}
-                          onChange={(e) => setFilters({ ...filters, genre: e.target.value })}
-                          className="w-full p-2 text-sm border border-black bg-white text-black rounded focus:outline-none focus:border-[#41F2EE]"
-                        >
-                          <option value="all">All Genres</option>
-                          {genres.map((g) => (
-                            <option key={g} value={g}>{g}</option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-black mb-2">Location</label>
-                        <div className="flex gap-4">
-                          <label className="flex items-center space-x-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="location"
-                              checked={filters.denverAreaOnly}
-                              onChange={() => setFilters({ ...filters, denverAreaOnly: true })}
-                              className="w-4 h-4 text-[#41F2EE] bg-white border-2 border-black focus:ring-[#41F2EE] focus:ring-2"
-                            />
-                            <span className="text-sm font-medium">Denver/Boulder</span>
-                          </label>
-                          <label className="flex items-center space-x-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="location"
-                              checked={!filters.denverAreaOnly}
-                              onChange={() => setFilters({ ...filters, denverAreaOnly: false })}
-                              className="w-4 h-4 text-[#41F2EE] bg-white border-2 border-black focus:ring-[#41F2EE] focus:ring-2"
-                            />
-                            <span className="text-sm font-medium">Roadtrips</span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                        </DialogContent>
-                      </Dialog>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Add more filters</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+              {/* Vertical separator */}
+              <div className="h-6 w-px bg-black opacity-40 mx-1"></div>
+              
+              {/* Month Filter Dropdown */}
+              <Select value={filters.month} onValueChange={(value) => setFilters({ ...filters, month: value })}>
+                <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-2 min-w-[100px] ${
+                  filters.month !== "all" 
+                    ? "bg-white text-black" 
+                    : "bg-[#FE6B41] text-black hover:border-white"
+                }`}>
+                  <SelectValue placeholder="Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Months</SelectItem>
+                  {months.map((month) => (
+                    <SelectItem key={month.key} value={month.key}>{month.display}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Genre Filter Dropdown */}
+              <Select value={filters.genre} onValueChange={(value) => setFilters({ ...filters, genre: value })}>
+                <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-2 min-w-[120px] ${
+                  filters.genre !== "all" 
+                    ? "bg-white text-black" 
+                    : "bg-[#FE6B41] text-black hover:border-white"
+                }`}>
+                  <SelectValue placeholder="Genre" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Genres</SelectItem>
+                  {genres.map((genre) => (
+                    <SelectItem key={genre} value={genre}>{genre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {/* Vertical separator */}
+              <div className="h-6 w-px bg-black opacity-40 mx-1"></div>
+              
+              {/* Location Filter Toggle */}
+              <button
+                onClick={() => setFilters({ ...filters, denverAreaOnly: !filters.denverAreaOnly })}
+                className={`px-2 py-1 rounded-full font-medium transition-colors border border-black text-sm ${
+                  !filters.denverAreaOnly 
+                    ? "bg-white text-black" 
+                    : "bg-[#FE6B41] text-black hover:border-white"
+                }`}
+              >
+                {filters.denverAreaOnly ? "Denver/Boulder" : "Roadtrips"}
+              </button>
                 
                 {/* Clear filters button - only show when filters are active */}
                 {hasActiveFilters && (
@@ -496,7 +464,6 @@ export default function Home() {
                     </Tooltip>
                   </TooltipProvider>
                 )}
-              </div>
               </div>
             </div>
           </div>
