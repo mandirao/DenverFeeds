@@ -495,26 +495,6 @@ export default function Home() {
                   </SelectContent>
                 </Select>
                 
-                {/* Clear filters button - only show when filters are active */}
-                {hasActiveFilters && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button 
-                          onClick={resetFilters}
-                          className="ml-1 w-8 h-8 rounded-full border border-black bg-white text-black hover:bg-red-50 focus:outline-none flex items-center justify-center flex-shrink-0 text-lg leading-none"
-                          style={{ fontFamily: 'monospace' }}
-                        >
-                          ×
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Clear all filters</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-                
                 {/* Vertical separator before Location filter */}
                 <div className="h-6 w-px bg-black opacity-40 mx-2 flex-shrink-0"></div>
                 
@@ -532,7 +512,28 @@ export default function Home() {
                     <SelectItem value="roadtrips">Roadtrips</SelectItem>
                   </SelectContent>
                 </Select>
-
+                
+                {/* Clear filters button - only show when filters are active */}
+                {hasActiveFilters && (
+                  <>
+                    <div className="h-6 w-px bg-black opacity-40 mx-2 flex-shrink-0"></div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button 
+                            onClick={resetFilters}
+                            className="px-3 py-1 rounded-full font-medium transition-colors text-sm bg-white text-black border border-black hover:bg-red-50 focus:outline-none whitespace-nowrap flex-shrink-0"
+                          >
+                            Clear All
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Clear all filters</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </>
+                )}
               </div>
             </div>
           </div>
