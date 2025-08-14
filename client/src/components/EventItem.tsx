@@ -112,8 +112,8 @@ function EventItem({ event }: EventItemProps) {
   const handleUpvote = () => {
     upvoteMutation.mutate(undefined, {
       onSuccess: (data) => {
-        // Always set hasVoted to true when user clicks the upvote button
-        setHasVoted(true);
+        // The backend toggles the vote, so we need to toggle our local state too
+        setHasVoted(!hasVoted);
         
         // Show the tooltip with appropriate message
         setShowUpvoteTooltip(true);
@@ -304,14 +304,14 @@ function EventItem({ event }: EventItemProps) {
                             onClick={handleUpvote}
                             disabled={upvoteMutation.isPending || upvoteMutation.isError}
                             className={`${hasVoted ? 'bg-[#25428A] text-white hover:opacity-90' : 'bg-black text-[#F26241] hover:text-[#41F2EE]'} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0 cursor-pointer`}
-                            aria-label={hasVoted ? 'You already voted for this one' : 'Upvote this show'}
+                            aria-label={hasVoted ? 'Remove your vote for this show' : 'Upvote this show'}
                           >
                             <ArrowUp className="h-3 w-3" /> {event.upvotes || 0}
                           </Button>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>{hasVoted ? 'Vote again' : 'Upvote this show'}</p>
+                        <p>{hasVoted ? 'Remove your vote' : 'Upvote this show'}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
