@@ -67,19 +67,9 @@ function EventItem({ event }: EventItemProps) {
     if (hasUpvotedQuery.data !== undefined) {
       const serverHasVoted = hasUpvotedQuery.data.hasUpvoted;
       
-      // Always sync with server state - this is the source of truth
-      setHasVoted(serverHasVoted);
-      
-      // Show the tooltip for first-time load if already voted
-      if (serverHasVoted && !upvoteMutation.isPending) {
-        setShowUpvoteTooltip(true);
-        
-        // Hide it after a brief delay
-        const timer = setTimeout(() => {
-          setShowUpvoteTooltip(false);
-        }, 2000);
-        
-        return () => clearTimeout(timer);
+      // Only sync with server state if we're not in the middle of a mutation
+      if (!upvoteMutation.isPending) {
+        setHasVoted(serverHasVoted);
       }
     }
   }, [hasUpvotedQuery.data, upvoteMutation.isPending]);
@@ -111,11 +101,23 @@ function EventItem({ event }: EventItemProps) {
   });
 
   const handleUpvote = () => {
+    // Store the current state for potential rollback
+    const previousVoteState = hasVoted;
+    const previousUpvotes = event.upvotes || 0;
+    
+    // Optimistically update the local state immediately
+    setHasVoted(!hasVoted);
+    
     upvoteMutation.mutate(undefined, {
       onSuccess: (data) => {
-        // Don't rely on local state toggle - wait for the server response
-        // The backend will respond with the updated event data
-        // The hasUpvotedQuery will be invalidated and refetched automatically
+        // Update the local state based on server response
+        // The server returns the updated event with the new upvote count
+        if (data && typeof data.upvotes === 'number') {
+          // Determine if we added or removed a vote based on the count change
+          const votesChanged = data.upvotes - previousUpvotes;
+          const nowHasVoted = votesChanged > 0;
+          setHasVoted(nowHasVoted);
+        }
         
         // Show the tooltip with appropriate message
         setShowUpvoteTooltip(true);
@@ -124,6 +126,11 @@ function EventItem({ event }: EventItemProps) {
         setTimeout(() => {
           setShowUpvoteTooltip(false);
         }, 3000);
+      },
+      onError: (error) => {
+        // Rollback optimistic update on error
+        setHasVoted(previousVoteState);
+        console.error('Vote error:', error);
       }
     });
   };
