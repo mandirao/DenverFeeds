@@ -64,24 +64,25 @@ function EventItem({ event }: EventItemProps) {
   
   // Set the voted state based on the query result
   useEffect(() => {
-    if (hasUpvotedQuery.data && hasUpvotedQuery.data.hasUpvoted) {
-      setHasVoted(true);
+    if (hasUpvotedQuery.data !== undefined) {
+      const serverHasVoted = hasUpvotedQuery.data.hasUpvoted;
+      
+      // Always sync with server state - this is the source of truth
+      setHasVoted(serverHasVoted);
       
       // Show the tooltip for first-time load if already voted
-      setShowUpvoteTooltip(true);
-      
-      // Hide it after a brief delay
-      const timer = setTimeout(() => {
-        setShowUpvoteTooltip(false);
-      }, 2000);
-      
-      return () => clearTimeout(timer);
+      if (serverHasVoted && !upvoteMutation.isPending) {
+        setShowUpvoteTooltip(true);
+        
+        // Hide it after a brief delay
+        const timer = setTimeout(() => {
+          setShowUpvoteTooltip(false);
+        }, 2000);
+        
+        return () => clearTimeout(timer);
+      }
     }
-    else if (hasUpvotedQuery.data && !hasUpvotedQuery.data.hasUpvoted && !hasVoted) {
-      // Only set to false if we haven't already voted (initial state only)
-      setHasVoted(false);
-    }
-  }, [hasUpvotedQuery.data]);
+  }, [hasUpvotedQuery.data, upvoteMutation.isPending]);
 
   // Schedule mutation
   const scheduleMutation = useMutation({
@@ -112,8 +113,9 @@ function EventItem({ event }: EventItemProps) {
   const handleUpvote = () => {
     upvoteMutation.mutate(undefined, {
       onSuccess: (data) => {
-        // The backend toggles the vote, so we need to toggle our local state too
-        setHasVoted(!hasVoted);
+        // Don't rely on local state toggle - wait for the server response
+        // The backend will respond with the updated event data
+        // The hasUpvotedQuery will be invalidated and refetched automatically
         
         // Show the tooltip with appropriate message
         setShowUpvoteTooltip(true);
