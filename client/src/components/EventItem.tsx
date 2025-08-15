@@ -67,12 +67,14 @@ function EventItem({ event }: EventItemProps) {
     if (hasUpvotedQuery.data !== undefined) {
       const serverHasVoted = hasUpvotedQuery.data.hasUpvoted;
       
-      // Only sync with server state if we're not in the middle of a mutation
+      // Always sync with server state when not pending
+      // This ensures we stay in sync with the backend
       if (!upvoteMutation.isPending) {
+        console.log(`Setting hasVoted to ${serverHasVoted} for event ${event.id}`);
         setHasVoted(serverHasVoted);
       }
     }
-  }, [hasUpvotedQuery.data, upvoteMutation.isPending]);
+  }, [hasUpvotedQuery.data, upvoteMutation.isPending, event.id]);
 
   // Schedule mutation
   const scheduleMutation = useMutation({
@@ -103,21 +105,13 @@ function EventItem({ event }: EventItemProps) {
   const handleUpvote = () => {
     // Store the current state for potential rollback
     const previousVoteState = hasVoted;
-    const previousUpvotes = event.upvotes || 0;
     
     // Optimistically update the local state immediately
     setHasVoted(!hasVoted);
     
     upvoteMutation.mutate(undefined, {
       onSuccess: (data) => {
-        // Update the local state based on server response
-        // The server returns the updated event with the new upvote count
-        if (data && typeof data.upvotes === 'number') {
-          // Determine if we added or removed a vote based on the count change
-          const votesChanged = data.upvotes - previousUpvotes;
-          const nowHasVoted = votesChanged > 0;
-          setHasVoted(nowHasVoted);
-        }
+        console.log('Upvote success response:', data);
         
         // Show the tooltip with appropriate message
         setShowUpvoteTooltip(true);
@@ -126,6 +120,11 @@ function EventItem({ event }: EventItemProps) {
         setTimeout(() => {
           setShowUpvoteTooltip(false);
         }, 3000);
+        
+        // Force refresh the has-upvoted query to ensure we're in sync
+        queryClient.invalidateQueries({ 
+          queryKey: [`/api/events/${event.id}/has-upvoted`]
+        });
       },
       onError: (error) => {
         // Rollback optimistic update on error
