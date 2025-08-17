@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { Navbar } from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -19,14 +20,43 @@ import { groupEventsByMonth, groupEventsByCreationTime, isRecentlyAdded, getAdde
 import { venueOptions, VenueOption, Event, genres as schemaGenres } from "@shared/schema";
 
 export default function Home() {
-  const [filters, setFilters] = useState({
-    month: "all",
-    genre: "all",
-    status: "all",
-    location: "denver", // "denver" or "roadtrips"
-    venue: "all",
-    sortBy: "date"
-  });
+  const [location, setLocation] = useLocation();
+  
+  // Initialize filters from URL parameters
+  const getFiltersFromURL = () => {
+    const params = new URLSearchParams(location.split('?')[1] || '');
+    return {
+      month: params.get('month') || "all",
+      genre: params.get('genre') || "all", 
+      status: params.get('status') || "all",
+      location: params.get('location') || "denver",
+      venue: params.get('venue') || "all",
+      sortBy: params.get('sortBy') || "date"
+    };
+  };
+
+  const [filters, setFiltersState] = useState(getFiltersFromURL);
+  
+  // Update URL when filters change
+  const setFilters = (newFilters: typeof filters) => {
+    setFiltersState(newFilters);
+    
+    // Build URL parameters
+    const params = new URLSearchParams();
+    Object.entries(newFilters).forEach(([key, value]) => {
+      if (value !== "all" && value !== "denver" && value !== "date") {
+        params.set(key, value);
+      }
+    });
+    
+    const newURL = params.toString() ? `/?${params.toString()}` : '/';
+    setLocation(newURL);
+  };
+  
+  // Sync filters when URL changes (back/forward navigation)
+  useEffect(() => {
+    setFiltersState(getFiltersFromURL());
+  }, [location]);
 
   // Fetch events - with refetchOnMount: always to ensure a fresh load every time
   const { data: events = [], isLoading, error } = useQuery<Event[]>({
@@ -286,31 +316,7 @@ export default function Home() {
     ? Object.entries(groupEventsByMonth(sortedEvents)).length > 0
     : Object.entries(groupedByMonthAndWeek).length > 0;
 
-  // Handle individual filter changes
-  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilters({ ...filters, month: e.target.value });
-  };
 
-  const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilters({ ...filters, genre: e.target.value });
-  };
-
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newStatus = e.target.value;
-    
-    // If selecting "top-voted", automatically set sortBy to "votes"
-    if (newStatus === "top-voted") {
-      setFilters({ ...filters, status: newStatus, sortBy: "votes" });
-    } else {
-      setFilters({ ...filters, status: newStatus });
-    }
-  };
-  
-
-  
-  const handleSortByChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilters({ ...filters, sortBy: e.target.value });
-  };
 
   return (
     <div className="min-h-screen bg-[#FE6B41]">
