@@ -115,13 +115,15 @@ export class LLMService {
 
     const prompt = `You're writing for a casual cool music newsletter inspired by Oh My Rockness and Pitchfork. Analyze "${artistName}" with this specific style:
 
-TONE: Casual, descriptive, compelling but never forced hype. Confident without exaggeration. A little wry, never breathless. Direct and useful.
+TONE: Casual and descriptive but compelling—no forced hype. Describe sound with confidence, not exaggeration. Slightly wry rather than breathless. Keep it tight, direct, and useful.
 
 1. EMOJI: One emoji that captures their actual vibe (not generic music symbols)
-2. SUMMARY (max 75 chars): Describe their signature sound in a relatable way. Focus on vibe over genre. Include brief unfussy history/origin if relevant. No "mind-blowing" unless it actually is. Examples:
-   - "Seattle duo crafting dreamy indie rock with crystalline vocals"
-   - "Brooklyn producer mixing jazz samples with trap beats"
-   - "Former Arcade Fire member's solo venture into folk territory"
+2. SUMMARY (max 55 chars): Ultra-concise signature sound description. Focus on their specific sonic vibe, not genre. Examples:
+   - "Neo-soul queen with astral vibes and witty flow"
+   - "Industrial punk intensity with cathartic vocals"
+   - "Shoegazey dream pop with an emo undercurrent"
+   - "Fragile, poetic alt-folk with spiritual weight"
+   - "Dance-punk frenzy with cowbell and chaos"
 3. SOUNDS LIKE: Two artists separated by comma only (format: "Artist One, Artist Two")
 4. GENRE: Pick from this list: Rock & Alternative, Folk, Country & Americana, Pop & Indie Pop, Electronic & Experimental, Funk, Soul & Jazz, Classical & Orchestral, Hip Hop & R&B
 5. VENUE: ONLY suggest venue if you find CONFIRMED Denver/Colorado tour dates in the search results. Must be exact venue match from: ${denverVenues.join(', ')}. If no confirmed Denver dates found, return empty string.
@@ -132,7 +134,7 @@ ${artistContext}${concertContext}
 JSON format:
 {
   "emoji": "🌙",
-  "summary": "Seattle duo crafting dreamy indie rock with crystalline vocals",
+  "summary": "Dreamy indie rock with crystalline vocals",
   "soundsLike": "Beach House, Slowdive",
   "genre": "Pop & Indie Pop",
   "suggestedVenue": "Gothic Theatre",
@@ -158,7 +160,7 @@ JSON format:
         // Validate and clean the response
         return {
           emoji: result.emoji || '🎵',
-          summary: (result.summary || '').substring(0, 75),
+          summary: (result.summary || '').substring(0, 55),
           soundsLike: (result.soundsLike || '').substring(0, 75),
           genre: this.validateGenre(result.genre),
           suggestedVenue: result.suggestedVenue || '', // Only valid if confirmed from search
