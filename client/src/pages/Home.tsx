@@ -25,13 +25,14 @@ export default function Home() {
   // Initialize filters from URL parameters
   const getFiltersFromURL = () => {
     const params = new URLSearchParams(location.split('?')[1] || '');
+    const status = params.get('status') || "all";
     return {
       month: params.get('month') || "all",
       genre: params.get('genre') || "all", 
-      status: params.get('status') || "all",
+      status: status,
       location: params.get('location') || "denver",
       venue: params.get('venue') || "all",
-      sortBy: params.get('sortBy') || "date"
+      sortBy: status === "top-voted" ? "votes" : "date"
     };
   };
 
@@ -39,12 +40,18 @@ export default function Home() {
   
   // Update URL when filters change
   const setFilters = (newFilters: typeof filters) => {
-    setFiltersState(newFilters);
+    // Automatically set sortBy based on status
+    const finalFilters = {
+      ...newFilters,
+      sortBy: newFilters.status === "top-voted" ? "votes" : "date"
+    };
     
-    // Build URL parameters
+    setFiltersState(finalFilters);
+    
+    // Build URL parameters (exclude sortBy since it's automatic)
     const params = new URLSearchParams();
-    Object.entries(newFilters).forEach(([key, value]) => {
-      if (value !== "all" && value !== "denver" && value !== "date") {
+    Object.entries(finalFilters).forEach(([key, value]) => {
+      if (key !== "sortBy" && value !== "all" && value !== "denver" && value !== "date") {
         params.set(key, value);
       }
     });
