@@ -112,7 +112,7 @@ function QueuePlaylistCard({ playlist }: { playlist: Playlist }) {
               rel="noopener noreferrer"
               className="bg-black text-[#FEABDA] hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors"
             >
-              Listen to the current queue
+              Work in progress
             </a>
           </div>
         </div>
