@@ -107,12 +107,12 @@ function QueuePlaylistCard({ playlist }: { playlist: Playlist }) {
 
           <div className="flex gap-3">
             <a
-              href="https://open.spotify.com/playlist/65hepNEHQKF41ymtEqunGr?si=fe7ae61767784f12&pt=0771af0f5848a6f0e5d4651186f89c53"
+              href="https://open.spotify.com/playlist/65hepNEHQKF41ymtEqunGr?si=0d6754a80a544986"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-black text-[#FEABDA] hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors"
             >
-              Collaborate on Spotify
+              Listen to the current queue
             </a>
           </div>
         </div>
