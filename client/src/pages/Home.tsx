@@ -100,7 +100,11 @@ export default function Home() {
   const filteredEvents = events.filter(event => {
     // Month filter (now applied for all views including top-voted)
     if (filters.month !== "all") {
-      const eventMonth = format(new Date(event.date), "MMMM yyyy");
+      // Parse date as local date to avoid timezone issues
+      const dateStr = event.date.toString().split('T')[0]; // Get just the YYYY-MM-DD part
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const eventDate = new Date(year, month - 1, day); // Create local date
+      const eventMonth = format(eventDate, "MMMM yyyy");
       if (eventMonth !== filters.month) return false;
     }
     
