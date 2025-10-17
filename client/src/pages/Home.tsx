@@ -568,7 +568,7 @@ export default function Home() {
                   onClick={resetFilters}
                   className="text-black text-sm hover:text-white transition-colors focus:outline-none underline"
                 >
-                  ✕ clear all
+                  ✕ clear filters
                 </button>
               </div>
             )}
