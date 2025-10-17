@@ -32,6 +32,7 @@ export default function Home() {
       status: status,
       location: params.get('location') || "denver",
       venue: params.get('venue') || "all",
+      dayOfWeek: params.get('dayOfWeek') || "all",
       sortBy: status === "top-voted" ? "votes" : "date"
     };
   };
@@ -162,6 +163,15 @@ export default function Home() {
       }
     }
     
+    // Day of week filter
+    if (filters.dayOfWeek !== "all") {
+      const eventDate = new Date(event.date);
+      const eventDayOfWeek = eventDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      if (eventDayOfWeek.toString() !== filters.dayOfWeek) {
+        return false;
+      }
+    }
+    
     return true;
   });
   
@@ -194,6 +204,7 @@ export default function Home() {
     if (filters.genre !== "all") count++;
     if (filters.location !== "denver") count++; // Denver is default
     if (filters.venue !== "all") count++;
+    if (filters.dayOfWeek !== "all") count++;
     return count;
   };
   
@@ -208,6 +219,7 @@ export default function Home() {
       status: "all",
       location: "denver",
       venue: "all",
+      dayOfWeek: "all",
       sortBy: "date"
     });
   };
@@ -505,6 +517,27 @@ export default function Home() {
                         ))}
                       </>
                     )}
+                  </SelectContent>
+                </Select>
+
+                {/* Day of Week Filter Dropdown */}
+                <Select value={filters.dayOfWeek} onValueChange={(value) => setFilters({ ...filters, dayOfWeek: value })}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filters.dayOfWeek !== "all" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`} style={{ width: "115px" }}>
+                    <SelectValue placeholder="Day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Days</SelectItem>
+                    <SelectItem value="0">Sunday</SelectItem>
+                    <SelectItem value="1">Monday</SelectItem>
+                    <SelectItem value="2">Tuesday</SelectItem>
+                    <SelectItem value="3">Wednesday</SelectItem>
+                    <SelectItem value="4">Thursday</SelectItem>
+                    <SelectItem value="5">Friday</SelectItem>
+                    <SelectItem value="6">Saturday</SelectItem>
                   </SelectContent>
                 </Select>
                 
