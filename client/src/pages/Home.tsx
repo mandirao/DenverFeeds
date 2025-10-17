@@ -558,30 +558,20 @@ export default function Home() {
                     <SelectItem value="roadtrips">Roadtrips</SelectItem>
                   </SelectContent>
                 </Select>
-                
-                {/* Clear filters button - only show when filters are active */}
-                {hasActiveFilters && (
-                  <>
-                    <div className="h-6 w-px bg-black opacity-40 mx-2 flex-shrink-0"></div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button 
-                            onClick={resetFilters}
-                            className="px-3 py-1 rounded-full font-medium transition-colors text-sm bg-white text-black border border-black hover:bg-red-50 focus:outline-none whitespace-nowrap flex-shrink-0"
-                          >
-                            Clear All
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Clear all filters</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </>
-                )}
               </div>
             </div>
+            
+            {/* Clear filters link - only show when filters are active */}
+            {hasActiveFilters && (
+              <div className="mt-2">
+                <button 
+                  onClick={resetFilters}
+                  className="text-black text-sm hover:text-white transition-colors focus:outline-none underline"
+                >
+                  ✕ clear all
+                </button>
+              </div>
+            )}
           </div>
         )}
         
