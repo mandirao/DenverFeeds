@@ -7,6 +7,10 @@ import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 
 const app = express();
+
+// Trust proxy - required for deployments behind reverse proxy (Replit, etc.)
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
