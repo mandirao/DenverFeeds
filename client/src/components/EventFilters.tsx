@@ -2,15 +2,17 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { getDenverBoulderVenues, cheapThrillsVenues } from "@shared/schema";
+import { getDenverVenues, cheapThrillsVenues } from "@shared/schema";
 
 export interface MonthOption {
   key: string;
   display: string;
 }
 
-// Get Denver/Boulder area venues from the schema
-export const denverBoulderVenues = getDenverBoulderVenues();
+// Get Denver area venues from the schema
+export const denverVenues = getDenverVenues();
+// Legacy alias for backward compatibility
+export const denverBoulderVenues = denverVenues;
 
 export interface EventFiltersProps {
   // The original callback

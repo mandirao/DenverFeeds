@@ -341,10 +341,12 @@ export default function EventForm({
                       </CommandItem>
                     )}
 
-                    <CommandGroup heading="Denver/Boulder Area">
+                    <CommandGroup heading="Denver">
                       {venueOptions
                         .filter(venue => 
-                          venue.group === "denver_boulder" && 
+                          venue.group === "denver" && 
+                          venue.value !== "TBD" &&
+                          venue.value !== "other" &&
                           venue.label.toLowerCase().includes(searchValue.toLowerCase())
                         )
                         .map(venue => (
@@ -359,10 +361,28 @@ export default function EventForm({
                         ))
                       }
                     </CommandGroup>
-                    <CommandGroup heading="Road Trip">
+                    <CommandGroup heading="Front Range">
                       {venueOptions
                         .filter(venue => 
-                          venue.group === "road_trip" && 
+                          venue.group === "front_range" && 
+                          venue.label.toLowerCase().includes(searchValue.toLowerCase())
+                        )
+                        .map(venue => (
+                          <CommandItem
+                            key={venue.value}
+                            value={venue.value}
+                            onSelect={handleVenueSelect}
+                            className="cursor-pointer"
+                          >
+                            {venue.label}
+                          </CommandItem>
+                        ))
+                      }
+                    </CommandGroup>
+                    <CommandGroup heading="Mountains">
+                      {venueOptions
+                        .filter(venue => 
+                          venue.group === "mountains" && 
                           venue.label.toLowerCase().includes(searchValue.toLowerCase())
                         )
                         .map(venue => (
