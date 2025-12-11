@@ -23,7 +23,7 @@ export function Navbar() {
                     onClick={() => setCalendarOpen(true)}
                     className="text-black hover:text-[#41F2EE] transition-colors mb-2 sm:mb-0"
                   >
-                    <Calendar className="h-6 w-6" />
+                    <Calendar className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
