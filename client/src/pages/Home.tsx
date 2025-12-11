@@ -83,13 +83,18 @@ export default function Home() {
   const definedVenueValues = venueOptions.map(option => option.value);
   
   // Separate venues by group
-  const denverBoulderVenues = venueOptions
-    .filter(venue => venue.group === "denver_boulder" && venue.value !== "other" && venue.value !== "TBD")
+  const denverVenues = venueOptions
+    .filter(venue => venue.group === "denver" && venue.value !== "other" && venue.value !== "TBD")
     .map(venue => venue.value)
     .sort();
     
-  const roadTripVenues = venueOptions
-    .filter(venue => venue.group === "road_trip")
+  const frontRangeVenues = venueOptions
+    .filter(venue => venue.group === "front_range")
+    .map(venue => venue.value)
+    .sort();
+    
+  const mountainsVenues = venueOptions
+    .filter(venue => venue.group === "mountains")
     .map(venue => venue.value)
     .sort();
   
@@ -138,20 +143,25 @@ export default function Home() {
     }
     // Note: we removed the just-added filter here, as we'll now show all events but sorted differently
     
-    // Location filter (All Regions, Denver/Boulder, or Roadtrips)
-    const roadTripVenues = venueOptions
-      .filter(venue => venue.group === "road_trip")
-      .map(venue => venue.value);
+    // Location filter (All Regions, Denver, Front Range, or Mountains)
+    const denverVenuesList = venueOptions.filter(v => v.group === "denver").map(v => v.value);
+    const frontRangeVenuesList = venueOptions.filter(v => v.group === "front_range").map(v => v.value);
+    const mountainsVenuesList = venueOptions.filter(v => v.group === "mountains").map(v => v.value);
       
     if (filters.location === "denver") {
-      // Show only Denver/Boulder venues
-      if (roadTripVenues.includes(event.venue)) {
-        return false; // Filter out road trip venues
+      // Show only Denver venues
+      if (!denverVenuesList.includes(event.venue)) {
+        return false;
       }
-    } else if (filters.location === "roadtrips") {
-      // Show only roadtrip venues
-      if (!roadTripVenues.includes(event.venue)) {
-        return false; // Filter out Denver/Boulder and custom venues
+    } else if (filters.location === "front_range") {
+      // Show only Front Range venues
+      if (!frontRangeVenuesList.includes(event.venue)) {
+        return false;
+      }
+    } else if (filters.location === "mountains") {
+      // Show only Mountains venues
+      if (!mountainsVenuesList.includes(event.venue)) {
+        return false;
       }
     }
     // Note: when filters.location === "all", show all venues (no filtering)
@@ -464,8 +474,9 @@ export default function Home() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Regions</SelectItem>
-                    <SelectItem value="denver">Denver/Boulder</SelectItem>
-                    <SelectItem value="roadtrips">Roadtrips</SelectItem>
+                    <SelectItem value="denver">Denver</SelectItem>
+                    <SelectItem value="front_range">Front Range</SelectItem>
+                    <SelectItem value="mountains">Mountains</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -515,8 +526,8 @@ export default function Home() {
                   <SelectContent>
                     <SelectItem value="all">All Venues</SelectItem>
                     
-                    {/* Denver/Boulder Area venues */}
-                    {denverBoulderVenues.map((venue) => (
+                    {/* Denver venues */}
+                    {denverVenues.map((venue) => (
                       <SelectItem key={venue} value={venue}>{venue}</SelectItem>
                     ))}
                     
@@ -525,18 +536,35 @@ export default function Home() {
                       <SelectItem value="Other">Other</SelectItem>
                     )}
                     
-                    {/* Separator and Road Trip venues */}
-                    {roadTripVenues.length > 0 && (
+                    {/* Separator and Front Range venues */}
+                    {frontRangeVenues.length > 0 && (
                       <>
-                        <div className="relative">
+                        <div className="relative py-2">
                           <div className="absolute inset-0 flex items-center">
                             <span className="w-full border-t border-gray-300" />
                           </div>
                           <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white px-2 text-gray-500">Road Trips</span>
+                            <span className="bg-white px-2 text-gray-500">Front Range</span>
                           </div>
                         </div>
-                        {roadTripVenues.map((venue) => (
+                        {frontRangeVenues.map((venue) => (
+                          <SelectItem key={venue} value={venue}>{venue}</SelectItem>
+                        ))}
+                      </>
+                    )}
+                    
+                    {/* Separator and Mountains venues */}
+                    {mountainsVenues.length > 0 && (
+                      <>
+                        <div className="relative py-2">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-gray-300" />
+                          </div>
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-white px-2 text-gray-500">Mountains</span>
+                          </div>
+                        </div>
+                        {mountainsVenues.map((venue) => (
                           <SelectItem key={venue} value={venue}>{venue}</SelectItem>
                         ))}
                       </>
