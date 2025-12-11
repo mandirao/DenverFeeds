@@ -70,6 +70,7 @@ export const venueOptions: VenueOption[] = [
   { value: "Aggie Theatre", label: "Aggie Theatre", group: "front_range" },
   { value: "Black Sheep", label: "Black Sheep", group: "front_range" },
   { value: "Boulder Theater", label: "Boulder Theater", group: "front_range" },
+  { value: "Broadmoor World Arena, CO Springs", label: "Broadmoor World Arena, CO Springs", group: "front_range" },
   { value: "Chautauqua Auditorium", label: "Chautauqua Auditorium", group: "front_range" },
   { value: "Folsom Field", label: "Folsom Field", group: "front_range" },
   { value: "Ford Amphitheater", label: "Ford Amphitheater", group: "front_range" },
@@ -84,6 +85,7 @@ export const venueOptions: VenueOption[] = [
   // Mountains venues
   { value: "Belly Up Aspen", label: "Belly Up Aspen", group: "mountains" },
   { value: "Dillon Amphitheater", label: "Dillon Amphitheater", group: "mountains" },
+  { value: "Ford Park, Vail", label: "Ford Park, Vail", group: "mountains" },
   { value: "Gerald R. Ford Amphitheater, Vail", label: "Gerald R. Ford Amphitheater, Vail", group: "mountains" },
   { value: "Gold Hill Inn", label: "Gold Hill Inn", group: "mountains" },
   { value: "Surf Hotel", label: "Surf Hotel", group: "mountains" },
