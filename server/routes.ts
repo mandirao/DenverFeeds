@@ -722,6 +722,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error getting discovery status:", error);
+
+
+  // iCalendar feed endpoint for calendar subscription
+  apiRouter.get("/calendar/feed.ics", async (req, res) => {
+    try {
+      const events = await storage.getUpcomingEvents();
+      
+      // Filter only scheduled events for the public calendar feed
+      const scheduledEvents = events.filter(e => e.isScheduled);
+      
+      // Generate iCalendar format
+      const lines: string[] = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Setlist Social//Concert Feed//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'X-WR-CALNAME:Setlist Social Shows',
+        'X-WR-TIMEZONE:America/Denver',
+        'X-WR-CALDESC:Denver area concerts curated by Setlist Social',
+      ];
+      
+      scheduledEvents.forEach(event => {
+        const eventDate = new Date(event.date);
+        
+        // Format as YYYYMMDD for all-day events
+        const dateStr = eventDate.toISOString().split('T')[0].replace(/-/g, '');
+        
+        // Create a unique ID for the event
+        const uid = `event-${event.id}@setlistsocial.com`;
+        
+        // Format description with artist info
+        let description = `${event.emoji} ${event.artist} at ${event.venue}\\n\\n`;
+        if (event.summary) {
+          description += `${event.summary}\\n`;
+        }
+        if (event.soundsLike) {
+          description += `Sounds like: ${event.soundsLike}\\n`;
+        }
+        description += `\\nGenre: ${event.genre}`;
+        
+        // Clean and escape text for iCal format
+        const cleanText = (text: string) => {
+          return text
+            .replace(/\\/g, '\\\\')
+            .replace(/;/g, '\\;')
+            .replace(/,/g, '\\,')
+            .replace(/\n/g, '\\n');
+        };
+        
+        lines.push('BEGIN:VEVENT');
+        lines.push(`UID:${uid}`);
+        lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
+        lines.push(`DTSTART;VALUE=DATE:${dateStr}`);
+        lines.push(`SUMMARY:${cleanText(event.artist)} @ ${cleanText(event.venue)}`);
+        lines.push(`DESCRIPTION:${cleanText(description)}`);
+        lines.push(`LOCATION:${cleanText(event.venue)}, Denver, CO`);
+        lines.push(`STATUS:CONFIRMED`);
+        lines.push(`TRANSP:TRANSPARENT`);
+        lines.push('END:VEVENT');
+      });
+      
+      lines.push('END:VCALENDAR');
+      
+      const icalContent = lines.join('\r\n');
+      
+      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+      res.setHeader('Content-Disposition', 'inline; filename="setlist-social.ics"');
+      res.send(icalContent);
+    } catch (error) {
+      console.error("Error generating iCal feed:", error);
+      res.status(500).json({ message: "Failed to generate calendar feed" });
+    }
+  });
+
       res.status(500).json({ error: "Failed to get discovery status" });
     }
   });

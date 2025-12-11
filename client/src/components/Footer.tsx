@@ -10,22 +10,24 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, List, Upload } from "lucide-react";
+import { AlertCircle, List, Upload, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import Papa from "papaparse";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 export function Footer() {
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [csvError, setCsvError] = useState<string | null>(null);
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  
+
   // Determine if we're on the Add Show or Playlists page
   const isAddPage = location === "/add" || location === "/playlists";
-  
+
   // Add multiple events (CSV) mutation
   const addEventsBulkMutation = useMutation({
     mutationFn: async (events: any[]) => {
@@ -37,13 +39,13 @@ export function Footer() {
     },
     onSuccess: (data) => {
       console.log("Bulk upload response:", data);
-      
+
       if (data.results?.created > 0) {
         toast({
           title: "Events Added",
           description: data.message || `Added ${data.results.created} events successfully!`,
         });
-        
+
         if (data.results.skipped === 0) {
           setCsvModalOpen(false);
           navigate("/");
@@ -51,7 +53,7 @@ export function Footer() {
       } else {
         setCsvError("No events were added. Please check the CSV format and try again.");
       }
-      
+
       // Update the results display
       if (data.results?.skipped > 0) {
         setCsvError(
@@ -63,7 +65,7 @@ export function Footer() {
     },
     onError: (error: any) => {
       console.error("Bulk upload error:", error);
-      
+
       // Handle structured error responses
       if (error.response?.data?.results?.errors?.length > 0) {
         const errors = error.response.data.results.errors;
@@ -84,10 +86,10 @@ export function Footer() {
   // Handle CSV upload
   const handleCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     setCsvError(null);
-    
+
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -99,11 +101,11 @@ export function Footer() {
           setCsvError(`Error parsing CSV file: ${results.errors[0].message || "Invalid format"}`);
           return;
         }
-        
+
         try {
           console.log("CSV headers:", results.meta.fields);
           console.log("Raw parsed data:", results.data);
-          
+
           // Check for required headers
           const requiredHeaders = ['artist', 'venue', 'date', 'emoji', 'summary', 'genre', 'requester'];
           const missingHeaders = requiredHeaders.filter(header => 
@@ -112,21 +114,21 @@ export function Footer() {
               (header === 'soundsLike' && field.toLowerCase() === 'sounds_like')
             )
           );
-          
+
           if (missingHeaders.length > 0) {
             setCsvError(`CSV is missing required headers: ${missingHeaders.join(', ')}`);
             return;
           }
-          
+
           // Track validation errors
           const errors: string[] = [];
-          
+
           // Process valid events
           const events = results.data
             .filter((row: any, index: number) => {
               // Skip empty rows
               if (!row || Object.values(row).every(val => !val)) return false;
-              
+
               // Check for required fields
               const missingFields = [];
               if (!row.artist) missingFields.push('artist');
@@ -136,12 +138,12 @@ export function Footer() {
               if (!row.summary) missingFields.push('summary');
               if (!row.genre) missingFields.push('genre');
               if (!row.requester) missingFields.push('requester');
-              
+
               if (missingFields.length > 0) {
                 errors.push(`Row ${index + 2}: Missing fields: ${missingFields.join(', ')}`);
                 return false;
               }
-              
+
               return true;
             })
             .map((row: any) => {
@@ -156,20 +158,20 @@ export function Footer() {
                 requester: row.requester?.trim() || "Mandi",
               };
             });
-          
+
           console.log("Processed events:", events);
           console.log("Validation errors:", errors);
-          
+
           if (errors.length > 0) {
             // Show first 3 errors with count of remaining
             const errorMessage = errors.length <= 3 
               ? errors.join('\n') 
               : `${errors.slice(0, 3).join('\n')}\n...and ${errors.length - 3} more errors`;
-            
+
             setCsvError(`CSV validation failed:\n${errorMessage}`);
             return;
           }
-          
+
           if (events.length > 0) {
             addEventsBulkMutation.mutate(events);
           } else {
@@ -186,7 +188,9 @@ export function Footer() {
       }
     });
   };
-  
+
+  const calendarFeedUrl = `${window.location.origin}/api/ical/feed`;
+
   return (
     <footer className="bg-[#FE6B41] py-4 mt-8">
       <div className="container mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
@@ -204,8 +208,14 @@ export function Footer() {
             </button>
           )}
         </div>
-        
+
         <div className="text-sm text-black flex items-center space-x-2">
+          <button 
+            onClick={() => setCalendarOpen(true)}
+            className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm"
+          >
+            <Calendar className="w-4 h-4 mr-1" /> SUBSCRIBE TO CALENDAR
+          </button>
           <span>© {new Date().getFullYear()} Setlist Social Feed.</span>
           <button 
             onClick={() => setAboutOpen(true)}
@@ -215,7 +225,7 @@ export function Footer() {
           </button>
         </div>
       </div>
-      
+
       {/* About Dialog */}
       <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
         <DialogContent className="bg-[#F5F3F0] sm:max-w-md">
@@ -237,7 +247,49 @@ export function Footer() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
+      {/* Calendar Subscription Dialog */}
+      <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <DialogContent className="bg-[#f0f0f0] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-anton">SUBSCRIBE TO SHOWS</DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="text-black">
+            <div className="mb-4">
+              Add upcoming shows to your Google Calendar (or any other calendar app) by subscribing to our iCalendar feed.
+            </div>
+            <div className="mb-4 flex items-center">
+              <Input 
+                type="text" 
+                readOnly 
+                value={calendarFeedUrl} 
+                className="mr-2 text-sm bg-white border-black"
+              />
+              <Button 
+                variant="outline2" 
+                onClick={() => {
+                  navigator.clipboard.writeText(calendarFeedUrl);
+                  toast({
+                    title: "Copied!",
+                    description: "Calendar feed URL copied to clipboard.",
+                  });
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+            <div className="text-xs text-gray-600 mt-2">
+              To subscribe, open your calendar application, find the option to add a calendar by URL, and paste the link above. Google Calendar typically refreshes every 8-24 hours.
+            </div>
+          </DialogDescription>
+          <DialogFooter>
+            <Button variant="outline2" onClick={() => setCalendarOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* CSV Upload Dialog */}
       <Dialog open={csvModalOpen} onOpenChange={setCsvModalOpen}>
         <DialogContent className="bg-[#FEABDA] max-w-xl sm:max-w-xl">
@@ -271,7 +323,7 @@ export function Footer() {
                 <div className="text-xs mt-1 opacity-70">Manage artist database and automated discovery</div>
               </div>
             </div>
-            
+
             {csvError && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mt-4 rounded relative">
                 <div className="font-bold flex items-center">
