@@ -117,9 +117,9 @@ export const getMountainsVenues = (): string[] => {
 export const getDenverBoulderVenues = getDenverVenues;
 
 // Location suffixes for Front Range and Mountains venues (for display purposes)
+// Note: Boulder Theater and Gold Hill Inn omitted as location is redundant in name
 export const venueLocationSuffixes: Record<string, string> = {
   // Front Range - Boulder
-  "Boulder Theater": "Boulder",
   "Chautauqua Auditorium": "Boulder",
   "Folsom Field": "Boulder",
   "Fox Theatre": "Boulder",
@@ -138,7 +138,6 @@ export const venueLocationSuffixes: Record<string, string> = {
   // Mountains
   "Belly Up Aspen": "Aspen",
   "Dillon Amphitheater": "Dillon",
-  "Gold Hill Inn": "Gold Hill",
   "Surf Hotel": "Buena Vista",
   "The Mishawaka": "Poudre Canyon",
   // Already has location in name, no suffix needed

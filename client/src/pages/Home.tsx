@@ -30,7 +30,7 @@ export default function Home() {
       month: params.get('month') || "all",
       genre: params.get('genre') || "all", 
       status: status,
-      location: params.get('location') || "denver",
+      location: params.get('location') || "all",
       venue: params.get('venue') || "all",
       dayOfWeek: params.get('dayOfWeek') || "all",
       sortBy: status === "top-voted" ? "votes" : "date"
@@ -52,7 +52,7 @@ export default function Home() {
     // Build URL parameters (exclude sortBy since it's automatic)
     const params = new URLSearchParams();
     Object.entries(finalFilters).forEach(([key, value]) => {
-      if (key !== "sortBy" && value !== "all" && value !== "denver" && value !== "date") {
+      if (key !== "sortBy" && value !== "all" && value !== "date") {
         params.set(key, value);
       }
     });
