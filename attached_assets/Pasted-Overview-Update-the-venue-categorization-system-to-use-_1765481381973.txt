@@ -1,0 +1,77 @@
+Overview
+Update the venue categorization system to use three regional filters (Denver, Front Range, Mountains) plus an "All Regions" option. Also rename two venues that have changed names.
+
+Task 1: Rename Venues in Schema
+File to modify: shared/schema.ts
+
+Changes needed:
+
+Find "Sunset Amphitheater" and rename to "Ford Amphitheater"
+Find "The Coast" and rename to "Sound Bar"
+Important: Update both the value and label fields for these venues in the venueOptions array.
+
+Task 2: Update Venue Regional Groupings
+File to modify: shared/schema.ts
+
+Changes needed:
+Reorganize all venues into three groups: denver, front_range, and mountains. Update the group property for each venue as follows:
+
+Denver group (denver):
+
+Ball Arena, Bellco Theatre, Bluebird Theater, Cervantes' Masterpiece Ballroom, Club Vinyl, Coors Field, Dazzle Denver, Dick's Sporting Goods Park, Empower Field at Mile High, Fiddlers Green Amphitheatre, Fillmore Auditorium, Globe Hall, Gothic Theatre, HQ, Hi-Dive, Larimer Lounge, Levitt Pavilion Denver, Lost Lake Lounge, Marquis Theater, Meow Wolf Denver, Mission Ballroom, Ogden Theatre, Ophelia's, Oriental Theater, Paramount Theatre, Red Rocks Amphitheatre, ReelWorks Denver, Roxy on Broadway, Skylark Lounge, Summit Music Hall, The Church, The Meadowlark, The Velvet Elk Lounge
+Front Range group (front_range):
+
+Boulder Theater, Chautauqua Auditorium, Fox Theatre, Folsom Field (Boulder)
+Black Sheep, Ford Amphitheater, Lulu's Downtown (Colorado Springs)
+Greeley Stampede (Greeley)
+Aggie Theatre, Fort Collins Armory, New Belgium Brewing Company, The Lyric, Washington's (Fort Collins)
+Mountains group (mountains):
+
+Dillon Amphitheater, Gerald R. Ford Amphitheater (Vail), Belly Up Aspen, The Mishawaka, Surf Hotel, Gold Hill Inn
+Note: Change the TypeScript type definition for VenueOption['group'] from "denver_boulder" | "road_trip" | "other" to "denver" | "front_range" | "mountains" | "other"
+
+Task 3: Update Region Filter UI
+File to modify: client/src/pages/Home.tsx
+
+Changes needed:
+
+Update the Region filter dropdown options from:
+
+"All Regions", "Denver/Boulder", "Roadtrips"
+To:
+
+"All Regions", "Denver", "Front Range", "Mountains"
+Update the filter logic (around line 130-150 where location filtering happens):
+
+When filters.location === "denver": Show only venues with group === "denver"
+When filters.location === "front_range": Show only venues with group === "front_range"
+When filters.location === "mountains": Show only venues with group === "mountains"
+When filters.location === "all": Show all venues
+Update the venue filter dropdown grouping to reflect the new three regions instead of "Denver/Boulder Area" and "Road Trips"
+
+Task 4: Update Helper Functions
+File to modify: shared/schema.ts
+
+Changes needed:
+
+Rename the getDenverBoulderVenues() helper function to getDenverVenues() and update it to filter for group === "denver"
+Add new helper functions:
+getFrontRangeVenues() - returns venues where group === "front_range"
+getMountainsVenues() - returns venues where group === "mountains"
+Task 5: Update Any References to Old Region Names
+Files to check and update:
+
+client/src/components/EventFilters.tsx - Update any references to "denver_boulder" or "road_trip" groups
+client/src/components/EventForm.tsx - Update the venue dropdown section headings from "Denver/Boulder Area" and "Road Trip" to "Denver", "Front Range", and "Mountains"
+server/venue-discovery-service.ts - Update any hardcoded location references if needed
+Verification Checklist
+After making changes, verify:
+
+ "Sunset Amphitheater" is now "Ford Amphitheater" throughout the app
+ "The Coast" is now "Sound Bar" throughout the app
+ Red Rocks and Fiddlers Green are in the Denver group
+ Boulder venues are in Front Range group
+ All mountain venues are in Mountains group
+ Region filter dropdown shows: All Regions, Denver, Front Range, Mountains
+ Filtering by each region shows only the correct venues
+ Venue selection dropdown in Add Event form has correct regional sections

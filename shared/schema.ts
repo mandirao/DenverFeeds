@@ -16,85 +16,103 @@ export const genres = [
 export interface VenueOption {
   value: string;
   label: string;
-  group: "denver_boulder" | "road_trip" | "other";
+  group: "denver" | "front_range" | "mountains" | "other";
 }
 
 export const venueOptions: VenueOption[] = [
-  // Denver/Boulder Area venues
-  { value: "TBD", label: "TBD", group: "denver_boulder" },
-  { value: "other", label: "Other/Festival", group: "denver_boulder" },
-  { value: "Ball Arena", label: "Ball Arena", group: "denver_boulder" },
-  { value: "Bellco Theatre", label: "Bellco Theatre", group: "denver_boulder" },
-  { value: "Bluebird Theater", label: "Bluebird Theater", group: "denver_boulder" },
-  { value: "Boettcher Concert Hall", label: "Boettcher Concert Hall", group: "denver_boulder" },
-  { value: "Boulder Theater", label: "Boulder Theater", group: "denver_boulder" },
-  { value: "Cervantes' Masterpiece Ballroom", label: "Cervantes' Masterpiece Ballroom", group: "denver_boulder" },
-  { value: "Chautauqua Auditorium", label: "Chautauqua Auditorium", group: "denver_boulder" },
-  { value: "City Park", label: "City Park", group: "denver_boulder" },
-  { value: "Club Vinyl", label: "Club Vinyl", group: "denver_boulder" },
-  { value: "Coors Field", label: "Coors Field", group: "denver_boulder" },
-  { value: "Dazzle Denver", label: "Dazzle Denver", group: "denver_boulder" },
-  { value: "Denver Botanic Gardens", label: "Denver Botanic Gardens", group: "denver_boulder" },
-  { value: "Dick's Sporting Goods Park", label: "Dick's Sporting Goods Park", group: "denver_boulder" },
-  { value: "Empower Field at Mile High", label: "Empower Field at Mile High", group: "denver_boulder" },
-  { value: "Fiddlers Green Amphitheatre", label: "Fiddlers Green Amphitheatre", group: "denver_boulder" },
-  { value: "Fillmore Auditorium", label: "Fillmore Auditorium", group: "denver_boulder" },
-  { value: "Folsom Field", label: "Folsom Field", group: "denver_boulder" },
-  { value: "Fox Theatre", label: "Fox Theatre", group: "denver_boulder" },
-  { value: "Globe Hall", label: "Globe Hall", group: "denver_boulder" },
-  { value: "Gothic Theatre", label: "Gothic Theatre", group: "denver_boulder" },
-  { value: "Greek Theater", label: "Greek Theater", group: "denver_boulder" },
-  { value: "HQ", label: "HQ", group: "denver_boulder" },
-  { value: "Hi-Dive", label: "Hi-Dive", group: "denver_boulder" },
-  { value: "Larimer Lounge", label: "Larimer Lounge", group: "denver_boulder" },
-  { value: "Levitt Pavilion Denver", label: "Levitt Pavilion Denver", group: "denver_boulder" },
-  { value: "Lost Lake Lounge", label: "Lost Lake Lounge", group: "denver_boulder" },
-  { value: "Marquis Theater", label: "Marquis Theater", group: "denver_boulder" },
-  { value: "Meow Wolf Denver", label: "Meow Wolf Denver", group: "denver_boulder" },
-  { value: "Mission Ballroom", label: "Mission Ballroom", group: "denver_boulder" },
-  { value: "Moe's Original BBQ", label: "Moe's Original BBQ", group: "denver_boulder" },
-  { value: "Newman Center", label: "Newman Center", group: "denver_boulder" },
-  { value: "Ogden Theatre", label: "Ogden Theatre", group: "denver_boulder" },
-  { value: "Ophelia's", label: "Ophelia's", group: "denver_boulder" },
-  { value: "Oriental Theater", label: "Oriental Theater", group: "denver_boulder" },
-  { value: "Paramount Theatre", label: "Paramount Theatre", group: "denver_boulder" },
-  { value: "Red Rocks Amphitheatre", label: "Red Rocks Amphitheatre", group: "denver_boulder" },
-  { value: "ReelWorks Denver", label: "ReelWorks Denver", group: "denver_boulder" },
-  { value: "Roxy on Broadway", label: "Roxy on Broadway", group: "denver_boulder" },
-  { value: "Skylark Lounge", label: "Skylark Lounge", group: "denver_boulder" },
-  { value: "Summit Music Hall", label: "Summit Music Hall", group: "denver_boulder" },
-  { value: "Swallow Hill", label: "Swallow Hill", group: "denver_boulder" },
-  { value: "The Brighton", label: "The Brighton", group: "denver_boulder" },
-  { value: "The Church", label: "The Church", group: "denver_boulder" },
-  { value: "The Meadowlark", label: "The Meadowlark", group: "denver_boulder" },
-  { value: "The Velvet Elk Lounge", label: "The Velvet Elk Lounge", group: "denver_boulder" },
+  // Denver Metro Area venues
+  { value: "TBD", label: "TBD", group: "denver" },
+  { value: "other", label: "Other/Festival", group: "denver" },
+  { value: "Ball Arena", label: "Ball Arena", group: "denver" },
+  { value: "Bellco Theatre", label: "Bellco Theatre", group: "denver" },
+  { value: "Bluebird Theater", label: "Bluebird Theater", group: "denver" },
+  { value: "Boettcher Concert Hall", label: "Boettcher Concert Hall", group: "denver" },
+  { value: "Cervantes' Masterpiece Ballroom", label: "Cervantes' Masterpiece Ballroom", group: "denver" },
+  { value: "City Park", label: "City Park", group: "denver" },
+  { value: "Club Vinyl", label: "Club Vinyl", group: "denver" },
+  { value: "Coors Field", label: "Coors Field", group: "denver" },
+  { value: "Dazzle Denver", label: "Dazzle Denver", group: "denver" },
+  { value: "Denver Botanic Gardens", label: "Denver Botanic Gardens", group: "denver" },
+  { value: "Dick's Sporting Goods Park", label: "Dick's Sporting Goods Park", group: "denver" },
+  { value: "Empower Field at Mile High", label: "Empower Field at Mile High", group: "denver" },
+  { value: "Fiddlers Green Amphitheatre", label: "Fiddlers Green Amphitheatre", group: "denver" },
+  { value: "Fillmore Auditorium", label: "Fillmore Auditorium", group: "denver" },
+  { value: "Globe Hall", label: "Globe Hall", group: "denver" },
+  { value: "Gothic Theatre", label: "Gothic Theatre", group: "denver" },
+  { value: "Greek Theater", label: "Greek Theater", group: "denver" },
+  { value: "HQ", label: "HQ", group: "denver" },
+  { value: "Hi-Dive", label: "Hi-Dive", group: "denver" },
+  { value: "Larimer Lounge", label: "Larimer Lounge", group: "denver" },
+  { value: "Levitt Pavilion Denver", label: "Levitt Pavilion Denver", group: "denver" },
+  { value: "Lost Lake Lounge", label: "Lost Lake Lounge", group: "denver" },
+  { value: "Marquis Theater", label: "Marquis Theater", group: "denver" },
+  { value: "Meow Wolf Denver", label: "Meow Wolf Denver", group: "denver" },
+  { value: "Mission Ballroom", label: "Mission Ballroom", group: "denver" },
+  { value: "Moe's Original BBQ", label: "Moe's Original BBQ", group: "denver" },
+  { value: "Newman Center", label: "Newman Center", group: "denver" },
+  { value: "Ogden Theatre", label: "Ogden Theatre", group: "denver" },
+  { value: "Ophelia's", label: "Ophelia's", group: "denver" },
+  { value: "Oriental Theater", label: "Oriental Theater", group: "denver" },
+  { value: "Paramount Theatre", label: "Paramount Theatre", group: "denver" },
+  { value: "Red Rocks Amphitheatre", label: "Red Rocks Amphitheatre", group: "denver" },
+  { value: "ReelWorks Denver", label: "ReelWorks Denver", group: "denver" },
+  { value: "Roxy on Broadway", label: "Roxy on Broadway", group: "denver" },
+  { value: "Skylark Lounge", label: "Skylark Lounge", group: "denver" },
+  { value: "Sound Bar", label: "Sound Bar", group: "denver" },
+  { value: "Summit Music Hall", label: "Summit Music Hall", group: "denver" },
+  { value: "Swallow Hill", label: "Swallow Hill", group: "denver" },
+  { value: "The Brighton", label: "The Brighton", group: "denver" },
+  { value: "The Church", label: "The Church", group: "denver" },
+  { value: "The Meadowlark", label: "The Meadowlark", group: "denver" },
+  { value: "The Velvet Elk Lounge", label: "The Velvet Elk Lounge", group: "denver" },
   
-  // Road Trip venues
-  { value: "Aggie Theatre", label: "Aggie Theatre", group: "road_trip" },
-  { value: "Belly Up Aspen", label: "Belly Up Aspen", group: "road_trip" },
-  { value: "Black Sheep", label: "Black Sheep", group: "road_trip" },
-  { value: "Dillon Amphitheater", label: "Dillon Amphitheater", group: "road_trip" },
-  { value: "Ford Amphitheater, CO Springs", label: "Ford Amphitheater, CO Springs", group: "road_trip" },
-  { value: "Fort Collins Armory", label: "Fort Collins Armory", group: "road_trip" },
-  { value: "Gerald R. Ford Amphitheater, Vail", label: "Gerald R. Ford Amphitheater, Vail", group: "road_trip" },
-  { value: "Gold Hill Inn", label: "Gold Hill Inn", group: "road_trip" },
-  { value: "Greeley Stampede", label: "Greeley Stampede", group: "road_trip" },
-  { value: "Lulu's Downtown", label: "Lulu's Downtown", group: "road_trip" },
-  { value: "New Belgium Brewing Company", label: "New Belgium Brewing Company", group: "road_trip" },
-  { value: "Sunset Amphitheater", label: "Sunset Amphitheater", group: "road_trip" },
-  { value: "Surf Hotel", label: "Surf Hotel", group: "road_trip" },
-  { value: "The Coast", label: "The Coast", group: "road_trip" },
-  { value: "The Lyric", label: "The Lyric", group: "road_trip" },
-  { value: "The Mishawaka", label: "The Mishawaka", group: "road_trip" },
-  { value: "Washington's", label: "Washington's", group: "road_trip" }
+  // Front Range venues (Boulder, Fort Collins, Colorado Springs, Greeley)
+  { value: "Aggie Theatre", label: "Aggie Theatre", group: "front_range" },
+  { value: "Black Sheep", label: "Black Sheep", group: "front_range" },
+  { value: "Boulder Theater", label: "Boulder Theater", group: "front_range" },
+  { value: "Chautauqua Auditorium", label: "Chautauqua Auditorium", group: "front_range" },
+  { value: "Folsom Field", label: "Folsom Field", group: "front_range" },
+  { value: "Ford Amphitheater", label: "Ford Amphitheater", group: "front_range" },
+  { value: "Fort Collins Armory", label: "Fort Collins Armory", group: "front_range" },
+  { value: "Fox Theatre", label: "Fox Theatre", group: "front_range" },
+  { value: "Greeley Stampede", label: "Greeley Stampede", group: "front_range" },
+  { value: "Lulu's Downtown", label: "Lulu's Downtown", group: "front_range" },
+  { value: "New Belgium Brewing Company", label: "New Belgium Brewing Company", group: "front_range" },
+  { value: "The Lyric", label: "The Lyric", group: "front_range" },
+  { value: "Washington's", label: "Washington's", group: "front_range" },
+  
+  // Mountains venues
+  { value: "Belly Up Aspen", label: "Belly Up Aspen", group: "mountains" },
+  { value: "Dillon Amphitheater", label: "Dillon Amphitheater", group: "mountains" },
+  { value: "Gerald R. Ford Amphitheater, Vail", label: "Gerald R. Ford Amphitheater, Vail", group: "mountains" },
+  { value: "Gold Hill Inn", label: "Gold Hill Inn", group: "mountains" },
+  { value: "Surf Hotel", label: "Surf Hotel", group: "mountains" },
+  { value: "The Mishawaka", label: "The Mishawaka", group: "mountains" }
 ];
 
-// Helper function to get all Denver/Boulder area venues
-export const getDenverBoulderVenues = (): string[] => {
+// Helper function to get all Denver area venues
+export const getDenverVenues = (): string[] => {
   return venueOptions
-    .filter(venue => venue.group === "denver_boulder")
+    .filter(venue => venue.group === "denver")
     .map(venue => venue.value);
 };
+
+// Helper function to get all Front Range venues
+export const getFrontRangeVenues = (): string[] => {
+  return venueOptions
+    .filter(venue => venue.group === "front_range")
+    .map(venue => venue.value);
+};
+
+// Helper function to get all Mountains venues
+export const getMountainsVenues = (): string[] => {
+  return venueOptions
+    .filter(venue => venue.group === "mountains")
+    .map(venue => venue.value);
+};
+
+// Legacy alias for backwards compatibility
+export const getDenverBoulderVenues = getDenverVenues;
 
 // Define the list of cheap thrills venues (smaller, more affordable venues)
 export const cheapThrillsVenues = [
