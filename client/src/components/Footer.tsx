@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import Papa from "papaparse";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { CalendarSubscribeModal } from "./CalendarSubscribeModal";
 
 export function Footer() {
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -189,12 +189,17 @@ export function Footer() {
     });
   };
 
-  const calendarFeedUrl = `${window.location.origin}/api/ical/feed`;
-
   return (
     <footer className="bg-[#FE6B41] py-4 mt-8">
       <div className="container mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
-        <div className="mb-4 sm:mb-0">
+        <div className="mb-4 sm:mb-0 flex items-center space-x-2">
+          <button 
+            onClick={() => setCalendarOpen(true)}
+            className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm"
+          >
+            <Calendar className="w-4 h-4 mr-1" /> SUBSCRIBE TO CALENDAR
+          </button>
+          <span className="text-black">|</span>
           {isAddPage ? (
             <Link href="/" className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm">
               <List className="w-4 h-4 mr-1" /> VIEW SHOWS
@@ -210,12 +215,6 @@ export function Footer() {
         </div>
 
         <div className="text-sm text-black flex items-center space-x-2">
-          <button 
-            onClick={() => setCalendarOpen(true)}
-            className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm"
-          >
-            <Calendar className="w-4 h-4 mr-1" /> SUBSCRIBE TO CALENDAR
-          </button>
           <span>© {new Date().getFullYear()} Setlist Social Feed.</span>
           <button 
             onClick={() => setAboutOpen(true)}
@@ -249,46 +248,7 @@ export function Footer() {
       </Dialog>
 
       {/* Calendar Subscription Dialog */}
-      <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>
-        <DialogContent className="bg-[#f0f0f0] sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-anton">SUBSCRIBE TO SHOWS</DialogTitle>
-          </DialogHeader>
-          <DialogDescription className="text-black">
-            <div className="mb-4">
-              Add upcoming shows to your Google Calendar (or any other calendar app) by subscribing to our iCalendar feed.
-            </div>
-            <div className="mb-4 flex items-center">
-              <Input 
-                type="text" 
-                readOnly 
-                value={calendarFeedUrl} 
-                className="mr-2 text-sm bg-white border-black"
-              />
-              <Button 
-                variant="outline2" 
-                onClick={() => {
-                  navigator.clipboard.writeText(calendarFeedUrl);
-                  toast({
-                    title: "Copied!",
-                    description: "Calendar feed URL copied to clipboard.",
-                  });
-                }}
-              >
-                Copy
-              </Button>
-            </div>
-            <div className="text-xs text-gray-600 mt-2">
-              To subscribe, open your calendar application, find the option to add a calendar by URL, and paste the link above. Google Calendar typically refreshes every 8-24 hours.
-            </div>
-          </DialogDescription>
-          <DialogFooter>
-            <Button variant="outline2" onClick={() => setCalendarOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CalendarSubscribeModal open={calendarOpen} onOpenChange={setCalendarOpen} />
 
       {/* CSV Upload Dialog */}
       <Dialog open={csvModalOpen} onOpenChange={setCsvModalOpen}>
