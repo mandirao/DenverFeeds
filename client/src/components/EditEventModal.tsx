@@ -159,6 +159,11 @@ export default function EditEventModal({ event, isOpen, onClose, isDuplicate = f
     ? new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : 'Unknown date';
 
+  // Format the created date for metadata footer
+  const createdDate = event.createdAt
+    ? new Date(event.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-[#F5F3F0]">
@@ -213,6 +218,11 @@ export default function EditEventModal({ event, isOpen, onClose, isDuplicate = f
             ) : undefined
           }
         />
+        {!isDuplicate && createdDate && (
+          <div className="mt-4 pt-3 border-t border-gray-300 text-xs text-gray-500">
+            Added {createdDate}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
