@@ -166,30 +166,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'Hip Hop & R&B'
             ];
             
+            // Genre keyword mapping for simplified genre names
+            const genreKeywordMap: Record<string, string> = {
+              'punk': 'Rock & Alternative',
+              'rock': 'Rock & Alternative',
+              'alt rock': 'Rock & Alternative',
+              'alternative': 'Rock & Alternative',
+              'indie rock': 'Rock & Alternative',
+              'indie/alt rock': 'Rock & Alternative',
+              'post-punk': 'Rock & Alternative',
+              'psych rock': 'Rock & Alternative',
+              'indie/psych': 'Rock & Alternative',
+              'americana': 'Folk, Country & Americana',
+              'folk': 'Folk, Country & Americana',
+              'country': 'Folk, Country & Americana',
+              'bluegrass': 'Folk, Country & Americana',
+              'country/americana': 'Folk, Country & Americana',
+              'folk/soul': 'Folk, Country & Americana',
+              'indie folk': 'Folk, Country & Americana',
+              'pop': 'Pop & Indie Pop',
+              'indie pop': 'Pop & Indie Pop',
+              'electronic': 'Electronic & Experimental',
+              'experimental': 'Electronic & Experimental',
+              'ambient': 'Electronic & Experimental',
+              'funk': 'Funk, Soul & Jazz',
+              'soul': 'Funk, Soul & Jazz',
+              'jazz': 'Funk, Soul & Jazz',
+              'soul/jazz': 'Funk, Soul & Jazz',
+              'classical': 'Classical & Orchestral',
+              'orchestral': 'Classical & Orchestral',
+              'hip hop': 'Hip Hop & R&B',
+              'r&b': 'Hip Hop & R&B',
+              'hip hop & r&b': 'Hip Hop & R&B'
+            };
+            
             const normalizedGenre = item.genre.trim();
             
             // If not a standard genre, try to normalize
             if (!genres.includes(normalizedGenre)) {
-              // Try to find a match by normalizing format
-              const normalizedGenres = genres.map(g => g.replace(/,/g, '/'));
-              const indexBySlash = normalizedGenres.findIndex(g => 
-                g.toLowerCase() === normalizedGenre.replace(/,/g, '/').toLowerCase()
-              );
-              
-              if (indexBySlash !== -1) {
-                item.genre = genres[indexBySlash]; // Use the canonical format
-                console.log(`Normalized genre from "${normalizedGenre}" to "${item.genre}"`);
+              // First try keyword mapping (case-insensitive)
+              const lowerGenre = normalizedGenre.toLowerCase();
+              if (genreKeywordMap[lowerGenre]) {
+                item.genre = genreKeywordMap[lowerGenre];
+                console.log(`Normalized genre from "${normalizedGenre}" to "${item.genre}" (keyword map)`);
               } else {
-                // Try a more aggressive normalization - strip spaces around commas
-                const strippedGenres = genres.map(g => g.replace(/\s*,\s*/g, ','));
-                const indexByStripped = strippedGenres.findIndex(g => 
-                  g.toLowerCase().replace(/\s*,\s*/g, ',') === 
-                  normalizedGenre.toLowerCase().replace(/\s*,\s*/g, ',')
+                // Try to find a match by normalizing format
+                const normalizedGenres = genres.map(g => g.replace(/,/g, '/'));
+                const indexBySlash = normalizedGenres.findIndex(g => 
+                  g.toLowerCase() === normalizedGenre.replace(/,/g, '/').toLowerCase()
                 );
                 
-                if (indexByStripped !== -1) {
-                  item.genre = genres[indexByStripped];
+                if (indexBySlash !== -1) {
+                  item.genre = genres[indexBySlash]; // Use the canonical format
                   console.log(`Normalized genre from "${normalizedGenre}" to "${item.genre}"`);
+                } else {
+                  // Try a more aggressive normalization - strip spaces around commas
+                  const strippedGenres = genres.map(g => g.replace(/\s*,\s*/g, ','));
+                  const indexByStripped = strippedGenres.findIndex(g => 
+                    g.toLowerCase().replace(/\s*,\s*/g, ',') === 
+                    normalizedGenre.toLowerCase().replace(/\s*,\s*/g, ',')
+                  );
+                  
+                  if (indexByStripped !== -1) {
+                    item.genre = genres[indexByStripped];
+                    console.log(`Normalized genre from "${normalizedGenre}" to "${item.genre}"`);
+                  }
                 }
               }
             }
