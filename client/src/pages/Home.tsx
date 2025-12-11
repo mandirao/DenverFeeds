@@ -138,7 +138,7 @@ export default function Home() {
     }
     // Note: we removed the just-added filter here, as we'll now show all events but sorted differently
     
-    // Location filter (Denver/Boulder vs Roadtrips)
+    // Location filter (All Regions, Denver/Boulder, or Roadtrips)
     const roadTripVenues = venueOptions
       .filter(venue => venue.group === "road_trip")
       .map(venue => venue.value);
@@ -154,6 +154,7 @@ export default function Home() {
         return false; // Filter out Denver/Boulder and custom venues
       }
     }
+    // Note: when filters.location === "all", show all venues (no filtering)
     
     // Venue filter
     if (filters.venue !== "all") {
@@ -209,7 +210,7 @@ export default function Home() {
     let count = 0;
     if (filters.month !== "all") count++;
     if (filters.genre !== "all") count++;
-    if (filters.location !== "denver") count++; // Denver is default
+    if (filters.location !== "all") count++; // "All Regions" is the cleared state
     if (filters.venue !== "all") count++;
     if (filters.dayOfWeek !== "all") count++;
     return count;
@@ -224,7 +225,7 @@ export default function Home() {
       month: "all",
       genre: "all", 
       status: "all",
-      location: "denver",
+      location: "all",
       venue: "all",
       dayOfWeek: "all",
       sortBy: "date"
@@ -554,13 +555,14 @@ export default function Home() {
                 {/* Location Filter Dropdown - moved to the right */}
                 <Select value={filters.location} onValueChange={(value) => setFilters({ ...filters, location: value })}>
                   <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
-                    filters.location !== "denver" 
+                    filters.location !== "all" 
                       ? "bg-white text-black" 
                       : "bg-[#FE6B41] text-black hover:border-white"
                   }`} style={{ width: "145px" }}>
                     <SelectValue placeholder="Location" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">All Regions</SelectItem>
                     <SelectItem value="denver">Denver/Boulder</SelectItem>
                     <SelectItem value="roadtrips">Roadtrips</SelectItem>
                   </SelectContent>
