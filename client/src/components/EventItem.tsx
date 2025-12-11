@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Event } from "@shared/schema";
+import { Event, getVenueDisplayName } from "@shared/schema";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { formatDate, createGoogleCalendarUrl, createGoogleMapsUrl, createSpotifySearchUrl, isRecentlyAdded } from "@/lib/utils";
@@ -207,7 +207,7 @@ function EventItem({ event }: EventItemProps) {
                       onMouseEnter={() => setIsHoveringVenue(true)}
                       onMouseLeave={() => setIsHoveringVenue(false)}
                     >
-                      {event.venue}
+                      {getVenueDisplayName(event.venue)}
                     </a>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -447,7 +447,7 @@ function EventItem({ event }: EventItemProps) {
               Are you sure you want to delete this show? This can not be undone.
             </AlertDialogDescription>
             <div className="pt-2 pb-4">
-              <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
+              <strong>{event.artist}</strong> @ {getVenueDisplayName(event.venue)} ({formattedDate})
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter>

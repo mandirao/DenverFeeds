@@ -114,6 +114,44 @@ export const getMountainsVenues = (): string[] => {
 // Legacy alias for backwards compatibility
 export const getDenverBoulderVenues = getDenverVenues;
 
+// Location suffixes for Front Range and Mountains venues (for display purposes)
+export const venueLocationSuffixes: Record<string, string> = {
+  // Front Range - Boulder
+  "Boulder Theater": "Boulder",
+  "Chautauqua Auditorium": "Boulder",
+  "Folsom Field": "Boulder",
+  "Fox Theatre": "Boulder",
+  // Front Range - Fort Collins
+  "Aggie Theatre": "Ft. Collins",
+  "Fort Collins Armory": "Ft. Collins",
+  "New Belgium Brewing Company": "Ft. Collins",
+  "The Lyric": "Ft. Collins",
+  "Washington's": "Ft. Collins",
+  // Front Range - Colorado Springs
+  "Black Sheep": "CO Springs",
+  "Ford Amphitheater": "CO Springs",
+  "Lulu's Downtown": "CO Springs",
+  // Front Range - Other
+  "Greeley Stampede": "Greeley",
+  // Mountains
+  "Belly Up Aspen": "Aspen",
+  "Dillon Amphitheater": "Dillon",
+  "Gold Hill Inn": "Gold Hill",
+  "Surf Hotel": "Buena Vista",
+  "The Mishawaka": "Poudre Canyon",
+  // Already has location in name, no suffix needed
+  // "Gerald R. Ford Amphitheater, Vail": already includes "Vail"
+};
+
+// Helper function to get display name with location suffix for non-Denver venues
+export const getVenueDisplayName = (venueName: string): string => {
+  const suffix = venueLocationSuffixes[venueName];
+  if (suffix) {
+    return `${venueName}, ${suffix}`;
+  }
+  return venueName;
+};
+
 // Define the list of cheap thrills venues (smaller, more affordable venues)
 export const cheapThrillsVenues = [
   "Hi-Dive", 
