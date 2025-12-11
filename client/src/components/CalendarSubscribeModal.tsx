@@ -18,7 +18,7 @@ interface CalendarSubscribeModalProps {
 
 export function CalendarSubscribeModal({ open, onOpenChange }: CalendarSubscribeModalProps) {
   const { toast } = useToast();
-  const calendarFeedUrl = `${window.location.origin}/api/ical/feed`;
+  const calendarFeedUrl = `${window.location.origin}/api/calendar/feed.ics`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -722,7 +722,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error getting discovery status:", error);
-
+      res.status(500).json({ error: "Failed to get discovery status" });
+    }
+  });
 
   // iCalendar feed endpoint for calendar subscription
   apiRouter.get("/calendar/feed.ics", async (req, res) => {
@@ -794,10 +796,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating iCal feed:", error);
       res.status(500).json({ message: "Failed to generate calendar feed" });
-    }
-  });
-
-      res.status(500).json({ error: "Failed to get discovery status" });
     }
   });
 
