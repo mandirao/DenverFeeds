@@ -729,10 +729,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // iCalendar feed endpoint for calendar subscription
   apiRouter.get("/calendar/feed.ics", async (req, res) => {
     try {
-      const events = await storage.getUpcomingEvents();
-      
-      // Filter only scheduled events for the public calendar feed
-      const scheduledEvents = events.filter(e => e.isScheduled);
+      // Get all upcoming events for the public calendar feed
+      const upcomingEvents = await storage.getUpcomingEvents();
       
       // Generate iCalendar format
       const lines: string[] = [
@@ -746,7 +744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'X-WR-CALDESC:Denver area concerts curated by Setlist Social',
       ];
       
-      scheduledEvents.forEach(event => {
+      upcomingEvents.forEach(event => {
         const eventDate = new Date(event.date);
         
         // Format as YYYYMMDD for all-day events
