@@ -144,13 +144,18 @@ export default function Home() {
     // Note: we removed the just-added filter here, as we'll now show all events but sorted differently
     
     // Location filter (All Regions, Denver, Front Range, or Mountains)
+    // Get all known venue names to check if venue is custom/unknown
+    const allKnownVenues = venueOptions.map(v => v.value);
     const denverVenuesList = venueOptions.filter(v => v.group === "denver").map(v => v.value);
     const frontRangeVenuesList = venueOptions.filter(v => v.group === "front_range").map(v => v.value);
     const mountainsVenuesList = venueOptions.filter(v => v.group === "mountains").map(v => v.value);
+    
+    // Custom venues (not in our defined list) are treated as Denver by default
+    const isCustomVenue = !allKnownVenues.includes(event.venue);
       
     if (filters.location === "denver") {
-      // Show only Denver venues
-      if (!denverVenuesList.includes(event.venue)) {
+      // Show Denver venues AND custom venues (festivals, one-off locations)
+      if (!denverVenuesList.includes(event.venue) && !isCustomVenue) {
         return false;
       }
     } else if (filters.location === "front_range") {
@@ -168,7 +173,7 @@ export default function Home() {
     
     // Venue filter
     if (filters.venue !== "all") {
-      if (filters.venue === "Other") {
+      if (filters.venue === "other") {
         // Show only events with venues not in our defined list
         if (definedVenueValues.includes(event.venue)) {
           return false;
@@ -533,7 +538,7 @@ export default function Home() {
                     
                     {/* Show "Other" option if there are custom venues */}
                     {hasOtherVenues && (
-                      <SelectItem value="Other">Other</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     )}
                     
                     {/* Separator and Front Range venues */}
