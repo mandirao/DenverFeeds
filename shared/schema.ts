@@ -58,7 +58,7 @@ export const venueOptions: VenueOption[] = [
   { value: "ReelWorks Denver", label: "ReelWorks Denver", group: "denver" },
   { value: "Roxy on Broadway", label: "Roxy on Broadway", group: "denver" },
   { value: "Skylark Lounge", label: "Skylark Lounge", group: "denver" },
-  { value: "Sound Bar", label: "Sound Bar", group: "denver" },
+  { value: "Sound Bar", label: "Sound Bar", group: "front_range" },
   { value: "Summit Music Hall", label: "Summit Music Hall", group: "denver" },
   { value: "Swallow Hill", label: "Swallow Hill", group: "denver" },
   { value: "The Brighton", label: "The Brighton", group: "denver" },
@@ -127,6 +127,7 @@ export const venueLocationSuffixes: Record<string, string> = {
   "Aggie Theatre": "Ft. Collins",
   "Fort Collins Armory": "Ft. Collins",
   "New Belgium Brewing Company": "Ft. Collins",
+  "Sound Bar": "Ft. Collins",
   "The Lyric": "Ft. Collins",
   "Washington's": "Ft. Collins",
   // Front Range - Colorado Springs
