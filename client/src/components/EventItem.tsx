@@ -22,6 +22,7 @@ function EventItem({ event }: EventItemProps) {
   const [showUpvoteTooltip, setShowUpvoteTooltip] = useState(false);
   const [showRequesterTooltip, setShowRequesterTooltip] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -371,6 +372,12 @@ function EventItem({ event }: EventItemProps) {
                     >
                       Edit
                     </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setIsDuplicateModalOpen(true)}
+                      className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                    >
+                      Duplicate
+                    </DropdownMenuItem>
                     {event.isScheduled ? (
                       <DropdownMenuItem 
                         onClick={handleSchedule}
@@ -425,6 +432,16 @@ function EventItem({ event }: EventItemProps) {
           event={event}
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
+        />
+      )}
+      
+      {/* Duplicate Event Modal */}
+      {isDuplicateModalOpen && (
+        <EditEventModal
+          event={event}
+          isOpen={isDuplicateModalOpen}
+          onClose={() => setIsDuplicateModalOpen(false)}
+          isDuplicate={true}
         />
       )}
       

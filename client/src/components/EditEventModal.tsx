@@ -29,14 +29,15 @@ interface EditEventModalProps {
   event: Event;
   isOpen: boolean;
   onClose: () => void;
+  isDuplicate?: boolean;
 }
 
-export default function EditEventModal({ event, isOpen, onClose }: EditEventModalProps) {
+export default function EditEventModal({ event, isOpen, onClose, isDuplicate = false }: EditEventModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
 
-  // Update event mutation
+  // Update event mutation (for editing)
   const updateEventMutation = useMutation({
     mutationFn: async (data: EventFormValues) => {
       return apiRequest({
@@ -59,7 +60,6 @@ export default function EditEventModal({ event, isOpen, onClose }: EditEventModa
       if (error.response?.status === 409 || error.message?.includes("already exists")) {
         setDuplicateError("This event already exists in the database.");
       } else if (error.response?.status === 400) {
-        // Handle validation errors
         toast({
           title: "Validation Error",
           description: error.response?.data?.message || "Please check your form inputs.",
@@ -69,6 +69,44 @@ export default function EditEventModal({ event, isOpen, onClose }: EditEventModa
         toast({
           title: "Error",
           description: "Failed to update event. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
+  // Create event mutation (for duplicating)
+  const createEventMutation = useMutation({
+    mutationFn: async (data: EventFormValues) => {
+      return apiRequest({
+        endpoint: "/api/events",
+        method: "POST",
+        data
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Event Created",
+        description: "The duplicate event has been created successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
+      onClose();
+    },
+    onError: (error: any) => {
+      console.error("Event create error:", error);
+      
+      if (error.response?.status === 409 || error.message?.includes("already exists")) {
+        setDuplicateError("This event already exists in the database.");
+      } else if (error.response?.status === 400) {
+        toast({
+          title: "Validation Error",
+          description: error.response?.data?.message || "Please check your form inputs.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create event. Please try again.",
           variant: "destructive",
         });
       }
@@ -103,8 +141,14 @@ export default function EditEventModal({ event, isOpen, onClose }: EditEventModa
 
   const handleSubmit = (data: EventFormValues) => {
     setDuplicateError(null);
-    updateEventMutation.mutate(data);
+    if (isDuplicate) {
+      createEventMutation.mutate(data);
+    } else {
+      updateEventMutation.mutate(data);
+    }
   };
+
+  const activeMutation = isDuplicate ? createEventMutation : updateEventMutation;
 
   const handleDelete = () => {
     deleteEventMutation.mutate();
@@ -119,50 +163,54 @@ export default function EditEventModal({ event, isOpen, onClose }: EditEventModa
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-[#F5F3F0]">
         <DialogHeader>
-          <DialogTitle className="text-2xl text-black font-anton font-black uppercase">EDIT SHOW</DialogTitle>
+          <DialogTitle className="text-2xl text-black font-anton font-black uppercase">
+            {isDuplicate ? "DUPLICATE SHOW" : "EDIT SHOW"}
+          </DialogTitle>
           <DialogDescription className="sr-only">
-            Edit event details
+            {isDuplicate ? "Create a duplicate event with modifications" : "Edit event details"}
           </DialogDescription>
         </DialogHeader>
         <EventForm
           onSubmit={handleSubmit}
           onCancel={onClose}
           initialData={event}
-          submitButtonText="UPDATE"
-          isPending={updateEventMutation.isPending}
+          submitButtonText={isDuplicate ? "CREATE" : "UPDATE"}
+          isPending={activeMutation.isPending}
           duplicateError={duplicateError}
           extraActions={
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="link" 
-                  className="text-red-500 hover:text-red-600 font-normal underline px-2 h-auto"
-                >
-                  Delete
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="bg-[#F5F3F0]">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Event</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this event? This action cannot be undone.
-                  </AlertDialogDescription>
-                  <div className="mt-2 px-6">
-                    <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
-                  </div>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={handleDelete}
-                    className="bg-red-500 hover:bg-red-600"
-                    disabled={deleteEventMutation.isPending}
+            !isDuplicate ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="link" 
+                    className="text-red-500 hover:text-red-600 font-normal underline px-2 h-auto"
                   >
-                    {deleteEventMutation.isPending ? "Deleting..." : "Delete"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-[#F5F3F0]">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Event</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this event? This action cannot be undone.
+                    </AlertDialogDescription>
+                    <div className="mt-2 px-6">
+                      <strong>{event.artist}</strong> @ {event.venue} ({formattedDate})
+                    </div>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleDelete}
+                      className="bg-red-500 hover:bg-red-600"
+                      disabled={deleteEventMutation.isPending}
+                    >
+                      {deleteEventMutation.isPending ? "Deleting..." : "Delete"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : undefined
           }
         />
       </DialogContent>
