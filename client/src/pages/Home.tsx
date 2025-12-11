@@ -453,6 +453,22 @@ export default function Home() {
                 {/* Vertical separator */}
                 <div className="h-6 w-px bg-black opacity-40 mx-2 flex-shrink-0"></div>
                 
+                {/* Location/Region Filter Dropdown */}
+                <Select value={filters.location} onValueChange={(value) => setFilters({ ...filters, location: value })}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filters.location !== "all" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`} style={{ width: "145px" }}>
+                    <SelectValue placeholder="Region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Regions</SelectItem>
+                    <SelectItem value="denver">Denver/Boulder</SelectItem>
+                    <SelectItem value="roadtrips">Roadtrips</SelectItem>
+                  </SelectContent>
+                </Select>
+
                 {/* Month Filter Dropdown */}
                 <Select value={filters.month} onValueChange={(value) => setFilters({ ...filters, month: value })}>
                   <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
@@ -546,25 +562,6 @@ export default function Home() {
                     <SelectItem value="4">Thursday</SelectItem>
                     <SelectItem value="5">Friday</SelectItem>
                     <SelectItem value="6">Saturday</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                {/* Vertical separator before Location filter */}
-                <div className="h-6 w-px bg-black opacity-40 mx-2 flex-shrink-0"></div>
-                
-                {/* Location Filter Dropdown - moved to the right */}
-                <Select value={filters.location} onValueChange={(value) => setFilters({ ...filters, location: value })}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
-                    filters.location !== "all" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
-                  }`} style={{ width: "145px" }}>
-                    <SelectValue placeholder="Location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Regions</SelectItem>
-                    <SelectItem value="denver">Denver/Boulder</SelectItem>
-                    <SelectItem value="roadtrips">Roadtrips</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
