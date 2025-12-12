@@ -732,6 +732,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all upcoming events for the public calendar feed
       const upcomingEvents = await storage.getUpcomingEvents();
       
+      // RFC 5545 line folding: lines must be <= 75 octets
+      const foldLine = (line: string): string => {
+        const maxLen = 75;
+        if (line.length <= maxLen) return line;
+        
+        const parts: string[] = [];
+        parts.push(line.substring(0, maxLen));
+        let remaining = line.substring(maxLen);
+        
+        while (remaining.length > 0) {
+          // Continuation lines start with space, so max is 74 chars of content
+          parts.push(' ' + remaining.substring(0, maxLen - 1));
+          remaining = remaining.substring(maxLen - 1);
+        }
+        
+        return parts.join('\r\n');
+      };
+      
+      // Escape text for iCal format (RFC 5545 compliant)
+      const escapeIcal = (text: string) => {
+        return text
+          .replace(/\\/g, '\\\\')
+          .replace(/;/g, '\\;')
+          .replace(/,/g, '\\,')
+          .replace(/\n/g, '\\n');
+      };
+      
       // Generate iCalendar format
       const lines: string[] = [
         'BEGIN:VCALENDAR',
@@ -753,15 +780,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create a unique ID for the event
         const uid = `event-${event.id}@setlistsocial.com`;
         
-        // Escape text for iCal format (RFC 5545 compliant)
-        const escapeIcal = (text: string) => {
-          return text
-            .replace(/\\/g, '\\\\')
-            .replace(/;/g, '\\;')
-            .replace(/,/g, '\\,')
-            .replace(/\n/g, '\\n');
-        };
-        
         // Build description without emojis for better compatibility
         let descParts: string[] = [];
         descParts.push(`${event.artist} at ${event.venue}`);
@@ -781,9 +799,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lines.push(`UID:${uid}`);
         lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
         lines.push(`DTSTART;VALUE=DATE:${dateStr}`);
-        lines.push(`SUMMARY:${escapeIcal(summary)}`);
-        lines.push(`DESCRIPTION:${escapeIcal(description)}`);
-        lines.push(`LOCATION:${escapeIcal(event.venue)}`);
+        lines.push(foldLine(`SUMMARY:${escapeIcal(summary)}`));
+        lines.push(foldLine(`DESCRIPTION:${escapeIcal(description)}`));
+        lines.push(foldLine(`LOCATION:${escapeIcal(event.venue)}`));
         lines.push('STATUS:CONFIRMED');
         lines.push('TRANSP:TRANSPARENT');
         lines.push('END:VEVENT');
