@@ -753,18 +753,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create a unique ID for the event
         const uid = `event-${event.id}@setlistsocial.com`;
         
-        // Format description with artist info
-        let description = `${event.emoji} ${event.artist} at ${event.venue}\\n\\n`;
-        if (event.summary) {
-          description += `${event.summary}\\n`;
-        }
-        if (event.soundsLike) {
-          description += `Sounds like: ${event.soundsLike}\\n`;
-        }
-        description += `\\nGenre: ${event.genre}`;
-        
-        // Clean and escape text for iCal format
-        const cleanText = (text: string) => {
+        // Escape text for iCal format (RFC 5545 compliant)
+        const escapeIcal = (text: string) => {
           return text
             .replace(/\\/g, '\\\\')
             .replace(/;/g, '\\;')
@@ -772,15 +762,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .replace(/\n/g, '\\n');
         };
         
+        // Build description without emojis for better compatibility
+        let descParts: string[] = [];
+        descParts.push(`${event.artist} at ${event.venue}`);
+        if (event.summary) {
+          descParts.push(event.summary);
+        }
+        if (event.soundsLike) {
+          descParts.push(`Sounds like: ${event.soundsLike}`);
+        }
+        descParts.push(`Genre: ${event.genre}`);
+        const description = descParts.join('\n');
+        
+        // Clean summary (remove emoji for compatibility)
+        const summary = `${event.artist} @ ${event.venue}`;
+        
         lines.push('BEGIN:VEVENT');
         lines.push(`UID:${uid}`);
         lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
         lines.push(`DTSTART;VALUE=DATE:${dateStr}`);
-        lines.push(`SUMMARY:${cleanText(event.artist)} @ ${cleanText(event.venue)}`);
-        lines.push(`DESCRIPTION:${cleanText(description)}`);
-        lines.push(`LOCATION:${cleanText(event.venue)}, Denver, CO`);
-        lines.push(`STATUS:CONFIRMED`);
-        lines.push(`TRANSP:TRANSPARENT`);
+        lines.push(`SUMMARY:${escapeIcal(summary)}`);
+        lines.push(`DESCRIPTION:${escapeIcal(description)}`);
+        lines.push(`LOCATION:${escapeIcal(event.venue)}`);
+        lines.push('STATUS:CONFIRMED');
+        lines.push('TRANSP:TRANSPARENT');
         lines.push('END:VEVENT');
       });
       
