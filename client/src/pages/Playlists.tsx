@@ -26,30 +26,82 @@ function formatDate(dateString: Date | string): string {
   });
 }
 
-function getMonthTag(dateString: Date | string): { month: string; color: string } {
+const monthColors: Record<string, string> = {
+  'Jan': 'bg-red-500 text-white',
+  'Feb': 'bg-pink-500 text-white', 
+  'Mar': 'bg-green-500 text-white',
+  'Apr': 'bg-blue-500 text-white',
+  'May': 'bg-purple-500 text-white',
+  'Jun': 'bg-yellow-500 text-black',
+  'Jul': 'bg-orange-500 text-white',
+  'Aug': 'bg-teal-500 text-white',
+  'Sep': 'bg-indigo-500 text-white',
+  'Oct': 'bg-amber-500 text-black',
+  'Nov': 'bg-cyan-500 text-white',
+  'Dec': 'bg-rose-500 text-white'
+};
+
+const monthNameToShort: Record<string, string> = {
+  'january': 'Jan', 'jan': 'Jan',
+  'february': 'Feb', 'feb': 'Feb',
+  'march': 'Mar', 'mar': 'Mar',
+  'april': 'Apr', 'apr': 'Apr',
+  'may': 'May',
+  'june': 'Jun', 'jun': 'Jun',
+  'july': 'Jul', 'jul': 'Jul', '4th of july': 'Jul',
+  'august': 'Aug', 'aug': 'Aug',
+  'september': 'Sep', 'sep': 'Sep', 'labor day': 'Sep',
+  'october': 'Oct', 'oct': 'Oct',
+  'november': 'Nov', 'nov': 'Nov',
+  'december': 'Dec', 'dec': 'Dec'
+};
+
+function extractMonthFromTitle(title: string): string | null {
+  const lowerTitle = title.toLowerCase();
+  
+  // Check for special cases first
+  if (lowerTitle.includes('4th of july') || lowerTitle.includes('fourth of july')) {
+    return 'Jul';
+  }
+  if (lowerTitle.includes('labor day')) {
+    return 'Sep';
+  }
+  
+  // Check for month names in the title
+  for (const [key, shortMonth] of Object.entries(monthNameToShort)) {
+    // Match whole word or month followed by space/period/number
+    const regex = new RegExp(`\\b${key}[\\.\\s]?`, 'i');
+    if (regex.test(lowerTitle)) {
+      return shortMonth;
+    }
+  }
+  
+  return null;
+}
+
+function getMonthTagFromDate(dateString: Date | string): { month: string; color: string } {
   const date = new Date(dateString);
   const month = date.toLocaleDateString('en-US', { month: 'short' });
-  
-  // Color palette for different months
-  const monthColors: Record<string, string> = {
-    'Jan': 'bg-red-500 text-white',
-    'Feb': 'bg-pink-500 text-white', 
-    'Mar': 'bg-green-500 text-white',
-    'Apr': 'bg-blue-500 text-white',
-    'May': 'bg-purple-500 text-white',
-    'Jun': 'bg-yellow-500 text-black',
-    'Jul': 'bg-orange-500 text-white',
-    'Aug': 'bg-teal-500 text-white',
-    'Sep': 'bg-indigo-500 text-white',
-    'Oct': 'bg-amber-500 text-black',
-    'Nov': 'bg-cyan-500 text-white',
-    'Dec': 'bg-rose-500 text-white'
-  };
   
   return {
     month,
     color: monthColors[month] || 'bg-gray-500 text-white'
   };
+}
+
+function getPlaylistMonthTag(playlist: { title: string; createdAt: Date | string | null }): { month: string; color: string } {
+  // First try to extract month from the title
+  const titleMonth = extractMonthFromTitle(playlist.title);
+  
+  if (titleMonth) {
+    return {
+      month: titleMonth,
+      color: monthColors[titleMonth] || 'bg-gray-500 text-white'
+    };
+  }
+  
+  // Fall back to createdAt date
+  return getMonthTagFromDate(playlist.createdAt || new Date());
 }
 
 function QueuePlaylistCard({ playlist }: { playlist: Playlist }) {
@@ -127,14 +179,6 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  // Override month tag for specific playlists
-  const getPlaylistMonthTag = (playlist: Playlist) => {
-    if (playlist.title === "Ep. June '25") {
-      return { month: 'Jun', color: 'bg-yellow-500 text-black' };
-    }
-    return getMonthTag(playlist.createdAt || new Date());
-  };
-  
   const monthTag = getPlaylistMonthTag(playlist);
   const { toast } = useToast();
 
@@ -276,13 +320,13 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
                   </div>
                 )}
 
-                {/* Track count and followers */}
+                {/* Track count and duration */}
                 <div className="text-xs text-gray-500 mb-0 flex gap-3">
                   {playlist.trackCount && (
                     <span>{playlist.trackCount} tracks</span>
                   )}
-                  {playlist.followerCount !== null && playlist.followerCount >= 0 && (
-                    <span>{playlist.followerCount} followers</span>
+                  {playlist.duration && playlist.duration > 0 && (
+                    <span>{Math.round(playlist.duration / 60000)} min</span>
                   )}
                 </div>
 
