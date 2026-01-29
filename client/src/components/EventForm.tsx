@@ -87,7 +87,20 @@ export default function EventForm({
   const [artistValue, setArtistValue] = useState(initialData?.artist || "");
   const { toast } = useToast();
 
-  // Format the date for input field (YYYY-MM-DD format)
+  // Format the date for display (MM DD YYYY format)
+  const formatDateForDisplay = (dateString?: string | Date): string => {
+    if (!dateString) return '';
+
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month} ${day} ${year}`; // Returns MM DD YYYY
+  };
+
+  // Format the date for the HTML date input (YYYY-MM-DD format required)
   const formatDateForInput = (dateString?: string | Date): string => {
     if (!dateString) return '';
 
@@ -424,8 +437,9 @@ export default function EventForm({
                         <Input
                           id="date"
                           readOnly
-                          value={field.value ? formatDateForInput(field.value) : ''}
-                          className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-5 w-[120px] text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black !bg-transparent cursor-pointer"
+                          value={field.value ? formatDateForDisplay(field.value) : ''}
+                          placeholder="MM DD YYYY"
+                          className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 pr-5 w-[130px] text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black !bg-transparent cursor-pointer"
                         />
                         <CalendarIcon className="absolute right-1 top-1/2 -translate-y-1/2 h-4 w-4 text-black pointer-events-none" />
                       </div>
