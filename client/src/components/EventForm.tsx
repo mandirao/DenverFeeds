@@ -87,27 +87,33 @@ export default function EventForm({
   const [artistValue, setArtistValue] = useState(initialData?.artist || "");
   const { toast } = useToast();
 
-  // Format the date for display (MM DD YYYY format)
-  const formatDateForDisplay = (dateString?: string | Date): string => {
-    if (!dateString) return '';
-
+  const getUTCParts = (dateString?: string | Date): { year: number; month: number; day: number } | null => {
+    if (!dateString) return null;
+    if (typeof dateString === 'string' && !dateString.includes('T')) {
+      const [y, m, d] = dateString.split('-').map(Number);
+      if (!y || !m || !d) return null;
+      return { year: y, month: m, day: d };
+    }
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '';
-
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${month} ${day} ${year}`; // Returns MM DD YYYY
+    if (isNaN(date.getTime())) return null;
+    return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate() };
   };
 
-  // Format the date for the HTML date input (YYYY-MM-DD format required)
+  const formatDateForDisplay = (dateString?: string | Date): string => {
+    const parts = getUTCParts(dateString);
+    if (!parts) return '';
+    return `${String(parts.month).padStart(2, '0')} ${String(parts.day).padStart(2, '0')} ${parts.year}`;
+  };
+
   const formatDateForInput = (dateString?: string | Date): string => {
-    if (!dateString) return '';
+    const parts = getUTCParts(dateString);
+    if (!parts) return '';
+    return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+  };
 
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '';
-
-    return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+  const parseDateUTC = (dateStr: string): Date => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day));
   };
 
   // Form setup
@@ -117,7 +123,12 @@ export default function EventForm({
       emoji: initialData?.emoji || "",
       artist: initialData?.artist || "",
       venue: initialData?.venue || "",
-      date: initialData?.date ? new Date(initialData.date) : undefined,
+      date: initialData?.date ? (() => {
+        const d = initialData.date;
+        const str = typeof d === 'string' ? d : (d as Date).toISOString();
+        if (!str.includes('T')) return parseDateUTC(str);
+        return new Date(d);
+      })() : undefined,
       summary: initialData?.summary || "",
       soundsLike: initialData?.soundsLike || "",
       genre: initialData?.genre || "",
@@ -193,7 +204,7 @@ export default function EventForm({
         
         // Auto-fill date if suggested
         if (response.suggestedDate) {
-          const date = new Date(response.suggestedDate);
+          const date = parseDateUTC(response.suggestedDate);
           if (!isNaN(date.getTime())) {
             form.setValue("date", date);
             form.clearErrors("date");
@@ -447,9 +458,10 @@ export default function EventForm({
                     <PopoverContent className="w-auto p-0" align="start">
                       <input
                         type="date"
-                        value={field.value ? formatDateForInput(field.value) : ''}
+                        value={field.value ? formatDateForInput(field.value) : `${new Date().getFullYear()}-`}
+                        min={`${new Date().getFullYear()}-01-01`}
                         onChange={(e) => {
-                          field.onChange(e.target.value ? new Date(e.target.value) : null);
+                          field.onChange(e.target.value ? parseDateUTC(e.target.value) : null);
                         }}
                         className="p-2"
                       />
