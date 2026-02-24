@@ -458,7 +458,7 @@ export default function EventForm({
                     <PopoverContent className="w-auto p-0" align="start">
                       <input
                         type="date"
-                        value={field.value ? formatDateForInput(field.value) : `${new Date().getFullYear()}-`}
+                        value={field.value ? formatDateForInput(field.value) : ''}
                         min={`${new Date().getFullYear()}-01-01`}
                         onChange={(e) => {
                           field.onChange(e.target.value ? parseDateUTC(e.target.value) : null);
