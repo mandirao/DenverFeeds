@@ -73,7 +73,7 @@ export class LLMService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          q: `"${artistName}" concert tour dates 2025 Denver Colorado tickets`,
+          q: `"${artistName}" concert tour dates 2026 Denver Colorado tickets`,
           num: 8
         })
       });
@@ -138,7 +138,7 @@ JSON format:
   "soundsLike": "Beach House, Slowdive",
   "genre": "Pop & Indie Pop",
   "suggestedVenue": "Gothic Theatre",
-  "suggestedDate": "2025-06-20"
+  "suggestedDate": "2026-06-20"
 }`;
 
     try {
@@ -155,7 +155,12 @@ JSON format:
 
       const content = response.content[0];
       if (content.type === 'text') {
-        const result = JSON.parse(content.text);
+        let text = content.text.trim();
+        const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) {
+          text = jsonMatch[1].trim();
+        }
+        const result = JSON.parse(text);
         
         // Validate and clean the response
         return {
@@ -171,13 +176,7 @@ JSON format:
       }
     } catch (error) {
       console.error('LLM API error:', error);
-      // Return fallback values
-      return {
-        emoji: '🎵',
-        summary: 'Innovative musical artist',
-        soundsLike: 'Various Artists',
-        genre: 'Rock & Alternative'
-      };
+      throw error;
     }
   }
 
@@ -208,9 +207,9 @@ JSON format:
       
       if (date <= today) return null;
       
-      // Ensure the date is within reasonable future (2025-2026)
+      const currentYear = new Date().getFullYear();
       const year = date.getFullYear();
-      if (year < 2025 || year > 2026) return null;
+      if (year < currentYear || year > currentYear + 1) return null;
       
       return date.toISOString().split('T')[0]; // Return YYYY-MM-DD format
     } catch {
