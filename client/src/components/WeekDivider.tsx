@@ -55,7 +55,7 @@ export default function WeekDivider({ events, subtitle }: WeekDividerProps) {
             {index < sortedWeekKeys.length - 1 && (
               <div className="pt-2 pb-1">
                 <div className="text-black text-sm font-black uppercase">
-                  WEEK {weekGroup.weekNumber + 1}
+                  WEEK {weekGroup.weekNumber}
                 </div>
               </div>
             )}
