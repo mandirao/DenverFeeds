@@ -200,9 +200,17 @@ export default function EventForm({
           }
         }
         
+        const parts = [];
+        if (response.suggestedVenue && response.suggestedDate) {
+          parts.push(`Show found via ${response.concertSource || 'search'}.`);
+        } else if (response.suggestedVenue || response.suggestedDate) {
+          parts.push(`Partial match via ${response.concertSource || 'search'}.`);
+        }
+        parts.push("Check the fields and make any necessary edits.");
+
         toast({
           title: "AI-generated content applied!",
-          description: "Check the fields and make any necessary edits.",
+          description: parts.join(' '),
         });
       } else {
         toast({

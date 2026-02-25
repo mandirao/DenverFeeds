@@ -47,6 +47,7 @@ This is a concert feed/newsletter application designed for an exclusive meetup g
 - **Real-time Updates**: Optimistic UI updates with TanStack Query cache invalidation
 - **Responsive Design**: Mobile-first approach with custom breakpoints
 - **Empty States**: Contextual messaging for filtered results
+- **AI Artist Analysis**: Three-tier concert lookup (Bandsintown/Songkick/AXS/Dice site searches → general web search → manual) with Claude handling creative fields (summary, sounds-like, emoji, genre). Venue/date data grounded in structured sources, not LLM hallucination.
 - **Automated Discovery**: AI-powered system that searches for Denver area concerts using artist database
 - **Artist Database**: 362+ artists from existing events plus manual additions, organized by genre and source
 - **Discovery Admin UI**: Real-time monitoring and control interface for automated event discovery
