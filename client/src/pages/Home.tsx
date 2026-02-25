@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { Navbar } from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -20,11 +19,11 @@ import { groupEventsByMonth, groupEventsByCreationTime, isRecentlyAdded, getAdde
 import { venueOptions, VenueOption, Event, genres as schemaGenres } from "@shared/schema";
 
 export default function Home() {
-  const [location, setLocation] = useLocation();
   
-  // Initialize filters from URL parameters
+  // Initialize filters from URL parameters using window.location.search
+  // (wouter's useLocation only returns the pathname, not query params)
   const getFiltersFromURL = () => {
-    const params = new URLSearchParams(location.split('?')[1] || '');
+    const params = new URLSearchParams(window.location.search);
     const status = params.get('status') || "all";
     return {
       month: params.get('month') || "all",
@@ -41,7 +40,6 @@ export default function Home() {
   
   // Update URL when filters change
   const setFilters = (newFilters: typeof filters) => {
-    // Automatically set sortBy based on status
     const finalFilters = {
       ...newFilters,
       sortBy: newFilters.status === "top-voted" ? "votes" : "date"
@@ -49,7 +47,6 @@ export default function Home() {
     
     setFiltersState(finalFilters);
     
-    // Build URL parameters (exclude sortBy since it's automatic)
     const params = new URLSearchParams();
     Object.entries(finalFilters).forEach(([key, value]) => {
       if (key !== "sortBy" && value !== "all" && value !== "date") {
@@ -58,13 +55,17 @@ export default function Home() {
     });
     
     const newURL = params.toString() ? `/?${params.toString()}` : '/';
-    setLocation(newURL);
+    window.history.replaceState(null, '', newURL);
   };
   
   // Sync filters when URL changes (back/forward navigation)
   useEffect(() => {
-    setFiltersState(getFiltersFromURL());
-  }, [location]);
+    const handlePopState = () => {
+      setFiltersState(getFiltersFromURL());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Fetch events - with refetchOnMount: always to ensure a fresh load every time
   const { data: events = [], isLoading, error } = useQuery<Event[]>({
