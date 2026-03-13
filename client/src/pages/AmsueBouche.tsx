@@ -87,84 +87,118 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
     onError: () => toast({ title: "Error", description: "Couldn't duplicate this event.", variant: "destructive" }),
   });
 
+  const soldOutMutation = useMutation({
+    mutationFn: () => apiRequest({ endpoint: `/api/food-events/${event.id}`, method: "PATCH", data: { soldOut: !event.soldOut } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/food-events"] });
+      toast({ title: event.soldOut ? "Back on the menu" : "Marked as sold out", description: event.name });
+    },
+    onError: () => toast({ title: "Error", description: "Couldn't update this event.", variant: "destructive" }),
+  });
+
   return (
     <>
       <li className="pb-1.5 relative flex items-start group">
         <span className="text-2xl mr-3 select-none">{event.emoji}</span>
 
-        <div className="flex-1 text-base">
-          <a
-            href={event.ticketUrl || mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-          >
-            {event.name}
-          </a>
-
-          {" @ "}
-
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-          >
-            {location}
-          </a>
-
-          {" ("}
-          <a
-            href={calendarUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
-          >
-            {formatDateRange(event.dateStart, event.dateEnd)}
-          </a>
-          {"). "}
-
-          {event.summary}
-
-          {event.cuisine && (
-            <span className="italic"> {event.cuisine}.</span>
-          )}
-
-          {event.price && (
+        {event.soldOut ? (
+          <div className="flex-1 text-base opacity-60">
+            <span className="font-bold">{event.name}</span>
+            {" "}
             <span
-              className="inline-block align-middle ml-2 text-xs font-black uppercase px-1.5 py-0.5"
-              style={{ backgroundColor: AB_ORANGE, position: "relative", top: "-1px" }}
+              className="inline-block align-middle text-xs font-black uppercase px-1.5 py-0.5 bg-black text-white"
+              style={{ position: "relative", top: "-1px" }}
             >
-              {event.price}
+              SOLD OUT
             </span>
-          )}
+            {event.sourceUrl && (
+              <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
+                <a
+                  href={ensureHttps(event.sourceUrl!)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase tracking-wide px-2 py-0.5 transition-colors"
+                >
+                  View Post
+                </a>
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="flex-1 text-base">
+            <a
+              href={event.ticketUrl || mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
+            >
+              {event.name}
+            </a>
 
-          {event.ticketUrl && (
-            <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
-              <a
-                href={ensureHttps(event.ticketUrl!)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] text-xs font-black uppercase tracking-wide px-2 py-0.5 transition-colors"
-              >
-                Reserve
-              </a>
-            </span>
-          )}
+            {" @ "}
 
-          {event.sourceUrl && (
-            <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
-              <a
-                href={ensureHttps(event.sourceUrl!)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase tracking-wide px-2 py-0.5 transition-colors"
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
+            >
+              {location}
+            </a>
+
+            {" ("}
+            <a
+              href={calendarUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
+            >
+              {formatDateRange(event.dateStart, event.dateEnd)}
+            </a>
+            {"). "}
+
+            {event.summary}
+
+            {event.cuisine && (
+              <span className="italic"> {event.cuisine}.</span>
+            )}
+
+            {event.price && (
+              <span
+                className="inline-block align-middle ml-2 text-xs font-black uppercase px-1.5 py-0.5"
+                style={{ backgroundColor: AB_ORANGE, position: "relative", top: "-1px" }}
               >
-                View Post
-              </a>
-            </span>
-          )}
-        </div>
+                {event.price}
+              </span>
+            )}
+
+            {event.ticketUrl && (
+              <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
+                <a
+                  href={ensureHttps(event.ticketUrl!)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-black text-[#FEABDA] hover:text-[#41F2EE] text-xs font-black uppercase tracking-wide px-2 py-0.5 transition-colors"
+                >
+                  Reserve
+                </a>
+              </span>
+            )}
+
+            {event.sourceUrl && (
+              <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
+                <a
+                  href={ensureHttps(event.sourceUrl!)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase tracking-wide px-2 py-0.5 transition-colors"
+                >
+                  View Post
+                </a>
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Three-dot menu */}
         <div className="ml-2 flex-shrink-0" style={{ position: "relative", top: "2px" }}>
@@ -178,12 +212,19 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
                 <MoreVertical className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-32 border-none bg-gray-100 shadow-md rounded-sm font-sans">
+            <DropdownMenuContent align="end" className="w-36 border-none bg-gray-100 shadow-md rounded-sm font-sans">
               <DropdownMenuItem
                 onClick={() => { setIsMenuOpen(false); setIsEditOpen(true); }}
                 className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
               >
                 Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => { setIsMenuOpen(false); soldOutMutation.mutate(); }}
+                disabled={soldOutMutation.isPending}
+                className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+              >
+                {event.soldOut ? "Mark available" : "Sold out"}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => { setIsMenuOpen(false); duplicateMutation.mutate(); }}
