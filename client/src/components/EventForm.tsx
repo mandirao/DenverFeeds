@@ -256,7 +256,7 @@ export default function EventForm({
               }}
               className="border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[300px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
             />
-            <Label htmlFor="artist" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">ARTIST NAME</Label>
+            <Label htmlFor="artist" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-bold">ARTIST NAME</Label>
             {form.formState.errors.artist && (
               <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.artist.message}</p>
             )}
@@ -290,7 +290,7 @@ export default function EventForm({
             placeholder="🎸"
             className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 w-[40px] max-w-[40px] text-center text-xl placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black !bg-transparent"
           />
-          <Label htmlFor="emoji" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">VIBE</Label>
+          <Label htmlFor="emoji" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-bold">VIBE</Label>
           {form.formState.errors.emoji && (
             <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.emoji.message}</p>
           )}
@@ -424,7 +424,7 @@ export default function EventForm({
             </Popover>
           )}
           {/* Hidden input is unnecessary since we already register venue in the custom mode input */}
-          <Label htmlFor="venue" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">VENUE</Label>
+          <Label htmlFor="venue" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-bold">VENUE</Label>
           {form.formState.errors.venue && (
             <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.venue.message}</p>
           )}
@@ -466,7 +466,7 @@ export default function EventForm({
                 </div>
               )}
             />
-            <Label htmlFor="date" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">DATE</Label>
+            <Label htmlFor="date" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-bold">DATE</Label>
             {form.formState.errors.date && (
               <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.date.message}</p>
             )}
@@ -483,7 +483,7 @@ export default function EventForm({
             placeholder="Dream-pop royalty with celestial vibes"
             className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[378px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
           />
-          <Label htmlFor="summary" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">SNAPPY BAND INTRO</Label>
+          <Label htmlFor="summary" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-bold">SNAPPY BAND INTRO</Label>
           {form.formState.errors.summary && (
             <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.summary.message}</p>
           )}
@@ -501,7 +501,7 @@ export default function EventForm({
               placeholder="Mazzy Star, Cocteau Twins"
               className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[225px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
             />
-            <Label htmlFor="soundsLike" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">SIMILAR ARTIST(S)</Label>
+            <Label htmlFor="soundsLike" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-bold">SIMILAR ARTIST(S)</Label>
             {form.formState.errors.soundsLike && (
               <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.soundsLike.message}</p>
             )}
@@ -521,7 +521,7 @@ export default function EventForm({
               <option key={genre} value={genre} className="text-black">{genre}</option>
             ))}
           </select>
-          <Label htmlFor="genre" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">GENRE</Label>
+          <Label htmlFor="genre" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-bold">GENRE</Label>
           {form.formState.errors.genre && (
             <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.genre.message}</p>
           )}
@@ -537,7 +537,7 @@ export default function EventForm({
             placeholder="Your name"
             className="inline-block border-0 border-b-2 border-black bg-transparent focus:bg-transparent p-2 pl-0 min-w-[200px] placeholder:text-black/20 text-black/20 [&:not(:placeholder-shown)]:text-black text-xl !bg-transparent"
           />
-          <Label htmlFor="requester" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-sora font-bold">YOUR NAME</Label>
+          <Label htmlFor="requester" className="absolute -bottom-5 left-0 text-[11px] text-gray-700 font-bold">YOUR NAME</Label>
           {form.formState.errors.requester && (
             <p className="absolute top-full left-0 text-red-500 text-[12px] whitespace-nowrap mt-6">{form.formState.errors.requester.message}</p>
           )}

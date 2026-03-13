@@ -195,19 +195,19 @@ export function Footer() {
         <div className="mb-4 sm:mb-0 flex items-center space-x-2">
           <button 
             onClick={() => setCalendarOpen(true)}
-            className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm"
+            className="text-black hover:text-[#41F2EE] transition-colors flex items-center underline text-sm"
           >
             <Calendar className="w-4 h-4 mr-1" /> SUBSCRIBE TO CALENDAR
           </button>
           <span className="text-black">|</span>
           {isAddPage ? (
-            <Link href="/" className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm">
+            <Link href="/" className="text-black hover:text-[#41F2EE] transition-colors flex items-center underline text-sm">
               <List className="w-4 h-4 mr-1" /> VIEW SHOWS
             </Link>
           ) : (
             <button
               onClick={() => setCsvModalOpen(true)} 
-              className="text-black hover:text-[#41F2EE] transition-colors font-sora flex items-center underline text-sm"
+              className="text-black hover:text-[#41F2EE] transition-colors flex items-center underline text-sm"
             >
               <Upload className="w-4 h-4 mr-1" /> UPLOAD EVENTS CSV
             </button>
@@ -218,14 +218,14 @@ export function Footer() {
           <span>© {new Date().getFullYear()} Setlist Social Feed.</span>
           <button 
             onClick={() => setAboutOpen(true)}
-            className="text-black hover:text-[#41F2EE] transition-colors font-sora underline text-sm"
+            className="text-black hover:text-[#41F2EE] transition-colors underline text-sm"
           >
             ABOUT
           </button>
           <span className="text-black opacity-30">|</span>
           <Link
             href="/amuse-bouche"
-            className="text-black opacity-20 hover:opacity-70 transition-opacity font-sora text-xs"
+            className="text-black opacity-20 hover:opacity-70 transition-opacity text-xs"
             title="🍽️"
           >
             🍽️
@@ -237,7 +237,7 @@ export function Footer() {
       <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
         <DialogContent className="bg-[#F5F3F0] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-anton">ABOUT SETLIST SOCIAL</DialogTitle>
+            <DialogTitle className="text-xl">ABOUT SETLIST SOCIAL</DialogTitle>
           </DialogHeader>
           <DialogDescription className="text-black">
             <div className="mb-4">
@@ -262,7 +262,7 @@ export function Footer() {
       <Dialog open={csvModalOpen} onOpenChange={setCsvModalOpen}>
         <DialogContent className="bg-[#FEABDA] max-w-xl sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-anton">UPLOAD CSV FILE</DialogTitle>
+            <DialogTitle className="text-xl">UPLOAD CSV FILE</DialogTitle>
           </DialogHeader>
           <div className="text-black mt-2">
             <div className="mb-4">

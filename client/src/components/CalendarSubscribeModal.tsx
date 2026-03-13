@@ -24,7 +24,7 @@ export function CalendarSubscribeModal({ open, onOpenChange }: CalendarSubscribe
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#f0f0f0] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl font-anton">SUBSCRIBE TO SHOWS</DialogTitle>
+          <DialogTitle className="text-xl">SUBSCRIBE TO SHOWS</DialogTitle>
         </DialogHeader>
         <DialogDescription className="text-black">
           <div className="mb-4">

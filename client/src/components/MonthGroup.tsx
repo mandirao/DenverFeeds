@@ -50,7 +50,7 @@ export function MonthGroup({ monthName, events }: MonthGroupProps) {
   
   return (
     <div className="mb-6">
-      <h2 className="text-xl text-black mb-3 font-anton font-black">{formatMonth(monthName)}</h2>
+      <h2 className="text-xl text-black mb-3 font-black">{formatMonth(monthName)}</h2>
       {weekKeys.map((weekKey, index) => {
         const weekData = events.weekGroups[weekKey];
         // Calculate week number from the first event in this week

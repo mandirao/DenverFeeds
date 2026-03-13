@@ -126,7 +126,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
 
           {event.price && (
             <span
-              className="inline-block align-middle ml-2 text-xs font-black font-sora uppercase px-1.5 py-0.5"
+              className="inline-block align-middle ml-2 text-xs font-black uppercase px-1.5 py-0.5"
               style={{ backgroundColor: AB_ORANGE, position: "relative", top: "-1px" }}
             >
               {event.price}
@@ -139,7 +139,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
                 href={event.ticketUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 transition-colors"
+                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] text-xs font-black uppercase tracking-wide px-2 py-0.5 transition-colors"
               >
                 Reserve
               </a>
@@ -152,7 +152,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
                 href={event.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-black text-white hover:text-[#41F2EE] text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 transition-colors"
+                className="bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase tracking-wide px-2 py-0.5 transition-colors"
               >
                 View Post
               </a>
@@ -209,18 +209,18 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AB_GOLD }}>
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-anton text-xl uppercase">Delete this popup?</AlertDialogTitle>
-            <AlertDialogDescription className="font-sora text-sm">
+            <AlertDialogTitle className="text-xl uppercase">Delete this popup?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
               <strong>{event.name}</strong> will be permanently removed from the feed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-2 border-black rounded-none font-sora font-black text-xs uppercase hover:bg-black hover:text-white transition-colors">
+            <AlertDialogCancel className="border-2 border-black rounded-none font-black text-xs uppercase hover:bg-black hover:text-white transition-colors">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate()}
-              className="bg-black text-white border-2 border-black rounded-none font-sora font-black text-xs uppercase hover:text-red-400 transition-colors"
+              className="bg-black text-white border-2 border-black rounded-none font-black text-xs uppercase hover:text-red-400 transition-colors"
             >
               Delete
             </AlertDialogAction>
@@ -276,15 +276,15 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
     updateMutation.mutate(form);
   };
 
-  const inputClass = "border-2 border-black rounded-none bg-white font-sora text-sm";
-  const labelClass = "font-sora font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
+  const inputClass = "border-2 border-black rounded-none bg-white text-sm";
+  const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-lg border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: AB_GOLD }}>
         <DialogHeader>
-          <DialogTitle className="font-anton text-3xl text-black uppercase tracking-tight">
+          <DialogTitle className="text-3xl text-black uppercase tracking-tight">
             Edit Popup
           </DialogTitle>
         </DialogHeader>
@@ -303,7 +303,7 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {cuisineTypes.map(c => <SelectItem key={c} value={c} className="font-sora">{c}</SelectItem>)}
+                  {cuisineTypes.map(c => <SelectItem key={c} value={c} className="">{c}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -346,7 +346,7 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
             <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
               className={`${inputClass} resize-none`} rows={3} maxLength={200}
               placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
-            <p className="text-xs font-sora text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
+            <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -376,11 +376,11 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
 
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2.5 border-2 border-black bg-white font-black font-sora uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
+              className="flex-1 px-4 py-2.5 border-2 border-black bg-white font-black uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
               Cancel
             </button>
             <button type="submit" disabled={updateMutation.isPending}
-              className="flex-1 px-4 py-2.5 border-2 border-black bg-black text-white font-black font-sora uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
+              className="flex-1 px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
               {updateMutation.isPending ? "Saving…" : "Save Changes"}
             </button>
           </div>
@@ -491,15 +491,15 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     setImageMediaType(null);
   };
 
-  const inputClass = "border-2 border-black rounded-none bg-white font-sora text-sm";
-  const labelClass = "font-sora font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
+  const inputClass = "border-2 border-black rounded-none bg-white text-sm";
+  const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: AB_GOLD }}>
         <DialogHeader>
-          <DialogTitle className="font-anton text-3xl text-black uppercase tracking-tight">
+          <DialogTitle className="text-3xl text-black uppercase tracking-tight">
             Add a Popup
           </DialogTitle>
         </DialogHeader>
@@ -512,7 +512,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
               <button
                 type="button"
                 onClick={() => switchMode("screenshot")}
-                className={`flex items-center justify-center gap-2 py-2.5 font-black font-sora uppercase tracking-wide text-sm transition-colors ${
+                className={`flex items-center justify-center gap-2 py-2.5 font-black uppercase tracking-wide text-sm transition-colors ${
                   inputMode === "screenshot"
                     ? "bg-black text-white"
                     : "bg-white text-black hover:bg-gray-100"
@@ -523,7 +523,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
               <button
                 type="button"
                 onClick={() => switchMode("blurb")}
-                className={`flex items-center justify-center gap-2 py-2.5 font-black font-sora uppercase tracking-wide text-sm transition-colors border-l-2 border-black ${
+                className={`flex items-center justify-center gap-2 py-2.5 font-black uppercase tracking-wide text-sm transition-colors border-l-2 border-black ${
                   inputMode === "blurb"
                     ? "bg-black text-white"
                     : "bg-white text-black hover:bg-gray-100"
@@ -536,7 +536,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             {/* ── Screenshot mode ── */}
             {inputMode === "screenshot" && (
               <div className="space-y-3">
-                <p className="text-xs font-sora text-gray-500">Upload a screenshot from Instagram, Eventbrite, or anywhere — AI will read the text directly from the image.</p>
+                <p className="text-xs text-gray-500">Upload a screenshot from Instagram, Eventbrite, or anywhere — AI will read the text directly from the image.</p>
                 <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-black bg-white cursor-pointer hover:bg-gray-50 transition-colors py-6 px-3">
                   <input
                     type="file"
@@ -556,8 +556,8 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                   ) : (
                     <>
                       <ImageIcon className="w-8 h-8 opacity-30" />
-                      <span className="font-sora text-sm font-semibold">Click to upload screenshot</span>
-                      <span className="font-sora text-xs text-gray-400">JPG, PNG, WEBP, GIF</span>
+                      <span className="text-sm font-semibold">Click to upload screenshot</span>
+                      <span className="text-xs text-gray-400">JPG, PNG, WEBP, GIF</span>
                     </>
                   )}
                 </label>
@@ -567,7 +567,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             {/* ── Blurb mode ── */}
             {inputMode === "blurb" && (
               <div className="space-y-3">
-                <p className="text-xs font-sora text-gray-500">Paste a caption or description from social media — AI will extract the event details.</p>
+                <p className="text-xs text-gray-500">Paste a caption or description from social media — AI will extract the event details.</p>
                 <Textarea rows={5}
                   placeholder={`e.g.\n\nhopalleydenver\n\nWe are happy to announce our Hop Alley Hot Pot Pop-Up Nights! On March 26-28…`}
                   value={blurb} onChange={e => setBlurb(e.target.value)}
@@ -586,12 +586,12 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             <div className="flex gap-2">
               <button onClick={() => parseMutation.mutate()}
                 disabled={(!blurb.trim() && !imageBase64) || parseMutation.isPending}
-                className="flex-1 bg-black text-white font-black font-sora uppercase tracking-wide text-sm px-4 py-2.5 border-2 border-black hover:text-[#41F2EE] transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                className="flex-1 bg-black text-white font-black uppercase tracking-wide text-sm px-4 py-2.5 border-2 border-black hover:text-[#41F2EE] transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
                 <Sparkles className="w-4 h-4" />
                 {parseMutation.isPending ? "Parsing…" : "Parse with AI"}
               </button>
               <button onClick={() => setShowForm(true)}
-                className="px-4 py-2.5 border-2 border-black bg-white font-black font-sora uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
+                className="px-4 py-2.5 border-2 border-black bg-white font-black uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
                 Skip
               </button>
             </div>
@@ -611,7 +611,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {cuisineTypes.map(c => <SelectItem key={c} value={c} className="font-sora">{c}</SelectItem>)}
+                    {cuisineTypes.map(c => <SelectItem key={c} value={c} className="">{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -654,7 +654,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
               <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
                 className={`${inputClass} resize-none`} rows={3} maxLength={200}
                 placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
-              <p className="text-xs font-sora text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
+              <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -684,11 +684,11 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
             <div className="flex gap-2 pt-1">
               <button type="button" onClick={handleClose}
-                className="flex-1 px-4 py-2.5 border-2 border-black bg-white font-black font-sora uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
+                className="flex-1 px-4 py-2.5 border-2 border-black bg-white font-black uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
                 Cancel
               </button>
               <button type="submit" disabled={createMutation.isPending}
-                className="flex-1 px-4 py-2.5 border-2 border-black bg-black text-white font-black font-sora uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
+                className="flex-1 px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
                 {createMutation.isPending ? "Adding…" : "Add Popup"}
               </button>
             </div>
@@ -728,19 +728,19 @@ export default function AmsueBouche() {
                   AMUSE-BOUCHE INSIDER
                 </h1>
               </Link>
-              <span className="font-sora text-sm font-semibold text-black opacity-60 hidden sm:block">
+              <span className="text-sm font-semibold text-black opacity-60 hidden sm:block">
                 Foodie popups & events
               </span>
             </div>
             <div className="flex items-center gap-4">
               <a href="https://www.meetup.com/amuse-bouche/"
                 target="_blank" rel="noopener noreferrer"
-                className="text-black hover:text-[#41F2EE] font-medium font-sora transition-colors flex items-center gap-1">
+                className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1">
                 <Users className="h-4 w-4" />
                 <span>Meetup</span>
               </a>
               <button onClick={() => setAddOpen(true)}
-                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black font-sora uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
+                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
                 <Plus className="w-4 h-4" />Popup
               </button>
             </div>
@@ -752,7 +752,7 @@ export default function AmsueBouche() {
       <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
 
         {isLoading && (
-          <div className="text-center py-16 text-gray-400 font-sora">
+          <div className="text-center py-16 text-gray-400">
             <UtensilsCrossed className="w-8 h-8 mx-auto mb-3 opacity-30" />
             <p>Loading the good stuff…</p>
           </div>
@@ -761,10 +761,10 @@ export default function AmsueBouche() {
         {!isLoading && events.length === 0 && (
           <div className="text-center py-16">
             <UtensilsCrossed className="w-10 h-10 mx-auto mb-3 opacity-20" />
-            <p className="font-anton text-2xl text-black uppercase mb-1">Nothing on the menu yet.</p>
-            <p className="font-sora text-sm text-gray-600 mb-4">Be the first to add a popup.</p>
+            <p className="text-2xl text-black uppercase mb-1">Nothing on the menu yet.</p>
+            <p className="text-sm text-gray-600 mb-4">Be the first to add a popup.</p>
             <button onClick={() => setAddOpen(true)}
-              className="bg-black text-white font-black font-sora uppercase tracking-wide text-sm px-6 py-2.5 border-2 border-black hover:text-[#41F2EE] transition-colors inline-flex items-center gap-2">
+              className="bg-black text-white font-black uppercase tracking-wide text-sm px-6 py-2.5 border-2 border-black hover:text-[#41F2EE] transition-colors inline-flex items-center gap-2">
               <Plus className="w-4 h-4" />Add a Popup
             </button>
           </div>
@@ -796,16 +796,16 @@ export default function AmsueBouche() {
         <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
           <div className="flex items-center gap-2">
             <Link href="/"
-              className="font-sora text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline flex items-center gap-1">
+              className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline flex items-center gap-1">
               <List className="w-4 h-4" />SETLIST SOCIAL FEED
             </Link>
             <span className="text-black opacity-40">|</span>
             <button onClick={() => setAddOpen(true)}
-              className="font-sora text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline">
+              className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline">
               ADD A POPUP
             </button>
           </div>
-          <span className="font-sora text-sm text-black">© {new Date().getFullYear()} Amuse Bouche</span>
+          <span className="text-sm text-black">© {new Date().getFullYear()} Amuse Bouche</span>
         </div>
       </footer>
 

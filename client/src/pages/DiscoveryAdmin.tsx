@@ -417,7 +417,7 @@ export default function DiscoveryAdmin() {
                 <span className="font-medium">Back to Shows</span>
               </Link>
             </div>
-            <h1 className="text-2xl font-anton text-black">DISCOVERY ADMIN</h1>
+            <h1 className="text-2xl text-black">DISCOVERY ADMIN</h1>
           </div>
         </div>
       </div>

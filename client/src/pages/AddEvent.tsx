@@ -62,7 +62,7 @@ export default function AddEvent() {
       
       <main className="container mx-auto px-4 py-8">
         <div className="bg-[#FEABDA] rounded-lg p-6">
-          <h2 className="text-2xl text-black mb-6 font-anton font-black uppercase">ADD A SHOW</h2>
+          <h2 className="text-2xl text-black mb-6 font-black uppercase">ADD A SHOW</h2>
           
           <EventForm 
             onSubmit={handleSubmit}

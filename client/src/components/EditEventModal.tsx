@@ -168,7 +168,7 @@ export default function EditEventModal({ event, isOpen, onClose, isDuplicate = f
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-[#F5F3F0]">
         <DialogHeader>
-          <DialogTitle className="text-2xl text-black font-anton font-black uppercase">
+          <DialogTitle className="text-2xl text-black font-black uppercase">
             {isDuplicate ? "DUPLICATE SHOW" : "EDIT SHOW"}
           </DialogTitle>
           <DialogDescription className="sr-only">

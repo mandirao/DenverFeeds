@@ -6,8 +6,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        anton: ['Anton', 'Impact', 'sans-serif'],
-        sora: ['Sora', 'Inter', 'sans-serif'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', '"Helvetica Neue"', 'Arial', 'sans-serif'],
       },
       borderRadius: {
         lg: "var(--radius)",
