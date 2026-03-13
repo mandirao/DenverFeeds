@@ -35,17 +35,6 @@ function getMonthLabel(dateStart: string): string {
   return new Date(dateStart + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
-const MONTH_COLORS: Record<string, string> = {
-  January: "#EF4444", February: "#EC4899", March: "#22C55E",
-  April: "#3B82F6", May: "#8B5CF6", June: "#EAB308",
-  July: "#F97316", August: "#14B8A6", September: "#6366F1",
-  October: "#F59E0B", November: "#06B6D4", December: "#F43F5E",
-};
-
-function monthColor(dateStart: string) {
-  const month = new Date(dateStart + "T12:00:00").toLocaleDateString("en-US", { month: "long" });
-  return MONTH_COLORS[month] || AB_ORANGE;
-}
 
 function createCalendarUrl(event: FoodEvent): string {
   const toGCal = (d: string) => d.replace(/-/g, "");
@@ -99,8 +88,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
           href={calendarUrl}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: monthColor(event.dateStart), borderColor: monthColor(event.dateStart) }}
-          className="font-medium border-b border-dotted hover:border-solid cursor-pointer"
+          className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
         >
           {formatDateRange(event.dateStart, event.dateEnd)}
         </a>
@@ -404,7 +392,7 @@ export default function AmsueBouche() {
       </nav>
 
       {/* ── Hero strip ── */}
-      <div className="border-b-2 border-black py-3 px-4 text-center" style={{ backgroundColor: AB_PINK }}>
+      <div className="py-3 px-4 text-center" style={{ backgroundColor: AB_PINK }}>
         <p className="font-sora text-sm font-semibold text-black max-w-xl mx-auto">
           Exclusive popups, secret dinners &amp; one-night-only experiences for our foodie community.
           Spot something? Paste the blurb and let AI do the rest.
@@ -434,16 +422,15 @@ export default function AmsueBouche() {
         )}
 
         {Object.entries(grouped).map(([month, monthEvents]) => {
-          const color = monthColor(monthEvents[0].dateStart);
           return (
             <div key={month} className="mb-6">
               {/* Fix 1: Month header — line — MONTH — line treatment */}
               <div className="flex items-center gap-3 mb-3">
-                <div className="h-0.5 flex-1" style={{ backgroundColor: color }} />
-                <h2 className="font-anton text-lg font-black uppercase" style={{ color }}>
+                <div className="h-0.5 flex-1 bg-black" />
+                <h2 className="font-anton text-lg font-black uppercase text-black">
                   {month.toUpperCase()}
                 </h2>
-                <div className="h-0.5 flex-1" style={{ backgroundColor: color }} />
+                <div className="h-0.5 flex-1 bg-black" />
               </div>
               <ul className="space-y-0">
                 {monthEvents.map(ev => (
@@ -456,7 +443,7 @@ export default function AmsueBouche() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="py-4 px-4 border-t-2 border-black" style={{ backgroundColor: AB_ORANGE }}>
+      <footer className="py-4 px-4" style={{ backgroundColor: AB_ORANGE }}>
         <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
           <div className="flex items-center gap-2">
             <Link href="/"
