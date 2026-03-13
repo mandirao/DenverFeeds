@@ -1,6 +1,6 @@
 import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent, discoveredArtists, type DiscoveredArtist, type InsertDiscoveredArtist, venues, type Venue, type InsertVenue, foodEvents, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, count, desc, gt } from "drizzle-orm";
+import { eq, and, sql, count, desc, gt, gte } from "drizzle-orm";
 import { spotifyService } from "./spotify";
 
 // modify the interface with any CRUD methods
@@ -522,7 +522,10 @@ export class DatabaseStorage implements IStorage {
 
   // Food Events methods (Amuse Bouche)
   async getAllFoodEvents(): Promise<FoodEvent[]> {
-    return await db.select().from(foodEvents).orderBy(foodEvents.dateStart);
+    const todayMT = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date());
+    return await db.select().from(foodEvents)
+      .where(gte(sql`COALESCE(${foodEvents.dateEnd}, ${foodEvents.dateStart})`, todayMT))
+      .orderBy(foodEvents.dateStart);
   }
 
   async getFoodEventById(id: number): Promise<FoodEvent | undefined> {
