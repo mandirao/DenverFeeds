@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
-import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users } from "lucide-react";
+import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText } from "lucide-react";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AB_ORANGE = "#FE6B41";
@@ -402,10 +402,22 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const [blurb, setBlurb] = useState("");
   const [form, setForm] = useState<Partial<InsertFoodEvent>>(BLANK);
   const [showForm, setShowForm] = useState(false);
+  const [inputMode, setInputMode] = useState<"screenshot" | "blurb">("screenshot");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imageMediaType, setImageMediaType] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const switchMode = (mode: "screenshot" | "blurb") => {
+    setInputMode(mode);
+    if (mode === "screenshot") {
+      setBlurb("");
+    } else {
+      setImagePreview(null);
+      setImageBase64(null);
+      setImageMediaType(null);
+    }
+  };
 
   const set = (field: keyof InsertFoodEvent, value: string) =>
     setForm(f => ({ ...f, [field]: value }));
@@ -473,6 +485,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     setBlurb("");
     setForm(BLANK);
     setShowForm(false);
+    setInputMode("screenshot");
     setImagePreview(null);
     setImageBase64(null);
     setImageMediaType(null);
@@ -493,51 +506,77 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
         {!showForm ? (
           <div className="space-y-4">
-            <p className="text-sm font-sora text-gray-700">
-              Paste a social media blurb and AI will parse the details — or skip to the form.
-            </p>
-            <div>
-              <label className={labelClass}>Social media blurb</label>
-              <Textarea rows={4}
-                placeholder={`e.g.\n\nhopalleydenver\n\nWe are happy to announce our Hop Alley Hot Pot Pop-Up Nights! On March 26-28…`}
-                value={blurb} onChange={e => setBlurb(e.target.value)}
-                className={`${inputClass} resize-none`} />
+
+            {/* ── Mode toggle ── */}
+            <div className="grid grid-cols-2 border-2 border-black">
+              <button
+                type="button"
+                onClick={() => switchMode("screenshot")}
+                className={`flex items-center justify-center gap-2 py-2.5 font-black font-sora uppercase tracking-wide text-sm transition-colors ${
+                  inputMode === "screenshot"
+                    ? "bg-black text-white"
+                    : "bg-white text-black hover:bg-gray-100"
+                }`}
+              >
+                <ImageIcon className="w-4 h-4" />Screenshot
+              </button>
+              <button
+                type="button"
+                onClick={() => switchMode("blurb")}
+                className={`flex items-center justify-center gap-2 py-2.5 font-black font-sora uppercase tracking-wide text-sm transition-colors border-l-2 border-black ${
+                  inputMode === "blurb"
+                    ? "bg-black text-white"
+                    : "bg-white text-black hover:bg-gray-100"
+                }`}
+              >
+                <FileText className="w-4 h-4" />Blurb
+              </button>
             </div>
 
-            {/* Screenshot upload */}
-            <div>
-              <label className={labelClass}>Screenshot from post <span className="font-normal normal-case opacity-60">(optional — AI will read text in the image)</span></label>
-              <div className="flex items-start gap-3">
-                <label className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-black bg-white cursor-pointer hover:bg-gray-50 transition-colors py-3 px-3 font-sora text-sm font-semibold">
+            {/* ── Screenshot mode ── */}
+            {inputMode === "screenshot" && (
+              <div className="space-y-3">
+                <p className="text-xs font-sora text-gray-500">Upload a screenshot from Instagram, Eventbrite, or anywhere — AI will read the text directly from the image.</p>
+                <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-black bg-white cursor-pointer hover:bg-gray-50 transition-colors py-6 px-3">
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp,image/gif"
                     className="hidden"
                     onChange={handleImageSelect}
                   />
-                  {imagePreview ? "Change image" : "Upload screenshot"}
+                  {imagePreview ? (
+                    <div className="relative">
+                      <img src={imagePreview} alt="Preview" className="max-h-48 max-w-full object-contain border-2 border-black" />
+                      <button
+                        type="button"
+                        onClick={e => { e.preventDefault(); setImagePreview(null); setImageBase64(null); setImageMediaType(null); }}
+                        className="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none"
+                      >×</button>
+                    </div>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-8 h-8 opacity-30" />
+                      <span className="font-sora text-sm font-semibold">Click to upload screenshot</span>
+                      <span className="font-sora text-xs text-gray-400">JPG, PNG, WEBP, GIF</span>
+                    </>
+                  )}
                 </label>
-                {imagePreview && (
-                  <div className="relative flex-shrink-0">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="h-16 w-16 object-cover border-2 border-black"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { setImagePreview(null); setImageBase64(null); setImageMediaType(null); }}
-                      className="absolute -top-1.5 -right-1.5 bg-black text-white rounded-full w-4 h-4 flex items-center justify-center text-xs leading-none"
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
               </div>
-            </div>
+            )}
+
+            {/* ── Blurb mode ── */}
+            {inputMode === "blurb" && (
+              <div className="space-y-3">
+                <p className="text-xs font-sora text-gray-500">Paste a caption or description from social media — AI will extract the event details.</p>
+                <Textarea rows={5}
+                  placeholder={`e.g.\n\nhopalleydenver\n\nWe are happy to announce our Hop Alley Hot Pot Pop-Up Nights! On March 26-28…`}
+                  value={blurb} onChange={e => setBlurb(e.target.value)}
+                  className={`${inputClass} resize-none`} />
+              </div>
+            )}
 
             <div>
-              <label className={labelClass}>Original post link</label>
+              <label className={labelClass}>Original post link <span className="font-normal normal-case opacity-60">(optional)</span></label>
               <Input
                 value={form.sourceUrl || ""}
                 onChange={e => set("sourceUrl", e.target.value)}
@@ -690,7 +729,7 @@ export default function AmsueBouche() {
                 </h1>
               </Link>
               <span className="font-sora text-sm font-semibold text-black opacity-60 hidden sm:block">
-                Foodie popups
+                Foodie popups & events
               </span>
             </div>
             <div className="flex items-center gap-4">
