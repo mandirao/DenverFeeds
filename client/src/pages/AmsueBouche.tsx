@@ -500,7 +500,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/food-events"] });
       toast({ title: "Popup added!", description: "It's now on the feed." });
-      handleClose();
+      forceClose();
     },
     onError: (e: any) => {
       toast({ title: "Error", description: e?.message || "Couldn't add event.", variant: "destructive" });
