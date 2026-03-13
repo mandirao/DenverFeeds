@@ -47,10 +47,23 @@ function monthColor(dateStart: string) {
   return MONTH_COLORS[month] || AB_ORANGE;
 }
 
+function createCalendarUrl(event: FoodEvent): string {
+  const toGCal = (d: string) => d.replace(/-/g, "");
+  const start = toGCal(event.dateStart);
+  const endDate = event.dateEnd ? event.dateEnd : event.dateStart;
+  // Google Calendar all-day events use exclusive end date (add 1 day)
+  const end = toGCal(new Date(new Date(endDate + "T12:00:00").getTime() + 86400000).toISOString().slice(0, 10));
+  const text = encodeURIComponent(event.name);
+  const loc = encodeURIComponent(`${event.venue}${event.neighborhood ? ", " + event.neighborhood : ""}, Denver CO`);
+  const details = encodeURIComponent(event.summary || "");
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&location=${loc}&details=${details}&dates=${start}/${end}`;
+}
+
 // ── Event Row (inline sentence style, matching Setlist Social) ────────────────
 
 function FoodEventRow({ event }: { event: FoodEvent }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue + " Denver CO")}`;
+  const calendarUrl = createCalendarUrl(event);
   const location = event.neighborhood ? `${event.venue}, ${event.neighborhood}` : event.venue;
 
   return (
@@ -58,7 +71,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
       <span className="text-2xl mr-3 select-none">{event.emoji}</span>
 
       <div className="flex-1 text-base">
-        {/* Event name — links to ticket URL if available, else maps */}
+        {/* Fix 2: Event name — bold dotted link */}
         <a
           href={event.ticketUrl || mapsUrl}
           target="_blank"
@@ -70,7 +83,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
 
         {" @ "}
 
-        {/* Venue — links to Google Maps */}
+        {/* Venue — dotted underline to Google Maps */}
         <a
           href={mapsUrl}
           target="_blank"
@@ -81,24 +94,36 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
         </a>
 
         {" ("}
-        <span style={{ color: monthColor(event.dateStart) }} className="font-medium">
+        {/* Fix 2: Date is now a clickable link to Google Calendar */}
+        <a
+          href={calendarUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: monthColor(event.dateStart), borderColor: monthColor(event.dateStart) }}
+          className="font-medium border-b border-dotted hover:border-solid cursor-pointer"
+        >
           {formatDateRange(event.dateStart, event.dateEnd)}
-        </span>
+        </a>
         {"). "}
 
         {event.summary}
 
-        {/* Price badge inline */}
+        {/* Fix 5: Cuisine tag — italic closer, like soundsLike on Setlist */}
+        {event.cuisine && (
+          <span className="italic"> {event.cuisine}.</span>
+        )}
+
+        {/* Fix 4: Price badge — separated after the sentence close */}
         {event.price && (
           <span
-            className="inline-block align-middle ml-1 text-xs font-black font-sora uppercase px-1.5 py-0.5"
+            className="inline-block align-middle ml-2 text-xs font-black font-sora uppercase px-1.5 py-0.5"
             style={{ backgroundColor: AB_ORANGE, position: "relative", top: "-1px" }}
           >
             {event.price}
           </span>
         )}
 
-        {/* Reserve CTA — inline if ticket URL exists */}
+        {/* Reserve CTA */}
         {event.ticketUrl && (
           <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
             <a
@@ -112,20 +137,19 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
           </span>
         )}
 
-        {/* View Post — inline if source URL exists */}
+        {/* Fix 3: View Post — now matches Reserve (black pill, white text) */}
         {event.sourceUrl && (
           <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
             <a
               href={event.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-white text-black hover:text-[#41F2EE] border border-black text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 transition-colors"
+              className="bg-black text-white hover:text-[#41F2EE] text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 transition-colors"
             >
               View Post
             </a>
           </span>
         )}
-
       </div>
     </li>
   );
@@ -413,10 +437,14 @@ export default function AmsueBouche() {
           const color = monthColor(monthEvents[0].dateStart);
           return (
             <div key={month} className="mb-6">
-              {/* Month header — same style as Setlist's MonthGroup */}
-              <h2 className="text-xl text-black mb-3 font-anton font-black" style={{ color }}>
-                {month.toUpperCase()}
-              </h2>
+              {/* Fix 1: Month header — line — MONTH — line treatment */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-0.5 flex-1" style={{ backgroundColor: color }} />
+                <h2 className="font-anton text-lg font-black uppercase" style={{ color }}>
+                  {month.toUpperCase()}
+                </h2>
+                <div className="h-0.5 flex-1" style={{ backgroundColor: color }} />
+              </div>
               <ul className="space-y-0">
                 {monthEvents.map(ev => (
                   <FoodEventRow key={ev.id} event={ev} />
