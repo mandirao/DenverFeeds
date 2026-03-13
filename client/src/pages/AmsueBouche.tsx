@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
-import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical } from "lucide-react";
+import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users } from "lucide-react";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AB_ORANGE = "#FE6B41";
@@ -683,17 +683,23 @@ export default function AmsueBouche() {
       <nav className="sticky top-0 z-50 shadow-md px-4 py-3" style={{ backgroundColor: AB_ORANGE }}>
         <div className="container mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-3">
               <Link href="/amuse-bouche">
                 <h1 className="text-3xl md:text-4xl text-black hover:text-[#41F2EE] transition-colors font-black cursor-pointer">
-                  AMUSE BOUCHE
+                  AMUSE-BOUCHE INSIDER
                 </h1>
               </Link>
+              <span className="font-sora text-sm font-semibold text-black opacity-60 hidden sm:block">
+                Foodie popups
+              </span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="font-sora text-sm font-semibold text-black opacity-60 hidden sm:block">
-                Denver food popups
-              </span>
+              <a href="https://www.meetup.com/amuse-bouche/"
+                target="_blank" rel="noopener noreferrer"
+                className="text-black hover:text-[#41F2EE] font-medium font-sora transition-colors flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                <span>Meetup</span>
+              </a>
               <button onClick={() => setAddOpen(true)}
                 className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black font-sora uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
                 <Plus className="w-4 h-4" />Popup
