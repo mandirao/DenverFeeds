@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
-import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText } from "lucide-react";
+import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown } from "lucide-react";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AB_ORANGE = "#FE6B41";
@@ -801,11 +801,21 @@ export default function AmsueBouche() {
         <div className="container mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
             <div className="flex items-baseline gap-3">
-              <Link href="/amuse-bouche">
-                <h1 className="text-3xl md:text-4xl text-black hover:text-[#41F2EE] transition-colors font-black cursor-pointer">
-                  AMUSE-BOUCHE INSIDER
-                </h1>
-              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1 group outline-none">
+                  <h1 className="text-3xl md:text-4xl text-black group-hover:text-[#41F2EE] transition-colors font-black">
+                    AMUSE-BOUCHE INSIDER
+                  </h1>
+                  <ChevronDown className="h-4 w-4 text-black group-hover:text-[#41F2EE] transition-colors shrink-0 self-center" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="rounded-none border-2 border-black bg-black text-white p-0 min-w-[220px]">
+                  <DropdownMenuItem asChild className="rounded-none focus:bg-[#FEABDA] focus:text-black px-4 py-3 cursor-pointer">
+                    <Link href="/" className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
+                      🎵 SETLIST SOCIAL FEED
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <span className="text-sm font-semibold text-black opacity-60 hidden sm:block">
                 Foodie popups & events
               </span>
