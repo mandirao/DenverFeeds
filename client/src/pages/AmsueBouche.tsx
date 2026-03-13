@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
-import { UtensilsCrossed, Plus, Sparkles, List, ArrowUp } from "lucide-react";
+import { UtensilsCrossed, Plus, Sparkles, List } from "lucide-react";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AB_ORANGE = "#FE6B41";
@@ -49,17 +49,8 @@ function monthColor(dateStart: string) {
 
 // ── Event Row (inline sentence style, matching Setlist Social) ────────────────
 
-function FoodEventRow({ event, onUpvote }: { event: FoodEvent; onUpvote: (id: number) => void }) {
-  const [upvoted, setUpvoted] = useState(false);
-  const [showUpvoteTooltip, setShowUpvoteTooltip] = useState(false);
+function FoodEventRow({ event }: { event: FoodEvent }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue + " Denver CO")}`;
-
-  const handleUpvote = () => {
-    if (!upvoted) { onUpvote(event.id); setUpvoted(true); }
-    setShowUpvoteTooltip(true);
-    setTimeout(() => setShowUpvoteTooltip(false), 2000);
-  };
-
   const location = event.neighborhood ? `${event.venue}, ${event.neighborhood}` : event.venue;
 
   return (
@@ -135,21 +126,6 @@ function FoodEventRow({ event, onUpvote }: { event: FoodEvent; onUpvote: (id: nu
           </span>
         )}
 
-        {/* Upvote pill — inline, same style as Setlist */}
-        <span
-          className="inline-block align-middle ml-2"
-          style={{ position: "relative", top: "-1px" }}
-          onMouseEnter={() => setShowUpvoteTooltip(true)}
-          onMouseLeave={() => !upvoted && setShowUpvoteTooltip(false)}
-        >
-          <button
-            onClick={handleUpvote}
-            disabled={upvoted}
-            className={`${upvoted ? "bg-[#25428A] text-white" : "bg-black text-[#FE6B41] hover:text-[#41F2EE]"} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0 cursor-pointer transition-colors`}
-          >
-            <ArrowUp className="h-3 w-3" /> {event.upvotes + (upvoted ? 1 : 0)}
-          </button>
-        </span>
       </div>
     </li>
   );
@@ -364,17 +340,9 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
 export default function AmsueBouche() {
   const [addOpen, setAddOpen] = useState(false);
-  const { toast } = useToast();
 
   const { data: events = [], isLoading } = useQuery<FoodEvent[]>({
     queryKey: ["/api/food-events"],
-  });
-
-  const upvoteMutation = useMutation({
-    mutationFn: (id: number) =>
-      apiRequest({ endpoint: `/api/food-events/${id}/upvote`, method: "POST", data: {} }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/food-events"] }),
-    onError: () => toast({ title: "Couldn't upvote", variant: "destructive" }),
   });
 
   const grouped = events.reduce<Record<string, FoodEvent[]>>((acc, ev) => {
@@ -451,7 +419,7 @@ export default function AmsueBouche() {
               </h2>
               <ul className="space-y-0">
                 {monthEvents.map(ev => (
-                  <FoodEventRow key={ev.id} event={ev} onUpvote={(id) => upvoteMutation.mutate(id)} />
+                  <FoodEventRow key={ev.id} event={ev} />
                 ))}
               </ul>
             </div>
