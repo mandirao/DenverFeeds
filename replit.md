@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a concert feed/newsletter application designed for an exclusive meetup group to discover, vote on, and organize attendance for upcoming music shows. The application allows users to browse concerts in a chronologically organized feed, upvote events they're interested in, and interact with event details through integrated third-party services like Google Calendar, Google Maps, and Spotify.
+This is a concert feed/newsletter application (Setlist Social Feed) with a sister app (Amuse Bouche) for foodie popups. Designed for an exclusive meetup group to discover, vote on, and organize attendance for upcoming music shows and food events. The application allows users to browse concerts in a chronologically organized feed, upvote events they're interested in, and interact with event details through integrated third-party services like Google Calendar, Google Maps, and Spotify.
 
 ## User Preferences
 
@@ -47,6 +47,7 @@ This is a concert feed/newsletter application designed for an exclusive meetup g
 - **Real-time Updates**: Optimistic UI updates with TanStack Query cache invalidation
 - **Responsive Design**: Mobile-first approach with custom breakpoints
 - **Empty States**: Contextual messaging for filtered results
+- **Amuse Bouche Sister App**: Food popup feed at `/amuse-bouche` with its own green/amber design, AI blurb parser (paste Instagram/social blurb → Claude extracts name/venue/dates/price/cuisine), upvoting, and add-event modal. Secret 🍽️ emoji link in Setlist footer connects the two apps. Food events stored in `food_events` table.
 - **AI Artist Analysis**: Three-tier concert lookup (Bandsintown/Songkick/AXS/Dice site searches → general web search → manual) with Claude handling creative fields (summary, sounds-like, emoji, genre). Venue/date data grounded in structured sources, not LLM hallucination.
 - **Automated Discovery**: AI-powered system that searches for Denver area concerts using artist database
 - **Artist Database**: 362+ artists from existing events plus manual additions, organized by genre and source

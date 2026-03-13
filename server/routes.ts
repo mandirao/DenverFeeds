@@ -1234,6 +1234,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Amuse Bouche – Food Events ───────────────────────────────────────────
+  app.get("/api/food-events", async (req, res) => {
+    try {
+      const events = await storage.getAllFoodEvents();
+      res.json(events);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch food events" });
+    }
+  });
+
+  app.post("/api/food-events", async (req, res) => {
+    try {
+      const { insertFoodEventSchema } = await import("@shared/schema");
+      const parsed = insertFoodEventSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.issues[0]?.message || "Validation failed" });
+      }
+      const event = await storage.createFoodEvent(parsed.data);
+      res.status(201).json(event);
+    } catch (error) {
+      console.error("Failed to create food event:", error);
+      res.status(500).json({ message: "Failed to create food event" });
+    }
+  });
+
+  app.patch("/api/food-events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updated = await storage.updateFoodEvent(id, req.body);
+      if (!updated) return res.status(404).json({ message: "Food event not found" });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update food event" });
+    }
+  });
+
+  app.delete("/api/food-events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteFoodEvent(id);
+      res.json({ success: deleted });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete food event" });
+    }
+  });
+
+  app.post("/api/food-events/:id/upvote", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.upvoteFoodEvent(id);
+      res.json({ success });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to upvote" });
+    }
+  });
+
+  // AI blurb parser for Amuse Bouche
+  app.post("/api/ai/parse-blurb", async (req, res) => {
+    try {
+      const { blurb } = req.body;
+      if (!blurb || typeof blurb !== "string") {
+        return res.status(400).json({ message: "blurb is required" });
+      }
+      const result = await llmService.parseBlurb(blurb);
+      res.json(result);
+    } catch (error) {
+      console.error("Blurb parse error:", error);
+      res.status(500).json({ message: "Failed to parse blurb" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

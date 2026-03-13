@@ -222,6 +222,14 @@ export function Footer() {
           >
             ABOUT
           </button>
+          <span className="text-black opacity-30">|</span>
+          <Link
+            href="/amuse-bouche"
+            className="text-black opacity-20 hover:opacity-70 transition-opacity font-sora text-xs"
+            title="🍽️"
+          >
+            🍽️
+          </Link>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent, discoveredArtists, type DiscoveredArtist, type InsertDiscoveredArtist, venues, type Venue, type InsertVenue } from "@shared/schema";
+import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent, discoveredArtists, type DiscoveredArtist, type InsertDiscoveredArtist, venues, type Venue, type InsertVenue, foodEvents, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, count, desc, gt } from "drizzle-orm";
 import { spotifyService } from "./spotify";
@@ -59,6 +59,14 @@ export interface IStorage {
   updateDiscoveredArtistStatus(id: number, status: 'approved' | 'rejected'): Promise<DiscoveredArtist | undefined>;
   approveDiscoveredArtist(id: number): Promise<Artist | undefined>; // Converts to real artist
   deleteDiscoveredArtist(id: number): Promise<boolean>;
+
+  // Food event methods for Amuse Bouche
+  getAllFoodEvents(): Promise<FoodEvent[]>;
+  getFoodEventById(id: number): Promise<FoodEvent | undefined>;
+  createFoodEvent(event: InsertFoodEvent): Promise<FoodEvent>;
+  updateFoodEvent(id: number, data: Partial<FoodEvent>): Promise<FoodEvent | undefined>;
+  deleteFoodEvent(id: number): Promise<boolean>;
+  upvoteFoodEvent(id: number): Promise<boolean>;
 
   // Venues methods for tracking and scraping
   getAllVenues(): Promise<Venue[]>;
@@ -508,6 +516,46 @@ export class DatabaseStorage implements IStorage {
       return !!deletedArtist;
     } catch (error) {
       console.error("Failed to delete discovered artist:", error);
+      return false;
+    }
+  }
+
+  // Food Events methods (Amuse Bouche)
+  async getAllFoodEvents(): Promise<FoodEvent[]> {
+    return await db.select().from(foodEvents).orderBy(foodEvents.dateStart);
+  }
+
+  async getFoodEventById(id: number): Promise<FoodEvent | undefined> {
+    const [event] = await db.select().from(foodEvents).where(eq(foodEvents.id, id));
+    return event || undefined;
+  }
+
+  async createFoodEvent(event: InsertFoodEvent): Promise<FoodEvent> {
+    const [newEvent] = await db.insert(foodEvents).values(event).returning();
+    return newEvent;
+  }
+
+  async updateFoodEvent(id: number, data: Partial<FoodEvent>): Promise<FoodEvent | undefined> {
+    const [updated] = await db.update(foodEvents).set(data).where(eq(foodEvents.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteFoodEvent(id: number): Promise<boolean> {
+    try {
+      await db.delete(foodEvents).where(eq(foodEvents.id, id));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async upvoteFoodEvent(id: number): Promise<boolean> {
+    try {
+      await db.update(foodEvents)
+        .set({ upvotes: sql`${foodEvents.upvotes} + 1` })
+        .where(eq(foodEvents.id, id));
+      return true;
+    } catch {
       return false;
     }
   }

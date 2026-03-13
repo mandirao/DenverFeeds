@@ -2,6 +2,30 @@ import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb, rea
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Cuisine types for Amuse Bouche food popup events
+export const cuisineTypes = [
+  'Hot Pot & Shabu',
+  'Japanese',
+  'Korean',
+  'Chinese',
+  'Thai & Southeast Asian',
+  'Indian & South Asian',
+  'Mexican & Latin',
+  'Italian',
+  'French',
+  'Mediterranean',
+  'Seafood',
+  'BBQ & Southern',
+  'Brunch & Breakfast',
+  'Dessert & Pastry',
+  'Cocktails & Wine',
+  'Tasting Menu',
+  'Farm-to-Table',
+  'Fusion',
+  'American',
+  'Other'
+];
+
 // Define valid genres
 export const genres = [
   'Rock & Alternative',
@@ -407,4 +431,38 @@ export const insertVenueSchema = createInsertSchema(venues)
   });
 
 export type InsertVenue = z.infer<typeof insertVenueSchema>;
+
+// Food popup events for the Amuse Bouche sister site
+export const foodEvents = pgTable("food_events", {
+  id: serial("id").primaryKey(),
+  emoji: text("emoji").notNull().default("🍴"),
+  name: text("name").notNull(),
+  venue: text("venue").notNull(),
+  neighborhood: text("neighborhood"),
+  dateStart: text("date_start").notNull(),
+  dateEnd: text("date_end"),
+  summary: text("summary").notNull(),
+  cuisine: text("cuisine").notNull().default("Other"),
+  price: text("price"),
+  ticketUrl: text("ticket_url"),
+  rawBlurb: text("raw_blurb"),
+  requester: text("requester").notNull().default(""),
+  upvotes: integer("upvotes").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertFoodEventSchema = createInsertSchema(foodEvents).omit({
+  id: true,
+  upvotes: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Event name is required"),
+  venue: z.string().min(1, "Venue is required"),
+  dateStart: z.string().min(1, "Start date is required"),
+  cuisine: z.string().min(1, "Cuisine type is required"),
+  requester: z.string().min(1, "Your name is required"),
+});
+
+export type InsertFoodEvent = z.infer<typeof insertFoodEventSchema>;
+export type FoodEvent = typeof foodEvents.$inferSelect;
 export type Venue = typeof venues.$inferSelect;

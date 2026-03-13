@@ -375,6 +375,75 @@ Respond with ONLY valid JSON, no markdown formatting:
     return validGenres.includes(genre) ? genre : 'Rock & Alternative';
   }
 
+  async parseBlurb(blurb: string): Promise<{
+    name: string;
+    venue: string;
+    neighborhood: string;
+    dateStart: string;
+    dateEnd: string;
+    emoji: string;
+    summary: string;
+    cuisine: string;
+    price: string;
+    ticketUrl: string;
+  }> {
+    const client = new Anthropic({ apiKey: this.apiKey });
+    const today = new Date().toISOString().split('T')[0];
+
+    const message = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: `You are parsing a social media blurb about a food popup event in Denver, CO. Extract details and return ONLY valid JSON.
+
+Today's date: ${today}
+
+Blurb:
+"""
+${blurb}
+"""
+
+Return this exact JSON structure (no markdown, no code blocks):
+{
+  "name": "short punchy event name (e.g. 'Hot Pot Pop-Up Nights')",
+  "venue": "restaurant or location name",
+  "neighborhood": "Denver neighborhood if mentioned, else empty string",
+  "dateStart": "YYYY-MM-DD or empty string if unknown",
+  "dateEnd": "YYYY-MM-DD for last day if multi-day, else empty string",
+  "emoji": "single food-related emoji that fits the event",
+  "summary": "one punchy sentence description, max 75 chars, casual cool tone",
+  "cuisine": "one of: Hot Pot & Shabu, Japanese, Korean, Chinese, Thai & Southeast Asian, Indian & South Asian, Mexican & Latin, Italian, French, Mediterranean, Seafood, BBQ & Southern, Brunch & Breakfast, Dessert & Pastry, Cocktails & Wine, Tasting Menu, Farm-to-Table, Fusion, American, Other",
+  "price": "price string like '$55/person' or empty string if unknown",
+  "ticketUrl": "reservation/ticket URL if mentioned or clearly implied platform URL, else empty string"
+}
+
+Rules:
+- Use current year (${new Date().getFullYear()}) unless another year is clearly stated
+- If a date range is mentioned (e.g. March 26-28), dateStart=first date, dateEnd=last date
+- Keep summary under 75 chars, casual and descriptive
+- Pick the most specific cuisine type that fits`
+      }]
+    });
+
+    const raw = message.content[0].type === 'text' ? message.content[0].text : '';
+    const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+
+    const result = JSON.parse(cleaned);
+    return {
+      name: result.name || '',
+      venue: result.venue || '',
+      neighborhood: result.neighborhood || '',
+      dateStart: result.dateStart || '',
+      dateEnd: result.dateEnd || '',
+      emoji: result.emoji || '🍴',
+      summary: result.summary || '',
+      cuisine: result.cuisine || 'Other',
+      price: result.price || '',
+      ticketUrl: result.ticketUrl || '',
+    };
+  }
+
   private validateDate(dateString: string): string | null {
     if (!dateString) return null;
 
