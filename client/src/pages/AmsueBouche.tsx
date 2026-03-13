@@ -620,7 +620,7 @@ export default function AmsueBouche() {
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
             <div className="flex items-baseline gap-2">
               <Link href="/amuse-bouche">
-                <h1 className="font-anton text-3xl md:text-4xl text-black hover:text-[#41F2EE] transition-colors cursor-pointer tracking-tight">
+                <h1 className="text-3xl md:text-4xl text-black hover:text-[#41F2EE] transition-colors font-black cursor-pointer">
                   AMUSE BOUCHE
                 </h1>
               </Link>
@@ -674,7 +674,7 @@ export default function AmsueBouche() {
               {/* Fix 1: Month header — line — MONTH — line treatment */}
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-0.5 flex-1 bg-black" />
-                <h2 className="font-anton text-lg font-black uppercase text-black">
+                <h2 className="text-lg font-black uppercase text-black">
                   {month.toUpperCase()}
                 </h2>
                 <div className="h-0.5 flex-1 bg-black" />
