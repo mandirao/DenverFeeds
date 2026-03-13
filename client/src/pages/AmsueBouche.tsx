@@ -880,6 +880,10 @@ export default function AmsueBouche() {
       {/* ── Feed ── */}
       <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
 
+        <p className="text-xs text-black mb-5 opacity-60 leading-snug">
+          ⚡ These popups fill up fast. Listing here is not a guarantee of availability — if something looks good, don't sleep on it.
+        </p>
+
         {isLoading && (
           <div className="text-center py-16 text-gray-400">
             <UtensilsCrossed className="w-8 h-8 mx-auto mb-3 opacity-30" />
