@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
-import { UtensilsCrossed, MapPin, Ticket, Heart, Plus, Sparkles, List, Calendar } from "lucide-react";
+import { UtensilsCrossed, Plus, Sparkles, List, ArrowUp } from "lucide-react";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AB_ORANGE = "#FE6B41";
@@ -47,85 +47,97 @@ function monthColor(dateStart: string) {
   return MONTH_COLORS[month] || AB_ORANGE;
 }
 
-// ── Event Card ─────────────────────────────────────────────────────────────────
+// ── Event Row (inline sentence style, matching Setlist Social) ────────────────
 
-function FoodEventCard({ event, onUpvote }: { event: FoodEvent; onUpvote: (id: number) => void }) {
+function FoodEventRow({ event, onUpvote }: { event: FoodEvent; onUpvote: (id: number) => void }) {
   const [upvoted, setUpvoted] = useState(false);
+  const [showUpvoteTooltip, setShowUpvoteTooltip] = useState(false);
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue + " Denver CO")}`;
 
   const handleUpvote = () => {
     if (!upvoted) { onUpvote(event.id); setUpvoted(true); }
+    setShowUpvoteTooltip(true);
+    setTimeout(() => setShowUpvoteTooltip(false), 2000);
   };
 
+  const location = event.neighborhood ? `${event.venue}, ${event.neighborhood}` : event.venue;
+
   return (
-    <div className="bg-white border-2 border-black p-4 mb-3 transition-shadow hover:shadow-md">
-      <div className="flex items-start gap-3">
-        <span className="text-3xl leading-none pt-0.5 select-none">{event.emoji}</span>
+    <li className="pb-1.5 relative flex items-start">
+      <span className="text-2xl mr-3 select-none">{event.emoji}</span>
 
-        <div className="flex-1 min-w-0">
-          {/* Title row */}
-          <div className="flex flex-wrap items-baseline gap-2 mb-0.5">
-            <h3 className="font-anton text-xl leading-tight text-black uppercase">{event.name}</h3>
-            {event.price && (
-              <span className="text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5"
-                style={{ backgroundColor: AB_ORANGE, color: "black" }}>
-                {event.price}
-              </span>
-            )}
-          </div>
+      <div className="flex-1 text-base">
+        {/* Event name — links to ticket URL if available, else maps */}
+        <a
+          href={event.ticketUrl || mapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
+        >
+          {event.name}
+        </a>
 
-          {/* Venue / date row */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm mb-2 font-sora">
-            <span className="font-bold text-black">{event.venue}</span>
-            {event.neighborhood && (
-              <>
-                <span className="text-gray-300">·</span>
-                <span className="text-gray-500 flex items-center gap-0.5">
-                  <MapPin className="w-3 h-3" />{event.neighborhood}
-                </span>
-              </>
-            )}
-            <span className="text-gray-300">·</span>
-            <span className="font-bold" style={{ color: monthColor(event.dateStart) }}>
-              {formatDateRange(event.dateStart, event.dateEnd)}
-            </span>
-          </div>
+        {" @ "}
 
-          {/* Summary */}
-          <p className="text-sm text-gray-700 mb-3 font-sora">{event.summary}</p>
+        {/* Venue — links to Google Maps */}
+        <a
+          href={mapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
+        >
+          {location}
+        </a>
 
-          {/* Footer row: tags + actions */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 border-2 border-black"
-              style={{ backgroundColor: AB_PINK }}>
-              {event.cuisine}
-            </span>
+        {" ("}
+        <span style={{ color: monthColor(event.dateStart) }} className="font-medium">
+          {formatDateRange(event.dateStart, event.dateEnd)}
+        </span>
+        {"). "}
 
-            <div className="flex items-center gap-2 ml-auto">
-              <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
-                className="text-xs font-sora font-semibold text-gray-500 hover:text-black transition-colors flex items-center gap-0.5 underline">
-                <MapPin className="w-3 h-3" />Map
-              </a>
+        {event.summary}
 
-              {event.ticketUrl && (
-                <a href={event.ticketUrl} target="_blank" rel="noopener noreferrer"
-                  className="text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 border-2 border-black bg-black text-white hover:text-[#41F2EE] transition-colors flex items-center gap-1">
-                  <Ticket className="w-3 h-3" />Reserve
-                </a>
-              )}
+        {/* Price badge inline */}
+        {event.price && (
+          <span
+            className="inline-block align-middle ml-1 text-xs font-black font-sora uppercase px-1.5 py-0.5"
+            style={{ backgroundColor: AB_ORANGE, position: "relative", top: "-1px" }}
+          >
+            {event.price}
+          </span>
+        )}
 
-              <button onClick={handleUpvote} disabled={upvoted}
-                className={`flex items-center gap-1 text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 border-2 border-black transition-colors ${
-                  upvoted ? "text-[#FE6B41] bg-[#FFF8E7]" : "text-black hover:text-[#FE6B41]"
-                }`}>
-                <Heart className={`w-3 h-3 ${upvoted ? "fill-[#FE6B41]" : ""}`} />
-                {event.upvotes + (upvoted ? 1 : 0)}
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Reserve CTA — inline if ticket URL exists */}
+        {event.ticketUrl && (
+          <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
+            <a
+              href={event.ticketUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-black text-[#FEABDA] hover:text-[#41F2EE] text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 transition-colors"
+            >
+              Reserve
+            </a>
+          </span>
+        )}
+
+        {/* Upvote pill — inline, same style as Setlist */}
+        <span
+          className="inline-block align-middle ml-2"
+          style={{ position: "relative", top: "-1px" }}
+          onMouseEnter={() => setShowUpvoteTooltip(true)}
+          onMouseLeave={() => !upvoted && setShowUpvoteTooltip(false)}
+        >
+          <button
+            onClick={handleUpvote}
+            disabled={upvoted}
+            className={`${upvoted ? "bg-[#25428A] text-white" : "bg-black text-[#FE6B41] hover:text-[#41F2EE]"} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0 cursor-pointer transition-colors`}
+          >
+            <ArrowUp className="h-3 w-3" /> {event.upvotes + (upvoted ? 1 : 0)}
+          </button>
+        </span>
       </div>
-    </div>
+    </li>
   );
 }
 
@@ -406,16 +418,14 @@ export default function AmsueBouche() {
           return (
             <div key={month} className="mb-6">
               {/* Month header — same style as Setlist's MonthGroup */}
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-0.5 flex-1" style={{ backgroundColor: color }} />
-                <h2 className="font-anton text-xl text-black uppercase" style={{ color }}>
-                  {month.toUpperCase()}
-                </h2>
-                <div className="h-0.5 flex-1" style={{ backgroundColor: color }} />
-              </div>
-              {monthEvents.map(ev => (
-                <FoodEventCard key={ev.id} event={ev} onUpvote={(id) => upvoteMutation.mutate(id)} />
-              ))}
+              <h2 className="text-xl text-black mb-3 font-anton font-black" style={{ color }}>
+                {month.toUpperCase()}
+              </h2>
+              <ul className="space-y-0">
+                {monthEvents.map(ev => (
+                  <FoodEventRow key={ev.id} event={ev} onUpvote={(id) => upvoteMutation.mutate(id)} />
+                ))}
+              </ul>
             </div>
           );
         })}
