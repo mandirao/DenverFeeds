@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
-import { UtensilsCrossed, Plus, Sparkles, List } from "lucide-react";
+import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical } from "lucide-react";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AB_ORANGE = "#FE6B41";
@@ -51,95 +53,340 @@ function createCalendarUrl(event: FoodEvent): string {
 // ── Event Row (inline sentence style, matching Setlist Social) ────────────────
 
 function FoodEventRow({ event }: { event: FoodEvent }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue + " Denver CO")}`;
   const calendarUrl = createCalendarUrl(event);
   const location = event.neighborhood ? `${event.venue}, ${event.neighborhood}` : event.venue;
 
+  const deleteMutation = useMutation({
+    mutationFn: () => apiRequest({ endpoint: `/api/food-events/${event.id}`, method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/food-events"] });
+      toast({ title: "Deleted", description: `${event.name} removed from the feed.` });
+    },
+    onError: () => toast({ title: "Error", description: "Couldn't delete this event.", variant: "destructive" }),
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: () => apiRequest({ endpoint: `/api/food-events/${event.id}/duplicate`, method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/food-events"] });
+      toast({ title: "Duplicated", description: `${event.name} copied to the feed.` });
+    },
+    onError: () => toast({ title: "Error", description: "Couldn't duplicate this event.", variant: "destructive" }),
+  });
+
   return (
-    <li className="pb-1.5 relative flex items-start">
-      <span className="text-2xl mr-3 select-none">{event.emoji}</span>
+    <>
+      <li className="pb-1.5 relative flex items-start group">
+        <span className="text-2xl mr-3 select-none">{event.emoji}</span>
 
-      <div className="flex-1 text-base">
-        {/* Fix 2: Event name — bold dotted link */}
-        <a
-          href={event.ticketUrl || mapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-        >
-          {event.name}
-        </a>
-
-        {" @ "}
-
-        {/* Venue — dotted underline to Google Maps */}
-        <a
-          href={mapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-        >
-          {location}
-        </a>
-
-        {" ("}
-        {/* Fix 2: Date is now a clickable link to Google Calendar */}
-        <a
-          href={calendarUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
-        >
-          {formatDateRange(event.dateStart, event.dateEnd)}
-        </a>
-        {"). "}
-
-        {event.summary}
-
-        {/* Fix 5: Cuisine tag — italic closer, like soundsLike on Setlist */}
-        {event.cuisine && (
-          <span className="italic"> {event.cuisine}.</span>
-        )}
-
-        {/* Fix 4: Price badge — separated after the sentence close */}
-        {event.price && (
-          <span
-            className="inline-block align-middle ml-2 text-xs font-black font-sora uppercase px-1.5 py-0.5"
-            style={{ backgroundColor: AB_ORANGE, position: "relative", top: "-1px" }}
+        <div className="flex-1 text-base">
+          <a
+            href={event.ticketUrl || mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
           >
-            {event.price}
-          </span>
-        )}
+            {event.name}
+          </a>
 
-        {/* Reserve CTA */}
-        {event.ticketUrl && (
-          <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
-            <a
-              href={event.ticketUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-black text-[#FEABDA] hover:text-[#41F2EE] text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 transition-colors"
-            >
-              Reserve
-            </a>
-          </span>
-        )}
+          {" @ "}
 
-        {/* Fix 3: View Post — now matches Reserve (black pill, white text) */}
-        {event.sourceUrl && (
-          <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
-            <a
-              href={event.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-black text-white hover:text-[#41F2EE] text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 transition-colors"
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
+          >
+            {location}
+          </a>
+
+          {" ("}
+          <a
+            href={calendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
+          >
+            {formatDateRange(event.dateStart, event.dateEnd)}
+          </a>
+          {"). "}
+
+          {event.summary}
+
+          {event.cuisine && (
+            <span className="italic"> {event.cuisine}.</span>
+          )}
+
+          {event.price && (
+            <span
+              className="inline-block align-middle ml-2 text-xs font-black font-sora uppercase px-1.5 py-0.5"
+              style={{ backgroundColor: AB_ORANGE, position: "relative", top: "-1px" }}
             >
-              View Post
-            </a>
-          </span>
-        )}
-      </div>
-    </li>
+              {event.price}
+            </span>
+          )}
+
+          {event.ticketUrl && (
+            <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
+              <a
+                href={event.ticketUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 transition-colors"
+              >
+                Reserve
+              </a>
+            </span>
+          )}
+
+          {event.sourceUrl && (
+            <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
+              <a
+                href={event.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-black text-white hover:text-[#41F2EE] text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 transition-colors"
+              >
+                View Post
+              </a>
+            </span>
+          )}
+        </div>
+
+        {/* Three-dot menu */}
+        <div className="ml-2 flex-shrink-0" style={{ position: "relative", top: "2px" }}>
+          <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full bg-transparent opacity-30 group-hover:opacity-70 transition-opacity"
+              >
+                <MoreVertical className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32 border-none bg-gray-100 shadow-md rounded-sm font-sans">
+              <DropdownMenuItem
+                onClick={() => { setIsMenuOpen(false); setIsEditOpen(true); }}
+                className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+              >
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => { setIsMenuOpen(false); duplicateMutation.mutate(); }}
+                disabled={duplicateMutation.isPending}
+                className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+              >
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setTimeout(() => setShowDeleteConfirm(true), 100);
+                }}
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </li>
+
+      {/* Edit modal */}
+      {isEditOpen && (
+        <EditFoodEventModal event={event} onClose={() => setIsEditOpen(false)} />
+      )}
+
+      {/* Delete confirm */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AB_GOLD }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-anton text-xl uppercase">Delete this popup?</AlertDialogTitle>
+            <AlertDialogDescription className="font-sora text-sm">
+              <strong>{event.name}</strong> will be permanently removed from the feed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-2 border-black rounded-none font-sora font-black text-xs uppercase hover:bg-black hover:text-white transition-colors">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate()}
+              className="bg-black text-white border-2 border-black rounded-none font-sora font-black text-xs uppercase hover:text-red-400 transition-colors"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+// ── Edit Food Event Modal ──────────────────────────────────────────────────────
+
+function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () => void }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [form, setForm] = useState<Partial<InsertFoodEvent>>({
+    emoji: event.emoji || "",
+    name: event.name || "",
+    venue: event.venue || "",
+    neighborhood: event.neighborhood || "",
+    dateStart: event.dateStart || "",
+    dateEnd: event.dateEnd || "",
+    summary: event.summary || "",
+    cuisine: event.cuisine || "",
+    price: event.price || "",
+    ticketUrl: event.ticketUrl || "",
+    sourceUrl: event.sourceUrl || "",
+    requester: event.requester || "",
+  });
+
+  const set = (field: keyof InsertFoodEvent, value: string) =>
+    setForm(f => ({ ...f, [field]: value }));
+
+  const updateMutation = useMutation({
+    mutationFn: (data: Partial<InsertFoodEvent>) =>
+      apiRequest({ endpoint: `/api/food-events/${event.id}`, method: "PATCH", data }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/food-events"] });
+      toast({ title: "Saved!", description: `${form.name} updated.` });
+      onClose();
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e?.message || "Couldn't save changes.", variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.venue || !form.dateStart || !form.cuisine || !form.requester) {
+      toast({ title: "Missing fields", description: "Name, venue, date, cuisine, and your name are required.", variant: "destructive" });
+      return;
+    }
+    updateMutation.mutate(form);
+  };
+
+  const inputClass = "border-2 border-black rounded-none bg-white font-sora text-sm";
+  const labelClass = "font-sora font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-lg border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
+        style={{ backgroundColor: AB_GOLD }}>
+        <DialogHeader>
+          <DialogTitle className="font-anton text-3xl text-black uppercase tracking-tight">
+            Edit Popup
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Emoji *</label>
+              <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
+                className={inputClass} placeholder="🫕" />
+            </div>
+            <div>
+              <label className={labelClass}>Cuisine *</label>
+              <Select value={form.cuisine || ""} onValueChange={v => set("cuisine", v)}>
+                <SelectTrigger className={inputClass}>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cuisineTypes.map(c => <SelectItem key={c} value={c} className="font-sora">{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Event Name *</label>
+            <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
+              className={inputClass} placeholder="Hot Pot Pop-Up Nights" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Venue / Restaurant *</label>
+              <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
+                className={inputClass} placeholder="Hop Alley" />
+            </div>
+            <div>
+              <label className={labelClass}>Neighborhood</label>
+              <Input value={form.neighborhood || ""} onChange={e => set("neighborhood", e.target.value)}
+                className={inputClass} placeholder="RiNo, LoHi…" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Start Date *</label>
+              <Input type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
+                className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>End Date</label>
+              <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
+                className={inputClass} />
+            </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>One-liner *</label>
+            <Input value={form.summary || ""} onChange={e => set("summary", e.target.value)}
+              className={inputClass} placeholder="MC'd hot pot with curated broths — bring your crew"
+              maxLength={75} />
+            <p className="text-xs font-sora text-gray-400 mt-0.5">{(form.summary || "").length}/75</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className={labelClass}>Price</label>
+              <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
+                className={inputClass} placeholder="$55/person" />
+            </div>
+            <div>
+              <label className={labelClass}>Ticket / Reservation URL</label>
+              <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
+                className={inputClass} placeholder="https://tock.com/…" />
+            </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Original post link</label>
+            <Input value={form.sourceUrl || ""} onChange={e => set("sourceUrl", e.target.value)}
+              className={inputClass} placeholder="https://instagram.com/p/…" />
+          </div>
+
+          <div>
+            <label className={labelClass}>Your Name *</label>
+            <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
+              className={inputClass} placeholder="Mandi" />
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-2.5 border-2 border-black bg-white font-black font-sora uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
+              Cancel
+            </button>
+            <button type="submit" disabled={updateMutation.isPending}
+              className="flex-1 px-4 py-2.5 border-2 border-black bg-black text-white font-black font-sora uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
+              {updateMutation.isPending ? "Saving…" : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
