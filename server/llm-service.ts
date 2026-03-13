@@ -390,35 +390,22 @@ Respond with ONLY valid JSON, no markdown formatting:
     const client = new Anthropic({ apiKey: this.apiKey });
     const today = new Date().toISOString().split('T')[0];
 
-    const prompt = `You are parsing a food popup event in Denver, CO from social media content. Extract event details and write a vivid summary in the Amuse-Bouche brand voice. Return ONLY valid JSON.
+    // ── PASS 1: extract structured facts from blurb/image ──────────────────
+    const pass1Prompt = `You are parsing a food popup event in Denver, CO from social media content. Extract details and return ONLY valid JSON.
 
 Today's date: ${today}
-${blurb ? `\nBlurb:\n"""\n${blurb}\n"""` : ''}${imageBase64 ? '\n\nAn image from the post is also attached — scan it carefully for any text, dates, prices, venue names, or details not captured in the blurb.' : ''}
-
---- AMUSE-BOUCHE SUMMARY VOICE GUIDE ---
-Write summaries like a cultured, vivid, in-the-know food editor:
-• VOICE: Informed and worldly but conversational. Confidently descriptive — no hedging, no hype. State what the food and atmosphere are like with authority.
-• TONE: Sensory and evocative — paint the food and the atmosphere, not the pitch. Activate taste, smell, texture, sound ("crispy leeks," "smoky broth," "snug room buzzing with chatter"). Do NOT use persuasion language or "nudge nudge" phrases like "Trust us," "you won't want to miss," "The kind of night Denver's been needing," or "show up early." Let the description do the work.
-• STRUCTURE: 1-2 tight sentences max. Lead with what the food or vibe actually feels like — not what makes it "special." No rhetorical hooks, no calls to action.
-• WORD CHOICE: Lush but efficient. Concrete sensory nouns and adjectives over abstract hype. Compound adjectives welcome ("bone marrow–washed bourbon," "tamarind chutney–glazed"). Juxtapositions work: humble + haute, nostalgic + electric.
-• LENGTH: Hard cap at 140 characters. Every word must earn its place.
-
-EXAMPLE SUMMARIES (tight, sensory, no pitch):
-- "House and disco, free dumplings at midnight, four DJs — Bao Brewhouse at full tilt on a Saturday night."
-- "Tamarind-glazed lamb, handmade dumplings, and a low-lit room that smells like brown butter and cardamom."
-- "Omakase-style pop-up: twelve courses, rotating protein, and a chef who trained under two Michelin-starred kitchens."
-
---- END VOICE GUIDE ---
+${blurb ? `\nBlurb:\n"""\n${blurb}\n"""` : ''}${imageBase64 ? '\n\nAn image from the post is also attached — scan it carefully for any text, dates, prices, venue names, or details.' : ''}
 
 Return this exact JSON structure (no markdown, no code blocks):
 {
-  "name": "short punchy event name (e.g. 'Hot Pot Pop-Up Nights')",
+  "name": "short punchy event name (e.g. 'Disco & Dumplings')",
   "venue": "restaurant or location name",
   "neighborhood": "Denver neighborhood if mentioned, else empty string",
   "dateStart": "YYYY-MM-DD or empty string if unknown",
   "dateEnd": "YYYY-MM-DD for last day if multi-day, else empty string",
   "emoji": "single food-related emoji that fits the event",
-  "summary": "1-2 tight sensory sentences, hard cap 140 characters — paint the food and vibe, no pitch, no calls to action",
+  "draftSummary": "raw factual notes about the event — food, vibe, key details. Not the final summary, just the raw material.",
+  "notableNames": ["array of any named chefs, DJs, collaborators, pop-up brands worth researching — empty array if none"],
   "cuisine": "one of: Hot Pot & Shabu, Japanese, Korean, Chinese, Thai & Southeast Asian, Indian & South Asian, Mexican & Latin, Italian, French, Mediterranean, Seafood, BBQ & Southern, Brunch & Breakfast, Dessert & Pastry, Cocktails & Wine, Tasting Menu, Farm-to-Table, Fusion, American, Other",
   "price": "price string like '$55/person' or empty string if unknown",
   "ticketUrl": "reservation/ticket URL if mentioned or clearly implied platform URL, else empty string"
@@ -427,14 +414,11 @@ Return this exact JSON structure (no markdown, no code blocks):
 Rules:
 - Use current year (${new Date().getFullYear()}) unless another year is clearly stated
 - If a date range is mentioned (e.g. March 26-28), dateStart=first date, dateEnd=last date
-- Pick the most specific cuisine type that fits
-- Combine all sources (blurb text + image text) for the most accurate result
-- Do NOT invent details not present in the source material — only embellish the tone, not the facts`;
+- Pick the most specific cuisine type that fits`;
 
-    const userContent: any[] = [];
-
+    const pass1Content: any[] = [];
     if (imageBase64 && imageMediaType) {
-      userContent.push({
+      pass1Content.push({
         type: 'image',
         source: {
           type: 'base64',
@@ -443,30 +427,91 @@ Rules:
         },
       });
     }
+    pass1Content.push({ type: 'text', text: pass1Prompt });
 
-    userContent.push({ type: 'text', text: prompt });
-
-    const message = await client.messages.create({
+    const pass1Message = await client.messages.create({
       model: 'claude-opus-4-5',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: userContent }],
+      max_tokens: 800,
+      messages: [{ role: 'user', content: pass1Content }],
     });
 
-    const raw = message.content[0].type === 'text' ? message.content[0].text : '';
-    const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const pass1Raw = pass1Message.content[0].type === 'text' ? pass1Message.content[0].text : '{}';
+    const pass1Cleaned = pass1Raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const pass1 = JSON.parse(pass1Cleaned);
 
-    const result = JSON.parse(cleaned);
+    // ── WEB SEARCH: look up venue + notable collaborators ──────────────────
+    const searchQueries: string[] = [];
+    if (pass1.venue) {
+      searchQueries.push(`${pass1.venue} Denver restaurant bar`);
+    }
+    const notableNames: string[] = Array.isArray(pass1.notableNames) ? pass1.notableNames : [];
+    for (const name of notableNames.slice(0, 2)) {
+      searchQueries.push(`${name} Denver chef DJ food`);
+    }
+
+    const searchResults = await Promise.all(
+      searchQueries.map(q => this.serperSearch(q, 3))
+    );
+
+    const searchContext = searchQueries.map((q, i) => {
+      const snippets = searchResults[i]
+        .map(r => `• ${r.title}: ${r.snippet}`)
+        .join('\n');
+      return `Search: "${q}"\n${snippets || '(no results)'}`;
+    }).join('\n\n');
+
+    // ── PASS 2: write final summary enriched with web context ──────────────
+    const pass2Prompt = `You are writing the final event listing entry for Amuse-Bouche, a Denver food popup newsletter.
+
+Here is what we know from the original post:
+- Event: ${pass1.name || 'unknown'}
+- Venue: ${pass1.venue || 'unknown'}
+- Draft notes: ${pass1.draftSummary || ''}
+
+Here is additional context from web searches about the venue and collaborators:
+${searchContext || '(no additional context found)'}
+
+Using ALL of this context, write a final summary and verify the neighborhood.
+
+--- AMUSE-BOUCHE SUMMARY VOICE GUIDE ---
+• VOICE: Informed and worldly but conversational. Confidently descriptive — no hedging, no hype.
+• TONE: Sensory and evocative — paint the food and atmosphere, not the pitch. Activate taste, smell, texture, sound. NO persuasion language ("Trust us," "you won't want to miss," "show up early," calls to action).
+• STRUCTURE: 1-2 tight sentences. Lead with what it actually feels like. No rhetorical hooks.
+• WORD CHOICE: Lush but efficient. Concrete sensory nouns, compound adjectives, juxtapositions (humble + haute, nostalgic + electric).
+• LENGTH: Hard cap at 140 characters. Every word earns its place.
+• USE SEARCH CONTEXT: If you found interesting venue history, chef pedigree, or collaborator cred, weave in one specific detail. Only include what's credible and relevant — don't pad.
+
+EXAMPLE SUMMARIES:
+- "House and disco, free dumplings at midnight, four DJs — Bao Brewhouse at full tilt on a Saturday night."
+- "An omakase pop-up from the team behind Michelin-recognized Kawa Ni: twelve courses, rotating proteins, low-lit and unhurried."
+
+Return ONLY valid JSON (no markdown):
+{
+  "neighborhood": "corrected Denver neighborhood based on venue address from search, or original if no better info",
+  "summary": "final 140-char-max Amuse-Bouche summary"
+}`;
+
+    const pass2Message = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 400,
+      messages: [{ role: 'user', content: pass2Prompt }],
+    });
+
+    const pass2Raw = pass2Message.content[0].type === 'text' ? pass2Message.content[0].text : '{}';
+    const pass2Cleaned = pass2Raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const pass2 = JSON.parse(pass2Cleaned);
+
     return {
-      name: result.name || '',
-      venue: result.venue || '',
-      neighborhood: result.neighborhood || '',
-      dateStart: result.dateStart || '',
-      dateEnd: result.dateEnd || '',
-      emoji: result.emoji || '🍴',
-      summary: (result.summary || '').substring(0, 140),
-      cuisine: result.cuisine || 'Other',
-      price: result.price || '',
-      ticketUrl: result.ticketUrl || '',
+      name: pass1.name || '',
+      venue: pass1.venue || '',
+      neighborhood: pass2.neighborhood || pass1.neighborhood || '',
+      dateStart: pass1.dateStart || '',
+      dateEnd: pass1.dateEnd || '',
+      emoji: pass1.emoji || '🍴',
+      summary: (pass2.summary || pass1.draftSummary || '').substring(0, 140),
+      cuisine: pass1.cuisine || 'Other',
+      price: pass1.price || '',
+      ticketUrl: pass1.ticketUrl || '',
     };
   }
 
