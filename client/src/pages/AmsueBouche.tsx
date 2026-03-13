@@ -22,6 +22,12 @@ const AB_TEAL   = "#41F2EE";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+function ensureHttps(url: string): string {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  return "https://" + url;
+}
+
 function formatDateRange(dateStart: string, dateEnd?: string | null): string {
   const fmt = (d: string) =>
     new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -136,7 +142,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
           {event.ticketUrl && (
             <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
               <a
-                href={event.ticketUrl}
+                href={ensureHttps(event.ticketUrl!)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-black text-[#FEABDA] hover:text-[#41F2EE] text-xs font-black uppercase tracking-wide px-2 py-0.5 transition-colors"
@@ -149,7 +155,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
           {event.sourceUrl && (
             <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
               <a
-                href={event.sourceUrl}
+                href={ensureHttps(event.sourceUrl!)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase tracking-wide px-2 py-0.5 transition-colors"
