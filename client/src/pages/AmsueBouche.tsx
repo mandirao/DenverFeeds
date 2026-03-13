@@ -612,10 +612,28 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
+
+            {/* ── Back to AI ── */}
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="flex items-center gap-1.5 text-xs font-semibold text-black opacity-50 hover:opacity-100 transition-opacity"
+            >
+              <Sparkles className="w-3 h-3" />
+              Use AI instead
+            </button>
+
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-3 md:gap-y-0">
 
               {/* ── Left column ── */}
               <div className="space-y-3">
+                <div>
+                  <label className={labelClass}>Description *</label>
+                  <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
+                    className={`${inputClass} resize-none`} rows={4} maxLength={200}
+                    placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
+                  <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
+                </div>
                 <div>
                   <label className={labelClass}>Event Name *</label>
                   <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
@@ -644,13 +662,6 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                     <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
                       className={inputClass} />
                   </div>
-                </div>
-                <div>
-                  <label className={labelClass}>Description *</label>
-                  <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-                    className={`${inputClass} resize-none`} rows={4} maxLength={200}
-                    placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
-                  <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
                 </div>
               </div>
 
