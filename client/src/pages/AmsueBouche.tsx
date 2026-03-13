@@ -234,6 +234,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
 // ── Edit Food Event Modal ──────────────────────────────────────────────────────
 
 function getMissingField(form: Partial<InsertFoodEvent>): string | null {
+  if (!form.emoji?.trim())     return "Emoji";
   if (!form.name?.trim())      return "Event name";
   if (!form.venue?.trim())     return "Venue / restaurant";
   if (!form.dateStart?.trim()) return "Start date";
@@ -346,7 +347,7 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className={labelClass}>Emoji</label>
+                  <label className={labelClass}>Emoji *</label>
                   <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
                     className={inputClass} placeholder="🫕" />
                 </div>
@@ -369,7 +370,7 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
                     className={inputClass} placeholder="$55/person" />
                 </div>
                 <div>
-                  <label className={labelClass}>Ticket / Reservation URL</label>
+                  <label className={labelClass}>RSVP/Ticket URL</label>
                   <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
                     className={inputClass} placeholder="https://tock.com/…" />
                 </div>
@@ -669,7 +670,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className={labelClass}>Emoji</label>
+                    <label className={labelClass}>Emoji *</label>
                     <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
                       className={inputClass} placeholder="🫕" />
                   </div>
@@ -692,7 +693,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                       className={inputClass} placeholder="$55/person" />
                   </div>
                   <div>
-                    <label className={labelClass}>Ticket / Reservation URL</label>
+                    <label className={labelClass}>RSVP/Ticket URL</label>
                     <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
                       className={inputClass} placeholder="https://tock.com/…" />
                   </div>
