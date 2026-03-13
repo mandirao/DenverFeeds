@@ -10,27 +10,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
-import { UtensilsCrossed, MapPin, Ticket, Heart, Plus, Sparkles, ExternalLink, List, ChevronDown } from "lucide-react";
+import { UtensilsCrossed, MapPin, Ticket, Heart, Plus, Sparkles, List, Calendar } from "lucide-react";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Colors ────────────────────────────────────────────────────────────────────
+const AB_ORANGE = "#FE6B41";
+const AB_PINK   = "#FEABDA";
+const AB_GOLD   = "#FFF8E7";
+const AB_TEAL   = "#41F2EE";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatDateRange(dateStart: string, dateEnd?: string | null): string {
-  const fmt = (d: string) => {
-    const dt = new Date(d + "T12:00:00");
-    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  };
+  const fmt = (d: string) =>
+    new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
   if (!dateEnd || dateEnd === dateStart) return fmt(dateStart);
   const s = new Date(dateStart + "T12:00:00");
   const e = new Date(dateEnd + "T12:00:00");
-  if (s.getMonth() === e.getMonth()) {
+  if (s.getMonth() === e.getMonth())
     return `${s.toLocaleDateString("en-US", { month: "short", day: "numeric" })}–${e.getDate()}`;
-  }
   return `${fmt(dateStart)} – ${fmt(dateEnd)}`;
 }
 
 function getMonthLabel(dateStart: string): string {
-  const d = new Date(dateStart + "T12:00:00");
-  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  return new Date(dateStart + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 const MONTH_COLORS: Record<string, string> = {
@@ -42,84 +44,81 @@ const MONTH_COLORS: Record<string, string> = {
 
 function monthColor(dateStart: string) {
   const month = new Date(dateStart + "T12:00:00").toLocaleDateString("en-US", { month: "long" });
-  return MONTH_COLORS[month] || "#D97706";
+  return MONTH_COLORS[month] || AB_ORANGE;
 }
 
-// ── Event Card ────────────────────────────────────────────────────────────────
+// ── Event Card ─────────────────────────────────────────────────────────────────
 
 function FoodEventCard({ event, onUpvote }: { event: FoodEvent; onUpvote: (id: number) => void }) {
   const [upvoted, setUpvoted] = useState(false);
-
-  const handleUpvote = () => {
-    if (!upvoted) {
-      onUpvote(event.id);
-      setUpvoted(true);
-    }
-  };
-
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue + " Denver CO")}`;
 
+  const handleUpvote = () => {
+    if (!upvoted) { onUpvote(event.id); setUpvoted(true); }
+  };
+
   return (
-    <div className="bg-white border-2 border-black rounded-none p-4 mb-3 hover:shadow-md transition-shadow">
+    <div className="bg-white border-2 border-black p-4 mb-3 transition-shadow hover:shadow-md">
       <div className="flex items-start gap-3">
-        <span className="text-3xl leading-none pt-0.5">{event.emoji}</span>
+        <span className="text-3xl leading-none pt-0.5 select-none">{event.emoji}</span>
+
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-start gap-2 mb-1">
-            <h3 className="font-black text-lg leading-tight text-black">{event.name}</h3>
+          {/* Title row */}
+          <div className="flex flex-wrap items-baseline gap-2 mb-0.5">
+            <h3 className="font-anton text-xl leading-tight text-black uppercase">{event.name}</h3>
             {event.price && (
-              <span className="text-xs font-bold bg-[#D97706] text-white px-2 py-0.5 rounded-full whitespace-nowrap">
+              <span className="text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5"
+                style={{ backgroundColor: AB_ORANGE, color: "black" }}>
                 {event.price}
               </span>
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-gray-600 mb-2">
-            <span className="font-medium text-black">{event.venue}</span>
+          {/* Venue / date row */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm mb-2 font-sora">
+            <span className="font-bold text-black">{event.venue}</span>
             {event.neighborhood && (
               <>
-                <span className="text-gray-400">·</span>
-                <span className="flex items-center gap-0.5">
-                  <MapPin className="w-3 h-3" />
-                  {event.neighborhood}
+                <span className="text-gray-300">·</span>
+                <span className="text-gray-500 flex items-center gap-0.5">
+                  <MapPin className="w-3 h-3" />{event.neighborhood}
                 </span>
               </>
             )}
-            <span className="text-gray-400">·</span>
-            <span className="font-medium" style={{ color: monthColor(event.dateStart) }}>
+            <span className="text-gray-300">·</span>
+            <span className="font-bold" style={{ color: monthColor(event.dateStart) }}>
               {formatDateRange(event.dateStart, event.dateEnd)}
             </span>
           </div>
 
-          <p className="text-sm text-gray-700 mb-3">{event.summary}</p>
+          {/* Summary */}
+          <p className="text-sm text-gray-700 mb-3 font-sora">{event.summary}</p>
 
+          {/* Footer row: tags + actions */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold bg-[#E8F5E9] text-[#1B5E20] border border-[#A5D6A7] px-2 py-0.5 rounded-full">
+            <span className="text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 border-2 border-black"
+              style={{ backgroundColor: AB_PINK }}>
               {event.cuisine}
             </span>
 
             <div className="flex items-center gap-2 ml-auto">
               <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
-                className="text-xs text-gray-500 hover:text-black transition-colors flex items-center gap-0.5">
-                <MapPin className="w-3 h-3" /> Map
+                className="text-xs font-sora font-semibold text-gray-500 hover:text-black transition-colors flex items-center gap-0.5 underline">
+                <MapPin className="w-3 h-3" />Map
               </a>
 
               {event.ticketUrl && (
                 <a href={event.ticketUrl} target="_blank" rel="noopener noreferrer"
-                  className="text-xs font-semibold bg-black text-white hover:bg-[#2D6A4F] px-2 py-0.5 rounded transition-colors flex items-center gap-0.5">
-                  <Ticket className="w-3 h-3" /> Reserve
+                  className="text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 border-2 border-black bg-black text-white hover:text-[#41F2EE] transition-colors flex items-center gap-1">
+                  <Ticket className="w-3 h-3" />Reserve
                 </a>
               )}
 
-              <button
-                onClick={handleUpvote}
-                disabled={upvoted}
-                className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded border-2 transition-colors ${
-                  upvoted
-                    ? "border-[#D97706] text-[#D97706] bg-[#FFF8E1]"
-                    : "border-black text-black hover:border-[#D97706] hover:text-[#D97706]"
-                }`}
-              >
-                <Heart className={`w-3 h-3 ${upvoted ? "fill-current" : ""}`} />
+              <button onClick={handleUpvote} disabled={upvoted}
+                className={`flex items-center gap-1 text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 border-2 border-black transition-colors ${
+                  upvoted ? "text-[#FE6B41] bg-[#FFF8E7]" : "text-black hover:text-[#FE6B41]"
+                }`}>
+                <Heart className={`w-3 h-3 ${upvoted ? "fill-[#FE6B41]" : ""}`} />
                 {event.upvotes + (upvoted ? 1 : 0)}
               </button>
             </div>
@@ -130,9 +129,9 @@ function FoodEventCard({ event, onUpvote }: { event: FoodEvent; onUpvote: (id: n
   );
 }
 
-// ── Add Event Form / Modal ─────────────────────────────────────────────────────
+// ── Add Event Modal ────────────────────────────────────────────────────────────
 
-const BLANK_FORM: Partial<InsertFoodEvent> = {
+const BLANK: Partial<InsertFoodEvent> = {
   emoji: "", name: "", venue: "", neighborhood: "",
   dateStart: "", dateEnd: "", summary: "",
   cuisine: "", price: "", ticketUrl: "", rawBlurb: "", requester: "",
@@ -140,40 +139,33 @@ const BLANK_FORM: Partial<InsertFoodEvent> = {
 
 function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [blurb, setBlurb] = useState("");
-  const [parsing, setParsing] = useState(false);
-  const [form, setForm] = useState<Partial<InsertFoodEvent>>(BLANK_FORM);
+  const [form, setForm] = useState<Partial<InsertFoodEvent>>(BLANK);
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
 
-  const setField = (field: keyof InsertFoodEvent, value: string) =>
+  const set = (field: keyof InsertFoodEvent, value: string) =>
     setForm(f => ({ ...f, [field]: value }));
 
-  const parseBlurbMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest({ endpoint: "/api/ai/parse-blurb", method: "POST", data: { blurb } });
-    },
+  const parseMutation = useMutation({
+    mutationFn: () => apiRequest({ endpoint: "/api/ai/parse-blurb", method: "POST", data: { blurb } }),
     onSuccess: (data) => {
       setForm({ ...data, rawBlurb: blurb, requester: form.requester || "" });
       setShowForm(true);
-      toast({ title: "Blurb parsed!", description: "Review the details and add your name." });
+      toast({ title: "Blurb parsed!", description: "Review the details below." });
     },
     onError: () => {
-      toast({ title: "Parse failed", description: "Try again or fill in the form manually.", variant: "destructive" });
+      toast({ title: "Parse failed", description: "Fill in the form manually.", variant: "destructive" });
       setShowForm(true);
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: InsertFoodEvent) => {
-      return apiRequest({ endpoint: "/api/food-events", method: "POST", data });
-    },
+    mutationFn: (data: InsertFoodEvent) =>
+      apiRequest({ endpoint: "/api/food-events", method: "POST", data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/food-events"] });
-      toast({ title: "Event added!", description: "Your popup is now on the feed." });
-      onClose();
-      setBlurb("");
-      setForm(BLANK_FORM);
-      setShowForm(false);
+      toast({ title: "Popup added!", description: "It's now on the feed." });
+      handleClose();
     },
     onError: (e: any) => {
       toast({ title: "Error", description: e?.message || "Couldn't add event.", variant: "destructive" });
@@ -190,144 +182,137 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   };
 
   const handleClose = () => {
-    onClose();
-    setBlurb("");
-    setForm(BLANK_FORM);
-    setShowForm(false);
+    onClose(); setBlurb(""); setForm(BLANK); setShowForm(false);
   };
+
+  const inputClass = "border-2 border-black rounded-none bg-white font-sora text-sm";
+  const labelClass = "font-sora font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg bg-[#F1F8E9] border-2 border-black rounded-none max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
+        style={{ backgroundColor: AB_GOLD }}>
         <DialogHeader>
-          <DialogTitle className="text-2xl font-black text-black">ADD A POPUP</DialogTitle>
+          <DialogTitle className="font-anton text-3xl text-black uppercase tracking-tight">
+            Add a Popup
+          </DialogTitle>
         </DialogHeader>
 
         {!showForm ? (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Paste a social media blurb and let AI extract the details — or skip straight to the form.
+            <p className="text-sm font-sora text-gray-700">
+              Paste a social media blurb and AI will parse the details — or skip to the form.
             </p>
             <div>
-              <Label className="font-bold text-black mb-1 block">Social media blurb</Label>
-              <Textarea
-                rows={6}
-                placeholder={`e.g.\n\nhopalleydenver\n\nWe are happy to announce our Hop Alley Hot Pot Pop-Up Nights! On March 26-28, grab some friends…`}
-                value={blurb}
-                onChange={e => setBlurb(e.target.value)}
-                className="border-2 border-black rounded-none bg-white text-sm resize-none"
-              />
+              <label className={labelClass}>Social media blurb</label>
+              <Textarea rows={6}
+                placeholder={`e.g.\n\nhopalleydenver\n\nWe are happy to announce our Hop Alley Hot Pot Pop-Up Nights! On March 26-28…`}
+                value={blurb} onChange={e => setBlurb(e.target.value)}
+                className={`${inputClass} resize-none`} />
             </div>
             <div className="flex gap-2">
-              <Button
-                onClick={() => parseBlurbMutation.mutate()}
-                disabled={!blurb.trim() || parseBlurbMutation.isPending}
-                className="bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-bold rounded-none flex-1"
-              >
-                <Sparkles className="w-4 h-4 mr-1" />
-                {parseBlurbMutation.isPending ? "Parsing…" : "Parse with AI"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowForm(true)}
-                className="border-2 border-black rounded-none font-bold"
-              >
+              <button onClick={() => parseMutation.mutate()}
+                disabled={!blurb.trim() || parseMutation.isPending}
+                className="flex-1 bg-black text-white font-black font-sora uppercase tracking-wide text-sm px-4 py-2.5 border-2 border-black hover:text-[#41F2EE] transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                <Sparkles className="w-4 h-4" />
+                {parseMutation.isPending ? "Parsing…" : "Parse with AI"}
+              </button>
+              <button onClick={() => setShowForm(true)}
+                className="px-4 py-2.5 border-2 border-black bg-white font-black font-sora uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
                 Skip
-              </Button>
+              </button>
             </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="font-bold text-black text-xs">Emoji *</Label>
-                <Input value={form.emoji || ""} onChange={e => setField("emoji", e.target.value)}
-                  className="border-2 border-black rounded-none bg-white" placeholder="🍲" />
+                <label className={labelClass}>Emoji *</label>
+                <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
+                  className={inputClass} placeholder="🫕" />
               </div>
               <div>
-                <Label className="font-bold text-black text-xs">Cuisine *</Label>
-                <Select value={form.cuisine || ""} onValueChange={v => setField("cuisine", v)}>
-                  <SelectTrigger className="border-2 border-black rounded-none bg-white">
+                <label className={labelClass}>Cuisine *</label>
+                <Select value={form.cuisine || ""} onValueChange={v => set("cuisine", v)}>
+                  <SelectTrigger className={inputClass}>
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {cuisineTypes.map(c => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
+                    {cuisineTypes.map(c => <SelectItem key={c} value={c} className="font-sora">{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div>
-              <Label className="font-bold text-black text-xs">Event Name *</Label>
-              <Input value={form.name || ""} onChange={e => setField("name", e.target.value)}
-                className="border-2 border-black rounded-none bg-white" placeholder="Hot Pot Pop-Up Nights" />
+              <label className={labelClass}>Event Name *</label>
+              <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
+                className={inputClass} placeholder="Hot Pot Pop-Up Nights" />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="font-bold text-black text-xs">Venue / Restaurant *</Label>
-                <Input value={form.venue || ""} onChange={e => setField("venue", e.target.value)}
-                  className="border-2 border-black rounded-none bg-white" placeholder="Hop Alley" />
+                <label className={labelClass}>Venue / Restaurant *</label>
+                <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
+                  className={inputClass} placeholder="Hop Alley" />
               </div>
               <div>
-                <Label className="font-bold text-black text-xs">Neighborhood</Label>
-                <Input value={form.neighborhood || ""} onChange={e => setField("neighborhood", e.target.value)}
-                  className="border-2 border-black rounded-none bg-white" placeholder="RiNo, Capitol Hill…" />
+                <label className={labelClass}>Neighborhood</label>
+                <Input value={form.neighborhood || ""} onChange={e => set("neighborhood", e.target.value)}
+                  className={inputClass} placeholder="RiNo, LoHi…" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="font-bold text-black text-xs">Start Date *</Label>
-                <Input type="date" value={form.dateStart || ""} onChange={e => setField("dateStart", e.target.value)}
-                  className="border-2 border-black rounded-none bg-white" />
+                <label className={labelClass}>Start Date *</label>
+                <Input type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
+                  className={inputClass} />
               </div>
               <div>
-                <Label className="font-bold text-black text-xs">End Date</Label>
-                <Input type="date" value={form.dateEnd || ""} onChange={e => setField("dateEnd", e.target.value)}
-                  className="border-2 border-black rounded-none bg-white" />
+                <label className={labelClass}>End Date</label>
+                <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
+                  className={inputClass} />
               </div>
             </div>
 
             <div>
-              <Label className="font-bold text-black text-xs">Summary *</Label>
-              <Input value={form.summary || ""} onChange={e => setField("summary", e.target.value)}
-                className="border-2 border-black rounded-none bg-white"
-                placeholder="MC'd hot pot with curated broths — bring your crew" maxLength={75} />
-              <p className="text-xs text-gray-400 mt-0.5">{(form.summary || "").length}/75 chars</p>
+              <label className={labelClass}>One-liner *</label>
+              <Input value={form.summary || ""} onChange={e => set("summary", e.target.value)}
+                className={inputClass} placeholder="MC'd hot pot with curated broths — bring your crew"
+                maxLength={75} />
+              <p className="text-xs font-sora text-gray-400 mt-0.5">{(form.summary || "").length}/75</p>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="font-bold text-black text-xs">Price</Label>
-                <Input value={form.price || ""} onChange={e => setField("price", e.target.value)}
-                  className="border-2 border-black rounded-none bg-white" placeholder="$55/person" />
+                <label className={labelClass}>Price</label>
+                <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
+                  className={inputClass} placeholder="$55/person" />
               </div>
               <div>
-                <Label className="font-bold text-black text-xs">Ticket / Reservation URL</Label>
-                <Input value={form.ticketUrl || ""} onChange={e => setField("ticketUrl", e.target.value)}
-                  className="border-2 border-black rounded-none bg-white" placeholder="https://tock.com/…" />
+                <label className={labelClass}>Ticket / Reservation URL</label>
+                <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
+                  className={inputClass} placeholder="https://tock.com/…" />
               </div>
             </div>
 
             <div>
-              <Label className="font-bold text-black text-xs">Your Name *</Label>
-              <Input value={form.requester || ""} onChange={e => setField("requester", e.target.value)}
-                className="border-2 border-black rounded-none bg-white" placeholder="Mandi" />
+              <label className={labelClass}>Your Name *</label>
+              <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
+                className={inputClass} placeholder="Mandi" />
             </div>
 
-            <DialogFooter className="flex gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={handleClose}
-                className="border-2 border-black rounded-none font-bold flex-1">
+            <div className="flex gap-2 pt-1">
+              <button type="button" onClick={handleClose}
+                className="flex-1 px-4 py-2.5 border-2 border-black bg-white font-black font-sora uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
                 Cancel
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending}
-                className="bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-black rounded-none flex-1">
+              </button>
+              <button type="submit" disabled={createMutation.isPending}
+                className="flex-1 px-4 py-2.5 border-2 border-black bg-black text-white font-black font-sora uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
                 {createMutation.isPending ? "Adding…" : "Add Popup"}
-              </Button>
-            </DialogFooter>
+              </button>
+            </div>
           </form>
         )}
       </DialogContent>
@@ -346,18 +331,12 @@ export default function AmsueBouche() {
   });
 
   const upvoteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest({ endpoint: `/api/food-events/${id}/upvote`, method: "POST", data: {} });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/food-events"] });
-    },
-    onError: () => {
-      toast({ title: "Couldn't upvote", description: "Try again.", variant: "destructive" });
-    },
+    mutationFn: (id: number) =>
+      apiRequest({ endpoint: `/api/food-events/${id}/upvote`, method: "POST", data: {} }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/food-events"] }),
+    onError: () => toast({ title: "Couldn't upvote", variant: "destructive" }),
   });
 
-  // Group by month
   const grouped = events.reduce<Record<string, FoodEvent[]>>((acc, ev) => {
     const key = getMonthLabel(ev.dateStart);
     if (!acc[key]) acc[key] = [];
@@ -366,57 +345,58 @@ export default function AmsueBouche() {
   }, {});
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FAFAF7" }}>
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 shadow-md px-4 py-3" style={{ backgroundColor: "#2D6A4F" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: AB_GOLD }}>
+
+      {/* ── Navbar ── */}
+      <nav className="sticky top-0 z-50 shadow-md px-4 py-3" style={{ backgroundColor: AB_ORANGE }}>
         <div className="container mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
-            <div className="flex items-center gap-3">
-              <UtensilsCrossed className="w-6 h-6 text-white opacity-80" />
-              <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">AMUSE BOUCHE</h1>
+            <div className="flex items-baseline gap-2">
+              <Link href="/amuse-bouche">
+                <h1 className="font-anton text-3xl md:text-4xl text-black hover:text-[#41F2EE] transition-colors cursor-pointer tracking-tight">
+                  AMUSE BOUCHE
+                </h1>
+              </Link>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-green-200 text-sm font-medium hidden sm:block">
+              <span className="font-sora text-sm font-semibold text-black opacity-60 hidden sm:block">
                 Denver food popups
               </span>
-              <button
-                onClick={() => setAddOpen(true)}
-                className="bg-[#D97706] hover:bg-[#B45309] text-white font-black px-4 py-2 rounded-none flex items-center gap-1 transition-colors"
-              >
-                <Plus className="w-4 h-4" /> Add Popup
+              <button onClick={() => setAddOpen(true)}
+                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black font-sora uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
+                <Plus className="w-4 h-4" />Popup
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Hero strip */}
-      <div className="py-4 px-4 text-center border-b-2 border-black" style={{ backgroundColor: "#F0FDF4" }}>
-        <p className="text-sm text-gray-600 max-w-xl mx-auto">
-          Exclusive popups, secret dinners, and one-night-only experiences for our foodie community.
-          Spot something good? Paste the blurb and let AI do the rest.
+      {/* ── Hero strip ── */}
+      <div className="border-b-2 border-black py-3 px-4 text-center" style={{ backgroundColor: AB_PINK }}>
+        <p className="font-sora text-sm font-semibold text-black max-w-xl mx-auto">
+          Exclusive popups, secret dinners &amp; one-night-only experiences for our foodie community.
+          Spot something? Paste the blurb and let AI do the rest.
         </p>
       </div>
 
-      {/* Feed */}
+      {/* ── Feed ── */}
       <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
+
         {isLoading && (
-          <div className="text-center py-16 text-gray-500">
+          <div className="text-center py-16 text-gray-400 font-sora">
             <UtensilsCrossed className="w-8 h-8 mx-auto mb-3 opacity-30" />
             <p>Loading the good stuff…</p>
           </div>
         )}
 
         {!isLoading && events.length === 0 && (
-          <div className="text-center py-16 text-gray-500">
-            <UtensilsCrossed className="w-10 h-10 mx-auto mb-3 opacity-25" />
-            <p className="font-bold text-lg text-black">Nothing on the menu yet.</p>
-            <p className="text-sm mt-1 mb-4">Be the first to add a popup.</p>
-            <button
-              onClick={() => setAddOpen(true)}
-              className="bg-[#2D6A4F] text-white font-black px-6 py-2 rounded-none inline-flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" /> Add a Popup
+          <div className="text-center py-16">
+            <UtensilsCrossed className="w-10 h-10 mx-auto mb-3 opacity-20" />
+            <p className="font-anton text-2xl text-black uppercase mb-1">Nothing on the menu yet.</p>
+            <p className="font-sora text-sm text-gray-600 mb-4">Be the first to add a popup.</p>
+            <button onClick={() => setAddOpen(true)}
+              className="bg-black text-white font-black font-sora uppercase tracking-wide text-sm px-6 py-2.5 border-2 border-black hover:text-[#41F2EE] transition-colors inline-flex items-center gap-2">
+              <Plus className="w-4 h-4" />Add a Popup
             </button>
           </div>
         )}
@@ -425,11 +405,12 @@ export default function AmsueBouche() {
           const color = monthColor(monthEvents[0].dateStart);
           return (
             <div key={month} className="mb-6">
+              {/* Month header — same style as Setlist's MonthGroup */}
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-0.5 flex-1" style={{ backgroundColor: color }} />
-                <span className="text-xs font-black px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: color }}>
+                <h2 className="font-anton text-xl text-black uppercase" style={{ color }}>
                   {month.toUpperCase()}
-                </span>
+                </h2>
                 <div className="h-0.5 flex-1" style={{ backgroundColor: color }} />
               </div>
               {monthEvents.map(ev => (
@@ -440,19 +421,21 @@ export default function AmsueBouche() {
         })}
       </main>
 
-      {/* Footer */}
-      <footer className="py-4 px-4 border-t-2 border-black" style={{ backgroundColor: "#D97706" }}>
-        <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-sm font-semibold">
-          <Link href="/" className="text-black hover:text-white transition-colors flex items-center gap-1 underline">
-            <List className="w-4 h-4" /> SETLIST SOCIAL FEED
-          </Link>
-          <span className="text-black">© {new Date().getFullYear()} Amuse Bouche</span>
-          <button
-            onClick={() => setAddOpen(true)}
-            className="text-black hover:text-white transition-colors underline"
-          >
-            ADD A POPUP
-          </button>
+      {/* ── Footer ── */}
+      <footer className="py-4 px-4 border-t-2 border-black" style={{ backgroundColor: AB_ORANGE }}>
+        <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Link href="/"
+              className="font-sora text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline flex items-center gap-1">
+              <List className="w-4 h-4" />SETLIST SOCIAL FEED
+            </Link>
+            <span className="text-black opacity-40">|</span>
+            <button onClick={() => setAddOpen(true)}
+              className="font-sora text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline">
+              ADD A POPUP
+            </button>
+          </div>
+          <span className="font-sora text-sm text-black">© {new Date().getFullYear()} Amuse Bouche</span>
         </div>
       </footer>
 
