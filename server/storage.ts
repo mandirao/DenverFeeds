@@ -524,7 +524,7 @@ export class DatabaseStorage implements IStorage {
   async getAllFoodEvents(): Promise<FoodEvent[]> {
     const todayMT = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date());
     return await db.select().from(foodEvents)
-      .where(sql`COALESCE(${foodEvents.dateEnd}, ${foodEvents.dateStart}) >= ${todayMT}`)
+      .where(sql`COALESCE(NULLIF(${foodEvents.dateEnd}, ''), ${foodEvents.dateStart}) >= ${todayMT}`)
       .orderBy(foodEvents.dateStart);
   }
 
