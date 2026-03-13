@@ -881,7 +881,7 @@ export default function AmsueBouche() {
       <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
 
         <p className="text-xs text-black mb-5 opacity-60 leading-snug">
-          ⚡ These popups fill up fast. Listing here is not a guarantee of availability — if something looks good, don't sleep on it.
+          ⚡ These fill up fast. If something looks good, act on it.
         </p>
 
         {isLoading && (
