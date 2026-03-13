@@ -233,6 +233,15 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
 
 // ── Edit Food Event Modal ──────────────────────────────────────────────────────
 
+function getMissingField(form: Partial<InsertFoodEvent>): string | null {
+  if (!form.name?.trim())      return "Event name";
+  if (!form.venue?.trim())     return "Venue / restaurant";
+  if (!form.dateStart?.trim()) return "Start date";
+  if (!form.cuisine?.trim())   return "Cuisine type";
+  if (!form.requester?.trim()) return "Your name";
+  return null;
+}
+
 function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () => void }) {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -269,8 +278,9 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.venue || !form.dateStart || !form.cuisine || !form.requester) {
-      toast({ title: "Missing fields", description: "Name, venue, date, cuisine, and your name are required.", variant: "destructive" });
+    const missing = getMissingField(form);
+    if (missing) {
+      toast({ title: `${missing} is required`, variant: "destructive" });
       return;
     }
     updateMutation.mutate(form);
@@ -281,7 +291,7 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
+      <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: AB_GOLD }}>
         <DialogHeader>
           <DialogTitle className="text-3xl text-black uppercase tracking-tight">
@@ -290,88 +300,91 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={labelClass}>Emoji *</label>
-              <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
-                className={inputClass} placeholder="🫕" />
-            </div>
-            <div>
-              <label className={labelClass}>Cuisine *</label>
-              <Select value={form.cuisine || ""} onValueChange={v => set("cuisine", v)}>
-                <SelectTrigger className={inputClass}>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cuisineTypes.map(c => <SelectItem key={c} value={c} className="">{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-3 md:gap-y-0">
 
-          <div>
-            <label className={labelClass}>Event Name *</label>
-            <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
-              className={inputClass} placeholder="Hot Pot Pop-Up Nights" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={labelClass}>Venue / Restaurant *</label>
-              <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
-                className={inputClass} placeholder="Hop Alley" />
+            {/* ── Left column ── */}
+            <div className="space-y-3">
+              <div>
+                <label className={labelClass}>Event Name *</label>
+                <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
+                  className={inputClass} placeholder="Hot Pot Pop-Up Nights" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelClass}>Venue / Restaurant *</label>
+                  <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
+                    className={inputClass} placeholder="Hop Alley" />
+                </div>
+                <div>
+                  <label className={labelClass}>Neighborhood</label>
+                  <Input value={form.neighborhood || ""} onChange={e => set("neighborhood", e.target.value)}
+                    className={inputClass} placeholder="RiNo, LoHi…" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelClass}>Start Date *</label>
+                  <Input type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
+                    className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>End Date</label>
+                  <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
+                    className={inputClass} />
+                </div>
+              </div>
+              <div>
+                <label className={labelClass}>Description *</label>
+                <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
+                  className={`${inputClass} resize-none`} rows={4} maxLength={200}
+                  placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
+                <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
+              </div>
             </div>
-            <div>
-              <label className={labelClass}>Neighborhood</label>
-              <Input value={form.neighborhood || ""} onChange={e => set("neighborhood", e.target.value)}
-                className={inputClass} placeholder="RiNo, LoHi…" />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={labelClass}>Start Date *</label>
-              <Input type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
-                className={inputClass} />
+            {/* ── Right column ── */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelClass}>Emoji</label>
+                  <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
+                    className={inputClass} placeholder="🫕" />
+                </div>
+                <div>
+                  <label className={labelClass}>Cuisine *</label>
+                  <Select value={form.cuisine || ""} onValueChange={v => set("cuisine", v)}>
+                    <SelectTrigger className={inputClass}>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cuisineTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelClass}>Price</label>
+                  <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
+                    className={inputClass} placeholder="$55/person" />
+                </div>
+                <div>
+                  <label className={labelClass}>Ticket / Reservation URL</label>
+                  <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
+                    className={inputClass} placeholder="https://tock.com/…" />
+                </div>
+              </div>
+              <div>
+                <label className={labelClass}>Original post link</label>
+                <Input value={form.sourceUrl || ""} onChange={e => set("sourceUrl", e.target.value)}
+                  className={inputClass} placeholder="https://instagram.com/p/…" />
+              </div>
+              <div>
+                <label className={labelClass}>Your Name *</label>
+                <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
+                  className={inputClass} placeholder="Mandi" />
+              </div>
             </div>
-            <div>
-              <label className={labelClass}>End Date</label>
-              <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
-                className={inputClass} />
-            </div>
-          </div>
-
-          <div>
-            <label className={labelClass}>Description *</label>
-            <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-              className={`${inputClass} resize-none`} rows={3} maxLength={200}
-              placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
-            <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={labelClass}>Price</label>
-              <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
-                className={inputClass} placeholder="$55/person" />
-            </div>
-            <div>
-              <label className={labelClass}>Ticket / Reservation URL</label>
-              <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
-                className={inputClass} placeholder="https://tock.com/…" />
-            </div>
-          </div>
-
-          <div>
-            <label className={labelClass}>Original post link</label>
-            <Input value={form.sourceUrl || ""} onChange={e => set("sourceUrl", e.target.value)}
-              className={inputClass} placeholder="https://instagram.com/p/…" />
-          </div>
-
-          <div>
-            <label className={labelClass}>Your Name *</label>
-            <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
-              className={inputClass} placeholder="Mandi" />
           </div>
 
           <div className="flex gap-2 pt-1">
@@ -473,8 +486,9 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.venue || !form.dateStart || !form.cuisine || !form.requester) {
-      toast({ title: "Missing fields", description: "Name, venue, date, cuisine, and your name are required.", variant: "destructive" });
+    const missing = getMissingField(form);
+    if (missing) {
+      toast({ title: `${missing} is required`, variant: "destructive" });
       return;
     }
     createMutation.mutate(form as InsertFoodEvent);
@@ -496,7 +510,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
+      <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: AB_GOLD }}>
         <DialogHeader>
           <DialogTitle className="text-3xl text-black uppercase tracking-tight">
@@ -598,88 +612,91 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className={labelClass}>Emoji *</label>
-                <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
-                  className={inputClass} placeholder="🫕" />
-              </div>
-              <div>
-                <label className={labelClass}>Cuisine *</label>
-                <Select value={form.cuisine || ""} onValueChange={v => set("cuisine", v)}>
-                  <SelectTrigger className={inputClass}>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cuisineTypes.map(c => <SelectItem key={c} value={c} className="">{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-3 md:gap-y-0">
 
-            <div>
-              <label className={labelClass}>Event Name *</label>
-              <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
-                className={inputClass} placeholder="Hot Pot Pop-Up Nights" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className={labelClass}>Venue / Restaurant *</label>
-                <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
-                  className={inputClass} placeholder="Hop Alley" />
+              {/* ── Left column ── */}
+              <div className="space-y-3">
+                <div>
+                  <label className={labelClass}>Event Name *</label>
+                  <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
+                    className={inputClass} placeholder="Hot Pot Pop-Up Nights" />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Venue / Restaurant *</label>
+                    <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
+                      className={inputClass} placeholder="Hop Alley" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Neighborhood</label>
+                    <Input value={form.neighborhood || ""} onChange={e => set("neighborhood", e.target.value)}
+                      className={inputClass} placeholder="RiNo, LoHi…" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Start Date *</label>
+                    <Input type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
+                      className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>End Date</label>
+                    <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
+                      className={inputClass} />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>Description *</label>
+                  <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
+                    className={`${inputClass} resize-none`} rows={4} maxLength={200}
+                    placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
+                  <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
+                </div>
               </div>
-              <div>
-                <label className={labelClass}>Neighborhood</label>
-                <Input value={form.neighborhood || ""} onChange={e => set("neighborhood", e.target.value)}
-                  className={inputClass} placeholder="RiNo, LoHi…" />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className={labelClass}>Start Date *</label>
-                <Input type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
-                  className={inputClass} />
+              {/* ── Right column ── */}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Emoji</label>
+                    <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
+                      className={inputClass} placeholder="🫕" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Cuisine *</label>
+                    <Select value={form.cuisine || ""} onValueChange={v => set("cuisine", v)}>
+                      <SelectTrigger className={inputClass}>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cuisineTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Price</label>
+                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
+                      className={inputClass} placeholder="$55/person" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Ticket / Reservation URL</label>
+                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
+                      className={inputClass} placeholder="https://tock.com/…" />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>Original post link</label>
+                  <Input value={form.sourceUrl || ""} onChange={e => set("sourceUrl", e.target.value)}
+                    className={inputClass} placeholder="https://instagram.com/p/… or eventbrite link" />
+                </div>
+                <div>
+                  <label className={labelClass}>Your Name *</label>
+                  <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
+                    className={inputClass} placeholder="Mandi" />
+                </div>
               </div>
-              <div>
-                <label className={labelClass}>End Date</label>
-                <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
-                  className={inputClass} />
-              </div>
-            </div>
-
-            <div>
-              <label className={labelClass}>Description *</label>
-              <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-                className={`${inputClass} resize-none`} rows={3} maxLength={200}
-                placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
-              <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className={labelClass}>Price</label>
-                <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
-                  className={inputClass} placeholder="$55/person" />
-              </div>
-              <div>
-                <label className={labelClass}>Ticket / Reservation URL</label>
-                <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
-                  className={inputClass} placeholder="https://tock.com/…" />
-              </div>
-            </div>
-
-            <div>
-              <label className={labelClass}>Original post link</label>
-              <Input value={form.sourceUrl || ""} onChange={e => set("sourceUrl", e.target.value)}
-                className={inputClass} placeholder="https://instagram.com/p/… or eventbrite link" />
-            </div>
-
-            <div>
-              <label className={labelClass}>Your Name *</label>
-              <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
-                className={inputClass} placeholder="Mandi" />
             </div>
 
             <div className="flex gap-2 pt-1">
