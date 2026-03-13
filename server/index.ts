@@ -11,8 +11,8 @@ const app = express();
 // Trust proxy - required for deployments behind reverse proxy (Replit, etc.)
 app.set('trust proxy', 1);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: false, limit: "20mb" }));
 
 // Configure session middleware with PostgreSQL session store
 const PgSession = connectPgSimple(session);
