@@ -344,9 +344,9 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
           <div>
             <label className={labelClass}>Description *</label>
             <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-              className={`${inputClass} resize-none`} rows={3} maxLength={140}
-              placeholder="Sensory snapshot — food, vibe, atmosphere in 1-2 tight sentences" />
-            <p className="text-xs font-sora text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/140</p>
+              className={`${inputClass} resize-none`} rows={3} maxLength={200}
+              placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
+            <p className="text-xs font-sora text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -613,9 +613,9 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             <div>
               <label className={labelClass}>Description *</label>
               <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-                className={`${inputClass} resize-none`} rows={3} maxLength={140}
-                placeholder="Sensory snapshot — food, vibe, atmosphere in 1-2 tight sentences" />
-              <p className="text-xs font-sora text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/140</p>
+                className={`${inputClass} resize-none`} rows={3} maxLength={200}
+                placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
+              <p className="text-xs font-sora text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
             </div>
 
             <div className="grid grid-cols-2 gap-2">

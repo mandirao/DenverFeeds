@@ -478,17 +478,18 @@ Using ALL of this context, write a final summary and verify the neighborhood.
 • TONE: Sensory and evocative — paint the food and atmosphere, not the pitch. Activate taste, smell, texture, sound. NO persuasion language ("Trust us," "you won't want to miss," "show up early," calls to action).
 • STRUCTURE: 1-2 tight sentences. Lead with what it actually feels like. No rhetorical hooks.
 • WORD CHOICE: Lush but efficient. Concrete sensory nouns, compound adjectives, juxtapositions (humble + haute, nostalgic + electric).
-• LENGTH: Hard cap at 140 characters. Every word earns its place.
+• LENGTH: Hard cap at 200 characters. Every word earns its place. Use the extra room to name recognizable shops, chefs, or collaborators when relevant — a name like "Oh My Gouda" or "Bao Brewhouse" does more work than a generic adjective.
 • USE SEARCH CONTEXT: If you found interesting venue history, chef pedigree, or collaborator cred, weave in one specific detail. Only include what's credible and relevant — don't pad.
 
 EXAMPLE SUMMARIES:
 - "House and disco, free dumplings at midnight, four DJs — Bao Brewhouse at full tilt on a Saturday night."
+- "Six beers, six cheeses, rooftop views of the Rockies — Odell pairs pints with boards from Oh My Gouda, run by an ex-Olympic ski jumper turned fromage obsessive."
 - "An omakase pop-up from the team behind Michelin-recognized Kawa Ni: twelve courses, rotating proteins, low-lit and unhurried."
 
 Return ONLY valid JSON (no markdown):
 {
   "neighborhood": "corrected Denver neighborhood based on venue address from search, or original if no better info",
-  "summary": "final 140-char-max Amuse-Bouche summary"
+  "summary": "final 200-char-max Amuse-Bouche summary"
 }`;
 
     const pass2Message = await client.messages.create({
@@ -508,7 +509,7 @@ Return ONLY valid JSON (no markdown):
       dateStart: pass1.dateStart || '',
       dateEnd: pass1.dateEnd || '',
       emoji: pass1.emoji || '🍴',
-      summary: (pass2.summary || pass1.draftSummary || '').substring(0, 140),
+      summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
       cuisine: pass1.cuisine || 'Other',
       price: pass1.price || '',
       ticketUrl: pass1.ticketUrl || '',
