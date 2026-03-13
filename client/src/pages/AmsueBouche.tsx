@@ -703,14 +703,6 @@ export default function AmsueBouche() {
         </div>
       </nav>
 
-      {/* ── Hero strip ── */}
-      <div className="py-3 px-4 text-center" style={{ backgroundColor: AB_PINK }}>
-        <p className="font-sora text-sm font-semibold text-black max-w-xl mx-auto">
-          Exclusive popups, secret dinners &amp; one-night-only experiences for our foodie community.
-          Spot something? Paste the blurb and let AI do the rest.
-        </p>
-      </div>
-
       {/* ── Feed ── */}
       <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
 
@@ -755,7 +747,7 @@ export default function AmsueBouche() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="py-4 px-4" style={{ backgroundColor: AB_ORANGE }}>
+      <footer className="py-4 px-4" style={{ backgroundColor: AB_GOLD }}>
         <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
           <div className="flex items-center gap-2">
             <Link href="/"
