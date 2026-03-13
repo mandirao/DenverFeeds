@@ -342,11 +342,10 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
           </div>
 
           <div>
-            <label className={labelClass}>One-liner *</label>
-            <Input value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-              className={inputClass} placeholder="MC'd hot pot with curated broths — bring your crew"
-              maxLength={75} />
-            <p className="text-xs font-sora text-gray-400 mt-0.5">{(form.summary || "").length}/75</p>
+            <label className={labelClass}>Description *</label>
+            <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
+              className={`${inputClass} resize-none`} rows={3}
+              placeholder="2-4 evocative sentences — what makes this night worth showing up for" />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -611,11 +610,10 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             </div>
 
             <div>
-              <label className={labelClass}>One-liner *</label>
-              <Input value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-                className={inputClass} placeholder="MC'd hot pot with curated broths — bring your crew"
-                maxLength={75} />
-              <p className="text-xs font-sora text-gray-400 mt-0.5">{(form.summary || "").length}/75</p>
+              <label className={labelClass}>Description *</label>
+              <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
+                className={`${inputClass} resize-none`} rows={3}
+                placeholder="2-4 evocative sentences — what makes this night worth showing up for" />
             </div>
 
             <div className="grid grid-cols-2 gap-2">

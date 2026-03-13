@@ -390,10 +390,25 @@ Respond with ONLY valid JSON, no markdown formatting:
     const client = new Anthropic({ apiKey: this.apiKey });
     const today = new Date().toISOString().split('T')[0];
 
-    const prompt = `You are parsing a food popup event in Denver, CO from social media content. Extract details and return ONLY valid JSON.
+    const prompt = `You are parsing a food popup event in Denver, CO from social media content. Extract event details and write a vivid summary in the Amuse-Bouche brand voice. Return ONLY valid JSON.
 
 Today's date: ${today}
-${blurb ? `\nBlurb:\n"""\n${blurb}\n"""` : ''}${imageBase64 ? '\n\nAn image from the post is also attached — scan it for any text, dates, prices, or details not captured in the blurb.' : ''}
+${blurb ? `\nBlurb:\n"""\n${blurb}\n"""` : ''}${imageBase64 ? '\n\nAn image from the post is also attached — scan it carefully for any text, dates, prices, venue names, or details not captured in the blurb.' : ''}
+
+--- AMUSE-BOUCHE SUMMARY VOICE GUIDE ---
+Write summaries like a cultured, vivid, in-the-know food editor:
+• VOICE: Informed and worldly but conversational. Confidently opinionated — no hedging. Uses phrases like "No wonder," "Of course," "Trust us."
+• TONE: Celebratory without being fawning. Sensory and evocative — activate taste, smell, atmosphere ("crispy leeks," "snug dining room bustles," "groovy retro-mod atmosphere"). Narrative-driven — tell a mini-story about the vibe, the chef, or the concept.
+• STRUCTURE: Open with a punchy editorial hook that nails what's unique. Use flowing clauses (semicolons, em-dashes) not bullet points. Highlight 2-3 standout elements for rhythm.
+• WORD CHOICE: Lush but efficient. Words like "stunner," "pedigree," "verve," "gem" add personality. Compound adjectives welcome ("bone marrow–washed bourbon," "tamarind chutney–glazed"). Blend contrasts: upscale + relaxed, nostalgic + new, humble + haute.
+• AUTHORITY: Write like an insider. "For those in the know," "every bit as notable," "the real surprise here…"
+• LENGTH: 2-4 punchy sentences. Rich enough to entice, tight enough to leave them wanting more.
+
+EXAMPLE SUMMARIES (aim for this quality):
+- "What separates this late-night dumpling party from your average pop-up: the dumplings are free at midnight and the DJ lineup reads like a who's who of Denver's underground dance scene. Show up early, stake your spot, and let the house and disco wash over you while the kitchen preps something worth staying for."
+- "Bao Brewhouse transforms its dining room into a full-on dance party — free dumplings drop at midnight, the first 50 through the door drink on the house, and four DJs keep the floor moving until close. The kind of night Denver's been needing."
+
+--- END VOICE GUIDE ---
 
 Return this exact JSON structure (no markdown, no code blocks):
 {
@@ -403,7 +418,7 @@ Return this exact JSON structure (no markdown, no code blocks):
   "dateStart": "YYYY-MM-DD or empty string if unknown",
   "dateEnd": "YYYY-MM-DD for last day if multi-day, else empty string",
   "emoji": "single food-related emoji that fits the event",
-  "summary": "one punchy sentence description, max 75 chars, casual cool tone",
+  "summary": "2-4 sentence Amuse-Bouche brand-voice description — vivid, evocative, insider",
   "cuisine": "one of: Hot Pot & Shabu, Japanese, Korean, Chinese, Thai & Southeast Asian, Indian & South Asian, Mexican & Latin, Italian, French, Mediterranean, Seafood, BBQ & Southern, Brunch & Breakfast, Dessert & Pastry, Cocktails & Wine, Tasting Menu, Farm-to-Table, Fusion, American, Other",
   "price": "price string like '$55/person' or empty string if unknown",
   "ticketUrl": "reservation/ticket URL if mentioned or clearly implied platform URL, else empty string"
@@ -412,9 +427,9 @@ Return this exact JSON structure (no markdown, no code blocks):
 Rules:
 - Use current year (${new Date().getFullYear()}) unless another year is clearly stated
 - If a date range is mentioned (e.g. March 26-28), dateStart=first date, dateEnd=last date
-- Keep summary under 75 chars, casual and descriptive
 - Pick the most specific cuisine type that fits
-- Combine all sources (blurb text + image text) for the most accurate result`;
+- Combine all sources (blurb text + image text) for the most accurate result
+- Do NOT invent details not present in the source material — only embellish the tone, not the facts`;
 
     const userContent: any[] = [];
 
@@ -433,7 +448,7 @@ Rules:
 
     const message = await client.messages.create({
       model: 'claude-opus-4-5',
-      max_tokens: 600,
+      max_tokens: 1024,
       messages: [{ role: 'user', content: userContent }],
     });
 
