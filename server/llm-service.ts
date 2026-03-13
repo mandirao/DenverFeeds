@@ -397,16 +397,16 @@ ${blurb ? `\nBlurb:\n"""\n${blurb}\n"""` : ''}${imageBase64 ? '\n\nAn image from
 
 --- AMUSE-BOUCHE SUMMARY VOICE GUIDE ---
 Write summaries like a cultured, vivid, in-the-know food editor:
-• VOICE: Informed and worldly but conversational. Confidently opinionated — no hedging. Uses phrases like "No wonder," "Of course," "Trust us."
-• TONE: Celebratory without being fawning. Sensory and evocative — activate taste, smell, atmosphere ("crispy leeks," "snug dining room bustles," "groovy retro-mod atmosphere"). Narrative-driven — tell a mini-story about the vibe, the chef, or the concept.
-• STRUCTURE: Open with a punchy editorial hook that nails what's unique. Use flowing clauses (semicolons, em-dashes) not bullet points. Highlight 2-3 standout elements for rhythm.
-• WORD CHOICE: Lush but efficient. Words like "stunner," "pedigree," "verve," "gem" add personality. Compound adjectives welcome ("bone marrow–washed bourbon," "tamarind chutney–glazed"). Blend contrasts: upscale + relaxed, nostalgic + new, humble + haute.
-• AUTHORITY: Write like an insider. "For those in the know," "every bit as notable," "the real surprise here…"
-• LENGTH: 2-4 punchy sentences. Rich enough to entice, tight enough to leave them wanting more.
+• VOICE: Informed and worldly but conversational. Confidently descriptive — no hedging, no hype. State what the food and atmosphere are like with authority.
+• TONE: Sensory and evocative — paint the food and the atmosphere, not the pitch. Activate taste, smell, texture, sound ("crispy leeks," "smoky broth," "snug room buzzing with chatter"). Do NOT use persuasion language or "nudge nudge" phrases like "Trust us," "you won't want to miss," "The kind of night Denver's been needing," or "show up early." Let the description do the work.
+• STRUCTURE: 1-2 tight sentences max. Lead with what the food or vibe actually feels like — not what makes it "special." No rhetorical hooks, no calls to action.
+• WORD CHOICE: Lush but efficient. Concrete sensory nouns and adjectives over abstract hype. Compound adjectives welcome ("bone marrow–washed bourbon," "tamarind chutney–glazed"). Juxtapositions work: humble + haute, nostalgic + electric.
+• LENGTH: Hard cap at 140 characters. Every word must earn its place.
 
-EXAMPLE SUMMARIES (aim for this quality):
-- "What separates this late-night dumpling party from your average pop-up: the dumplings are free at midnight and the DJ lineup reads like a who's who of Denver's underground dance scene. Show up early, stake your spot, and let the house and disco wash over you while the kitchen preps something worth staying for."
-- "Bao Brewhouse transforms its dining room into a full-on dance party — free dumplings drop at midnight, the first 50 through the door drink on the house, and four DJs keep the floor moving until close. The kind of night Denver's been needing."
+EXAMPLE SUMMARIES (tight, sensory, no pitch):
+- "House and disco, free dumplings at midnight, four DJs — Bao Brewhouse at full tilt on a Saturday night."
+- "Tamarind-glazed lamb, handmade dumplings, and a low-lit room that smells like brown butter and cardamom."
+- "Omakase-style pop-up: twelve courses, rotating protein, and a chef who trained under two Michelin-starred kitchens."
 
 --- END VOICE GUIDE ---
 
@@ -418,7 +418,7 @@ Return this exact JSON structure (no markdown, no code blocks):
   "dateStart": "YYYY-MM-DD or empty string if unknown",
   "dateEnd": "YYYY-MM-DD for last day if multi-day, else empty string",
   "emoji": "single food-related emoji that fits the event",
-  "summary": "2-4 sentence Amuse-Bouche brand-voice description — vivid, evocative, insider",
+  "summary": "1-2 tight sensory sentences, hard cap 140 characters — paint the food and vibe, no pitch, no calls to action",
   "cuisine": "one of: Hot Pot & Shabu, Japanese, Korean, Chinese, Thai & Southeast Asian, Indian & South Asian, Mexican & Latin, Italian, French, Mediterranean, Seafood, BBQ & Southern, Brunch & Breakfast, Dessert & Pastry, Cocktails & Wine, Tasting Menu, Farm-to-Table, Fusion, American, Other",
   "price": "price string like '$55/person' or empty string if unknown",
   "ticketUrl": "reservation/ticket URL if mentioned or clearly implied platform URL, else empty string"
@@ -463,7 +463,7 @@ Rules:
       dateStart: result.dateStart || '',
       dateEnd: result.dateEnd || '',
       emoji: result.emoji || '🍴',
-      summary: result.summary || '',
+      summary: (result.summary || '').substring(0, 140),
       cuisine: result.cuisine || 'Other',
       price: result.price || '',
       ticketUrl: result.ticketUrl || '',
