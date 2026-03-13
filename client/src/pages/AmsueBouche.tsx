@@ -402,13 +402,39 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const [blurb, setBlurb] = useState("");
   const [form, setForm] = useState<Partial<InsertFoodEvent>>(BLANK);
   const [showForm, setShowForm] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [imageMediaType, setImageMediaType] = useState<string | null>(null);
   const { toast } = useToast();
 
   const set = (field: keyof InsertFoodEvent, value: string) =>
     setForm(f => ({ ...f, [field]: value }));
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const mediaType = file.type as string;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      // Extract pure base64 (strip data:image/...;base64, prefix)
+      const base64 = dataUrl.split(",")[1];
+      setImagePreview(dataUrl);
+      setImageBase64(base64);
+      setImageMediaType(mediaType);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const parseMutation = useMutation({
-    mutationFn: () => apiRequest({ endpoint: "/api/ai/parse-blurb", method: "POST", data: { blurb } }),
+    mutationFn: () => apiRequest({
+      endpoint: "/api/ai/parse-blurb",
+      method: "POST",
+      data: {
+        blurb,
+        ...(imageBase64 ? { imageBase64, imageMediaType } : {}),
+      },
+    }),
     onSuccess: (data) => {
       setForm({ ...data, rawBlurb: blurb, sourceUrl: form.sourceUrl || "", requester: form.requester || "" });
       setShowForm(true);
@@ -443,7 +469,13 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   };
 
   const handleClose = () => {
-    onClose(); setBlurb(""); setForm(BLANK); setShowForm(false);
+    onClose();
+    setBlurb("");
+    setForm(BLANK);
+    setShowForm(false);
+    setImagePreview(null);
+    setImageBase64(null);
+    setImageMediaType(null);
   };
 
   const inputClass = "border-2 border-black rounded-none bg-white font-sora text-sm";
@@ -466,11 +498,44 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             </p>
             <div>
               <label className={labelClass}>Social media blurb</label>
-              <Textarea rows={5}
+              <Textarea rows={4}
                 placeholder={`e.g.\n\nhopalleydenver\n\nWe are happy to announce our Hop Alley Hot Pot Pop-Up Nights! On March 26-28…`}
                 value={blurb} onChange={e => setBlurb(e.target.value)}
                 className={`${inputClass} resize-none`} />
             </div>
+
+            {/* Screenshot upload */}
+            <div>
+              <label className={labelClass}>Screenshot from post <span className="font-normal normal-case opacity-60">(optional — AI will read text in the image)</span></label>
+              <div className="flex items-start gap-3">
+                <label className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-black bg-white cursor-pointer hover:bg-gray-50 transition-colors py-3 px-3 font-sora text-sm font-semibold">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={handleImageSelect}
+                  />
+                  {imagePreview ? "Change image" : "Upload screenshot"}
+                </label>
+                {imagePreview && (
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="h-16 w-16 object-cover border-2 border-black"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setImagePreview(null); setImageBase64(null); setImageMediaType(null); }}
+                      className="absolute -top-1.5 -right-1.5 bg-black text-white rounded-full w-4 h-4 flex items-center justify-center text-xs leading-none"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div>
               <label className={labelClass}>Original post link</label>
               <Input
@@ -481,7 +546,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             </div>
             <div className="flex gap-2">
               <button onClick={() => parseMutation.mutate()}
-                disabled={!blurb.trim() || parseMutation.isPending}
+                disabled={(!blurb.trim() && !imageBase64) || parseMutation.isPending}
                 className="flex-1 bg-black text-white font-black font-sora uppercase tracking-wide text-sm px-4 py-2.5 border-2 border-black hover:text-[#41F2EE] transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
                 <Sparkles className="w-4 h-4" />
                 {parseMutation.isPending ? "Parsing…" : "Parse with AI"}

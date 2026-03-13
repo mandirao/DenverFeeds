@@ -375,7 +375,7 @@ Respond with ONLY valid JSON, no markdown formatting:
     return validGenres.includes(genre) ? genre : 'Rock & Alternative';
   }
 
-  async parseBlurb(blurb: string): Promise<{
+  async parseBlurb(blurb: string, imageBase64?: string, imageMediaType?: string): Promise<{
     name: string;
     venue: string;
     neighborhood: string;
@@ -390,19 +390,10 @@ Respond with ONLY valid JSON, no markdown formatting:
     const client = new Anthropic({ apiKey: this.apiKey });
     const today = new Date().toISOString().split('T')[0];
 
-    const message = await client.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 600,
-      messages: [{
-        role: 'user',
-        content: `You are parsing a social media blurb about a food popup event in Denver, CO. Extract details and return ONLY valid JSON.
+    const prompt = `You are parsing a food popup event in Denver, CO from social media content. Extract details and return ONLY valid JSON.
 
 Today's date: ${today}
-
-Blurb:
-"""
-${blurb}
-"""
+${blurb ? `\nBlurb:\n"""\n${blurb}\n"""` : ''}${imageBase64 ? '\n\nAn image from the post is also attached — scan it for any text, dates, prices, or details not captured in the blurb.' : ''}
 
 Return this exact JSON structure (no markdown, no code blocks):
 {
@@ -422,8 +413,28 @@ Rules:
 - Use current year (${new Date().getFullYear()}) unless another year is clearly stated
 - If a date range is mentioned (e.g. March 26-28), dateStart=first date, dateEnd=last date
 - Keep summary under 75 chars, casual and descriptive
-- Pick the most specific cuisine type that fits`
-      }]
+- Pick the most specific cuisine type that fits
+- Combine all sources (blurb text + image text) for the most accurate result`;
+
+    const userContent: any[] = [];
+
+    if (imageBase64 && imageMediaType) {
+      userContent.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: imageMediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+          data: imageBase64,
+        },
+      });
+    }
+
+    userContent.push({ type: 'text', text: prompt });
+
+    const message = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 600,
+      messages: [{ role: 'user', content: userContent }],
     });
 
     const raw = message.content[0].type === 'text' ? message.content[0].text : '';
