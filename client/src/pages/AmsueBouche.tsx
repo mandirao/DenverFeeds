@@ -121,6 +121,20 @@ function FoodEventRow({ event, onUpvote }: { event: FoodEvent; onUpvote: (id: nu
           </span>
         )}
 
+        {/* View Post — inline if source URL exists */}
+        {event.sourceUrl && (
+          <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
+            <a
+              href={event.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white text-black hover:text-[#41F2EE] border border-black text-xs font-black font-sora uppercase tracking-wide px-2 py-0.5 transition-colors"
+            >
+              View Post
+            </a>
+          </span>
+        )}
+
         {/* Upvote pill — inline, same style as Setlist */}
         <span
           className="inline-block align-middle ml-2"
@@ -146,7 +160,7 @@ function FoodEventRow({ event, onUpvote }: { event: FoodEvent; onUpvote: (id: nu
 const BLANK: Partial<InsertFoodEvent> = {
   emoji: "", name: "", venue: "", neighborhood: "",
   dateStart: "", dateEnd: "", summary: "",
-  cuisine: "", price: "", ticketUrl: "", rawBlurb: "", requester: "",
+  cuisine: "", price: "", ticketUrl: "", sourceUrl: "", rawBlurb: "", requester: "",
 };
 
 function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -161,7 +175,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const parseMutation = useMutation({
     mutationFn: () => apiRequest({ endpoint: "/api/ai/parse-blurb", method: "POST", data: { blurb } }),
     onSuccess: (data) => {
-      setForm({ ...data, rawBlurb: blurb, requester: form.requester || "" });
+      setForm({ ...data, rawBlurb: blurb, sourceUrl: form.sourceUrl || "", requester: form.requester || "" });
       setShowForm(true);
       toast({ title: "Blurb parsed!", description: "Review the details below." });
     },
@@ -217,10 +231,18 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             </p>
             <div>
               <label className={labelClass}>Social media blurb</label>
-              <Textarea rows={6}
+              <Textarea rows={5}
                 placeholder={`e.g.\n\nhopalleydenver\n\nWe are happy to announce our Hop Alley Hot Pot Pop-Up Nights! On March 26-28…`}
                 value={blurb} onChange={e => setBlurb(e.target.value)}
                 className={`${inputClass} resize-none`} />
+            </div>
+            <div>
+              <label className={labelClass}>Original post link</label>
+              <Input
+                value={form.sourceUrl || ""}
+                onChange={e => set("sourceUrl", e.target.value)}
+                className={inputClass}
+                placeholder="https://instagram.com/p/… or eventbrite link" />
             </div>
             <div className="flex gap-2">
               <button onClick={() => parseMutation.mutate()}
@@ -307,6 +329,12 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                 <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
                   className={inputClass} placeholder="https://tock.com/…" />
               </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>Original post link</label>
+              <Input value={form.sourceUrl || ""} onChange={e => set("sourceUrl", e.target.value)}
+                className={inputClass} placeholder="https://instagram.com/p/… or eventbrite link" />
             </div>
 
             <div>

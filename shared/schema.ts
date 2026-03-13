@@ -445,6 +445,7 @@ export const foodEvents = pgTable("food_events", {
   cuisine: text("cuisine").notNull().default("Other"),
   price: text("price"),
   ticketUrl: text("ticket_url"),
+  sourceUrl: text("source_url"),
   rawBlurb: text("raw_blurb"),
   requester: text("requester").notNull().default(""),
   upvotes: integer("upvotes").notNull().default(0),
