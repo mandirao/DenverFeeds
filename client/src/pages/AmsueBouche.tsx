@@ -246,6 +246,7 @@ function getMissingField(form: Partial<InsertFoodEvent>): string | null {
 function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () => void }) {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [form, setForm] = useState<Partial<InsertFoodEvent>>({
     emoji: event.emoji || "",
     name: event.name || "",
@@ -263,6 +264,16 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
 
   const set = (field: keyof InsertFoodEvent, value: string) =>
     setForm(f => ({ ...f, [field]: value }));
+
+  const hasChanges = () => {
+    const keys = ['emoji', 'name', 'venue', 'neighborhood', 'dateStart', 'dateEnd', 'summary', 'cuisine', 'price', 'ticketUrl', 'sourceUrl', 'requester'] as const;
+    return keys.some(k => (form[k] || "") !== ((event[k as keyof FoodEvent] as string) || ""));
+  };
+
+  const tryClose = () => {
+    if (hasChanges()) setShowConfirmClose(true);
+    else onClose();
+  };
 
   const updateMutation = useMutation({
     mutationFn: (data: Partial<InsertFoodEvent>) =>
@@ -291,7 +302,20 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
   const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
 
   return (
-    <Dialog open onOpenChange={onClose}>
+    <>
+    <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
+      <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AB_GOLD }}>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="font-black uppercase">Discard changes?</AlertDialogTitle>
+          <AlertDialogDescription>You have unsaved edits. They'll be lost if you close now.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="border-2 border-black rounded-none font-black uppercase text-sm">Keep editing</AlertDialogCancel>
+          <AlertDialogAction onClick={onClose} className="bg-black text-white border-2 border-black rounded-none font-black uppercase text-sm hover:text-[#41F2EE]">Discard</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    <Dialog open onOpenChange={open => { if (!open) tryClose(); }}>
       <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: AB_GOLD }}>
         <DialogHeader>
@@ -389,18 +413,15 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
           </div>
 
           <div className="flex gap-2 pt-1">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2.5 border-2 border-black bg-white font-black uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
-              Cancel
-            </button>
             <button type="submit" disabled={updateMutation.isPending}
-              className="flex-1 px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
+              className="w-full px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
               {updateMutation.isPending ? "Saving…" : "Save Changes"}
             </button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
 
@@ -420,6 +441,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imageMediaType, setImageMediaType] = useState<string | null>(null);
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
   const { toast } = useToast();
 
   const switchMode = (mode: "screenshot" | "blurb") => {
@@ -495,7 +517,12 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     createMutation.mutate(form as InsertFoodEvent);
   };
 
-  const handleClose = () => {
+  const hasContent = () => {
+    const formHasContent = Object.values(form).some(v => v && v.toString().trim() !== "");
+    return formHasContent || blurb.trim() !== "" || !!imageBase64;
+  };
+
+  const forceClose = () => {
     onClose();
     setBlurb("");
     setForm(BLANK);
@@ -504,12 +531,31 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     setImagePreview(null);
     setImageBase64(null);
     setImageMediaType(null);
+    setShowConfirmClose(false);
+  };
+
+  const handleClose = () => {
+    if (hasContent()) setShowConfirmClose(true);
+    else forceClose();
   };
 
   const inputClass = "border-2 border-black rounded-none bg-white text-sm";
   const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
 
   return (
+    <>
+    <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
+      <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AB_GOLD }}>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="font-black uppercase">Discard changes?</AlertDialogTitle>
+          <AlertDialogDescription>You have unsaved content. It'll be lost if you close now.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="border-2 border-black rounded-none font-black uppercase text-sm">Keep editing</AlertDialogCancel>
+          <AlertDialogAction onClick={forceClose} className="bg-black text-white border-2 border-black rounded-none font-black uppercase text-sm hover:text-[#41F2EE]">Discard</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: AB_GOLD }}>
@@ -712,12 +758,8 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             </div>
 
             <div className="flex gap-2 pt-1">
-              <button type="button" onClick={handleClose}
-                className="flex-1 px-4 py-2.5 border-2 border-black bg-white font-black uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
-                Cancel
-              </button>
               <button type="submit" disabled={createMutation.isPending}
-                className="flex-1 px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
+                className="w-full px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
                 {createMutation.isPending ? "Adding…" : "Add Popup"}
               </button>
             </div>
@@ -725,6 +767,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 }
 
