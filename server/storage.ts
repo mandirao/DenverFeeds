@@ -575,8 +575,14 @@ export class DatabaseStorage implements IStorage {
 
   // Art event methods for Artistry & Nerdery Live
   async getAllArtEvents(): Promise<ArtEvent[]> {
+    const todayMT = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date());
     const all = await db.select().from(artEvents).orderBy(artEvents.dateStart);
-    return all.map(e => ({ ...e, dateEnd: e.dateEnd || "" }));
+    return all
+      .map(e => ({ ...e, dateEnd: e.dateEnd || "" }))
+      .filter(ev => {
+        const effectiveDate = (ev.dateEnd && ev.dateEnd.trim()) ? ev.dateEnd.trim() : ev.dateStart;
+        return effectiveDate >= todayMT;
+      });
   }
 
   async getArtEventById(id: number): Promise<ArtEvent | undefined> {
