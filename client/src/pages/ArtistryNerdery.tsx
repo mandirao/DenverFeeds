@@ -126,13 +126,6 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
     onError: () => toast({ title: "Error", description: "Couldn't update this event.", variant: "destructive" }),
   });
 
-  const upvoteMutation = useMutation({
-    mutationFn: () => apiRequest({ endpoint: `/api/art-events/${event.id}/upvote`, method: "POST" }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/art-events"] });
-    },
-  });
-
   return (
     <>
       <li className="pb-1.5 relative flex items-start group">
@@ -243,15 +236,6 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
               </span>
             )}
 
-            {/* Upvote */}
-            <button
-              onClick={() => upvoteMutation.mutate()}
-              disabled={upvoteMutation.isPending}
-              className="inline-flex items-center align-middle ml-2 text-xs opacity-40 hover:opacity-90 transition-opacity gap-0.5"
-              title="I'm interested"
-            >
-              ↑{event.upvotes > 0 && <span>{event.upvotes}</span>}
-            </button>
           </div>
         )}
 
