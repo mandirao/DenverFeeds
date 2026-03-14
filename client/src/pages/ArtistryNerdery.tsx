@@ -65,7 +65,12 @@ function formatDateRange(dateStart: string, dateEnd?: string | null): string {
 }
 
 function getMonthLabel(dateStart: string): string {
-  return new Date(dateStart + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const eventDate = new Date(dateStart + "T12:00:00");
+  const now = new Date();
+  const eventMonthStart = new Date(eventDate.getFullYear(), eventDate.getMonth(), 1);
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const displayDate = eventMonthStart < currentMonthStart ? now : eventDate;
+  return displayDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 function createSearchUrl(event: ArtEvent): string {
@@ -1020,8 +1025,12 @@ export default function ArtistryNerdery() {
   type MonthBucket = { events: ArtEvent[]; weekGroups: Record<string, { events: ArtEvent[] }> };
   const grouped = filteredEvents.reduce<Record<string, MonthBucket>>((acc, ev) => {
     const monthKey = getMonthLabel(ev.dateStart);
-    const date = new Date(ev.dateStart);
-    const weekKey = getWeekRange(date).key;
+    const eventDate = new Date(ev.dateStart + "T12:00:00");
+    const nowDate = new Date();
+    const eventMonthStart = new Date(eventDate.getFullYear(), eventDate.getMonth(), 1);
+    const currentMonthStart = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1);
+    const dateForWeek = eventMonthStart < currentMonthStart ? nowDate : eventDate;
+    const weekKey = getWeekRange(dateForWeek).key;
     if (!acc[monthKey]) acc[monthKey] = { events: [], weekGroups: {} };
     acc[monthKey].events.push(ev);
     if (!acc[monthKey].weekGroups[weekKey]) acc[monthKey].weekGroups[weekKey] = { events: [] };

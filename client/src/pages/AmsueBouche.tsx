@@ -64,7 +64,12 @@ function formatDateRange(dateStart: string, dateEnd?: string | null): string {
 }
 
 function getMonthLabel(dateStart: string): string {
-  return new Date(dateStart + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const eventDate = new Date(dateStart + "T12:00:00");
+  const now = new Date();
+  const eventMonthStart = new Date(eventDate.getFullYear(), eventDate.getMonth(), 1);
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const displayDate = eventMonthStart < currentMonthStart ? now : eventDate;
+  return displayDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
 
