@@ -34,7 +34,7 @@ const RISK_LABELS = ["", "Low", "Mild", "Moderate", "High", "Instant sellout"];
 
 function riskPips(level: number | null | undefined): string | null {
   if (!level || level < 1 || level > 5) return null;
-  return "■".repeat(level) + "□".repeat(5 - level);
+  return "●".repeat(level);
 }
 
 function daysLive(announcedAt: string | null | undefined): string | null {
