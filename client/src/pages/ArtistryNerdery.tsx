@@ -1009,7 +1009,7 @@ export default function ArtistryNerdery() {
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-1 group outline-none">
                   <h1 className="text-3xl md:text-4xl text-white group-hover:text-[#41F2EE] transition-colors font-black">
-                    ARTISTRY & NERDERY LIVE
+                    ARTISTRY/NERDISTRY LIVE
                   </h1>
                   <ChevronDown className="h-4 w-4 text-white group-hover:text-[#41F2EE] transition-colors shrink-0 self-center" />
                 </DropdownMenuTrigger>
@@ -1103,7 +1103,7 @@ export default function ArtistryNerdery() {
               ADD AN EVENT
             </button>
           </div>
-          <span className="text-sm text-black">© {new Date().getFullYear()} Artistry & Nerdery Live</span>
+          <span className="text-sm text-black">© {new Date().getFullYear()} Artistry/Nerdistry Live</span>
         </div>
       </footer>
 

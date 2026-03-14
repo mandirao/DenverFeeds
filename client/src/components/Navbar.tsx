@@ -27,7 +27,7 @@ export function Navbar() {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-none focus:bg-[#F2F0FF] focus:text-black px-4 py-3 cursor-pointer">
                   <Link href="/artistry-nerdery" className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
-                    🎨 ARTISTRY & NERDERY LIVE
+                    🎨 ARTISTRY/NERDISTRY LIVE
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
