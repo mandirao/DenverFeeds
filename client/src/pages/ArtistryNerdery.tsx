@@ -203,12 +203,6 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
               <span className="italic"> {event.category}.</span>
             )}
 
-            {event.isRecurring && (
-              <span className="inline-flex items-center align-middle ml-2 text-[11px] font-semibold tracking-wide opacity-55">
-                ↻ {event.recurrenceLabel || "Recurring"}
-              </span>
-            )}
-
             {event.price && (
               <span
                 className="inline-flex items-center align-middle ml-2 text-xs font-black uppercase leading-none px-2 py-[3px]"
