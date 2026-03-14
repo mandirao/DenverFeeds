@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { artCategories, type ArtEvent, type InsertArtEvent } from "@shared/schema";
 import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown } from "lucide-react";
 import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AN_ORANGE   = "#000000";
@@ -95,6 +96,7 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [showRequesterTooltip, setShowRequesterTooltip] = useState(false);
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue + " Denver CO")}`;
   const calendarUrl = createCalendarUrl(event);
@@ -234,6 +236,27 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
                   ? <span>↻ {event.recurrenceLabel || "Recurring"}</span>
                   : (daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`)}
                 {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`} style={{ fontSize: '8px', letterSpacing: '0.2em' }}>{(event.isRecurring || daysLive(event.announcedAt)) ? " " : "· "}{riskPips(event.selloutRisk)}</span>}
+              </span>
+            )}
+
+            {event.requester && event.requester !== 'Mandi' && (
+              <span className="inline-block align-middle ml-2">
+                <TooltipProvider>
+                  <Tooltip open={showRequesterTooltip}>
+                    <TooltipTrigger asChild>
+                      <span
+                        className="text-base inline-flex items-center cursor-pointer"
+                        style={{ position: 'relative', top: '-1px' }}
+                        onClick={() => { setShowRequesterTooltip(true); setTimeout(() => setShowRequesterTooltip(false), 2000); }}
+                        onMouseEnter={() => setShowRequesterTooltip(true)}
+                        onMouseLeave={() => setShowRequesterTooltip(false)}
+                      >
+                        🛎️
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Added by {event.requester}</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </span>
             )}
 
