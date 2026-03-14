@@ -387,6 +387,7 @@ Respond with ONLY valid JSON, no markdown formatting:
     price: string;
     ticketUrl: string;
     announcedAt: string;
+    selloutRisk: number | null;
   }> {
     const client = new Anthropic({ apiKey: this.apiKey });
     const today = new Date().toISOString().split('T')[0];
@@ -411,7 +412,14 @@ Return this exact JSON structure (no markdown, no code blocks):
   "cuisine": "one of: Hot Pot & Shabu, Japanese, Korean, Chinese, Thai & Southeast Asian, Indian & South Asian, Mexican & Latin, Italian, French, Mediterranean, Seafood, BBQ & Southern, Brunch & Breakfast, Dessert & Pastry, Cocktails & Wine, Tasting Menu, Farm-to-Table, Fusion, American, Other",
   "price": "price string like '$55/person' or empty string if unknown",
   "ticketUrl": "reservation/ticket URL if mentioned or clearly implied platform URL, else empty string",
-  "announcedAt": "YYYY-MM-DD date when this was first announced/posted — check in order: (1) relative timestamp visible in image like '3d' or '2 days ago' subtracted from today, (2) date pattern in file name, (3) empty string if unknown"
+  "announcedAt": "YYYY-MM-DD date when this was first announced/posted — check in order: (1) relative timestamp visible in image like '3d' or '2 days ago' subtracted from today, (2) date pattern in file name, (3) empty string if unknown",
+  "selloutRisk": integer 1-5 estimating how fast this will sell out based on contextual clues:
+    5 = Instant sellout — famous/prestige restaurant (Tavernetta, Beckon, Frasca, Mizuna, Nobu), ticketed tasting menu, explicitly limited seats, single night only, high price
+    4 = Sells out within hours — well-known chef or brand collab, Tock/Resy/Eventbrite ticket link present, $60+/person, strong demand signals ("limited spots", "first come first served")
+    3 = Moderate risk — recurring popup brand with following, decent price point, multi-day but popular cuisine (omakase, hot pot, Korean BBQ)
+    2 = Low-moderate — casual popup, walk-in friendly, multi-day window, mid-range price
+    1 = Minimal risk — street food style, ongoing/daily popup, no reservation needed, very casual
+    Use null only if there are genuinely no signals to go on.
 }
 
 Rules:
@@ -531,6 +539,8 @@ Return ONLY valid JSON (no markdown):
       price: pass1.price || '',
       ticketUrl: pass1.ticketUrl || '',
       announcedAt: pass1.announcedAt || '',
+      selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
+        ? Math.round(pass1.selloutRisk) : null,
     };
   }
 
