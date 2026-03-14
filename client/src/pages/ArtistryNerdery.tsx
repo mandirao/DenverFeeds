@@ -15,9 +15,9 @@ import { artCategories, type ArtEvent, type InsertArtEvent } from "@shared/schem
 import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown } from "lucide-react";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
-const AN_ORANGE   = "#FE6B41";
+const AN_ORANGE   = "#5bdcef";
 const AN_LAVENDER = "#D8B4FE";
-const AN_BG       = "#F2F0FF";
+const AN_BG       = "#b574e0";
 const AN_TEAL     = "#41F2EE";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
