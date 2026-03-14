@@ -18,7 +18,6 @@ import Papa from "papaparse";
 import { CalendarSubscribeModal } from "./CalendarSubscribeModal";
 
 export function Footer() {
-  const [aboutOpen, setAboutOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [csvError, setCsvError] = useState<string | null>(null);
@@ -214,46 +213,10 @@ export function Footer() {
           )}
         </div>
 
-        <div className="text-sm text-black flex items-center space-x-2">
+        <div className="text-sm text-black">
           <span>© {new Date().getFullYear()} Setlist Social Feed.</span>
-          <button 
-            onClick={() => setAboutOpen(true)}
-            className="text-black hover:text-[#41F2EE] transition-colors underline text-sm"
-          >
-            ABOUT
-          </button>
-          <span className="text-black opacity-30">|</span>
-          <Link
-            href="/amuse-bouche"
-            className="text-black opacity-20 hover:opacity-70 transition-opacity text-xs"
-            title="🍽️"
-          >
-            🍽️
-          </Link>
         </div>
       </div>
-
-      {/* About Dialog */}
-      <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
-        <DialogContent className="bg-[#F5F3F0] sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl">ABOUT SETLIST SOCIAL</DialogTitle>
-          </DialogHeader>
-          <DialogDescription className="text-black">
-            <div className="mb-4">
-              Setlist Social is a not-for-profit, fan-run hub for music lovers in our Denver meetup group to share upcoming shows w/ friends.
-            </div>
-            <div className="mb-4">
-              We don't own or claim any copyrighted material. Questions or concerns? Drop a note through our Meetup group.
-            </div>
-          </DialogDescription>
-          <DialogFooter>
-            <Button variant="outline2" onClick={() => setAboutOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Calendar Subscription Dialog */}
       <CalendarSubscribeModal open={calendarOpen} onOpenChange={setCalendarOpen} />
