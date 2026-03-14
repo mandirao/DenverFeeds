@@ -66,6 +66,15 @@ function getMonthLabel(dateStart: string): string {
   return new Date(dateStart + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
+function createSearchUrl(event: ArtEvent): string {
+  const parts: string[] = [event.name, event.venue, "Denver"];
+  if (event.dateStart) {
+    const d = new Date(event.dateStart + "T12:00:00");
+    parts.push(d.toLocaleDateString("en-US", { month: "long", year: "numeric" }));
+  }
+  return `https://www.google.com/search?q=${encodeURIComponent(parts.join(" "))}`;
+}
+
 function createCalendarUrl(event: ArtEvent): string {
   const toGCal = (d: string) => d.replace(/-/g, "");
   const start = toGCal(event.dateStart);
@@ -156,7 +165,7 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
         ) : (
           <div className="flex-1 text-base">
             <a
-              href={event.ticketUrl || mapsUrl}
+              href={createSearchUrl(event)}
               target="_blank"
               rel="noopener noreferrer"
               className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
