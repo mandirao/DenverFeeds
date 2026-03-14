@@ -30,6 +30,13 @@ function ensureHttps(url: string): string {
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const RISK_LABELS = ["", "Low", "Mild", "Moderate", "High", "Instant sellout"];
+
+function riskPips(level: number | null | undefined): string | null {
+  if (!level || level < 1 || level > 5) return null;
+  return "■".repeat(level) + "□".repeat(5 - level);
+}
+
 function daysLive(announcedAt: string | null | undefined): string | null {
   if (!announcedAt) return null;
   const announced = new Date(announcedAt + "T12:00:00");
@@ -124,6 +131,15 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
             <span className="inline-flex items-center align-middle text-xs font-black uppercase leading-none px-2 py-[3px] bg-black text-white">
               SOLD OUT
             </span>
+            {riskPips(event.selloutRisk) && (
+              <span
+                title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`}
+                className="inline-flex items-center align-middle ml-2 text-xs font-black leading-none px-2 py-[3px] tracking-tight cursor-default"
+                style={{ backgroundColor: "white", border: "1.5px solid black" }}
+              >
+                {riskPips(event.selloutRisk)}
+              </span>
+            )}
             {event.sourceUrl && (
               <a
                 href={ensureHttps(event.sourceUrl!)}
@@ -183,6 +199,16 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
                 style={{ backgroundColor: "white", border: "1.5px solid black" }}
               >
                 {event.price}
+              </span>
+            )}
+
+            {riskPips(event.selloutRisk) && (
+              <span
+                title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`}
+                className="inline-flex items-center align-middle ml-2 text-xs font-black leading-none px-2 py-[3px] tracking-tight cursor-default"
+                style={{ backgroundColor: "white", border: "1.5px solid black" }}
+              >
+                {riskPips(event.selloutRisk)}
               </span>
             )}
 
@@ -321,6 +347,7 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
     sourceUrl: event.sourceUrl || "",
     requester: event.requester || "",
     announcedAt: event.announcedAt || "",
+    selloutRisk: event.selloutRisk ?? undefined,
   });
 
   const set = (field: keyof InsertFoodEvent, value: string) =>
@@ -328,7 +355,8 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
 
   const hasChanges = () => {
     const keys = ['emoji', 'name', 'venue', 'neighborhood', 'dateStart', 'dateEnd', 'summary', 'cuisine', 'price', 'ticketUrl', 'sourceUrl', 'requester', 'announcedAt'] as const;
-    return keys.some(k => (form[k] || "") !== ((event[k as keyof FoodEvent] as string) || ""));
+    return keys.some(k => (form[k] || "") !== ((event[k as keyof FoodEvent] as string) || ""))
+      || (form.selloutRisk ?? null) !== (event.selloutRisk ?? null);
   };
 
   const tryClose = () => {
@@ -475,6 +503,29 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
                 <Input type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt", e.target.value)}
                   className={inputClass} />
               </div>
+              <div>
+                <label className={labelClass}>Sellout Risk <span className="font-normal normal-case opacity-60">(optional)</span></label>
+                <div className="flex gap-1.5 mt-1">
+                  {[1,2,3,4,5].map(n => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, selloutRisk: f.selloutRisk === n ? undefined : n }))}
+                      className="flex-1 py-1 border-2 text-xs font-black transition-colors"
+                      style={{
+                        borderColor: "black",
+                        backgroundColor: form.selloutRisk === n ? "black" : "white",
+                        color: form.selloutRisk === n ? "white" : "black",
+                      }}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                {form.selloutRisk && (
+                  <p className="text-xs text-gray-500 mt-0.5">{RISK_LABELS[form.selloutRisk]} — {riskPips(form.selloutRisk)}</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -497,7 +548,7 @@ const BLANK: Partial<InsertFoodEvent> = {
   emoji: "", name: "", venue: "", neighborhood: "",
   dateStart: "", dateEnd: "", summary: "",
   cuisine: "", price: "", ticketUrl: "", sourceUrl: "", rawBlurb: "", requester: "",
-  announcedAt: "",
+  announcedAt: "", selloutRisk: undefined,
 };
 
 function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -828,6 +879,29 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                   <label className={labelClass}>Announced <span className="font-normal normal-case opacity-60">(optional)</span></label>
                   <Input type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt", e.target.value)}
                     className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Sellout Risk <span className="font-normal normal-case opacity-60">(optional)</span></label>
+                  <div className="flex gap-1.5 mt-1">
+                    {[1,2,3,4,5].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, selloutRisk: f.selloutRisk === n ? undefined : n }))}
+                        className="flex-1 py-1 border-2 text-xs font-black transition-colors"
+                        style={{
+                          borderColor: "black",
+                          backgroundColor: form.selloutRisk === n ? "black" : "white",
+                          color: form.selloutRisk === n ? "white" : "black",
+                        }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  {form.selloutRisk && (
+                    <p className="text-xs text-gray-500 mt-0.5">{RISK_LABELS[form.selloutRisk]} — {riskPips(form.selloutRisk)}</p>
+                  )}
                 </div>
               </div>
             </div>

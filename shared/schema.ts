@@ -451,6 +451,7 @@ export const foodEvents = pgTable("food_events", {
   upvotes: integer("upvotes").notNull().default(0),
   soldOut: boolean("sold_out").notNull().default(false),
   announcedAt: text("announced_at"),
+  selloutRisk: integer("sellout_risk"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
