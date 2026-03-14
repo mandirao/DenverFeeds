@@ -1,4 +1,4 @@
-import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent, discoveredArtists, type DiscoveredArtist, type InsertDiscoveredArtist, venues, type Venue, type InsertVenue, foodEvents, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
+import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent, discoveredArtists, type DiscoveredArtist, type InsertDiscoveredArtist, venues, type Venue, type InsertVenue, foodEvents, type FoodEvent, type InsertFoodEvent, artEvents, type ArtEvent, type InsertArtEvent } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, count, desc, gt } from "drizzle-orm";
 import { spotifyService } from "./spotify";
@@ -67,6 +67,14 @@ export interface IStorage {
   updateFoodEvent(id: number, data: Partial<FoodEvent>): Promise<FoodEvent | undefined>;
   deleteFoodEvent(id: number): Promise<boolean>;
   upvoteFoodEvent(id: number): Promise<boolean>;
+
+  // Art event methods for Artistry & Nerdery Live
+  getAllArtEvents(): Promise<ArtEvent[]>;
+  getArtEventById(id: number): Promise<ArtEvent | undefined>;
+  createArtEvent(event: InsertArtEvent): Promise<ArtEvent>;
+  updateArtEvent(id: number, data: Partial<ArtEvent>): Promise<ArtEvent | undefined>;
+  deleteArtEvent(id: number): Promise<boolean>;
+  upvoteArtEvent(id: number): Promise<boolean>;
 
   // Venues methods for tracking and scraping
   getAllVenues(): Promise<Venue[]>;
@@ -559,6 +567,47 @@ export class DatabaseStorage implements IStorage {
       await db.update(foodEvents)
         .set({ upvotes: sql`${foodEvents.upvotes} + 1` })
         .where(eq(foodEvents.id, id));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Art event methods for Artistry & Nerdery Live
+  async getAllArtEvents(): Promise<ArtEvent[]> {
+    const all = await db.select().from(artEvents).orderBy(artEvents.dateStart);
+    return all.map(e => ({ ...e, dateEnd: e.dateEnd || "" }));
+  }
+
+  async getArtEventById(id: number): Promise<ArtEvent | undefined> {
+    const [event] = await db.select().from(artEvents).where(eq(artEvents.id, id));
+    return event;
+  }
+
+  async createArtEvent(event: InsertArtEvent): Promise<ArtEvent> {
+    const [newEvent] = await db.insert(artEvents).values(event).returning();
+    return newEvent;
+  }
+
+  async updateArtEvent(id: number, data: Partial<ArtEvent>): Promise<ArtEvent | undefined> {
+    const [updated] = await db.update(artEvents).set(data).where(eq(artEvents.id, id)).returning();
+    return updated;
+  }
+
+  async deleteArtEvent(id: number): Promise<boolean> {
+    try {
+      await db.delete(artEvents).where(eq(artEvents.id, id));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async upvoteArtEvent(id: number): Promise<boolean> {
+    try {
+      await db.update(artEvents)
+        .set({ upvotes: sql`${artEvents.upvotes} + 1` })
+        .where(eq(artEvents.id, id));
       return true;
     } catch {
       return false;

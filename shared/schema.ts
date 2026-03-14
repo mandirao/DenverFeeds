@@ -469,4 +469,50 @@ export const insertFoodEventSchema = createInsertSchema(foodEvents).omit({
 
 export type InsertFoodEvent = z.infer<typeof insertFoodEventSchema>;
 export type FoodEvent = typeof foodEvents.$inferSelect;
+
+// ── Artistry & Nerdery Live ────────────────────────────────────────────────
+
+export const artCategories = [
+  "Art & Visual Arts", "Science & Nature", "Literature & Books",
+  "Film & Cinema", "Theater & Performance", "Comedy", "History & Culture",
+  "Technology", "Architecture & Design", "Photography", "Lecture & Talk", "Other"
+] as const;
+export type ArtCategory = typeof artCategories[number];
+
+export const artEvents = pgTable("art_events", {
+  id: serial("id").primaryKey(),
+  emoji: text("emoji").notNull().default("🎨"),
+  name: text("name").notNull(),
+  venue: text("venue").notNull(),
+  neighborhood: text("neighborhood"),
+  dateStart: text("date_start").notNull(),
+  dateEnd: text("date_end"),
+  summary: text("summary").notNull(),
+  category: text("category").notNull().default("Other"),
+  price: text("price"),
+  ticketUrl: text("ticket_url"),
+  sourceUrl: text("source_url"),
+  rawBlurb: text("raw_blurb"),
+  requester: text("requester").notNull().default(""),
+  upvotes: integer("upvotes").notNull().default(0),
+  soldOut: boolean("sold_out").notNull().default(false),
+  announcedAt: text("announced_at"),
+  selloutRisk: integer("sellout_risk"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertArtEventSchema = createInsertSchema(artEvents).omit({
+  id: true,
+  upvotes: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Event name is required"),
+  venue: z.string().min(1, "Venue is required"),
+  dateStart: z.string().min(1, "Start date is required"),
+  category: z.string().min(1, "Category is required"),
+  requester: z.string().min(1, "Your name is required"),
+});
+
+export type InsertArtEvent = z.infer<typeof insertArtEventSchema>;
+export type ArtEvent = typeof artEvents.$inferSelect;
 export type Venue = typeof venues.$inferSelect;

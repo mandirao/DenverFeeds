@@ -11,14 +11,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
-import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown } from "lucide-react";
+import { artCategories, type ArtEvent, type InsertArtEvent } from "@shared/schema";
+import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown } from "lucide-react";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
-const AB_ORANGE = "#FE6B41";
-const AB_PINK   = "#FEABDA";
-const AB_GOLD   = "#FFF8E7";
-const AB_TEAL   = "#41F2EE";
+const AN_ORANGE   = "#FE6B41";
+const AN_LAVENDER = "#D8B4FE";
+const AN_BG       = "#F2F0FF";
+const AN_TEAL     = "#41F2EE";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -66,12 +66,10 @@ function getMonthLabel(dateStart: string): string {
   return new Date(dateStart + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
-
-function createCalendarUrl(event: FoodEvent): string {
+function createCalendarUrl(event: ArtEvent): string {
   const toGCal = (d: string) => d.replace(/-/g, "");
   const start = toGCal(event.dateStart);
   const endDate = event.dateEnd ? event.dateEnd : event.dateStart;
-  // Google Calendar all-day events use exclusive end date (add 1 day)
   const end = toGCal(new Date(new Date(endDate + "T12:00:00").getTime() + 86400000).toISOString().slice(0, 10));
   const text = encodeURIComponent(event.name);
   const loc = encodeURIComponent(`${event.venue}${event.neighborhood ? ", " + event.neighborhood : ""}, Denver CO`);
@@ -79,9 +77,9 @@ function createCalendarUrl(event: FoodEvent): string {
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&location=${loc}&details=${details}&dates=${start}/${end}`;
 }
 
-// ── Event Row (inline sentence style, matching Setlist Social) ────────────────
+// ── Event Row ─────────────────────────────────────────────────────────────────
 
-function FoodEventRow({ event }: { event: FoodEvent }) {
+function ArtEventRow({ event }: { event: ArtEvent }) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -93,30 +91,37 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
   const location = event.neighborhood ? `${event.venue}, ${event.neighborhood}` : event.venue;
 
   const deleteMutation = useMutation({
-    mutationFn: () => apiRequest({ endpoint: `/api/food-events/${event.id}`, method: "DELETE" }),
+    mutationFn: () => apiRequest({ endpoint: `/api/art-events/${event.id}`, method: "DELETE" }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/food-events"] });
+      qc.invalidateQueries({ queryKey: ["/api/art-events"] });
       toast({ title: "Deleted", description: `${event.name} removed from the feed.` });
     },
     onError: () => toast({ title: "Error", description: "Couldn't delete this event.", variant: "destructive" }),
   });
 
   const duplicateMutation = useMutation({
-    mutationFn: () => apiRequest({ endpoint: `/api/food-events/${event.id}/duplicate`, method: "POST" }),
+    mutationFn: () => apiRequest({ endpoint: `/api/art-events/${event.id}/duplicate`, method: "POST" }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/food-events"] });
+      qc.invalidateQueries({ queryKey: ["/api/art-events"] });
       toast({ title: "Duplicated", description: `${event.name} copied to the feed.` });
     },
     onError: () => toast({ title: "Error", description: "Couldn't duplicate this event.", variant: "destructive" }),
   });
 
   const soldOutMutation = useMutation({
-    mutationFn: () => apiRequest({ endpoint: `/api/food-events/${event.id}`, method: "PATCH", data: { soldOut: !event.soldOut } }),
+    mutationFn: () => apiRequest({ endpoint: `/api/art-events/${event.id}`, method: "PATCH", data: { soldOut: !event.soldOut } }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/food-events"] });
-      toast({ title: event.soldOut ? "Back on the menu" : "Marked as sold out", description: event.name });
+      qc.invalidateQueries({ queryKey: ["/api/art-events"] });
+      toast({ title: event.soldOut ? "Back on the list" : "Marked as sold out", description: event.name });
     },
     onError: () => toast({ title: "Error", description: "Couldn't update this event.", variant: "destructive" }),
+  });
+
+  const upvoteMutation = useMutation({
+    mutationFn: () => apiRequest({ endpoint: `/api/art-events/${event.id}/upvote`, method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/art-events"] });
+    },
   });
 
   return (
@@ -142,7 +147,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
               </a>
             )}
             {(daysLive(event.announcedAt) || riskPips(event.selloutRisk)) && (
-              <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : event.selloutRisk === 4 ? "#FFB700" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
+              <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? AN_ORANGE : event.selloutRisk === 4 ? "#FFB700" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
                 {daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`}
                 {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`} style={{ fontSize: '8px', letterSpacing: '0.2em' }}>{daysLive(event.announcedAt) ? " " : "· "}{riskPips(event.selloutRisk)}</span>}
               </span>
@@ -183,8 +188,8 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
 
             {event.summary}
 
-            {event.cuisine && (
-              <span className="italic"> {event.cuisine}.</span>
+            {event.category && (
+              <span className="italic"> {event.category}.</span>
             )}
 
             {event.price && (
@@ -201,9 +206,9 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
                 href={ensureHttps(event.ticketUrl!)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center align-middle ml-2 bg-black text-[#FEABDA] hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors"
+                className="inline-flex items-center align-middle ml-2 bg-black text-[#D8B4FE] hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors"
               >
-                Reserve
+                Tickets
               </a>
             )}
 
@@ -217,12 +222,23 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
                 View Post
               </a>
             )}
+
             {(daysLive(event.announcedAt) || riskPips(event.selloutRisk)) && (
-              <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : event.selloutRisk === 4 ? "#FFB700" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
+              <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? AN_ORANGE : event.selloutRisk === 4 ? "#FFB700" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
                 {daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`}
                 {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`} style={{ fontSize: '8px', letterSpacing: '0.2em' }}>{daysLive(event.announcedAt) ? " " : "· "}{riskPips(event.selloutRisk)}</span>}
               </span>
             )}
+
+            {/* Upvote */}
+            <button
+              onClick={() => upvoteMutation.mutate()}
+              disabled={upvoteMutation.isPending}
+              className="inline-flex items-center align-middle ml-2 text-xs opacity-40 hover:opacity-90 transition-opacity gap-0.5"
+              title="I'm interested"
+            >
+              ↑{event.upvotes > 0 && <span>{event.upvotes}</span>}
+            </button>
           </div>
         )}
 
@@ -273,16 +289,14 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
         </div>
       </li>
 
-      {/* Edit modal */}
       {isEditOpen && (
-        <EditFoodEventModal event={event} onClose={() => setIsEditOpen(false)} />
+        <EditArtEventModal event={event} onClose={() => setIsEditOpen(false)} />
       )}
 
-      {/* Delete confirm */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AB_GOLD }}>
+        <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AN_BG }}>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl uppercase">Delete this popup?</AlertDialogTitle>
+            <AlertDialogTitle className="text-xl uppercase">Delete this event?</AlertDialogTitle>
             <AlertDialogDescription className="text-sm">
               <strong>{event.name}</strong> will be permanently removed from the feed.
             </AlertDialogDescription>
@@ -304,23 +318,23 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
   );
 }
 
-// ── Edit Food Event Modal ──────────────────────────────────────────────────────
+// ── Edit Art Event Modal ───────────────────────────────────────────────────────
 
-function getMissingField(form: Partial<InsertFoodEvent>): string | null {
+function getMissingField(form: Partial<InsertArtEvent>): string | null {
   if (!form.emoji?.trim())     return "Emoji";
   if (!form.name?.trim())      return "Event name";
-  if (!form.venue?.trim())     return "Venue / restaurant";
+  if (!form.venue?.trim())     return "Venue";
   if (!form.dateStart?.trim()) return "Start date";
-  if (!form.cuisine?.trim())   return "Cuisine type";
+  if (!form.category?.trim())  return "Category";
   if (!form.requester?.trim()) return "Your name";
   return null;
 }
 
-function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () => void }) {
+function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () => void }) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [showConfirmClose, setShowConfirmClose] = useState(false);
-  const [form, setForm] = useState<Partial<InsertFoodEvent>>({
+  const [form, setForm] = useState<Partial<InsertArtEvent>>({
     emoji: event.emoji || "",
     name: event.name || "",
     venue: event.venue || "",
@@ -328,7 +342,7 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
     dateStart: event.dateStart || "",
     dateEnd: event.dateEnd || "",
     summary: event.summary || "",
-    cuisine: event.cuisine || "",
+    category: event.category || "",
     price: event.price || "",
     ticketUrl: event.ticketUrl || "",
     sourceUrl: event.sourceUrl || "",
@@ -337,26 +351,21 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
     selloutRisk: event.selloutRisk ?? undefined,
   });
 
-  const set = (field: keyof InsertFoodEvent, value: string) =>
+  const set = (field: keyof InsertArtEvent, value: string) =>
     setForm(f => ({ ...f, [field]: value }));
 
-  const hasChanges = () => {
-    const keys = ['emoji', 'name', 'venue', 'neighborhood', 'dateStart', 'dateEnd', 'summary', 'cuisine', 'price', 'ticketUrl', 'sourceUrl', 'requester', 'announcedAt'] as const;
-    return keys.some(k => (form[k] || "") !== ((event[k as keyof FoodEvent] as string) || ""))
-      || (form.selloutRisk ?? null) !== (event.selloutRisk ?? null);
-  };
-
-  const tryClose = () => {
-    if (hasChanges()) setShowConfirmClose(true);
-    else onClose();
+  const isDirty = () => {
+    const keys: (keyof InsertArtEvent)[] = ["emoji", "name", "venue", "neighborhood", "dateStart", "dateEnd", "summary", "category", "price", "ticketUrl", "sourceUrl", "requester", "announcedAt"];
+    return keys.some(k => (form[k] || "") !== ((event[k as keyof ArtEvent] as string) || ""))
+      || form.selloutRisk !== (event.selloutRisk ?? undefined);
   };
 
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<InsertFoodEvent>) =>
-      apiRequest({ endpoint: `/api/food-events/${event.id}`, method: "PATCH", data }),
+    mutationFn: (data: Partial<InsertArtEvent>) =>
+      apiRequest({ endpoint: `/api/art-events/${event.id}`, method: "PATCH", data }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/food-events"] });
-      toast({ title: "Saved!", description: `${form.name} updated.` });
+      qc.invalidateQueries({ queryKey: ["/api/art-events"] });
+      toast({ title: "Updated!", description: `${form.name} saved.` });
       onClose();
     },
     onError: (e: any) => {
@@ -374,173 +383,183 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
     updateMutation.mutate(form);
   };
 
+  const handleClose = () => {
+    if (isDirty()) setShowConfirmClose(true);
+    else onClose();
+  };
+
   const inputClass = "border-2 border-black rounded-none bg-white text-sm";
   const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
 
   return (
     <>
-    <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
-      <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AB_GOLD }}>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="font-black uppercase">Discard changes?</AlertDialogTitle>
-          <AlertDialogDescription>You have unsaved edits. They'll be lost if you close now.</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel className="border-2 border-black rounded-none font-black uppercase text-sm">Keep editing</AlertDialogCancel>
-          <AlertDialogAction onClick={onClose} className="bg-black text-white border-2 border-black rounded-none font-black uppercase text-sm hover:text-[#41F2EE]">Discard</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-    <Dialog open onOpenChange={open => { if (!open) tryClose(); }}>
-      <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: AB_GOLD }}>
-        <DialogHeader>
-          <DialogTitle className="text-3xl text-black uppercase tracking-tight">
-            Edit Popup
-          </DialogTitle>
-        </DialogHeader>
+      <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
+        <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AN_BG }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-black uppercase">Discard changes?</AlertDialogTitle>
+            <AlertDialogDescription>You have unsaved changes.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-2 border-black rounded-none font-black uppercase text-sm">Keep editing</AlertDialogCancel>
+            <AlertDialogAction onClick={onClose} className="bg-black text-white border-2 border-black rounded-none font-black uppercase text-sm hover:text-[#41F2EE]">Discard</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-3 md:gap-y-0">
+      <Dialog open onOpenChange={handleClose}>
+        <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
+          style={{ backgroundColor: AN_BG }}>
+          <DialogHeader>
+            <DialogTitle className="text-3xl text-black uppercase tracking-tight">
+              Edit Event
+            </DialogTitle>
+          </DialogHeader>
 
-            {/* ── Left column ── */}
-            <div className="space-y-3">
-              <div>
-                <label className={labelClass}>Event Name *</label>
-                <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
-                  className={inputClass} placeholder="Hot Pot Pop-Up Nights" />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-3 md:gap-y-0">
+
+              {/* Left column */}
+              <div className="space-y-3">
                 <div>
-                  <label className={labelClass}>Venue / Restaurant *</label>
-                  <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
-                    className={inputClass} placeholder="Hop Alley" />
+                  <label className={labelClass}>Description *</label>
+                  <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
+                    className={`${inputClass} resize-none`} rows={4} maxLength={200}
+                    placeholder="Smart, specific snapshot of the event." />
+                  <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
                 </div>
                 <div>
-                  <label className={labelClass}>Neighborhood</label>
-                  <Input value={form.neighborhood || ""} onChange={e => set("neighborhood", e.target.value)}
-                    className={inputClass} placeholder="RiNo, LoHi…" />
+                  <label className={labelClass}>Event Name *</label>
+                  <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
+                    className={inputClass} />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Venue *</label>
+                    <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
+                      className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Neighborhood</label>
+                    <Input value={form.neighborhood || ""} onChange={e => set("neighborhood", e.target.value)}
+                      className={inputClass} placeholder="RiNo, LoHi…" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Start Date *</label>
+                    <Input type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
+                      className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>End Date</label>
+                    <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
+                      className={inputClass} />
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+
+              {/* Right column */}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Emoji *</label>
+                    <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
+                      className={inputClass} placeholder="🎨" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Category *</label>
+                    <Select value={form.category || ""} onValueChange={v => set("category", v)}>
+                      <SelectTrigger className={inputClass}>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {artCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Price</label>
+                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
+                      className={inputClass} placeholder="$20/person" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Ticket URL</label>
+                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
+                      className={inputClass} placeholder="https://…" />
+                  </div>
+                </div>
                 <div>
-                  <label className={labelClass}>Start Date *</label>
-                  <Input type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
+                  <label className={labelClass}>Original post link</label>
+                  <Input value={form.sourceUrl || ""} onChange={e => set("sourceUrl", e.target.value)}
+                    className={inputClass} placeholder="https://instagram.com/p/…" />
+                </div>
+                <div>
+                  <label className={labelClass}>Your Name *</label>
+                  <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
                     className={inputClass} />
                 </div>
                 <div>
-                  <label className={labelClass}>End Date</label>
-                  <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
+                  <label className={labelClass}>Announced <span className="font-normal normal-case opacity-60">(optional)</span></label>
+                  <Input type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt", e.target.value)}
                     className={inputClass} />
                 </div>
-              </div>
-              <div>
-                <label className={labelClass}>Description *</label>
-                <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-                  className={`${inputClass} resize-none`} rows={4} maxLength={200}
-                  placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
-                <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
+                <div>
+                  <label className={labelClass}>Sellout Risk <span className="font-normal normal-case opacity-60">(optional)</span></label>
+                  <div className="flex gap-1.5 mt-1">
+                    {[1,2,3,4,5].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setForm(f => ({ ...f, selloutRisk: f.selloutRisk === n ? undefined : n }))}
+                        className="flex-1 py-1 border-2 text-xs font-black transition-colors"
+                        style={{
+                          borderColor: "black",
+                          backgroundColor: form.selloutRisk === n ? "black" : "white",
+                          color: form.selloutRisk === n ? "white" : "black",
+                        }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  {form.selloutRisk && (
+                    <p className="text-xs text-gray-500 mt-0.5">{RISK_LABELS[form.selloutRisk]} — {riskPips(form.selloutRisk)}</p>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* ── Right column ── */}
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelClass}>Emoji *</label>
-                  <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
-                    className={inputClass} placeholder="🫕" />
-                </div>
-                <div>
-                  <label className={labelClass}>Cuisine *</label>
-                  <Select value={form.cuisine || ""} onValueChange={v => set("cuisine", v)}>
-                    <SelectTrigger className={inputClass}>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cuisineTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelClass}>Price</label>
-                  <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
-                    className={inputClass} placeholder="$55/person" />
-                </div>
-                <div>
-                  <label className={labelClass}>RSVP/Ticket URL</label>
-                  <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
-                    className={inputClass} placeholder="https://tock.com/…" />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Original post link</label>
-                <Input value={form.sourceUrl || ""} onChange={e => set("sourceUrl", e.target.value)}
-                  className={inputClass} placeholder="https://instagram.com/p/…" />
-              </div>
-              <div>
-                <label className={labelClass}>Your Name *</label>
-                <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
-                  className={inputClass} placeholder="Mandi" />
-              </div>
-              <div>
-                <label className={labelClass}>Announced <span className="font-normal normal-case opacity-60">(optional)</span></label>
-                <Input type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt", e.target.value)}
-                  className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Sellout Risk <span className="font-normal normal-case opacity-60">(optional)</span></label>
-                <div className="flex gap-1.5 mt-1">
-                  {[1,2,3,4,5].map(n => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setForm(f => ({ ...f, selloutRisk: f.selloutRisk === n ? undefined : n }))}
-                      className="flex-1 py-1 border-2 text-xs font-black transition-colors"
-                      style={{
-                        borderColor: "black",
-                        backgroundColor: form.selloutRisk === n ? "black" : "white",
-                        color: form.selloutRisk === n ? "white" : "black",
-                      }}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                {form.selloutRisk && (
-                  <p className="text-xs text-gray-500 mt-0.5">{RISK_LABELS[form.selloutRisk]} — {riskPips(form.selloutRisk)}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-1">
-            <button type="submit" disabled={updateMutation.isPending}
-              className="w-full px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
-              {updateMutation.isPending ? "Saving…" : "Save Changes"}
-            </button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter className="pt-1 flex gap-2">
+              <button type="button" onClick={handleClose}
+                className="px-4 py-2.5 border-2 border-black bg-white font-black uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
+                Cancel
+              </button>
+              <button type="submit" disabled={updateMutation.isPending}
+                className="flex-1 px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
+                {updateMutation.isPending ? "Saving…" : "Save Changes"}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
 
 // ── Add Event Modal ────────────────────────────────────────────────────────────
 
-const BLANK: Partial<InsertFoodEvent> = {
+const BLANK: Partial<InsertArtEvent> = {
   emoji: "", name: "", venue: "", neighborhood: "",
   dateStart: "", dateEnd: "", summary: "",
-  cuisine: "", price: "", ticketUrl: "", sourceUrl: "", rawBlurb: "", requester: "",
+  category: "", price: "", ticketUrl: "", sourceUrl: "", rawBlurb: "", requester: "",
   announcedAt: "", selloutRisk: undefined,
 };
 
 function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [blurb, setBlurb] = useState("");
-  const [form, setForm] = useState<Partial<InsertFoodEvent>>(BLANK);
+  const [form, setForm] = useState<Partial<InsertArtEvent>>(BLANK);
   const [showForm, setShowForm] = useState(false);
   const [inputMode, setInputMode] = useState<"screenshot" | "blurb">("screenshot");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -561,7 +580,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     }
   };
 
-  const set = (field: keyof InsertFoodEvent, value: string) =>
+  const set = (field: keyof InsertArtEvent, value: string) =>
     setForm(f => ({ ...f, [field]: value }));
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -572,7 +591,6 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      // Extract pure base64 (strip data:image/...;base64, prefix)
       const base64 = dataUrl.split(",")[1];
       setImagePreview(dataUrl);
       setImageBase64(base64);
@@ -583,7 +601,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
   const parseMutation = useMutation({
     mutationFn: () => apiRequest({
-      endpoint: "/api/ai/parse-blurb",
+      endpoint: "/api/ai/parse-art-blurb",
       method: "POST",
       data: {
         blurb,
@@ -593,7 +611,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     onSuccess: (data) => {
       setForm({ ...data, rawBlurb: blurb, sourceUrl: form.sourceUrl || "", requester: form.requester || "" });
       setShowForm(true);
-      toast({ title: "Blurb parsed!", description: "Review the details below." });
+      toast({ title: "Parsed!", description: "Review the details below." });
     },
     onError: () => {
       toast({ title: "Parse failed", description: "Fill in the form manually.", variant: "destructive" });
@@ -602,11 +620,11 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: InsertFoodEvent) =>
-      apiRequest({ endpoint: "/api/food-events", method: "POST", data }),
+    mutationFn: (data: InsertArtEvent) =>
+      apiRequest({ endpoint: "/api/art-events", method: "POST", data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/food-events"] });
-      toast({ title: "Popup added!", description: "It's now on the feed." });
+      queryClient.invalidateQueries({ queryKey: ["/api/art-events"] });
+      toast({ title: "Event added!", description: "It's now on the feed." });
       forceClose();
     },
     onError: (e: any) => {
@@ -621,7 +639,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
       toast({ title: `${missing} is required`, variant: "destructive" });
       return;
     }
-    createMutation.mutate(form as InsertFoodEvent);
+    createMutation.mutate(form as InsertArtEvent);
   };
 
   const hasContent = () => {
@@ -653,7 +671,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   return (
     <>
     <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
-      <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AB_GOLD }}>
+      <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AN_BG }}>
         <AlertDialogHeader>
           <AlertDialogTitle className="font-black uppercase">Discard changes?</AlertDialogTitle>
           <AlertDialogDescription>You have unsaved content. It'll be lost if you close now.</AlertDialogDescription>
@@ -666,17 +684,17 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     </AlertDialog>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: AB_GOLD }}>
+        style={{ backgroundColor: AN_BG }}>
         <DialogHeader>
           <DialogTitle className="text-3xl text-black uppercase tracking-tight">
-            Add a Popup
+            Add an Event
           </DialogTitle>
         </DialogHeader>
 
         {!showForm ? (
           <div className="space-y-4">
 
-            {/* ── Mode toggle ── */}
+            {/* Mode toggle */}
             <div className="grid grid-cols-2 border-2 border-black">
               <button
                 type="button"
@@ -702,10 +720,10 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
               </button>
             </div>
 
-            {/* ── Screenshot mode ── */}
+            {/* Screenshot mode */}
             {inputMode === "screenshot" && (
               <div className="space-y-3">
-                <p className="text-xs text-gray-500">Upload a screenshot from Instagram, Eventbrite, or anywhere — AI will read the text directly from the image.</p>
+                <p className="text-xs text-gray-500">Upload a screenshot from Instagram, Eventbrite, a museum site, or anywhere — AI will read the text directly from the image.</p>
                 <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-black bg-white cursor-pointer hover:bg-gray-50 transition-colors py-6 px-3">
                   <input
                     type="file"
@@ -733,12 +751,12 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
               </div>
             )}
 
-            {/* ── Blurb mode ── */}
+            {/* Blurb mode */}
             {inputMode === "blurb" && (
               <div className="space-y-3">
-                <p className="text-xs text-gray-500">Paste a caption or description from social media — AI will extract the event details.</p>
+                <p className="text-xs text-gray-500">Paste a caption or description from social media, a newsletter, or a museum listing — AI will extract the event details.</p>
                 <Textarea rows={5}
-                  placeholder={`e.g.\n\nhopalleydenver\n\nWe are happy to announce our Hop Alley Hot Pot Pop-Up Nights! On March 26-28…`}
+                  placeholder={`e.g.\n\nDenver Art Museum\n\nJoin us for an exclusive evening with artist Kaws on April 12th…`}
                   value={blurb} onChange={e => setBlurb(e.target.value)}
                   className={`${inputClass} resize-none`} />
               </div>
@@ -750,7 +768,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                 value={form.sourceUrl || ""}
                 onChange={e => set("sourceUrl", e.target.value)}
                 className={inputClass}
-                placeholder="https://instagram.com/p/… or eventbrite link" />
+                placeholder="https://instagram.com/p/… or ticketing link" />
             </div>
             <div className="flex gap-2">
               <button onClick={() => parseMutation.mutate()}
@@ -768,7 +786,6 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
 
-            {/* ── Back to AI ── */}
             <button
               type="button"
               onClick={() => setShowForm(false)}
@@ -780,30 +797,30 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-3 md:gap-y-0">
 
-              {/* ── Left column ── */}
+              {/* Left column */}
               <div className="space-y-3">
                 <div>
                   <label className={labelClass}>Description *</label>
                   <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
                     className={`${inputClass} resize-none`} rows={4} maxLength={200}
-                    placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
+                    placeholder="Smart, specific snapshot — what it is, who's behind it, why it's worth noting." />
                   <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
                 </div>
                 <div>
                   <label className={labelClass}>Event Name *</label>
                   <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
-                    className={inputClass} placeholder="Hot Pot Pop-Up Nights" />
+                    className={inputClass} placeholder="Saturn at Opposition" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className={labelClass}>Venue / Restaurant *</label>
+                    <label className={labelClass}>Venue *</label>
                     <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
-                      className={inputClass} placeholder="Hop Alley" />
+                      className={inputClass} placeholder="Denver Art Museum" />
                   </div>
                   <div>
                     <label className={labelClass}>Neighborhood</label>
                     <Input value={form.neighborhood || ""} onChange={e => set("neighborhood", e.target.value)}
-                      className={inputClass} placeholder="RiNo, LoHi…" />
+                      className={inputClass} placeholder="Capitol Hill…" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -820,22 +837,22 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                 </div>
               </div>
 
-              {/* ── Right column ── */}
+              {/* Right column */}
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className={labelClass}>Emoji *</label>
                     <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
-                      className={inputClass} placeholder="🫕" />
+                      className={inputClass} placeholder="🎨" />
                   </div>
                   <div>
-                    <label className={labelClass}>Cuisine *</label>
-                    <Select value={form.cuisine || ""} onValueChange={v => set("cuisine", v)}>
+                    <label className={labelClass}>Category *</label>
+                    <Select value={form.category || ""} onValueChange={v => set("category", v)}>
                       <SelectTrigger className={inputClass}>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        {cuisineTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        {artCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -844,18 +861,18 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                   <div>
                     <label className={labelClass}>Price</label>
                     <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
-                      className={inputClass} placeholder="$55/person" />
+                      className={inputClass} placeholder="$20/person" />
                   </div>
                   <div>
-                    <label className={labelClass}>RSVP/Ticket URL</label>
+                    <label className={labelClass}>Ticket URL</label>
                     <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
-                      className={inputClass} placeholder="https://tock.com/…" />
+                      className={inputClass} placeholder="https://…" />
                   </div>
                 </div>
                 <div>
                   <label className={labelClass}>Original post link</label>
                   <Input value={form.sourceUrl || ""} onChange={e => set("sourceUrl", e.target.value)}
-                    className={inputClass} placeholder="https://instagram.com/p/… or eventbrite link" />
+                    className={inputClass} placeholder="https://instagram.com/p/…" />
                 </div>
                 <div>
                   <label className={labelClass}>Your Name *</label>
@@ -896,7 +913,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             <div className="flex gap-2 pt-1">
               <button type="submit" disabled={createMutation.isPending}
                 className="w-full px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
-                {createMutation.isPending ? "Adding…" : "Add Popup"}
+                {createMutation.isPending ? "Adding…" : "Add Event"}
               </button>
             </div>
           </form>
@@ -909,14 +926,14 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-export default function AmsueBouche() {
+export default function ArtistryNerdery() {
   const [addOpen, setAddOpen] = useState(false);
 
-  const { data: events = [], isLoading } = useQuery<FoodEvent[]>({
-    queryKey: ["/api/food-events"],
+  const { data: events = [], isLoading } = useQuery<ArtEvent[]>({
+    queryKey: ["/api/art-events"],
   });
 
-  const grouped = events.reduce<Record<string, FoodEvent[]>>((acc, ev) => {
+  const grouped = events.reduce<Record<string, ArtEvent[]>>((acc, ev) => {
     const key = getMonthLabel(ev.dateStart);
     if (!acc[key]) acc[key] = [];
     acc[key].push(ev);
@@ -924,17 +941,17 @@ export default function AmsueBouche() {
   }, {});
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: AB_GOLD }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: AN_BG }}>
 
-      {/* ── Navbar ── */}
-      <nav className="sticky top-0 z-50 shadow-md px-4 py-3" style={{ backgroundColor: AB_ORANGE }}>
+      {/* Navbar */}
+      <nav className="sticky top-0 z-50 shadow-md px-4 py-3" style={{ backgroundColor: AN_ORANGE }}>
         <div className="container mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
             <div className="flex items-baseline gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-1 group outline-none">
                   <h1 className="text-3xl md:text-4xl text-black group-hover:text-[#41F2EE] transition-colors font-black">
-                    AMUSE-BOUCHE INSIDER
+                    ARTISTRY & NERDERY LIVE
                   </h1>
                   <ChevronDown className="h-4 w-4 text-black group-hover:text-[#41F2EE] transition-colors shrink-0 self-center" />
                 </DropdownMenuTrigger>
@@ -944,82 +961,73 @@ export default function AmsueBouche() {
                       🎵 SETLIST SOCIAL FEED
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="rounded-none focus:bg-[#F2F0FF] focus:text-black px-4 py-3 cursor-pointer">
-                    <Link href="/artistry-nerdery" className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
-                      🎨 ARTISTRY & NERDERY LIVE
+                  <DropdownMenuItem asChild className="rounded-none focus:bg-[#FFF8E7] focus:text-black px-4 py-3 cursor-pointer">
+                    <Link href="/amuse-bouche" className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
+                      🍽️ AMUSE-BOUCHE INSIDER
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <span className="text-sm font-semibold text-black opacity-60 hidden sm:block">
-                Foodie popups & events
+                Art, science & nerdery
               </span>
             </div>
             <div className="flex items-center gap-4">
-              <a href="https://www.meetup.com/amuse-bouche/"
-                target="_blank" rel="noopener noreferrer"
-                className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                <span>Meetup</span>
-              </a>
               <button onClick={() => setAddOpen(true)}
-                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
-                <Plus className="w-4 h-4" />Popup
+                className="bg-black text-[#D8B4FE] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
+                <Plus className="w-4 h-4" />Event
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* ── Feed ── */}
+      {/* Feed */}
       <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
 
         <p className="text-xs text-black mb-5 opacity-60 leading-snug">
-          ⚡ These fill up fast. If something looks good, act on it.
+          ⚡ Exhibits, talks, screenings, performances — things worth knowing about.
         </p>
 
         {isLoading && (
           <div className="text-center py-16 text-gray-400">
-            <UtensilsCrossed className="w-8 h-8 mx-auto mb-3 opacity-30" />
+            <Telescope className="w-8 h-8 mx-auto mb-3 opacity-30" />
             <p>Loading the good stuff…</p>
           </div>
         )}
 
         {!isLoading && events.length === 0 && (
           <div className="text-center py-16">
-            <UtensilsCrossed className="w-10 h-10 mx-auto mb-3 opacity-20" />
-            <p className="text-2xl text-black uppercase mb-1">Nothing on the menu yet.</p>
-            <p className="text-sm text-gray-600 mb-4">Be the first to add a popup.</p>
+            <Telescope className="w-10 h-10 mx-auto mb-3 opacity-20" />
+            <p className="text-2xl text-black uppercase mb-1">Nothing on the calendar yet.</p>
+            <p className="text-sm text-gray-600 mb-4">Be the first to add an event.</p>
             <button onClick={() => setAddOpen(true)}
               className="bg-black text-white font-black uppercase tracking-wide text-sm px-6 py-2.5 border-2 border-black hover:text-[#41F2EE] transition-colors inline-flex items-center gap-2">
-              <Plus className="w-4 h-4" />Add a Popup
+              <Plus className="w-4 h-4" />Add an Event
             </button>
           </div>
         )}
 
-        {Object.entries(grouped).map(([month, monthEvents]) => {
-          return (
-            <div key={month} className="mb-6">
-              {/* Fix 1: Month header — line — MONTH — line treatment */}
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-0.5 flex-1 bg-black" />
-                <h2 className="text-lg font-black uppercase text-black">
-                  {month.toUpperCase()}
-                </h2>
-                <div className="h-0.5 flex-1 bg-black" />
-              </div>
-              <ul className="space-y-0">
-                {monthEvents.map(ev => (
-                  <FoodEventRow key={ev.id} event={ev} />
-                ))}
-              </ul>
+        {Object.entries(grouped).map(([month, monthEvents]) => (
+          <div key={month} className="mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-0.5 flex-1 bg-black" />
+              <h2 className="text-lg font-black uppercase text-black">
+                {month.toUpperCase()}
+              </h2>
+              <div className="h-0.5 flex-1 bg-black" />
             </div>
-          );
-        })}
+            <ul className="space-y-0">
+              {monthEvents.map(ev => (
+                <ArtEventRow key={ev.id} event={ev} />
+              ))}
+            </ul>
+          </div>
+        ))}
       </main>
 
-      {/* ── Footer ── */}
-      <footer className="py-4 px-4" style={{ backgroundColor: AB_GOLD }}>
+      {/* Footer */}
+      <footer className="py-4 px-4" style={{ backgroundColor: AN_BG }}>
         <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
           <div className="flex items-center gap-2">
             <Link href="/"
@@ -1027,12 +1035,17 @@ export default function AmsueBouche() {
               <List className="w-4 h-4" />SETLIST SOCIAL FEED
             </Link>
             <span className="text-black opacity-40">|</span>
+            <Link href="/amuse-bouche"
+              className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline">
+              AMUSE-BOUCHE
+            </Link>
+            <span className="text-black opacity-40">|</span>
             <button onClick={() => setAddOpen(true)}
               className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline">
-              ADD A POPUP
+              ADD AN EVENT
             </button>
           </div>
-          <span className="text-sm text-black">© {new Date().getFullYear()} Amuse Bouche</span>
+          <span className="text-sm text-black">© {new Date().getFullYear()} Artistry & Nerdery Live</span>
         </div>
       </footer>
 

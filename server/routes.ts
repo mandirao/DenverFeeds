@@ -1318,6 +1318,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Artistry & Nerdery Live routes ────────────────────────────────────────
+
+  app.get("/api/art-events", async (req, res) => {
+    try {
+      const events = await storage.getAllArtEvents();
+      res.json(events);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch art events" });
+    }
+  });
+
+  app.post("/api/art-events", async (req, res) => {
+    try {
+      const { insertArtEventSchema } = await import("@shared/schema");
+      const parsed = insertArtEventSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: "Invalid event data", errors: parsed.error.errors });
+      const event = await storage.createArtEvent(parsed.data);
+      res.json(event);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create art event" });
+    }
+  });
+
+  app.patch("/api/art-events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updated = await storage.updateArtEvent(id, req.body);
+      if (!updated) return res.status(404).json({ message: "Event not found" });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update art event" });
+    }
+  });
+
+  app.delete("/api/art-events/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteArtEvent(id);
+      res.json({ success: deleted });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete art event" });
+    }
+  });
+
+  app.post("/api/art-events/:id/duplicate", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const original = await storage.getArtEventById(id);
+      if (!original) return res.status(404).json({ message: "Event not found" });
+      const { id: _id, createdAt: _ca, upvotes: _uv, ...rest } = original;
+      const copy = await storage.createArtEvent(rest as any);
+      res.json(copy);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to duplicate art event" });
+    }
+  });
+
+  app.post("/api/art-events/:id/upvote", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.upvoteArtEvent(id);
+      res.json({ success });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to upvote" });
+    }
+  });
+
+  // AI blurb parser for Artistry & Nerdery
+  app.post("/api/ai/parse-art-blurb", async (req, res) => {
+    try {
+      const { blurb, imageBase64, imageMediaType, fileName } = req.body;
+      if (!blurb && !imageBase64) {
+        return res.status(400).json({ message: "blurb or image is required" });
+      }
+      const result = await llmService.parseArtBlurb(blurb || "", imageBase64, imageMediaType, fileName);
+      res.json(result);
+    } catch (error) {
+      console.error("Art blurb parse error:", error);
+      res.status(500).json({ message: "Failed to parse blurb" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -47,7 +47,8 @@ This is a concert feed/newsletter application (Setlist Social Feed) with a siste
 - **Real-time Updates**: Optimistic UI updates with TanStack Query cache invalidation
 - **Responsive Design**: Mobile-first approach with custom breakpoints
 - **Empty States**: Contextual messaging for filtered results
-- **Amuse Bouche Sister App**: Food popup feed at `/amuse-bouche` with its own green/amber design, AI blurb parser (paste Instagram/social blurb → Claude extracts name/venue/dates/price/cuisine), upvoting, and add-event modal. Secret 🍽️ emoji link in Setlist footer connects the two apps. Food events stored in `food_events` table.
+- **Amuse Bouche Sister App**: Food popup feed at `/amuse-bouche` with its own gold/cream design, AI blurb parser (paste Instagram/social blurb → Claude extracts name/venue/dates/price/cuisine), upvoting, and add-event modal. Food events stored in `food_events` table.
+- **Artistry & Nerdery Live Sister App**: Art, science, literary & cultural events feed at `/artistry-nerdery` with lavender (#F2F0FF) bg, orange nav, AI screenshot/blurb parser (Claude extracts name/venue/dates/category/price), upvoting, full CRUD. Categories: Art & Visual Arts, Science & Nature, Literature & Books, Film & Cinema, Theater & Performance, Comedy, History & Culture, Technology, Architecture & Design, Photography, Lecture & Talk, Other. Art events stored in `art_events` table. All three apps linked via title dropdown in each navbar.
 - **AI Artist Analysis**: Three-tier concert lookup (Bandsintown/Songkick/AXS/Dice site searches → general web search → manual) with Claude handling creative fields (summary, sounds-like, emoji, genre). Venue/date data grounded in structured sources, not LLM hallucination.
 - **Automated Discovery**: AI-powered system that searches for Denver area concerts using artist database
 - **Artist Database**: 362+ artists from existing events plus manual additions, organized by genre and source

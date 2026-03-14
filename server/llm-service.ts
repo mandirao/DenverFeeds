@@ -544,6 +544,159 @@ Return ONLY valid JSON (no markdown):
     };
   }
 
+  async parseArtBlurb(blurb: string, imageBase64?: string, imageMediaType?: string, fileName?: string): Promise<{
+    name: string;
+    venue: string;
+    neighborhood: string;
+    dateStart: string;
+    dateEnd: string;
+    emoji: string;
+    summary: string;
+    category: string;
+    price: string;
+    ticketUrl: string;
+    announcedAt: string;
+    selloutRisk: number | null;
+  }> {
+    const client = new Anthropic({ apiKey: this.apiKey });
+    const today = new Date().toISOString().split('T')[0];
+
+    const pass1Prompt = `You are parsing an art, science, or cultural event in Denver/Boulder, CO from social media or promotional content. Extract details and return ONLY valid JSON.
+
+Today's date: ${today}
+${fileName ? `Screenshot file name: "${fileName}" — look for date/time patterns like YYYY-MM-DD or YYYYMMDD in this name to determine when the screenshot was taken.` : ''}
+${blurb ? `\nBlurb:\n"""\n${blurb}\n"""` : ''}${imageBase64 ? '\n\nAn image is attached — scan it for any text, dates, prices, venue names, or details. Look for relative post timestamps like "2h", "3d", "1w" that indicate when the post was published.' : ''}
+
+Return this exact JSON structure (no markdown, no code blocks):
+{
+  "name": "short evocative event name",
+  "venue": "venue, museum, gallery, theater, or location name",
+  "neighborhood": "Denver/Boulder neighborhood if mentioned, else empty string",
+  "dateStart": "YYYY-MM-DD or empty string if unknown",
+  "dateEnd": "YYYY-MM-DD for last day if multi-day, else empty string",
+  "emoji": "single emoji that fits the event type (art: 🎨, science: 🔭, books: 📚, film: 🎬, theater: 🎭, comedy: 🎤, history: 🏛️, tech: 💻, nature: 🌿, architecture: 🏗️, photo: 📷, talk: 🎙️)",
+  "draftSummary": "raw factual notes — theme, format, speakers, vibe, key details. Not the final summary.",
+  "notableNames": ["array of any named artists, scientists, authors, performers, organizations worth researching — empty array if none"],
+  "category": "one of: Art & Visual Arts, Science & Nature, Literature & Books, Film & Cinema, Theater & Performance, Comedy, History & Culture, Technology, Architecture & Design, Photography, Lecture & Talk, Other",
+  "price": "price string like '$15/person' or 'Free' or empty string if unknown",
+  "ticketUrl": "ticket/registration URL if mentioned, else empty string",
+  "announcedAt": "YYYY-MM-DD date when first announced/posted — check: (1) relative timestamp in image like '3d' or '2 days ago' subtracted from today, (2) date pattern in file name, (3) empty string if unknown",
+  "selloutRisk": integer 1-5 estimating how fast this will sell out:
+    5 = Instant sellout — famous venue (Denver Art Museum special, Meow Wolf ticketed, Red Rocks comedy), single night, explicitly limited capacity, famous speaker/performer
+    4 = Sells out quickly — well-known institution or artist, ticketed + limited seats, $50+/person, strong demand signals
+    3 = Moderate risk — recurring event series with following, mid-range capacity, popular topic
+    2 = Low-moderate — casual event, walk-in friendly, multi-day, mid-range price
+    1 = Minimal risk — free/drop-in, ongoing exhibition, very casual
+    Use null if genuinely no signals.
+}
+
+Rules:
+- Use current year (${new Date().getFullYear()}) unless another year is clearly stated
+- If a date range is mentioned (e.g. March 26–28), dateStart=first date, dateEnd=last date
+- For announcedAt: '3d' ago means subtract 3 days from today; '1w' means subtract 7 days; '2h' means today`;
+
+    const pass1Content: any[] = [];
+    if (imageBase64 && imageMediaType) {
+      pass1Content.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: imageMediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+          data: imageBase64,
+        },
+      });
+    }
+    pass1Content.push({ type: 'text', text: pass1Prompt });
+
+    const pass1Message = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 800,
+      messages: [{ role: 'user', content: pass1Content }],
+    });
+
+    const pass1Raw = pass1Message.content[0].type === 'text' ? pass1Message.content[0].text : '{}';
+    const pass1Cleaned = pass1Raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const pass1 = JSON.parse(pass1Cleaned);
+
+    // Web search for venue + notable names
+    const searchQueries: string[] = [];
+    if (pass1.venue) searchQueries.push(`${pass1.venue} Denver`);
+    if (pass1.name && pass1.venue) {
+      searchQueries.push(`"${pass1.name}" "${pass1.venue}" Denver`);
+    } else if (pass1.name) {
+      searchQueries.push(`"${pass1.name}" Denver event`);
+    }
+    const notableNames: string[] = Array.isArray(pass1.notableNames) ? pass1.notableNames : [];
+    for (const name of notableNames.slice(0, 2)) {
+      searchQueries.push(`"${name}" Denver`);
+    }
+
+    const searchResults = await Promise.all(searchQueries.map(q => this.serperSearch(q, 3)));
+    const searchContext = searchQueries.map((q, i) => {
+      const snippets = searchResults[i].map(r => `• ${r.title}: ${r.snippet}`).join('\n');
+      return `Search: "${q}"\n${snippets || '(no results)'}`;
+    }).join('\n\n');
+
+    // Pass 2: write final summary
+    const pass2Prompt = `You are writing the final event listing for Artistry & Nerdery Live, a Denver/Boulder cultural event newsletter covering art, science, literature, and curiosity-driven events.
+
+Here is what we know from the original post:
+- Event: ${pass1.name || 'unknown'}
+- Venue: ${pass1.venue || 'unknown'}
+- Category: ${pass1.category || 'unknown'}
+- Draft notes: ${pass1.draftSummary || ''}
+
+Additional context from web searches:
+${searchContext || '(no additional context found)'}
+
+--- NAMING RULE ---
+Named artists, scientists, authors, performers, or organizations from search results MUST appear in the summary by name. Never substitute generic descriptions for real names.
+
+--- VOICE GUIDE ---
+• VOICE: Smart and curious but not academic. The tone of a friend who knows things — informative without being a lecture.
+• TONE: Specific and sensory where possible. No hype, no cheerleading ("you won't want to miss," "incredible," "amazing").
+• STRUCTURE: 1-2 tight sentences. Lead with what makes this event worth noting.
+• WORD CHOICE: Precise and vivid. Concrete nouns, specific details over adjectives.
+• LENGTH: Hard cap at 200 characters.
+
+EXAMPLE SUMMARIES:
+- "James Turrell's light installation at DAM: walk-in, stand still, lose track of time."
+- "Author of 'Hidden Figures' reads from the new book, signs copies, takes questions — history nerd paradise at BookBar."
+- "Denver Astronomical Society opens the rooftop for Saturn opposition — bring a sweater, the view is worth it."
+
+Return ONLY valid JSON (no markdown):
+{
+  "neighborhood": "corrected Denver/Boulder neighborhood based on venue from search, or original if no better info",
+  "summary": "final 200-char-max summary — must use real names of any collaborators/artists found in search"
+}`;
+
+    const pass2Message = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 400,
+      messages: [{ role: 'user', content: pass2Prompt }],
+    });
+
+    const pass2Raw = pass2Message.content[0].type === 'text' ? pass2Message.content[0].text : '{}';
+    const pass2Cleaned = pass2Raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const pass2 = JSON.parse(pass2Cleaned);
+
+    return {
+      name: pass1.name || '',
+      venue: pass1.venue || '',
+      neighborhood: pass2.neighborhood || pass1.neighborhood || '',
+      dateStart: pass1.dateStart || '',
+      dateEnd: pass1.dateEnd || '',
+      emoji: pass1.emoji || '🎨',
+      summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
+      category: pass1.category || 'Other',
+      price: pass1.price || '',
+      ticketUrl: pass1.ticketUrl || '',
+      announcedAt: pass1.announcedAt || '',
+      selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
+        ? Math.round(pass1.selloutRisk) : null,
+    };
+  }
+
   private validateDate(dateString: string): string | null {
     if (!dateString) return null;
 
