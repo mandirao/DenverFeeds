@@ -121,23 +121,18 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
           <div className="flex-1 text-base opacity-60">
             <span className="font-bold">{event.name}</span>
             {" "}
-            <span
-              className="inline-block align-middle text-xs font-black uppercase px-1.5 py-0.5 bg-black text-white"
-              style={{ position: "relative", top: "-1px" }}
-            >
+            <span className="inline-flex items-center align-middle text-xs font-black uppercase leading-none px-2 py-[3px] bg-black text-white">
               SOLD OUT
             </span>
             {event.sourceUrl && (
-              <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
-                <a
-                  href={ensureHttps(event.sourceUrl!)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase tracking-wide px-2 py-0.5 transition-colors"
-                >
-                  View Post
-                </a>
-              </span>
+              <a
+                href={ensureHttps(event.sourceUrl!)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center align-middle ml-2 bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors"
+              >
+                View Post
+              </a>
             )}
             {daysLive(event.announcedAt) && (
               <span className="text-xs opacity-40 ml-1.5">· live {daysLive(event.announcedAt)}</span>
@@ -184,37 +179,33 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
 
             {event.price && (
               <span
-                className="inline-block align-middle ml-2 text-xs font-black uppercase px-1.5 py-0.5"
-                style={{ backgroundColor: "white", border: "1.5px solid black", position: "relative", top: "-1px" }}
+                className="inline-flex items-center align-middle ml-2 text-xs font-black uppercase leading-none px-2 py-[3px]"
+                style={{ backgroundColor: "white", border: "1.5px solid black" }}
               >
                 {event.price}
               </span>
             )}
 
             {event.ticketUrl && (
-              <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
-                <a
-                  href={ensureHttps(event.ticketUrl!)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-black text-[#FEABDA] hover:text-[#41F2EE] text-xs font-black uppercase tracking-wide px-2 py-0.5 transition-colors"
-                >
-                  Reserve
-                </a>
-              </span>
+              <a
+                href={ensureHttps(event.ticketUrl!)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center align-middle ml-2 bg-black text-[#FEABDA] hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors"
+              >
+                Reserve
+              </a>
             )}
 
             {event.sourceUrl && (
-              <span className="inline-block align-middle ml-2" style={{ position: "relative", top: "-1px" }}>
-                <a
-                  href={ensureHttps(event.sourceUrl!)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase tracking-wide px-2 py-0.5 transition-colors"
-                >
-                  View Post
-                </a>
-              </span>
+              <a
+                href={ensureHttps(event.sourceUrl!)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center align-middle ml-2 bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors"
+              >
+                View Post
+              </a>
             )}
             {daysLive(event.announcedAt) && (
               <span className="text-xs opacity-40 ml-1.5">· live {daysLive(event.announcedAt)}</span>
