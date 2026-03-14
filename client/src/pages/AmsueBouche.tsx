@@ -948,12 +948,25 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
 export default function AmsueBouche() {
   const [addOpen, setAddOpen] = useState(false);
+  const [filterDuration, setFilterDuration] = useState("all");
 
   const { data: events = [], isLoading } = useQuery<FoodEvent[]>({
     queryKey: ["/api/food-events"],
   });
 
-  const grouped = events.reduce<Record<string, FoodEvent[]>>((acc, ev) => {
+  const hasActiveFilters = filterDuration !== "all";
+  const resetFilters = () => setFilterDuration("all");
+
+  const filteredEvents = events.filter(ev => {
+    if (filterDuration === "one-time") {
+      if (ev.dateEnd && ev.dateEnd.trim() && ev.dateEnd !== ev.dateStart) return false;
+    } else if (filterDuration === "limited-run") {
+      if (!ev.dateEnd || !ev.dateEnd.trim() || ev.dateEnd === ev.dateStart) return false;
+    }
+    return true;
+  });
+
+  const grouped = filteredEvents.reduce<Record<string, FoodEvent[]>>((acc, ev) => {
     const key = getMonthLabel(ev.dateStart);
     if (!acc[key]) acc[key] = [];
     acc[key].push(ev);
