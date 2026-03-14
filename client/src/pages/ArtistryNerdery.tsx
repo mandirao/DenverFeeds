@@ -150,7 +150,7 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
               </a>
             )}
             {(event.isRecurring || daysLive(event.announcedAt) || riskPips(event.selloutRisk)) && (
-              <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? AN_ORANGE : event.selloutRisk === 4 ? "#ffff00" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
+              <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : event.selloutRisk === 4 ? "#ffff00" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
                 {event.isRecurring
                   ? <span>↻ {event.recurrenceLabel || "Recurring"}</span>
                   : (daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`)}
@@ -229,7 +229,7 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
             )}
 
             {(event.isRecurring || daysLive(event.announcedAt) || riskPips(event.selloutRisk)) && (
-              <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? AN_ORANGE : event.selloutRisk === 4 ? "#ffff00" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
+              <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : event.selloutRisk === 4 ? "#ffff00" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
                 {event.isRecurring
                   ? <span>↻ {event.recurrenceLabel || "Recurring"}</span>
                   : (daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`)}
