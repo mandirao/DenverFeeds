@@ -986,12 +986,30 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
 export default function ArtistryNerdery() {
   const [addOpen, setAddOpen] = useState(false);
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterDay, setFilterDay] = useState("all");
 
   const { data: events = [], isLoading } = useQuery<ArtEvent[]>({
     queryKey: ["/api/art-events"],
   });
 
-  const grouped = events.reduce<Record<string, ArtEvent[]>>((acc, ev) => {
+  const hasActiveFilters = filterCategory !== "all" || filterDay !== "all";
+
+  const resetFilters = () => {
+    setFilterCategory("all");
+    setFilterDay("all");
+  };
+
+  const filteredEvents = events.filter(ev => {
+    if (filterCategory !== "all" && ev.category !== filterCategory) return false;
+    if (filterDay !== "all") {
+      const d = new Date(ev.dateStart + "T12:00:00");
+      if (d.getDay().toString() !== filterDay) return false;
+    }
+    return true;
+  });
+
+  const grouped = filteredEvents.reduce<Record<string, ArtEvent[]>>((acc, ev) => {
     const key = getMonthLabel(ev.dateStart);
     if (!acc[key]) acc[key] = [];
     acc[key].push(ev);
@@ -1043,9 +1061,63 @@ export default function ArtistryNerdery() {
       {/* Feed */}
       <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
 
-        <p className="text-xs text-black mb-5 opacity-60 leading-snug">
+        <p className="text-xs text-black mb-4 opacity-60 leading-snug">
           ⚡ Exhibits, talks, screenings, performances — things worth knowing about.
         </p>
+
+        {/* Filters */}
+        {!isLoading && events.length > 0 && (
+          <div className="mb-5">
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
+                {/* Category filter */}
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filterCategory !== "all" ? "bg-white text-black" : "text-black hover:border-white"
+                  }`} style={{ width: "160px", backgroundColor: filterCategory !== "all" ? "white" : AN_BG }}>
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {artCategories.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Day of week filter */}
+                <Select value={filterDay} onValueChange={setFilterDay}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filterDay !== "all" ? "bg-white text-black" : "text-black hover:border-white"
+                  }`} style={{ width: "120px", backgroundColor: filterDay !== "all" ? "white" : AN_BG }}>
+                    <SelectValue placeholder="Day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Days</SelectItem>
+                    <SelectItem value="0">Sunday</SelectItem>
+                    <SelectItem value="1">Monday</SelectItem>
+                    <SelectItem value="2">Tuesday</SelectItem>
+                    <SelectItem value="3">Wednesday</SelectItem>
+                    <SelectItem value="4">Thursday</SelectItem>
+                    <SelectItem value="5">Friday</SelectItem>
+                    <SelectItem value="6">Saturday</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {hasActiveFilters && (
+              <div className="mt-2">
+                <button
+                  onClick={resetFilters}
+                  className="text-black text-sm hover:text-white transition-colors focus:outline-none underline"
+                >
+                  ✕ clear filters
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {isLoading && (
           <div className="text-center py-16 text-gray-400">
@@ -1062,6 +1134,15 @@ export default function ArtistryNerdery() {
             <button onClick={() => setAddOpen(true)}
               className="bg-black text-white font-black uppercase tracking-wide text-sm px-6 py-2.5 border-2 border-black hover:text-[#41F2EE] transition-colors inline-flex items-center gap-2">
               <Plus className="w-4 h-4" />Add an Event
+            </button>
+          </div>
+        )}
+
+        {!isLoading && events.length > 0 && filteredEvents.length === 0 && (
+          <div className="text-center py-16">
+            <p className="text-lg text-black uppercase mb-2">No events match your filters.</p>
+            <button onClick={resetFilters} className="text-black text-sm underline hover:text-white transition-colors">
+              ✕ clear filters
             </button>
           </div>
         )}
