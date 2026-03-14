@@ -16,7 +16,7 @@ import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileTe
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AN_ORANGE   = "#000000";
-const AN_LAVENDER = "#D8B4FE";
+const AN_LAVENDER = "#FE6B41";
 const AN_BG       = "#FEABDA";
 const AN_TEAL     = "#41F2EE";
 
