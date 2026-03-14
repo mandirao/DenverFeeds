@@ -131,15 +131,6 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
             <span className="inline-flex items-center align-middle text-xs font-black uppercase leading-none px-2 py-[3px] bg-black text-white">
               SOLD OUT
             </span>
-            {riskPips(event.selloutRisk) && (
-              <span
-                title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`}
-                className="inline-flex items-center align-middle ml-2 text-xs font-black leading-none px-2 py-[3px] tracking-tight cursor-default"
-                style={{ backgroundColor: "white", border: "1.5px solid black" }}
-              >
-                {riskPips(event.selloutRisk)}
-              </span>
-            )}
             {event.sourceUrl && (
               <a
                 href={ensureHttps(event.sourceUrl!)}
@@ -150,8 +141,11 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
                 View Post
               </a>
             )}
-            {daysLive(event.announcedAt) && (
-              <span className="text-xs opacity-40 ml-1.5">· live {daysLive(event.announcedAt)}</span>
+            {(daysLive(event.announcedAt) || riskPips(event.selloutRisk)) && (
+              <span className="text-[10px] opacity-40 ml-1.5 tracking-tight">
+                {daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`}
+                {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`}>{daysLive(event.announcedAt) ? "  " : "· "}{riskPips(event.selloutRisk)}</span>}
+              </span>
             )}
           </div>
         ) : (
@@ -202,16 +196,6 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
               </span>
             )}
 
-            {riskPips(event.selloutRisk) && (
-              <span
-                title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`}
-                className="inline-flex items-center align-middle ml-2 text-xs font-black leading-none px-2 py-[3px] tracking-tight cursor-default"
-                style={{ backgroundColor: "white", border: "1.5px solid black" }}
-              >
-                {riskPips(event.selloutRisk)}
-              </span>
-            )}
-
             {event.ticketUrl && (
               <a
                 href={ensureHttps(event.ticketUrl!)}
@@ -233,8 +217,11 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
                 View Post
               </a>
             )}
-            {daysLive(event.announcedAt) && (
-              <span className="text-xs opacity-40 ml-1.5">· live {daysLive(event.announcedAt)}</span>
+            {(daysLive(event.announcedAt) || riskPips(event.selloutRisk)) && (
+              <span className="text-[10px] opacity-40 ml-1.5 tracking-tight">
+                {daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`}
+                {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`}>{daysLive(event.announcedAt) ? "  " : "· "}{riskPips(event.selloutRisk)}</span>}
+              </span>
             )}
           </div>
         )}
