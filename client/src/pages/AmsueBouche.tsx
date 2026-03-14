@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
 import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AB_ORANGE = "#FE6B41";
@@ -953,10 +954,19 @@ export default function AmsueBouche() {
     queryKey: ["/api/food-events"],
   });
 
-  const grouped = events.reduce<Record<string, FoodEvent[]>>((acc, ev) => {
-    const key = getMonthLabel(ev.dateStart);
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(ev);
+  type MonthBucket = { events: FoodEvent[]; weekGroups: Record<string, { events: FoodEvent[] }> };
+  const grouped = events.reduce<Record<string, MonthBucket>>((acc, ev) => {
+    const monthKey = getMonthLabel(ev.dateStart);
+    const eventDate = new Date(ev.dateStart + "T12:00:00");
+    const nowDate = new Date();
+    const eventMonthStart = new Date(eventDate.getFullYear(), eventDate.getMonth(), 1);
+    const currentMonthStart = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1);
+    const dateForWeek = eventMonthStart < currentMonthStart ? nowDate : eventDate;
+    const weekKey = getWeekRange(dateForWeek).key;
+    if (!acc[monthKey]) acc[monthKey] = { events: [], weekGroups: {} };
+    acc[monthKey].events.push(ev);
+    if (!acc[monthKey].weekGroups[weekKey]) acc[monthKey].weekGroups[weekKey] = { events: [] };
+    acc[monthKey].weekGroups[weekKey].events.push(ev);
     return acc;
   }, {});
 
@@ -1034,10 +1044,10 @@ export default function AmsueBouche() {
           </div>
         )}
 
-        {Object.entries(grouped).map(([month, monthEvents]) => {
+        {Object.entries(grouped).map(([month, monthData]) => {
+          const weekKeys = Object.keys(monthData.weekGroups).sort();
           return (
             <div key={month} className="mb-6">
-              {/* Fix 1: Month header — line — MONTH — line treatment */}
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-0.5 flex-1 bg-black" />
                 <h2 className="text-lg font-black uppercase text-black">
@@ -1045,11 +1055,29 @@ export default function AmsueBouche() {
                 </h2>
                 <div className="h-0.5 flex-1 bg-black" />
               </div>
-              <ul className="space-y-0">
-                {monthEvents.map(ev => (
-                  <FoodEventRow key={ev.id} event={ev} />
-                ))}
-              </ul>
+              {weekKeys.map((weekKey, weekIdx) => {
+                const weekEvents = monthData.weekGroups[weekKey].events;
+                const isLastWeek = weekIdx === weekKeys.length - 1;
+                const weekNumber = weekEvents.length > 0
+                  ? getWeekOfMonth(new Date(weekEvents[0].dateStart))
+                  : 1;
+                return (
+                  <div key={weekKey}>
+                    <ul className="space-y-0">
+                      {weekEvents.map(ev => (
+                        <FoodEventRow key={ev.id} event={ev} />
+                      ))}
+                    </ul>
+                    {!isLastWeek && (
+                      <div className="pt-2 pb-1">
+                        <div className="text-black text-sm font-black uppercase">
+                          WEEK {weekNumber + 1}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           );
         })}
