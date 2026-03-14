@@ -20,7 +20,7 @@ function Router() {
       <Route path="/playlists" component={Playlists} />
       <Route path="/discovery" component={DiscoveryAdmin} />
       <Route path="/amuse-bouche" component={AmsueBouche} />
-      <Route path="/artistry-nerdery" component={ArtistryNerdery} />
+      <Route path="/artistry-nerdistry" component={ArtistryNerdery} />
       <Route component={NotFound} />
     </Switch>
   );
