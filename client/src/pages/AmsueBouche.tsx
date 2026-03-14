@@ -30,6 +30,17 @@ function ensureHttps(url: string): string {
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+function daysLive(announcedAt: string | null | undefined): string | null {
+  if (!announcedAt) return null;
+  const announced = new Date(announcedAt + "T12:00:00");
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const days = Math.floor((today.getTime() - announced.getTime()) / (1000 * 60 * 60 * 24));
+  if (days <= 0) return null;
+  if (days < 7) return `${days}d`;
+  return `${Math.floor(days / 7)}w`;
+}
+
 function formatDateRange(dateStart: string, dateEnd?: string | null): string {
   const parse = (d: string) => new Date(d + "T12:00:00");
   const fmt = (d: string) =>
@@ -128,6 +139,9 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
                 </a>
               </span>
             )}
+            {daysLive(event.announcedAt) && (
+              <span className="text-xs opacity-40 ml-1.5">· live {daysLive(event.announcedAt)}</span>
+            )}
           </div>
         ) : (
           <div className="flex-1 text-base">
@@ -201,6 +215,9 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
                   View Post
                 </a>
               </span>
+            )}
+            {daysLive(event.announcedAt) && (
+              <span className="text-xs opacity-40 ml-1.5">· live {daysLive(event.announcedAt)}</span>
             )}
           </div>
         )}
@@ -312,13 +329,14 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
     ticketUrl: event.ticketUrl || "",
     sourceUrl: event.sourceUrl || "",
     requester: event.requester || "",
+    announcedAt: event.announcedAt || "",
   });
 
   const set = (field: keyof InsertFoodEvent, value: string) =>
     setForm(f => ({ ...f, [field]: value }));
 
   const hasChanges = () => {
-    const keys = ['emoji', 'name', 'venue', 'neighborhood', 'dateStart', 'dateEnd', 'summary', 'cuisine', 'price', 'ticketUrl', 'sourceUrl', 'requester'] as const;
+    const keys = ['emoji', 'name', 'venue', 'neighborhood', 'dateStart', 'dateEnd', 'summary', 'cuisine', 'price', 'ticketUrl', 'sourceUrl', 'requester', 'announcedAt'] as const;
     return keys.some(k => (form[k] || "") !== ((event[k as keyof FoodEvent] as string) || ""));
   };
 
@@ -461,6 +479,11 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
                 <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
                   className={inputClass} placeholder="Mandi" />
               </div>
+              <div>
+                <label className={labelClass}>Announced <span className="font-normal normal-case opacity-60">(optional)</span></label>
+                <Input type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt", e.target.value)}
+                  className={inputClass} />
+              </div>
             </div>
           </div>
 
@@ -483,6 +506,7 @@ const BLANK: Partial<InsertFoodEvent> = {
   emoji: "", name: "", venue: "", neighborhood: "",
   dateStart: "", dateEnd: "", summary: "",
   cuisine: "", price: "", ticketUrl: "", sourceUrl: "", rawBlurb: "", requester: "",
+  announcedAt: "",
 };
 
 function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -493,6 +517,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imageMediaType, setImageMediaType] = useState<string | null>(null);
+  const [imageFileName, setImageFileName] = useState<string | null>(null);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const { toast } = useToast();
 
@@ -514,6 +539,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     const file = e.target.files?.[0];
     if (!file) return;
     const mediaType = file.type as string;
+    setImageFileName(file.name);
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
@@ -532,7 +558,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
       method: "POST",
       data: {
         blurb,
-        ...(imageBase64 ? { imageBase64, imageMediaType } : {}),
+        ...(imageBase64 ? { imageBase64, imageMediaType, fileName: imageFileName } : {}),
       },
     }),
     onSuccess: (data) => {
@@ -583,6 +609,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     setImagePreview(null);
     setImageBase64(null);
     setImageMediaType(null);
+    setImageFileName(null);
     setShowConfirmClose(false);
   };
 
@@ -805,6 +832,11 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                   <label className={labelClass}>Your Name *</label>
                   <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
                     className={inputClass} placeholder="Mandi" />
+                </div>
+                <div>
+                  <label className={labelClass}>Announced <span className="font-normal normal-case opacity-60">(optional)</span></label>
+                  <Input type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt", e.target.value)}
+                    className={inputClass} />
                 </div>
               </div>
             </div>

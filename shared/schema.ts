@@ -450,6 +450,7 @@ export const foodEvents = pgTable("food_events", {
   requester: text("requester").notNull().default(""),
   upvotes: integer("upvotes").notNull().default(0),
   soldOut: boolean("sold_out").notNull().default(false),
+  announcedAt: text("announced_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

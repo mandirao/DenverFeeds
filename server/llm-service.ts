@@ -375,7 +375,7 @@ Respond with ONLY valid JSON, no markdown formatting:
     return validGenres.includes(genre) ? genre : 'Rock & Alternative';
   }
 
-  async parseBlurb(blurb: string, imageBase64?: string, imageMediaType?: string): Promise<{
+  async parseBlurb(blurb: string, imageBase64?: string, imageMediaType?: string, fileName?: string): Promise<{
     name: string;
     venue: string;
     neighborhood: string;
@@ -386,6 +386,7 @@ Respond with ONLY valid JSON, no markdown formatting:
     cuisine: string;
     price: string;
     ticketUrl: string;
+    announcedAt: string;
   }> {
     const client = new Anthropic({ apiKey: this.apiKey });
     const today = new Date().toISOString().split('T')[0];
@@ -394,7 +395,8 @@ Respond with ONLY valid JSON, no markdown formatting:
     const pass1Prompt = `You are parsing a food popup event in Denver, CO from social media content. Extract details and return ONLY valid JSON.
 
 Today's date: ${today}
-${blurb ? `\nBlurb:\n"""\n${blurb}\n"""` : ''}${imageBase64 ? '\n\nAn image from the post is also attached — scan it carefully for any text, dates, prices, venue names, or details.' : ''}
+${fileName ? `Screenshot file name: "${fileName}" — look for date/time patterns like YYYY-MM-DD or YYYYMMDD in this name to determine when the screenshot was taken.` : ''}
+${blurb ? `\nBlurb:\n"""\n${blurb}\n"""` : ''}${imageBase64 ? '\n\nAn image from the post is also attached — scan it carefully for any text, dates, prices, venue names, or details. Look for relative post timestamps like "2h", "3d", "1w", "2 days ago" that indicate when the post was published.' : ''}
 
 Return this exact JSON structure (no markdown, no code blocks):
 {
@@ -408,13 +410,15 @@ Return this exact JSON structure (no markdown, no code blocks):
   "notableNames": ["array of any named chefs, DJs, collaborators, pop-up brands worth researching — empty array if none"],
   "cuisine": "one of: Hot Pot & Shabu, Japanese, Korean, Chinese, Thai & Southeast Asian, Indian & South Asian, Mexican & Latin, Italian, French, Mediterranean, Seafood, BBQ & Southern, Brunch & Breakfast, Dessert & Pastry, Cocktails & Wine, Tasting Menu, Farm-to-Table, Fusion, American, Other",
   "price": "price string like '$55/person' or empty string if unknown",
-  "ticketUrl": "reservation/ticket URL if mentioned or clearly implied platform URL, else empty string"
+  "ticketUrl": "reservation/ticket URL if mentioned or clearly implied platform URL, else empty string",
+  "announcedAt": "YYYY-MM-DD date when this was first announced/posted — check in order: (1) relative timestamp visible in image like '3d' or '2 days ago' subtracted from today, (2) date pattern in file name, (3) empty string if unknown"
 }
 
 Rules:
 - Use current year (${new Date().getFullYear()}) unless another year is clearly stated
 - If a date range is mentioned (e.g. March 26-28), dateStart=first date, dateEnd=last date
-- Pick the most specific cuisine type that fits`;
+- Pick the most specific cuisine type that fits
+- For announcedAt: '3d' ago means subtract 3 days from today's date; '1w' means subtract 7 days; '2h' means today`;
 
     const pass1Content: any[] = [];
     if (imageBase64 && imageMediaType) {
@@ -526,6 +530,7 @@ Return ONLY valid JSON (no markdown):
       cuisine: pass1.cuisine || 'Other',
       price: pass1.price || '',
       ticketUrl: pass1.ticketUrl || '',
+      announcedAt: pass1.announcedAt || '',
     };
   }
 

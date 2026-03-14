@@ -1306,11 +1306,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI blurb parser for Amuse Bouche
   app.post("/api/ai/parse-blurb", async (req, res) => {
     try {
-      const { blurb, imageBase64, imageMediaType } = req.body;
+      const { blurb, imageBase64, imageMediaType, fileName } = req.body;
       if (!blurb && !imageBase64) {
         return res.status(400).json({ message: "blurb or image is required" });
       }
-      const result = await llmService.parseBlurb(blurb || "", imageBase64, imageMediaType);
+      const result = await llmService.parseBlurb(blurb || "", imageBase64, imageMediaType, fileName);
       res.json(result);
     } catch (error) {
       console.error("Blurb parse error:", error);
