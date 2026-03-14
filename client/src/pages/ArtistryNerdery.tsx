@@ -217,7 +217,7 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
                 href={ensureHttps(event.ticketUrl!)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center align-middle ml-2 bg-black text-[#D8B4FE] hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors"
+                className="inline-flex items-center align-middle ml-2 bg-black text-[#FE6B41] hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors"
               >
                 Tickets
               </a>
@@ -1032,7 +1032,7 @@ export default function ArtistryNerdery() {
             </div>
             <div className="flex items-center gap-4">
               <button onClick={() => setAddOpen(true)}
-                className="bg-black text-[#D8B4FE] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
+                className="bg-black text-[#FE6B41] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
                 <Plus className="w-4 h-4" />Event
               </button>
             </div>
