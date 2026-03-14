@@ -28,15 +28,20 @@ function ensureHttps(url: string): string {
   return "https://" + url;
 }
 
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 function formatDateRange(dateStart: string, dateEnd?: string | null): string {
+  const parse = (d: string) => new Date(d + "T12:00:00");
   const fmt = (d: string) =>
-    new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  if (!dateEnd || dateEnd === dateStart) return fmt(dateStart);
-  const s = new Date(dateStart + "T12:00:00");
-  const e = new Date(dateEnd + "T12:00:00");
+    parse(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const dow = (d: string) => DAYS[parse(d).getDay()];
+
+  if (!dateEnd || dateEnd === dateStart) return `${dow(dateStart)} ${fmt(dateStart)}`;
+  const s = parse(dateStart);
+  const e = parse(dateEnd);
   if (s.getMonth() === e.getMonth())
-    return `${s.toLocaleDateString("en-US", { month: "short", day: "numeric" })}–${e.getDate()}`;
-  return `${fmt(dateStart)} – ${fmt(dateEnd)}`;
+    return `${dow(dateStart)} ${s.toLocaleDateString("en-US", { month: "short", day: "numeric" })}–${e.getDate()}`;
+  return `${dow(dateStart)} ${fmt(dateStart)} – ${dow(dateEnd)} ${fmt(dateEnd)}`;
 }
 
 function getMonthLabel(dateStart: string): string {
