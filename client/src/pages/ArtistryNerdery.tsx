@@ -15,9 +15,9 @@ import { artCategories, type ArtEvent, type InsertArtEvent } from "@shared/schem
 import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown } from "lucide-react";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
-const AN_ORANGE   = "#5bdcef";
+const AN_ORANGE   = "#000000";
 const AN_LAVENDER = "#D8B4FE";
-const AN_BG       = "#b574e0";
+const AN_BG       = "#FEABDA";
 const AN_TEAL     = "#41F2EE";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1008,10 +1008,10 @@ export default function ArtistryNerdery() {
             <div className="flex items-baseline gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-1 group outline-none">
-                  <h1 className="text-3xl md:text-4xl text-black group-hover:text-[#41F2EE] transition-colors font-black">
+                  <h1 className="text-3xl md:text-4xl text-white group-hover:text-[#41F2EE] transition-colors font-black">
                     ARTISTRY & NERDERY LIVE
                   </h1>
-                  <ChevronDown className="h-4 w-4 text-black group-hover:text-[#41F2EE] transition-colors shrink-0 self-center" />
+                  <ChevronDown className="h-4 w-4 text-white group-hover:text-[#41F2EE] transition-colors shrink-0 self-center" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="rounded-none border-2 border-black bg-black text-white p-0 min-w-[240px]">
                   <DropdownMenuItem asChild className="rounded-none focus:bg-[#FEABDA] focus:text-black px-4 py-3 cursor-pointer">
@@ -1026,7 +1026,7 @@ export default function ArtistryNerdery() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <span className="text-sm font-semibold text-black opacity-60 hidden sm:block">
+              <span className="text-sm font-semibold text-white opacity-60 hidden sm:block">
                 Art, science & nerdery
               </span>
             </div>
