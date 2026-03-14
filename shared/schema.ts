@@ -498,6 +498,8 @@ export const artEvents = pgTable("art_events", {
   soldOut: boolean("sold_out").notNull().default(false),
   announcedAt: text("announced_at"),
   selloutRisk: integer("sellout_risk"),
+  isRecurring: boolean("is_recurring").notNull().default(false),
+  recurrenceLabel: text("recurrence_label"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -201,6 +201,12 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
               <span className="italic"> {event.category}.</span>
             )}
 
+            {event.isRecurring && (
+              <span className="inline-flex items-center align-middle ml-2 text-[11px] font-semibold tracking-wide opacity-55">
+                ↻ {event.recurrenceLabel || "Recurring"}
+              </span>
+            )}
+
             {event.price && (
               <span
                 className="inline-flex items-center align-middle ml-2 text-xs font-black uppercase leading-none px-2 py-[3px]"
@@ -358,15 +364,18 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
     requester: event.requester || "",
     announcedAt: event.announcedAt || "",
     selloutRisk: event.selloutRisk ?? undefined,
+    isRecurring: event.isRecurring ?? false,
+    recurrenceLabel: event.recurrenceLabel || "",
   });
 
   const set = (field: keyof InsertArtEvent, value: string) =>
     setForm(f => ({ ...f, [field]: value }));
 
   const isDirty = () => {
-    const keys: (keyof InsertArtEvent)[] = ["emoji", "name", "venue", "neighborhood", "dateStart", "dateEnd", "summary", "category", "price", "ticketUrl", "sourceUrl", "requester", "announcedAt"];
+    const keys: (keyof InsertArtEvent)[] = ["emoji", "name", "venue", "neighborhood", "dateStart", "dateEnd", "summary", "category", "price", "ticketUrl", "sourceUrl", "requester", "announcedAt", "recurrenceLabel"];
     return keys.some(k => (form[k] || "") !== ((event[k as keyof ArtEvent] as string) || ""))
-      || form.selloutRisk !== (event.selloutRisk ?? undefined);
+      || form.selloutRisk !== (event.selloutRisk ?? undefined)
+      || form.isRecurring !== (event.isRecurring ?? false);
   };
 
   const updateMutation = useMutation({
@@ -537,6 +546,27 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                     <p className="text-xs text-gray-500 mt-0.5">{RISK_LABELS[form.selloutRisk]} — {riskPips(form.selloutRisk)}</p>
                   )}
                 </div>
+                <div>
+                  <label className={labelClass}>Recurring <span className="font-normal normal-case opacity-60">(optional)</span></label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
+                      className="flex items-center gap-1.5 px-3 py-1.5 border-2 text-xs font-black transition-colors"
+                      style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
+                    >
+                      ↻ {form.isRecurring ? "Yes" : "No"}
+                    </button>
+                    {form.isRecurring && (
+                      <Input
+                        value={form.recurrenceLabel || ""}
+                        onChange={e => set("recurrenceLabel", e.target.value)}
+                        className={inputClass + " flex-1"}
+                        placeholder="Monthly, Weekly, Every 1st Friday…"
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -563,7 +593,7 @@ const BLANK: Partial<InsertArtEvent> = {
   emoji: "", name: "", venue: "", neighborhood: "",
   dateStart: "", dateEnd: "", summary: "",
   category: "", price: "", ticketUrl: "", sourceUrl: "", rawBlurb: "", requester: "",
-  announcedAt: "", selloutRisk: undefined,
+  announcedAt: "", selloutRisk: undefined, isRecurring: false, recurrenceLabel: "",
 };
 
 function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -915,6 +945,27 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                   {form.selloutRisk && (
                     <p className="text-xs text-gray-500 mt-0.5">{RISK_LABELS[form.selloutRisk]} — {riskPips(form.selloutRisk)}</p>
                   )}
+                </div>
+                <div>
+                  <label className={labelClass}>Recurring <span className="font-normal normal-case opacity-60">(optional)</span></label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
+                      className="flex items-center gap-1.5 px-3 py-1.5 border-2 text-xs font-black transition-colors"
+                      style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
+                    >
+                      ↻ {form.isRecurring ? "Yes" : "No"}
+                    </button>
+                    {form.isRecurring && (
+                      <Input
+                        value={form.recurrenceLabel || ""}
+                        onChange={e => set("recurrenceLabel", e.target.value)}
+                        className={inputClass + " flex-1"}
+                        placeholder="Monthly, Weekly, Every 1st Friday…"
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
