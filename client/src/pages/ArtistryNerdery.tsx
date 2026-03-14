@@ -156,12 +156,10 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
                 View Post
               </a>
             )}
-            {(event.isRecurring || daysLive(event.announcedAt) || riskPips(event.selloutRisk)) && (
+            {(event.isRecurring || riskPips(event.selloutRisk)) && (
               <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : event.selloutRisk === 4 ? "#ffff00" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
-                {event.isRecurring
-                  ? <span>↻ {event.recurrenceLabel || "Recurring"}</span>
-                  : (daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`)}
-                {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`} style={{ fontSize: '8px', letterSpacing: '0.2em' }}>{(event.isRecurring || daysLive(event.announcedAt)) ? " " : "· "}{riskPips(event.selloutRisk)}</span>}
+                {event.isRecurring && <span>↻ {event.recurrenceLabel || "Recurring"}</span>}
+                {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`} style={{ fontSize: '8px', letterSpacing: '0.2em' }}>{event.isRecurring ? " " : "· "}{riskPips(event.selloutRisk)}</span>}
               </span>
             )}
           </div>
@@ -235,12 +233,10 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
               </a>
             )}
 
-            {(event.isRecurring || daysLive(event.announcedAt) || riskPips(event.selloutRisk)) && (
+            {(event.isRecurring || riskPips(event.selloutRisk)) && (
               <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : event.selloutRisk === 4 ? "#ffff00" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
-                {event.isRecurring
-                  ? <span>↻ {event.recurrenceLabel || "Recurring"}</span>
-                  : (daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`)}
-                {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`} style={{ fontSize: '8px', letterSpacing: '0.2em' }}>{(event.isRecurring || daysLive(event.announcedAt)) ? " " : "· "}{riskPips(event.selloutRisk)}</span>}
+                {event.isRecurring && <span>↻ {event.recurrenceLabel || "Recurring"}</span>}
+                {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`} style={{ fontSize: '8px', letterSpacing: '0.2em' }}>{event.isRecurring ? " " : "· "}{riskPips(event.selloutRisk)}</span>}
               </span>
             )}
 
