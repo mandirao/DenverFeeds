@@ -185,7 +185,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
             {event.price && (
               <span
                 className="inline-block align-middle ml-2 text-xs font-black uppercase px-1.5 py-0.5"
-                style={{ backgroundColor: AB_ORANGE, position: "relative", top: "-1px" }}
+                style={{ backgroundColor: "white", border: "1.5px solid black", position: "relative", top: "-1px" }}
               >
                 {event.price}
               </span>
