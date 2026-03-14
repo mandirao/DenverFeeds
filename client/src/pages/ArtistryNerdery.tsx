@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/ui/label";
 import { artCategories, type ArtEvent, type InsertArtEvent } from "@shared/schema";
 import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown } from "lucide-react";
+import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AN_ORANGE   = "#000000";
@@ -993,10 +994,15 @@ export default function ArtistryNerdery() {
     return true;
   });
 
-  const grouped = filteredEvents.reduce<Record<string, ArtEvent[]>>((acc, ev) => {
-    const key = getMonthLabel(ev.dateStart);
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(ev);
+  type MonthBucket = { events: ArtEvent[]; weekGroups: Record<string, { events: ArtEvent[] }> };
+  const grouped = filteredEvents.reduce<Record<string, MonthBucket>>((acc, ev) => {
+    const monthKey = getMonthLabel(ev.dateStart);
+    const date = new Date(ev.dateStart);
+    const weekKey = getWeekRange(date).key;
+    if (!acc[monthKey]) acc[monthKey] = { events: [], weekGroups: {} };
+    acc[monthKey].events.push(ev);
+    if (!acc[monthKey].weekGroups[weekKey]) acc[monthKey].weekGroups[weekKey] = { events: [] };
+    acc[monthKey].weekGroups[weekKey].events.push(ev);
     return acc;
   }, {});
 
@@ -1131,22 +1137,43 @@ export default function ArtistryNerdery() {
           </div>
         )}
 
-        {Object.entries(grouped).map(([month, monthEvents]) => (
-          <div key={month} className="mb-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-0.5 flex-1 bg-black" />
-              <h2 className="text-lg font-black uppercase text-black">
-                {month.toUpperCase()}
-              </h2>
-              <div className="h-0.5 flex-1 bg-black" />
+        {Object.entries(grouped).map(([month, monthData]) => {
+          const weekKeys = Object.keys(monthData.weekGroups).sort();
+          return (
+            <div key={month} className="mb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-0.5 flex-1 bg-black" />
+                <h2 className="text-lg font-black uppercase text-black">
+                  {month.toUpperCase()}
+                </h2>
+                <div className="h-0.5 flex-1 bg-black" />
+              </div>
+              {weekKeys.map((weekKey, weekIdx) => {
+                const weekEvents = monthData.weekGroups[weekKey].events;
+                const isLastWeek = weekIdx === weekKeys.length - 1;
+                const weekNumber = weekEvents.length > 0
+                  ? getWeekOfMonth(new Date(weekEvents[0].dateStart))
+                  : 1;
+                return (
+                  <div key={weekKey}>
+                    <ul className="space-y-0">
+                      {weekEvents.map(ev => (
+                        <ArtEventRow key={ev.id} event={ev} />
+                      ))}
+                    </ul>
+                    {!isLastWeek && (
+                      <div className="pt-2 pb-1">
+                        <div className="text-black text-sm font-black uppercase">
+                          WEEK {weekNumber + 1}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            <ul className="space-y-0">
-              {monthEvents.map(ev => (
-                <ArtEventRow key={ev.id} event={ev} />
-              ))}
-            </ul>
-          </div>
-        ))}
+          );
+        })}
       </main>
 
       {/* Footer */}
