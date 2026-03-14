@@ -1001,16 +1001,18 @@ export default function ArtistryNerdery() {
   const [addOpen, setAddOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterDay, setFilterDay] = useState("all");
+  const [filterDuration, setFilterDuration] = useState("all");
 
   const { data: events = [], isLoading } = useQuery<ArtEvent[]>({
     queryKey: ["/api/art-events"],
   });
 
-  const hasActiveFilters = filterCategory !== "all" || filterDay !== "all";
+  const hasActiveFilters = filterCategory !== "all" || filterDay !== "all" || filterDuration !== "all";
 
   const resetFilters = () => {
     setFilterCategory("all");
     setFilterDay("all");
+    setFilterDuration("all");
   };
 
   const filteredEvents = events.filter(ev => {
@@ -1018,6 +1020,13 @@ export default function ArtistryNerdery() {
     if (filterDay !== "all") {
       const d = new Date(ev.dateStart + "T12:00:00");
       if (d.getDay().toString() !== filterDay) return false;
+    }
+    if (filterDuration !== "all") {
+      const isRecurring = ev.isRecurring === true;
+      const hasSpan = ev.dateEnd && ev.dateEnd !== "" && ev.dateEnd !== ev.dateStart;
+      if (filterDuration === "recurring" && !isRecurring) return false;
+      if (filterDuration === "limited-run" && (isRecurring || !hasSpan)) return false;
+      if (filterDuration === "one-time" && (isRecurring || hasSpan)) return false;
     }
     return true;
   });
@@ -1123,6 +1132,21 @@ export default function ArtistryNerdery() {
                     <SelectItem value="4">Thursday</SelectItem>
                     <SelectItem value="5">Friday</SelectItem>
                     <SelectItem value="6">Saturday</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Duration filter */}
+                <Select value={filterDuration} onValueChange={setFilterDuration}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filterDuration !== "all" ? "bg-white text-black" : "text-black hover:border-white"
+                  }`} style={{ width: "140px", backgroundColor: filterDuration !== "all" ? "white" : AN_BG }}>
+                    <SelectValue placeholder="Duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Durations</SelectItem>
+                    <SelectItem value="one-time">One-time</SelectItem>
+                    <SelectItem value="limited-run">Limited run</SelectItem>
+                    <SelectItem value="recurring">Recurring</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
