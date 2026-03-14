@@ -142,7 +142,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
               </a>
             )}
             {(daysLive(event.announcedAt) || riskPips(event.selloutRisk)) && (
-              <span className="text-[10px] opacity-40 ml-1.5 tracking-tight">
+              <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : undefined, opacity: event.selloutRisk === 5 ? 1 : 0.4 }}>
                 {daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`}
                 {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`}>{daysLive(event.announcedAt) ? "  " : "· "}{riskPips(event.selloutRisk)}</span>}
               </span>
@@ -218,7 +218,7 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
               </a>
             )}
             {(daysLive(event.announcedAt) || riskPips(event.selloutRisk)) && (
-              <span className="text-[10px] opacity-40 ml-1.5 tracking-tight">
+              <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : undefined, opacity: event.selloutRisk === 5 ? 1 : 0.4 }}>
                 {daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`}
                 {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`}>{daysLive(event.announcedAt) ? "  " : "· "}{riskPips(event.selloutRisk)}</span>}
               </span>
