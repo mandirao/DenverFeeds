@@ -579,7 +579,7 @@ Return this exact JSON structure (no markdown, no code blocks):
   "emoji": "single emoji that fits the event type (art: 🎨, science: 🔭, books: 📚, film: 🎬, theater: 🎭, comedy: 🎤, history: 🏛️, tech: 💻, nature: 🌿, architecture: 🏗️, photo: 📷, talk: 🎙️)",
   "draftSummary": "raw factual notes — theme, format, speakers, vibe, key details. Not the final summary.",
   "notableNames": ["array of any named artists, scientists, authors, performers, organizations worth researching — empty array if none"],
-  "category": "one of: Art & Visual Arts, Science & Nature, Literature & Books, Film & Cinema, Theater & Performance, Comedy, History & Culture, Technology, Architecture & Design, Photography, Lecture & Talk, Other",
+  "category": "one of: Art & Visual Arts, Music & Performance, Theater & Film, Science & Nature, Ideas & Talks, Markets & Pop-Ups, Wellness & Community — choose the closest fit: Art & Visual Arts = galleries/studios/making/photography; Music & Performance = live music/concerts/dance/open mic/DJ; Theater & Film = theater/storytelling/film festivals/screenings; Science & Nature = astronomy/science/nature talks; Ideas & Talks = lectures/seminars/author events/literary events/panels; Markets & Pop-Ups = markets/swap meets/pop-ups/craft fairs; Wellness & Community = meditation/yoga/seasonal gatherings/community social events",
   "price": "price string like '$15/person' or 'Free' or empty string if unknown",
   "ticketUrl": "ticket/registration URL if mentioned, else empty string",
   "announcedAt": "YYYY-MM-DD date when first announced/posted — check: (1) relative timestamp in image like '3d' or '2 days ago' subtracted from today, (2) date pattern in file name, (3) empty string if unknown",
