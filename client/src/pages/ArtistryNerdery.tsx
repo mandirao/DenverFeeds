@@ -17,8 +17,7 @@ import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileTe
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AN_ORANGE   = "#5bdcef";
 const AN_LAVENDER = "#D8B4FE";
-const AN_BG       = "#1e1c1a";
-const AN_TEXT     = "#f0e6d3";
+const AN_BG       = "#b574e0";
 const AN_TEAL     = "#41F2EE";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -171,7 +170,7 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
               href={createSearchUrl(event)}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-bold border-b border-dotted border-current hover:border-solid hover:opacity-80 cursor-pointer"
+              className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
             >
               {event.name}
             </a>
@@ -182,7 +181,7 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
               href={mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="border-b border-dotted border-current hover:border-solid hover:opacity-80 cursor-pointer"
+              className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
             >
               {location}
             </a>
@@ -192,7 +191,7 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
               href={calendarUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium border-b border-dotted border-current hover:border-solid hover:opacity-80 cursor-pointer"
+              className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
             >
               {formatDateRange(event.dateStart, event.dateEnd)}
             </a>
@@ -308,7 +307,7 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
       )}
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AN_BG, color: AN_TEXT }}>
+        <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AN_BG }}>
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl uppercase">Delete this event?</AlertDialogTitle>
             <AlertDialogDescription className="text-sm">
@@ -406,12 +405,12 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
   };
 
   const inputClass = "border-2 border-black rounded-none bg-white text-sm";
-  const labelClass = "font-black text-xs uppercase tracking-wide mb-0.5 block";
+  const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
 
   return (
     <>
       <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
-        <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AN_BG, color: AN_TEXT }}>
+        <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AN_BG }}>
           <AlertDialogHeader>
             <AlertDialogTitle className="font-black uppercase">Discard changes?</AlertDialogTitle>
             <AlertDialogDescription>You have unsaved changes.</AlertDialogDescription>
@@ -425,9 +424,9 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
 
       <Dialog open onOpenChange={handleClose}>
         <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
-          style={{ backgroundColor: AN_BG, color: AN_TEXT }}>
+          style={{ backgroundColor: AN_BG }}>
           <DialogHeader>
-            <DialogTitle className="text-3xl uppercase tracking-tight" style={{ color: AN_TEXT }}>
+            <DialogTitle className="text-3xl text-black uppercase tracking-tight">
               Edit Event
             </DialogTitle>
           </DialogHeader>
@@ -704,7 +703,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   };
 
   const inputClass = "border-2 border-black rounded-none bg-white text-sm";
-  const labelClass = "font-black text-xs uppercase tracking-wide mb-0.5 block";
+  const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
 
   return (
     <>
@@ -722,9 +721,9 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     </AlertDialog>
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: AN_BG, color: AN_TEXT }}>
+        style={{ backgroundColor: AN_BG }}>
         <DialogHeader>
-          <DialogTitle className="text-3xl uppercase tracking-tight" style={{ color: AN_TEXT }}>
+          <DialogTitle className="text-3xl text-black uppercase tracking-tight">
             Add an Event
           </DialogTitle>
         </DialogHeader>
@@ -827,7 +826,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="flex items-center gap-1.5 text-xs font-semibold opacity-50 hover:opacity-100 transition-opacity"
+              className="flex items-center gap-1.5 text-xs font-semibold text-black opacity-50 hover:opacity-100 transition-opacity"
             >
               <Sparkles className="w-3 h-3" />
               Use AI instead
@@ -1000,7 +999,7 @@ export default function ArtistryNerdery() {
   }, {});
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: AN_BG, color: AN_TEXT }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: AN_BG }}>
 
       {/* Navbar */}
       <nav className="sticky top-0 z-50 shadow-md px-4 py-3" style={{ backgroundColor: AN_ORANGE }}>
@@ -1044,7 +1043,7 @@ export default function ArtistryNerdery() {
       {/* Feed */}
       <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
 
-        <p className="text-xs mb-5 opacity-60 leading-snug">
+        <p className="text-xs text-black mb-5 opacity-60 leading-snug">
           ⚡ Exhibits, talks, screenings, performances — things worth knowing about.
         </p>
 
@@ -1058,8 +1057,8 @@ export default function ArtistryNerdery() {
         {!isLoading && events.length === 0 && (
           <div className="text-center py-16">
             <Telescope className="w-10 h-10 mx-auto mb-3 opacity-20" />
-            <p className="text-2xl uppercase mb-1">Nothing on the calendar yet.</p>
-            <p className="text-sm opacity-60 mb-4">Be the first to add an event.</p>
+            <p className="text-2xl text-black uppercase mb-1">Nothing on the calendar yet.</p>
+            <p className="text-sm text-gray-600 mb-4">Be the first to add an event.</p>
             <button onClick={() => setAddOpen(true)}
               className="bg-black text-white font-black uppercase tracking-wide text-sm px-6 py-2.5 border-2 border-black hover:text-[#41F2EE] transition-colors inline-flex items-center gap-2">
               <Plus className="w-4 h-4" />Add an Event
@@ -1070,11 +1069,11 @@ export default function ArtistryNerdery() {
         {Object.entries(grouped).map(([month, monthEvents]) => (
           <div key={month} className="mb-6">
             <div className="flex items-center gap-3 mb-3">
-              <div className="h-0.5 flex-1 opacity-30" style={{ backgroundColor: AN_TEXT }} />
-              <h2 className="text-lg font-black uppercase">
+              <div className="h-0.5 flex-1 bg-black" />
+              <h2 className="text-lg font-black uppercase text-black">
                 {month.toUpperCase()}
               </h2>
-              <div className="h-0.5 flex-1 opacity-30" style={{ backgroundColor: AN_TEXT }} />
+              <div className="h-0.5 flex-1 bg-black" />
             </div>
             <ul className="space-y-0">
               {monthEvents.map(ev => (
@@ -1090,21 +1089,21 @@ export default function ArtistryNerdery() {
         <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
           <div className="flex items-center gap-2">
             <Link href="/"
-              className="text-sm font-bold hover:text-[#41F2EE] transition-colors underline flex items-center gap-1">
+              className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline flex items-center gap-1">
               <List className="w-4 h-4" />SETLIST SOCIAL FEED
             </Link>
-            <span className="opacity-40">|</span>
+            <span className="text-black opacity-40">|</span>
             <Link href="/amuse-bouche"
-              className="text-sm font-bold hover:text-[#41F2EE] transition-colors underline">
+              className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline">
               AMUSE-BOUCHE
             </Link>
-            <span className="opacity-40">|</span>
+            <span className="text-black opacity-40">|</span>
             <button onClick={() => setAddOpen(true)}
-              className="text-sm font-bold hover:text-[#41F2EE] transition-colors underline">
+              className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline">
               ADD AN EVENT
             </button>
           </div>
-          <span className="text-sm opacity-60">© {new Date().getFullYear()} Artistry & Nerdery Live</span>
+          <span className="text-sm text-black">© {new Date().getFullYear()} Artistry & Nerdery Live</span>
         </div>
       </footer>
 
