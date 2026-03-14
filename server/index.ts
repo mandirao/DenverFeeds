@@ -6,6 +6,23 @@ import { randomUUID } from "crypto";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 
+// Prevent Neon/WebSocket connection drops from crashing the process
+process.on("uncaughtException", (err: any) => {
+  if (err?.code === "57P01" || err?.message?.includes("terminating connection")) {
+    console.warn("[db] Neon connection terminated by server — will reconnect on next request.");
+  } else {
+    console.error("[uncaughtException]", err);
+  }
+});
+
+process.on("unhandledRejection", (reason: any) => {
+  if (reason?.code === "57P01" || reason?.message?.includes("terminating connection")) {
+    console.warn("[db] Neon connection rejection — will reconnect on next request.");
+  } else {
+    console.error("[unhandledRejection]", reason);
+  }
+});
+
 const app = express();
 
 // Trust proxy - required for deployments behind reverse proxy (Replit, etc.)
