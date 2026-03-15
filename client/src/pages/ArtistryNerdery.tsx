@@ -996,6 +996,101 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   );
 }
 
+// ── Recurring event expansion ──────────────────────────────────────────────────
+
+function classifyRecurrence(label: string | null | undefined): 'weekly' | 'biweekly' | 'monthly' | 'annual' | 'irregular' {
+  if (!label) return 'monthly';
+  const l = label.toLowerCase();
+  if (l.includes('annual') || l.includes('yearly') || l.includes('seasonal')) return 'annual';
+  if (l.includes('bi-week') || l.includes('biweek') || l.includes('every other week') ||
+      /\d+(st|nd|rd|th)?.{0,5}&.{0,5}\d+(st|nd|rd|th)?/.test(l)) return 'biweekly';
+  if (l.includes('week')) return 'weekly';
+  if (l.includes('month') || l.includes('every 1st') || l.includes('every first') ||
+      l.includes('every last') || /every \d+(st|nd|rd|th)/.test(l)) return 'monthly';
+  return 'irregular';
+}
+
+function addCalDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function addCalMonths(dateStr: string, months: number): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().split('T')[0];
+}
+
+function expandRecurringEvents(events: ArtEvent[]): ArtEvent[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split('T')[0];
+
+  const result: ArtEvent[] = [];
+
+  for (const ev of events) {
+    if (!ev.isRecurring) {
+      result.push(ev);
+      continue;
+    }
+
+    const type = classifyRecurrence(ev.recurrenceLabel);
+    const spanDays = ev.dateEnd && ev.dateEnd !== '' && ev.dateEnd !== ev.dateStart
+      ? Math.round((new Date(ev.dateEnd + 'T12:00:00').getTime() - new Date(ev.dateStart + 'T12:00:00').getTime()) / 86400000)
+      : 0;
+
+    const makeOccurrence = (dateStart: string): ArtEvent => ({
+      ...ev,
+      dateStart,
+      dateEnd: spanDays > 0 ? addCalDays(dateStart, spanDays) : (ev.dateEnd ?? ''),
+    });
+
+    if (type === 'annual') {
+      // Show this year's occurrence if upcoming; once passed, hide until Jan 1 then show next year
+      const monthDay = ev.dateStart.slice(5); // "MM-DD"
+      const yr = today.getFullYear();
+      const thisYearOcc = `${yr}-${monthDay}`;
+      if (thisYearOcc >= todayStr) {
+        result.push(makeOccurrence(thisYearOcc));
+      } else if (today.getMonth() === 0) {
+        // It's January — repopulate with next year's date
+        result.push(makeOccurrence(`${yr + 1}-${monthDay}`));
+      }
+      // Otherwise: between the past event date and Dec 31 → hide
+      continue;
+    }
+
+    if (type === 'irregular') {
+      // Non-standard recurrence: just show 1 next occurrence, monthly cadence
+      let d = ev.dateStart;
+      while (d < todayStr) d = addCalMonths(d, 1);
+      result.push(makeOccurrence(d));
+      continue;
+    }
+
+    // weekly / biweekly / monthly: show up to 2 upcoming occurrences
+    const maxOccurrences = 2;
+    const periodDays = type === 'weekly' ? 7 : type === 'biweekly' ? 14 : null;
+
+    let d = ev.dateStart;
+    if (periodDays) {
+      while (d < todayStr) d = addCalDays(d, periodDays);
+    } else {
+      while (d < todayStr) d = addCalMonths(d, 1);
+    }
+
+    for (let i = 0; i < maxOccurrences; i++) {
+      result.push(makeOccurrence(d));
+      if (i < maxOccurrences - 1) {
+        d = periodDays ? addCalDays(d, periodDays) : addCalMonths(d, 1);
+      }
+    }
+  }
+
+  return result.sort((a, b) => a.dateStart.localeCompare(b.dateStart));
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function ArtistryNerdery() {
@@ -1009,6 +1104,8 @@ export default function ArtistryNerdery() {
     queryKey: ["/api/art-events"],
   });
 
+  const expandedEvents = expandRecurringEvents(events);
+
   const hasActiveFilters = filterCategory !== "all" || filterDay !== "all" || filterDuration !== "all";
 
   const resetFilters = () => {
@@ -1017,7 +1114,7 @@ export default function ArtistryNerdery() {
     setFilterDuration("all");
   };
 
-  const filteredEvents = events.filter(ev => {
+  const filteredEvents = expandedEvents.filter(ev => {
     if (filterCategory !== "all" && ev.category !== filterCategory) return false;
     if (filterDay !== "all") {
       const d = new Date(ev.dateStart + "T12:00:00");
@@ -1226,7 +1323,7 @@ export default function ArtistryNerdery() {
                   <div key={weekKey}>
                     <ul className="space-y-0">
                       {weekEvents.map(ev => (
-                        <ArtEventRow key={ev.id} event={ev} />
+                        <ArtEventRow key={`${ev.id}-${ev.dateStart}`} event={ev} />
                       ))}
                     </ul>
                     {!isLastWeek && (
