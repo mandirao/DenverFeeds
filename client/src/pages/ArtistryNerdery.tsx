@@ -1324,7 +1324,7 @@ export default function ArtistryNerdery() {
       </nav>
 
       {/* Feed */}
-      <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
+      <main className={`container mx-auto px-4 py-6 flex-1 transition-all duration-200 ${viewMode === "calendar" ? "max-w-5xl" : "max-w-2xl"}`}>
 
         <p className="text-xs text-black mb-4 opacity-60 leading-snug">
           Exhibits, talks, screenings, performances, workshops and similar fun.
