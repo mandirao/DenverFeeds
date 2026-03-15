@@ -170,35 +170,56 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
           </div>
         ) : (
           <div className="flex-1 text-base">
-            <a
-              href={createSearchUrl(event)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-            >
-              {event.name}
-            </a>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={createSearchUrl(event)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
+                  >
+                    {event.name}
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent><p>Search on Google</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             {" @ "}
 
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-            >
-              {location}
-            </a>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
+                  >
+                    {location}
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent><p>Find on Google Maps</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             {" ("}
-            <a
-              href={calendarUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
-            >
-              {formatDateRange(event.dateStart, event.dateEnd)}
-            </a>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={calendarUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
+                  >
+                    {formatDateRange(event.dateStart, event.dateEnd)}
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent><p>Add to Google Calendar</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             {"). "}
 
             {event.summary}
@@ -1555,13 +1576,30 @@ export default function ArtistryNerdery() {
             const dateStr = endDate && ev.dateEnd !== ev.dateStart
               ? `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} – ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
               : startDate.toLocaleDateString('en-US', fmtOpts);
+            const evSearchUrl = createSearchUrl(ev);
+            const evMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.venue + " Denver CO")}`;
+            const evCalUrl = createCalendarUrl(ev);
             return (
               <>
                 <div className="px-6 pt-6 pb-4" style={{ backgroundColor: AN_BG }}>
                   <div className="flex items-start justify-between gap-3 mb-1">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-3xl flex-shrink-0">{ev.emoji}</span>
-                      <h2 className="text-xl font-black uppercase text-black leading-tight">{ev.name}</h2>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a
+                              href={evSearchUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xl font-black uppercase text-black leading-tight hover:underline cursor-pointer"
+                            >
+                              {ev.name}
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Search on Google</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                     {ev.soldOut && (
                       <span className="text-[10px] font-black uppercase bg-black text-white px-2 py-0.5 flex-shrink-0">SOLD OUT</span>
@@ -1579,11 +1617,39 @@ export default function ArtistryNerdery() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-black font-semibold">
                       <span>📅</span>
-                      <span>{dateStr}</span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a
+                              href={evCalUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline cursor-pointer"
+                            >
+                              {dateStr}
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Add to Google Calendar</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-black/80">
                       <span>📍</span>
-                      <span>{ev.venue}{ev.neighborhood ? `, ${ev.neighborhood}` : ''}</span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a
+                              href={evMapsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline cursor-pointer"
+                            >
+                              {ev.venue}{ev.neighborhood ? `, ${ev.neighborhood}` : ''}
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Find on Google Maps</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                     {ev.price && (
                       <div className="flex items-center gap-2 text-sm text-black/80">

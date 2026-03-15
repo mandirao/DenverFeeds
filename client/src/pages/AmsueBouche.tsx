@@ -172,35 +172,56 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
           </div>
         ) : (
           <div className="flex-1 text-base">
-            <a
-              href={createSearchUrl(event)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-            >
-              {event.name}
-            </a>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={createSearchUrl(event)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
+                  >
+                    {event.name}
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent><p>Search on Google</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             {" @ "}
 
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-            >
-              {location}
-            </a>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
+                  >
+                    {location}
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent><p>Find on Google Maps</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             {" ("}
-            <a
-              href={calendarUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
-            >
-              {formatDateRange(event.dateStart, event.dateEnd)}
-            </a>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={calendarUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
+                  >
+                    {formatDateRange(event.dateStart, event.dateEnd)}
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent><p>Add to Google Calendar</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             {"). "}
 
             {event.summary}
