@@ -90,7 +90,11 @@ function createCalendarUrl(event: ArtEvent): string {
   const end = toGCal(new Date(new Date(endDate + "T12:00:00").getTime() + 86400000).toISOString().slice(0, 10));
   const text = encodeURIComponent(event.name);
   const loc = encodeURIComponent(`${event.venue}${event.neighborhood ? ", " + event.neighborhood : ""}, Denver CO`);
-  const details = encodeURIComponent(event.summary || "");
+  const detailsParts: string[] = [];
+  if (event.summary) detailsParts.push(event.summary);
+  if (event.ticketUrl) detailsParts.push(`Tickets: ${event.ticketUrl}`);
+  if (event.sourceUrl) detailsParts.push(`More info: ${event.sourceUrl}`);
+  const details = encodeURIComponent(detailsParts.join("\n"));
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&location=${loc}&details=${details}&dates=${start}/${end}`;
 }
 

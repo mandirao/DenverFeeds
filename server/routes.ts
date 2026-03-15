@@ -857,6 +857,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let desc = `${ev.name} at ${ev.venue}`;
         if (ev.summary) desc += `\n${ev.summary}`;
         if (ev.cuisine) desc += `\nCuisine: ${ev.cuisine}`;
+        if (ev.ticketUrl) desc += `\nTickets: ${ev.ticketUrl}`;
+        if (ev.sourceUrl) desc += `\nMore info: ${ev.sourceUrl}`;
         lines.push('BEGIN:VEVENT');
         lines.push(`UID:food-${ev.id}@setlistsocial.com`);
         lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
@@ -915,6 +917,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let desc = `${ev.name} at ${ev.venue}`;
         if (ev.summary) desc += `\n${ev.summary}`;
         if (ev.category) desc += `\nCategory: ${ev.category}`;
+        if (ev.ticketUrl) desc += `\nTickets: ${ev.ticketUrl}`;
+        if (ev.sourceUrl) desc += `\nMore info: ${ev.sourceUrl}`;
         lines.push('BEGIN:VEVENT');
         lines.push(`UID:art-${ev.id}@setlistsocial.com`);
         lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
