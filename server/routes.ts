@@ -820,6 +820,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Food events iCal feed
+  apiRouter.get("/calendar/food-feed.ics", async (req, res) => {
+    try {
+      const allEvents = await storage.getAllFoodEvents();
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const upcoming = allEvents.filter(ev => new Date(ev.dateStart + "T12:00:00") >= today);
+
+      const foldLine = (line: string): string => {
+        const maxLen = 75;
+        if (line.length <= maxLen) return line;
+        const parts: string[] = [line.substring(0, maxLen)];
+        let remaining = line.substring(maxLen);
+        while (remaining.length > 0) { parts.push(' ' + remaining.substring(0, maxLen - 1)); remaining = remaining.substring(maxLen - 1); }
+        return parts.join('\r\n');
+      };
+      const escapeIcal = (text: string) => text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+      const toDateStr = (d: string) => d.replace(/-/g, '');
+      const nextDay = (d: string) => {
+        const dt = new Date(d + "T12:00:00");
+        dt.setDate(dt.getDate() + 1);
+        return dt.toISOString().split('T')[0].replace(/-/g, '');
+      };
+
+      const lines: string[] = [
+        'BEGIN:VCALENDAR', 'VERSION:2.0',
+        'PRODID:-//Setlist Social//Amuse-Bouche Feed//EN',
+        'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+        'X-WR-CALNAME:Amuse-Bouche Insider',
+        'X-WR-TIMEZONE:America/Denver',
+        'X-WR-CALDESC:Denver area foodie popups & events',
+      ];
+
+      upcoming.forEach(ev => {
+        const endDateStr = ev.dateEnd && ev.dateEnd !== ev.dateStart ? nextDay(ev.dateEnd) : nextDay(ev.dateStart);
+        let desc = `${ev.name} at ${ev.venue}`;
+        if (ev.summary) desc += `\n${ev.summary}`;
+        if (ev.cuisine) desc += `\nCuisine: ${ev.cuisine}`;
+        lines.push('BEGIN:VEVENT');
+        lines.push(`UID:food-${ev.id}@setlistsocial.com`);
+        lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
+        lines.push(`DTSTART;VALUE=DATE:${toDateStr(ev.dateStart)}`);
+        lines.push(`DTEND;VALUE=DATE:${endDateStr}`);
+        lines.push(foldLine(`SUMMARY:${escapeIcal(ev.name + ' @ ' + ev.venue)}`));
+        lines.push(foldLine(`DESCRIPTION:${escapeIcal(desc)}`));
+        lines.push(foldLine(`LOCATION:${escapeIcal(ev.venue + ', Denver CO')}`));
+        lines.push('STATUS:CONFIRMED', 'TRANSP:TRANSPARENT', 'END:VEVENT');
+      });
+
+      lines.push('END:VCALENDAR');
+      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+      res.setHeader('Content-Disposition', 'inline; filename="amuse-bouche.ics"');
+      res.send(lines.join('\r\n'));
+    } catch (error) {
+      console.error("Error generating food iCal feed:", error);
+      res.status(500).json({ message: "Failed to generate calendar feed" });
+    }
+  });
+
+  // Art/Nerdistry events iCal feed
+  apiRouter.get("/calendar/art-feed.ics", async (req, res) => {
+    try {
+      const allEvents = await storage.getAllArtEvents();
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const upcoming = allEvents.filter(ev => new Date(ev.dateStart + "T12:00:00") >= today);
+
+      const foldLine = (line: string): string => {
+        const maxLen = 75;
+        if (line.length <= maxLen) return line;
+        const parts: string[] = [line.substring(0, maxLen)];
+        let remaining = line.substring(maxLen);
+        while (remaining.length > 0) { parts.push(' ' + remaining.substring(0, maxLen - 1)); remaining = remaining.substring(maxLen - 1); }
+        return parts.join('\r\n');
+      };
+      const escapeIcal = (text: string) => text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+      const toDateStr = (d: string) => d.replace(/-/g, '');
+      const nextDay = (d: string) => {
+        const dt = new Date(d + "T12:00:00");
+        dt.setDate(dt.getDate() + 1);
+        return dt.toISOString().split('T')[0].replace(/-/g, '');
+      };
+
+      const lines: string[] = [
+        'BEGIN:VCALENDAR', 'VERSION:2.0',
+        'PRODID:-//Setlist Social//Artistry-Nerdistry Feed//EN',
+        'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+        'X-WR-CALNAME:Artistry/Nerdistry Live',
+        'X-WR-TIMEZONE:America/Denver',
+        'X-WR-CALDESC:Denver area art\\, science\\, cultural & literary events',
+      ];
+
+      upcoming.forEach(ev => {
+        const endDateStr = ev.dateEnd && ev.dateEnd !== ev.dateStart ? nextDay(ev.dateEnd) : nextDay(ev.dateStart);
+        let desc = `${ev.name} at ${ev.venue}`;
+        if (ev.summary) desc += `\n${ev.summary}`;
+        if (ev.category) desc += `\nCategory: ${ev.category}`;
+        lines.push('BEGIN:VEVENT');
+        lines.push(`UID:art-${ev.id}@setlistsocial.com`);
+        lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
+        lines.push(`DTSTART;VALUE=DATE:${toDateStr(ev.dateStart)}`);
+        lines.push(`DTEND;VALUE=DATE:${endDateStr}`);
+        lines.push(foldLine(`SUMMARY:${escapeIcal(ev.name + ' @ ' + ev.venue)}`));
+        lines.push(foldLine(`DESCRIPTION:${escapeIcal(desc)}`));
+        lines.push(foldLine(`LOCATION:${escapeIcal(ev.venue + ', Denver CO')}`));
+        lines.push('STATUS:CONFIRMED', 'TRANSP:TRANSPARENT', 'END:VEVENT');
+      });
+
+      lines.push('END:VCALENDAR');
+      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+      res.setHeader('Content-Disposition', 'inline; filename="artistry-nerdistry.ics"');
+      res.send(lines.join('\r\n'));
+    } catch (error) {
+      console.error("Error generating art iCal feed:", error);
+      res.status(500).json({ message: "Failed to generate calendar feed" });
+    }
+  });
+
   // Venue-first discovery endpoints
   apiRouter.get("/discovery/venues", async (req, res) => {
     try {

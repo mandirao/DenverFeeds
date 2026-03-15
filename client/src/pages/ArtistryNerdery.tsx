@@ -12,9 +12,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { artCategories, type ArtEvent, type InsertArtEvent } from "@shared/schema";
-import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown } from "lucide-react";
+import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar } from "lucide-react";
 import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AN_ORANGE   = "#000000";
@@ -995,6 +996,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
 export default function ArtistryNerdery() {
   const [addOpen, setAddOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterDay, setFilterDay] = useState("all");
   const [filterDuration, setFilterDuration] = useState("all");
@@ -1076,6 +1078,19 @@ export default function ArtistryNerdery() {
               </span>
             </div>
             <div className="flex items-center gap-4">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setCalendarOpen(true)}
+                      className="text-white hover:text-[#41F2EE] transition-colors"
+                    >
+                      <Calendar className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Subscribe to calendar</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <button onClick={() => setAddOpen(true)}
                 className="bg-black text-[#FE6B41] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
                 <Plus className="w-4 h-4" />Event
@@ -1252,6 +1267,12 @@ export default function ArtistryNerdery() {
       </footer>
 
       <AddEventModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <CalendarSubscribeModal
+        open={calendarOpen}
+        onOpenChange={setCalendarOpen}
+        feedPath="/api/calendar/art-feed.ics"
+        title="SUBSCRIBE TO EVENTS"
+      />
     </div>
   );
 }

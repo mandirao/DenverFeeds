@@ -14,21 +14,23 @@ import { useToast } from "@/hooks/use-toast";
 interface CalendarSubscribeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  feedPath?: string;
+  title?: string;
 }
 
-export function CalendarSubscribeModal({ open, onOpenChange }: CalendarSubscribeModalProps) {
+export function CalendarSubscribeModal({ open, onOpenChange, feedPath = "/api/calendar/feed.ics", title = "SUBSCRIBE TO SHOWS" }: CalendarSubscribeModalProps) {
   const { toast } = useToast();
-  const calendarFeedUrl = `${window.location.origin}/api/calendar/feed.ics`;
+  const calendarFeedUrl = `${window.location.origin}${feedPath}`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#f0f0f0] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">SUBSCRIBE TO SHOWS</DialogTitle>
+          <DialogTitle className="text-xl">{title}</DialogTitle>
         </DialogHeader>
         <DialogDescription className="text-black">
           <div className="mb-4">
-            Add upcoming shows to your Google Calendar (or any other calendar app) by subscribing to our iCalendar feed.
+            Add upcoming events to your Google Calendar (or any other calendar app) by subscribing to our iCalendar feed.
           </div>
           <div className="mb-4 flex items-center">
             <Input 

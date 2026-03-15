@@ -12,9 +12,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
-import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown } from "lucide-react";
+import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
+import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AB_ORANGE = "#FE6B41";
@@ -949,6 +950,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
 export default function AmsueBouche() {
   const [addOpen, setAddOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const { data: events = [], isLoading } = useQuery<FoodEvent[]>({
     queryKey: ["/api/food-events"],
@@ -1003,6 +1005,19 @@ export default function AmsueBouche() {
               </span>
             </div>
             <div className="flex items-center gap-4">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setCalendarOpen(true)}
+                      className="text-black hover:text-[#41F2EE] transition-colors"
+                    >
+                      <Calendar className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Subscribe to calendar</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <a href="https://www.meetup.com/amuse-bouche/"
                 target="_blank" rel="noopener noreferrer"
                 className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1">
@@ -1102,6 +1117,12 @@ export default function AmsueBouche() {
       </footer>
 
       <AddEventModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <CalendarSubscribeModal
+        open={calendarOpen}
+        onOpenChange={setCalendarOpen}
+        feedPath="/api/calendar/food-feed.ics"
+        title="SUBSCRIBE TO POPUPS"
+      />
     </div>
   );
 }
