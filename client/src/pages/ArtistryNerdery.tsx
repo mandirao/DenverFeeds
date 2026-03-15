@@ -1007,12 +1007,16 @@ function CalendarMonthView({
   viewMonth,
   onPrevMonth,
   onNextMonth,
+  onEventClick,
+  onDayOverflowClick,
 }: {
   filteredEvents: ArtEvent[];
   viewYear: number;
   viewMonth: number;
   onPrevMonth: () => void;
   onNextMonth: () => void;
+  onEventClick: (ev: ArtEvent) => void;
+  onDayOverflowClick: (date: string, events: ArtEvent[]) => void;
 }) {
   const todayStr = new Date().toISOString().split('T')[0];
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
@@ -1088,17 +1092,23 @@ function CalendarMonthView({
               </div>
               <div className="space-y-0.5">
                 {shown.map((ev, i) => (
-                  <div
+                  <button
                     key={`${ev.id}-${ev.dateStart}-${i}`}
-                    className="text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 bg-black/10 rounded text-black truncate"
+                    onClick={() => onEventClick(ev)}
+                    className="w-full text-left text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 bg-black/10 hover:bg-black/20 active:bg-black/30 rounded text-black truncate transition-colors cursor-pointer"
                     title={ev.name}
                   >
                     <span>{ev.emoji} </span>
                     <span className="font-medium">{ev.name}</span>
-                  </div>
+                  </button>
                 ))}
                 {overflow > 0 && (
-                  <div className="text-[9px] text-black/50 pl-1 font-medium">+{overflow} more</div>
+                  <button
+                    onClick={() => onDayOverflowClick(dayStr, dayEvents)}
+                    className="text-[9px] text-black/60 hover:text-black pl-1 font-semibold transition-colors cursor-pointer underline underline-offset-1"
+                  >
+                    +{overflow} more
+                  </button>
                 )}
               </div>
             </div>
@@ -1212,6 +1222,8 @@ export default function ArtistryNerdery() {
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [calViewYear, setCalViewYear] = useState(() => new Date().getFullYear());
   const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
+  const [calEventDetail, setCalEventDetail] = useState<ArtEvent | null>(null);
+  const [calDaySheet, setCalDaySheet] = useState<{ date: string; events: ArtEvent[] } | null>(null);
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterDay, setFilterDay] = useState("all");
   const [filterDuration, setFilterDuration] = useState("all");
@@ -1456,6 +1468,8 @@ export default function ArtistryNerdery() {
             viewMonth={calViewMonth}
             onPrevMonth={prevCalMonth}
             onNextMonth={nextCalMonth}
+            onEventClick={setCalEventDetail}
+            onDayOverflowClick={(date, events) => setCalDaySheet({ date, events })}
           />
         )}
 
@@ -1528,6 +1542,127 @@ export default function ArtistryNerdery() {
         feedPath="/api/calendar/art-feed.ics"
         title="SUBSCRIBE TO EVENTS"
       />
+
+      {/* Event detail dialog */}
+      <Dialog open={calEventDetail !== null} onOpenChange={open => { if (!open) setCalEventDetail(null); }}>
+        <DialogContent className="max-w-lg rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">{calEventDetail?.name ?? "Event Details"}</DialogTitle>
+          {calEventDetail && (() => {
+            const ev = calEventDetail;
+            const startDate = new Date(ev.dateStart + 'T12:00:00');
+            const endDate = ev.dateEnd ? new Date(ev.dateEnd + 'T12:00:00') : null;
+            const fmtOpts: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+            const dateStr = endDate && ev.dateEnd !== ev.dateStart
+              ? `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} – ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+              : startDate.toLocaleDateString('en-US', fmtOpts);
+            return (
+              <>
+                <div className="px-6 pt-6 pb-4" style={{ backgroundColor: AN_BG }}>
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-3xl flex-shrink-0">{ev.emoji}</span>
+                      <h2 className="text-xl font-black uppercase text-black leading-tight">{ev.name}</h2>
+                    </div>
+                    {ev.soldOut && (
+                      <span className="text-[10px] font-black uppercase bg-black text-white px-2 py-0.5 flex-shrink-0">SOLD OUT</span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border border-black/30 text-black/70">{ev.category}</span>
+                    {ev.isRecurring && ev.recurrenceLabel && (
+                      <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-black/10 text-black/70">{ev.recurrenceLabel}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 space-y-4 bg-white">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-black font-semibold">
+                      <span>📅</span>
+                      <span>{dateStr}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-black/80">
+                      <span>📍</span>
+                      <span>{ev.venue}{ev.neighborhood ? `, ${ev.neighborhood}` : ''}</span>
+                    </div>
+                    {ev.price && (
+                      <div className="flex items-center gap-2 text-sm text-black/80">
+                        <span>🎟</span>
+                        <span>{ev.price}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-sm text-black/90 leading-relaxed">{ev.summary}</p>
+
+                  {(ev.ticketUrl || ev.sourceUrl) && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {ev.ticketUrl && (
+                        <a
+                          href={ev.ticketUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 bg-black text-white font-black uppercase text-xs tracking-wide px-4 py-2 hover:bg-[#FE6B41] transition-colors"
+                        >
+                          Get Tickets ↗
+                        </a>
+                      )}
+                      {ev.sourceUrl && (
+                        <a
+                          href={ev.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 border-2 border-black text-black font-black uppercase text-xs tracking-wide px-4 py-2 hover:bg-black hover:text-white transition-colors"
+                        >
+                          Original Post ↗
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Day sheet dialog — shows all events on a crowded day */}
+      <Dialog open={calDaySheet !== null} onOpenChange={open => { if (!open) setCalDaySheet(null); }}>
+        <DialogContent className="max-w-sm rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">
+            {calDaySheet ? `Events on ${new Date(calDaySheet.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}` : "Events"}
+          </DialogTitle>
+          {calDaySheet && (() => {
+            const d = new Date(calDaySheet.date + 'T12:00:00');
+            const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            return (
+              <>
+                <div className="px-5 pt-5 pb-3" style={{ backgroundColor: AN_BG }}>
+                  <h2 className="text-base font-black uppercase text-black">{label}</h2>
+                  <p className="text-xs text-black/60 mt-0.5">{calDaySheet.events.length} event{calDaySheet.events.length !== 1 ? 's' : ''}</p>
+                </div>
+                <div className="divide-y divide-black/10 bg-white max-h-[60vh] overflow-y-auto">
+                  {calDaySheet.events.map((ev, i) => (
+                    <button
+                      key={`${ev.id}-${i}`}
+                      onClick={() => { setCalDaySheet(null); setCalEventDetail(ev); }}
+                      className="w-full text-left px-5 py-3 hover:bg-[#FEABDA]/40 transition-colors flex items-center gap-3"
+                    >
+                      <span className="text-xl flex-shrink-0">{ev.emoji}</span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-black truncate">{ev.name}</div>
+                        <div className="text-xs text-black/60 truncate">{ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}</div>
+                        {ev.price && <div className="text-xs text-black/50">{ev.price}</div>}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-black/30 flex-shrink-0 ml-auto" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

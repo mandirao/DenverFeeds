@@ -28,16 +28,14 @@ export function CalendarSubscribeModal({ open, onOpenChange, feedPath = "/api/ca
         <DialogHeader>
           <DialogTitle className="text-xl">{title}</DialogTitle>
         </DialogHeader>
-        <DialogDescription className="text-black">
-          <div className="mb-4">
-            Add upcoming events to your Google Calendar (or any other calendar app) by subscribing to our iCalendar feed.
-          </div>
-          <div className="mb-4 flex items-center">
+        <div className="text-black text-sm space-y-4">
+          <p>Add upcoming events to your Google Calendar (or any other calendar app) by subscribing to our iCalendar feed.</p>
+          <div className="flex items-center gap-2">
             <Input 
               type="text" 
               readOnly 
               value={calendarFeedUrl} 
-              className="mr-2 text-sm bg-white border-black"
+              className="text-sm bg-white border-black"
             />
             <Button 
               variant="outline2" 
@@ -52,10 +50,10 @@ export function CalendarSubscribeModal({ open, onOpenChange, feedPath = "/api/ca
               Copy
             </Button>
           </div>
-          <div className="text-xs text-gray-600 mt-2">
+          <p className="text-xs text-gray-600">
             To subscribe, open your calendar application, find the option to add a calendar by URL, and paste the link above. Google Calendar typically refreshes every 8-24 hours.
-          </div>
-        </DialogDescription>
+          </p>
+        </div>
         <DialogFooter>
           <Button variant="outline2" onClick={() => onOpenChange(false)}>
             Close
