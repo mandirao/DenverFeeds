@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { artCategories, type ArtEvent, type InsertArtEvent } from "@shared/schema";
-import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar } from "lucide-react";
+import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
@@ -996,6 +996,119 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   );
 }
 
+// ── Calendar month view ────────────────────────────────────────────────────────
+
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAY_HEADERS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function CalendarMonthView({
+  filteredEvents,
+  viewYear,
+  viewMonth,
+  onPrevMonth,
+  onNextMonth,
+}: {
+  filteredEvents: ArtEvent[];
+  viewYear: number;
+  viewMonth: number;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+}) {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const monthPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
+
+  const eventsByDay = new Map<string, ArtEvent[]>();
+  for (const ev of filteredEvents) {
+    if (ev.dateStart.startsWith(monthPrefix)) {
+      const existing = eventsByDay.get(ev.dateStart) ?? [];
+      eventsByDay.set(ev.dateStart, [...existing, ev]);
+    } else if (ev.dateEnd && ev.dateEnd !== ev.dateStart && !ev.isRecurring) {
+      // Multi-day event that started before this month but extends into it
+      const monthStart = new Date(viewYear, viewMonth, 1);
+      const end = new Date(ev.dateEnd + 'T12:00:00');
+      const start = new Date(ev.dateStart + 'T12:00:00');
+      if (start < monthStart && end >= monthStart) {
+        const key = `${monthPrefix}-01`;
+        const existing = eventsByDay.get(key) ?? [];
+        eventsByDay.set(key, [...existing, ev]);
+      }
+    }
+  }
+
+  const cells: (number | null)[] = [
+    ...Array(firstDayOfWeek).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={onPrevMonth} className="p-1.5 text-black hover:text-[#FE6B41] transition-colors rounded-full hover:bg-black/10">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <h2 className="text-base font-black uppercase text-black tracking-wide">
+          {MONTH_NAMES[viewMonth]} {viewYear}
+        </h2>
+        <button onClick={onNextMonth} className="p-1.5 text-black hover:text-[#FE6B41] transition-colors rounded-full hover:bg-black/10">
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 mb-1">
+        {DAY_HEADERS.map(d => (
+          <div key={d} className="text-center text-[10px] font-black text-black/50 uppercase py-1 tracking-wider">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 border-l border-t border-black/15">
+        {cells.map((day, idx) => {
+          if (day === null) {
+            return (
+              <div key={`empty-${idx}`} className="border-r border-b border-black/15 min-h-[72px] sm:min-h-[90px]" style={{ backgroundColor: AN_BG }} />
+            );
+          }
+          const dayStr = `${monthPrefix}-${String(day).padStart(2, '0')}`;
+          const isToday = dayStr === todayStr;
+          const dayEvents = eventsByDay.get(dayStr) ?? [];
+          const MAX_SHOWN = 3;
+          const shown = dayEvents.slice(0, MAX_SHOWN);
+          const overflow = dayEvents.length - MAX_SHOWN;
+
+          return (
+            <div key={dayStr} className="border-r border-b border-black/15 p-1 min-h-[72px] sm:min-h-[90px]" style={{ backgroundColor: AN_BG }}>
+              <div className={`text-xs font-bold mb-1 w-5 h-5 flex items-center justify-center leading-none ${
+                isToday ? 'bg-black text-white rounded-full' : 'text-black'
+              }`}>
+                {day}
+              </div>
+              <div className="space-y-0.5">
+                {shown.map((ev, i) => (
+                  <div
+                    key={`${ev.id}-${ev.dateStart}-${i}`}
+                    className="text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 bg-black/10 rounded text-black truncate"
+                    title={ev.name}
+                  >
+                    <span>{ev.emoji} </span>
+                    <span className="font-medium">{ev.name}</span>
+                  </div>
+                ))}
+                {overflow > 0 && (
+                  <div className="text-[9px] text-black/50 pl-1 font-medium">+{overflow} more</div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Recurring event expansion ──────────────────────────────────────────────────
 
 function classifyRecurrence(label: string | null | undefined): 'weekly' | 'biweekly' | 'monthly' | 'annual' | 'irregular' {
@@ -1096,9 +1209,21 @@ function expandRecurringEvents(events: ArtEvent[]): ArtEvent[] {
 export default function ArtistryNerdery() {
   const [addOpen, setAddOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [calViewYear, setCalViewYear] = useState(() => new Date().getFullYear());
+  const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterDay, setFilterDay] = useState("all");
   const [filterDuration, setFilterDuration] = useState("all");
+
+  const prevCalMonth = () => {
+    if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
+    else setCalViewMonth(m => m - 1);
+  };
+  const nextCalMonth = () => {
+    if (calViewMonth === 11) { setCalViewMonth(0); setCalViewYear(y => y + 1); }
+    else setCalViewMonth(m => m + 1);
+  };
 
   const { data: events = [], isLoading } = useQuery<ArtEvent[]>({
     queryKey: ["/api/art-events"],
@@ -1258,6 +1383,28 @@ export default function ArtistryNerdery() {
                     <SelectItem value="recurring">Recurring</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* View mode toggle */}
+                <div className="flex items-center gap-1 ml-1 border border-black rounded-full overflow-hidden flex-shrink-0">
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`h-8 w-8 flex items-center justify-center transition-colors ${
+                      viewMode === "list" ? "bg-black text-white" : "text-black hover:bg-black/10"
+                    }`}
+                    title="List view"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("calendar")}
+                    className={`h-8 w-8 flex items-center justify-center transition-colors ${
+                      viewMode === "calendar" ? "bg-black text-white" : "text-black hover:bg-black/10"
+                    }`}
+                    title="Calendar view"
+                  >
+                    <CalendarDays className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1293,7 +1440,7 @@ export default function ArtistryNerdery() {
           </div>
         )}
 
-        {!isLoading && events.length > 0 && filteredEvents.length === 0 && (
+        {!isLoading && events.length > 0 && filteredEvents.length === 0 && viewMode === "list" && (
           <div className="text-center py-16">
             <p className="text-lg text-black uppercase mb-2">No events match your filters.</p>
             <button onClick={resetFilters} className="text-black text-sm underline hover:text-white transition-colors">
@@ -1302,7 +1449,17 @@ export default function ArtistryNerdery() {
           </div>
         )}
 
-        {Object.entries(grouped).map(([month, monthData]) => {
+        {!isLoading && viewMode === "calendar" && (
+          <CalendarMonthView
+            filteredEvents={filteredEvents}
+            viewYear={calViewYear}
+            viewMonth={calViewMonth}
+            onPrevMonth={prevCalMonth}
+            onNextMonth={nextCalMonth}
+          />
+        )}
+
+        {viewMode === "list" && Object.entries(grouped).map(([month, monthData]) => {
           const weekKeys = Object.keys(monthData.weekGroups).sort();
           return (
             <div key={month} className="mb-6">
