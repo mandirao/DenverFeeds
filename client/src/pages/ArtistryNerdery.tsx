@@ -1073,9 +1073,6 @@ export default function ArtistryNerdery() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <span className="text-sm font-semibold text-white opacity-60 hidden sm:block">
-                Art, science & nerdery
-              </span>
             </div>
             <div className="flex items-center gap-4">
               <TooltipProvider>
@@ -1104,7 +1101,7 @@ export default function ArtistryNerdery() {
       <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
 
         <p className="text-xs text-black mb-4 opacity-60 leading-snug">
-          ⚡ Exhibits, talks, screenings, performances — things worth knowing about.
+          Exhibits, talks, screenings, performances, workshops and similar fun.
         </p>
 
         {/* Filters */}

@@ -32,12 +32,14 @@ export function Navbar() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
+          <div className="flex items-center space-x-6">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button 
                     onClick={() => setCalendarOpen(true)}
-                    className="text-black hover:text-[#41F2EE] transition-colors mb-2 sm:mb-0"
+                    className="text-black hover:text-[#41F2EE] transition-colors"
                   >
                     <Calendar className="h-4 w-4" />
                   </button>
@@ -47,8 +49,6 @@ export function Navbar() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-          </div>
-          <div className="flex items-center space-x-6">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

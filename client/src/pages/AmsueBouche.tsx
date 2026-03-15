@@ -1000,9 +1000,6 @@ export default function AmsueBouche() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <span className="text-sm font-semibold text-black opacity-60 hidden sm:block">
-                Foodie popups & events
-              </span>
             </div>
             <div className="flex items-center gap-4">
               <TooltipProvider>
@@ -1037,7 +1034,7 @@ export default function AmsueBouche() {
       <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
 
         <p className="text-xs text-black mb-5 opacity-60 leading-snug">
-          ⚡ These fill up fast. If something looks good, act on it.
+          Pop-ups fill up fast! If something looks good, act on it.
         </p>
 
         {isLoading && (
