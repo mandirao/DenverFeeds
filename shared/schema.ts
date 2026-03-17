@@ -473,8 +473,10 @@ export type FoodEvent = typeof foodEvents.$inferSelect;
 // ── Artistry & Nerdery Live ────────────────────────────────────────────────
 
 export const artCategories = [
-  "Art & Visual Arts", "Music & Performance", "Theater & Film",
-  "Science & Nature", "Ideas & Talks", "Markets & Pop-Ups", "Wellness & Community"
+  "Theater & Musicals", "Comedy & Storytelling", "Film & Cinema",
+  "Dance & Movement", "Music & Performance", "Galleries & Exhibitions",
+  "Workshops & Classes", "Science & Nature", "Books & Talks",
+  "Markets & Pop-Ups", "Wellness & Community"
 ] as const;
 export type ArtCategory = typeof artCategories[number];
 
