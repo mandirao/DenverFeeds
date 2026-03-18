@@ -895,6 +895,18 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                       className={inputClass} />
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Price</label>
+                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
+                      className={inputClass} placeholder="$55/person" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>RSVP/Ticket URL</label>
+                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
+                      className={inputClass} placeholder="https://tock.com/…" />
+                  </div>
+                </div>
               </div>
 
               {/* Right column — metadata */}
@@ -915,18 +927,6 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                         {cuisineTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Price</label>
-                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
-                      className={inputClass} placeholder="$55/person" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>RSVP/Ticket URL</label>
-                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
-                      className={inputClass} placeholder="https://tock.com/…" />
                   </div>
                 </div>
                 <div>

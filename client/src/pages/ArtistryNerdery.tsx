@@ -533,6 +533,18 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                       className={inputClass} />
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Price</label>
+                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
+                      className={inputClass} placeholder="$20/person" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Ticket URL</label>
+                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
+                      className={inputClass} placeholder="https://…" />
+                  </div>
+                </div>
               </div>
 
               {/* Right column — metadata */}
@@ -553,18 +565,6 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                         {artCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Price</label>
-                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
-                      className={inputClass} placeholder="$20/person" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Ticket URL</label>
-                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
-                      className={inputClass} placeholder="https://…" />
                   </div>
                 </div>
                 <div>
@@ -605,6 +605,25 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                         className={inputClass + " flex-1"} placeholder="Monthly, Weekly, Every 1st Friday…" />
                     )}
                   </div>
+                  {/* Per-occurrence note — only shown when editing a recurring event occurrence */}
+                  {event.isRecurring && (
+                    <div className="border-2 border-dashed border-black/40 p-2 mt-2" style={{ backgroundColor: "rgba(0,0,0,0.04)" }}>
+                      <label className="font-black text-xs uppercase tracking-wide text-black mb-1 block">
+                        ↻ This occurrence only
+                        <span className="font-normal normal-case ml-1 opacity-50">
+                          — {new Date(occurrenceDate + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                        </span>
+                      </label>
+                      <textarea
+                        value={instanceNote}
+                        onChange={e => setInstanceNote(e.target.value)}
+                        rows={2}
+                        className="w-full border-2 border-black/30 bg-white text-sm p-2 resize-none focus:outline-none focus:border-black"
+                        placeholder="Theme, featured guest, topic for this date only…"
+                      />
+                      <p className="text-[10px] text-black/40 mt-0.5">Won't affect other dates in the series.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -617,27 +636,6 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                 placeholder="Smart, specific snapshot of the event." />
               <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
             </div>
-
-            {event.isRecurring && (
-              <div className="px-4 pb-2">
-                <div className="border-2 border-dashed border-black/40 p-3 mt-1" style={{ backgroundColor: "rgba(0,0,0,0.04)" }}>
-                  <label className="font-black text-xs uppercase tracking-wide text-black mb-1 block">
-                    ↻ This occurrence only
-                    <span className="font-normal normal-case ml-1 opacity-50">
-                      — {new Date(occurrenceDate + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                    </span>
-                  </label>
-                  <textarea
-                    value={instanceNote}
-                    onChange={e => setInstanceNote(e.target.value)}
-                    rows={2}
-                    className="w-full border-2 border-black/30 bg-white text-sm p-2 resize-none focus:outline-none focus:border-black"
-                    placeholder="Theme, featured guest, topic for this date only…"
-                  />
-                  <p className="text-[10px] text-black/40 mt-0.5">Won't affect other dates in the series.</p>
-                </div>
-              </div>
-            )}
 
             <DialogFooter className="pt-1 flex gap-2">
               <button type="button" onClick={handleClose}
@@ -951,6 +949,18 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                       className={inputClass} />
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Price</label>
+                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
+                      className={inputClass} placeholder="$20/person" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Ticket URL</label>
+                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
+                      className={inputClass} placeholder="https://…" />
+                  </div>
+                </div>
               </div>
 
               {/* Right column — metadata */}
@@ -971,18 +981,6 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                         {artCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Price</label>
-                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
-                      className={inputClass} placeholder="$20/person" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Ticket URL</label>
-                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
-                      className={inputClass} placeholder="https://…" />
                   </div>
                 </div>
                 <div>
