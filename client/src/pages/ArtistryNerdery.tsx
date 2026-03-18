@@ -1368,30 +1368,26 @@ export default function ArtistryNerdery() {
         {/* Filters */}
         {!isLoading && events.length > 0 && (
           <div className="mb-5">
-            {/* Sort pills */}
-            <div className="flex gap-2 mb-3">
-              <button
-                onClick={() => setSortBy("date")}
-                className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
-                  sortBy === "date" ? "bg-black text-white" : "text-black hover:border-white"
-                }`}
-                style={{ backgroundColor: sortBy === "date" ? "black" : AN_BG }}
-              >
-                Show All
-              </button>
-              <button
-                onClick={() => setSortBy("added")}
-                className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
-                  sortBy === "added" ? "bg-black text-white" : "text-black hover:border-white"
-                }`}
-                style={{ backgroundColor: sortBy === "added" ? "black" : AN_BG }}
-              >
-                Recently Added
-              </button>
-            </div>
-
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
+                {/* Sort pills */}
+                <button
+                  onClick={() => setSortBy("date")}
+                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap`}
+                  style={{ backgroundColor: sortBy === "date" ? "white" : AN_BG }}
+                >
+                  Show All
+                </button>
+                <button
+                  onClick={() => setSortBy("added")}
+                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap`}
+                  style={{ backgroundColor: sortBy === "added" ? "white" : AN_BG }}
+                >
+                  Recently Added
+                </button>
+
+                {/* Vertical separator */}
+                <div className="h-6 w-px bg-black opacity-40 mx-1 flex-shrink-0" />
                 {/* Category filter */}
                 <Select value={filterCategory} onValueChange={setFilterCategory}>
                   <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
@@ -1518,15 +1514,47 @@ export default function ArtistryNerdery() {
           />
         )}
 
-        {viewMode === "list" && sortBy === "added" && (
-          <ul className="space-y-0">
-            {[...filteredEvents]
-              .sort((a, b) => b.id - a.id)
-              .map(ev => (
-                <ArtEventRow key={`${ev.id}-${ev.dateStart}`} event={ev} />
-              ))}
-          </ul>
-        )}
+        {viewMode === "list" && sortBy === "added" && (() => {
+          const now = new Date();
+          const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const dayOfWeek = todayDate.getDay();
+          const startOfWeek = new Date(todayDate);
+          startOfWeek.setDate(todayDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+          const getGroup = (ev: ArtEvent): "today" | "week" | "month" | "earlier" => {
+            if (!ev.createdAt) return "earlier";
+            const c = new Date(ev.createdAt);
+            const cDate = new Date(c.getFullYear(), c.getMonth(), c.getDate());
+            if (cDate.getTime() === todayDate.getTime()) return "today";
+            if (cDate >= startOfWeek) return "week";
+            if (c.getMonth() === now.getMonth() && c.getFullYear() === now.getFullYear()) return "month";
+            return "earlier";
+          };
+
+          const sorted = [...filteredEvents].sort((a, b) => b.id - a.id);
+          const buckets: { key: "today" | "week" | "month" | "earlier"; label: string; events: ArtEvent[] }[] = [
+            { key: "today", label: "Added today", events: [] },
+            { key: "week",  label: "Added this week", events: [] },
+            { key: "month", label: "Added this month", events: [] },
+            { key: "earlier", label: "Added earlier", events: [] },
+          ];
+          for (const ev of sorted) buckets.find(b => b.key === getGroup(ev))!.events.push(ev);
+
+          return buckets.filter(b => b.events.length > 0).map(bucket => (
+            <div key={bucket.key} className="mb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-0.5 flex-1 bg-black" />
+                <h2 className="text-lg font-black uppercase text-black">{bucket.label.toUpperCase()}</h2>
+                <div className="h-0.5 flex-1 bg-black" />
+              </div>
+              <ul className="space-y-0">
+                {bucket.events.map(ev => (
+                  <ArtEventRow key={`${ev.id}-${ev.dateStart}`} event={ev} />
+                ))}
+              </ul>
+            </div>
+          ));
+        })()}
 
         {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => {
           const weekKeys = Object.keys(monthData.weekGroups).sort();
