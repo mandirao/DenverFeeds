@@ -1410,21 +1410,47 @@ export default function ArtistryNerdery() {
           <div className="mb-5">
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
-                {/* Sort pills */}
-                <button
-                  onClick={() => setSortBy("date")}
-                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap`}
-                  style={{ backgroundColor: sortBy === "date" ? "white" : AN_BG }}
-                >
-                  Show All
-                </button>
-                <button
-                  onClick={() => setSortBy("added")}
-                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap`}
-                  style={{ backgroundColor: sortBy === "added" ? "white" : AN_BG }}
-                >
-                  Recently Added
-                </button>
+                {/* View mode toggle — first position */}
+                <div className="flex items-center gap-1 border border-black rounded-full overflow-hidden flex-shrink-0">
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`h-8 w-8 flex items-center justify-center transition-colors ${
+                      viewMode === "list" ? "bg-black text-white" : "text-black hover:bg-black/10"
+                    }`}
+                    title="List view"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("calendar")}
+                    className={`h-8 w-8 flex items-center justify-center transition-colors ${
+                      viewMode === "calendar" ? "bg-black text-white" : "text-black hover:bg-black/10"
+                    }`}
+                    title="Calendar view"
+                  >
+                    <CalendarDays className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Sort pills — hidden in calendar mode */}
+                {viewMode !== "calendar" && (
+                  <>
+                    <button
+                      onClick={() => setSortBy("date")}
+                      className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap`}
+                      style={{ backgroundColor: sortBy === "date" ? "white" : AN_BG }}
+                    >
+                      Show All
+                    </button>
+                    <button
+                      onClick={() => setSortBy("added")}
+                      className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap`}
+                      style={{ backgroundColor: sortBy === "added" ? "white" : AN_BG }}
+                    >
+                      Recently Added
+                    </button>
+                  </>
+                )}
 
                 {/* Vertical separator */}
                 <div className="h-6 w-px bg-black opacity-40 mx-1 flex-shrink-0" />
@@ -1477,27 +1503,6 @@ export default function ArtistryNerdery() {
                   </SelectContent>
                 </Select>
 
-                {/* View mode toggle */}
-                <div className="flex items-center gap-1 ml-1 border border-black rounded-full overflow-hidden flex-shrink-0">
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={`h-8 w-8 flex items-center justify-center transition-colors ${
-                      viewMode === "list" ? "bg-black text-white" : "text-black hover:bg-black/10"
-                    }`}
-                    title="List view"
-                  >
-                    <List className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("calendar")}
-                    className={`h-8 w-8 flex items-center justify-center transition-colors ${
-                      viewMode === "calendar" ? "bg-black text-white" : "text-black hover:bg-black/10"
-                    }`}
-                    title="Calendar view"
-                  >
-                    <CalendarDays className="w-3.5 h-3.5" />
-                  </button>
-                </div>
               </div>
             </div>
 
