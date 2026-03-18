@@ -501,6 +501,7 @@ export const artEvents = pgTable("art_events", {
   selloutRisk: integer("sellout_risk"),
   isRecurring: boolean("is_recurring").notNull().default(false),
   recurrenceLabel: text("recurrence_label"),
+  instanceNotes: jsonb("instance_notes").$type<Record<string, string>>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

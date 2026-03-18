@@ -224,6 +224,12 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
 
             {event.summary}
 
+            {event.isRecurring && event.instanceNotes?.[event.dateStart] && (
+              <span className="block text-sm italic mt-0.5" style={{ opacity: 0.75 }}>
+                ↳ {(event.instanceNotes as Record<string, string>)[event.dateStart]}
+              </span>
+            )}
+
             {event.category && (
               <span className="italic"> {event.category}.</span>
             )}
@@ -382,6 +388,10 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
   const qc = useQueryClient();
   const { toast } = useToast();
   const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const occurrenceDate = event.dateStart;
+  const [instanceNote, setInstanceNote] = useState<string>(
+    (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? ""
+  );
   const [form, setForm] = useState<Partial<InsertArtEvent>>({
     emoji: event.emoji || "",
     name: event.name || "",
@@ -406,13 +416,15 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
 
   const isDirty = () => {
     const keys: (keyof InsertArtEvent)[] = ["emoji", "name", "venue", "neighborhood", "dateStart", "dateEnd", "summary", "category", "price", "ticketUrl", "sourceUrl", "requester", "announcedAt", "recurrenceLabel"];
+    const originalNote = (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? "";
     return keys.some(k => (form[k] || "") !== ((event[k as keyof ArtEvent] as string) || ""))
       || form.selloutRisk !== (event.selloutRisk ?? undefined)
-      || form.isRecurring !== (event.isRecurring ?? false);
+      || form.isRecurring !== (event.isRecurring ?? false)
+      || instanceNote !== originalNote;
   };
 
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<InsertArtEvent>) =>
+    mutationFn: (data: Partial<InsertArtEvent> & { instanceNotes?: Record<string, string> }) =>
       apiRequest({ endpoint: `/api/art-events/${event.id}`, method: "PATCH", data }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/art-events"] });
@@ -431,7 +443,14 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
       toast({ title: `${missing} is required`, variant: "destructive" });
       return;
     }
-    updateMutation.mutate(form);
+    const existingNotes = (event.instanceNotes as Record<string, string> | null | undefined) ?? {};
+    const updatedNotes = { ...existingNotes };
+    if (instanceNote.trim()) {
+      updatedNotes[occurrenceDate] = instanceNote.trim();
+    } else {
+      delete updatedNotes[occurrenceDate];
+    }
+    updateMutation.mutate({ ...form, instanceNotes: updatedNotes });
   };
 
   const handleClose = () => {
@@ -602,6 +621,27 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                 </div>
               </div>
             </div>
+
+            {event.isRecurring && (
+              <div className="px-4 pb-2">
+                <div className="border-2 border-dashed border-black/40 p-3 mt-1" style={{ backgroundColor: "rgba(0,0,0,0.04)" }}>
+                  <label className="font-black text-xs uppercase tracking-wide text-black mb-1 block">
+                    ↻ This occurrence only
+                    <span className="font-normal normal-case ml-1 opacity-50">
+                      — {new Date(occurrenceDate + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                    </span>
+                  </label>
+                  <textarea
+                    value={instanceNote}
+                    onChange={e => setInstanceNote(e.target.value)}
+                    rows={2}
+                    className="w-full border-2 border-black/30 bg-white text-sm p-2 resize-none focus:outline-none focus:border-black"
+                    placeholder="Theme, featured guest, topic for this date only…"
+                  />
+                  <p className="text-[10px] text-black/40 mt-0.5">Won't affect other dates in the series.</p>
+                </div>
+              </div>
+            )}
 
             <DialogFooter className="pt-1 flex gap-2">
               <button type="button" onClick={handleClose}
@@ -1531,7 +1571,10 @@ export default function ArtistryNerdery() {
             return "earlier";
           };
 
-          const sorted = [...filteredEvents].sort((a, b) => b.id - a.id);
+          const seen = new Set<number>();
+          const sorted = [...filteredEvents]
+            .filter(ev => { if (seen.has(ev.id)) return false; seen.add(ev.id); return true; })
+            .sort((a, b) => b.id - a.id);
           const buckets: { key: "today" | "week" | "month" | "earlier"; label: string; events: ArtEvent[] }[] = [
             { key: "today", label: "Added today", events: [] },
             { key: "week",  label: "Added this week", events: [] },
