@@ -476,7 +476,7 @@ export const artCategories = [
   "Theater & Musicals", "Comedy & Storytelling", "Film & Cinema",
   "Dance & Movement", "Music & Performance", "Galleries & Exhibitions",
   "Workshops & Classes", "Science & Nature", "Books & Talks",
-  "Markets & Pop-Ups", "Wellness & Community"
+  "Markets & Pop-Ups", "Wellness & Community", "Parties & Social"
 ] as const;
 export type ArtCategory = typeof artCategories[number];
 
