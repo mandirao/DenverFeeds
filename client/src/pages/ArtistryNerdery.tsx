@@ -625,7 +625,7 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                       <SelectTrigger id="edit-an-category" className={inputClass + fieldErr("category")}>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-[280px] overflow-y-auto">
                         {artCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
@@ -1096,7 +1096,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                       <SelectTrigger id="add-an-category" className={inputClass + fieldErr("category")}>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-[280px] overflow-y-auto">
                         {artCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
