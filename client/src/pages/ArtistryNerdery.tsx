@@ -502,7 +502,7 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
 
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-3 md:gap-y-0">
 
-              {/* Left column — core identity */}
+              {/* Left column — core identity + scheduling */}
               <div className="space-y-3">
                 <div>
                   <label className={labelClass}>Event Name *</label>
@@ -533,17 +533,41 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                       className={inputClass} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Price</label>
-                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
-                      className={inputClass} placeholder="$20/person" />
+                {/* Recurring — below dates */}
+                <div>
+                  <label className={labelClass}>Recurring <span className="font-normal normal-case opacity-60">(optional)</span></label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <button type="button"
+                      onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
+                      className="flex items-center gap-1.5 px-3 py-1.5 border-2 text-xs font-black transition-colors"
+                      style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
+                    >↻ {form.isRecurring ? "Yes" : "No"}</button>
+                    {form.isRecurring && (
+                      <Input value={form.recurrenceLabel || ""} onChange={e => set("recurrenceLabel", e.target.value)}
+                        className={inputClass + " flex-1"} placeholder="Monthly, Weekly, Every 1st Friday…" />
+                    )}
                   </div>
-                  <div>
-                    <label className={labelClass}>Ticket URL</label>
-                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
-                      className={inputClass} placeholder="https://…" />
-                  </div>
+                  {/* Per-occurrence note — visible whenever recurring is toggled on */}
+                  {form.isRecurring && (
+                    <div className="border-2 border-dashed border-black/40 p-2 mt-2" style={{ backgroundColor: "rgba(0,0,0,0.04)" }}>
+                      <label className="font-black text-xs uppercase tracking-wide text-black mb-1 block">
+                        ↻ This occurrence only
+                        {occurrenceDate && (
+                          <span className="font-normal normal-case ml-1 opacity-50">
+                            — {new Date(occurrenceDate + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                          </span>
+                        )}
+                      </label>
+                      <textarea
+                        value={instanceNote}
+                        onChange={e => setInstanceNote(e.target.value)}
+                        rows={2}
+                        className="w-full border-2 border-black/30 bg-white text-sm p-2 resize-none focus:outline-none focus:border-black"
+                        placeholder="Theme, featured guest, topic for this date only…"
+                      />
+                      <p className="text-[10px] text-black/40 mt-0.5">Won't affect other dates in the series.</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -565,6 +589,18 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                         {artCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Price</label>
+                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
+                      className={inputClass} placeholder="$20/person" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Ticket URL</label>
+                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
+                      className={inputClass} placeholder="https://…" />
                   </div>
                 </div>
                 <div>
@@ -590,39 +626,6 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                   </div>
                   {form.selloutRisk && (
                     <p className="text-xs text-gray-500 mt-0.5">{RISK_LABELS[form.selloutRisk]} — {riskPips(form.selloutRisk)}</p>
-                  )}
-                </div>
-                <div>
-                  <label className={labelClass}>Recurring <span className="font-normal normal-case opacity-60">(optional)</span></label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <button type="button"
-                      onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
-                      className="flex items-center gap-1.5 px-3 py-1.5 border-2 text-xs font-black transition-colors"
-                      style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
-                    >↻ {form.isRecurring ? "Yes" : "No"}</button>
-                    {form.isRecurring && (
-                      <Input value={form.recurrenceLabel || ""} onChange={e => set("recurrenceLabel", e.target.value)}
-                        className={inputClass + " flex-1"} placeholder="Monthly, Weekly, Every 1st Friday…" />
-                    )}
-                  </div>
-                  {/* Per-occurrence note — only shown when editing a recurring event occurrence */}
-                  {event.isRecurring && (
-                    <div className="border-2 border-dashed border-black/40 p-2 mt-2" style={{ backgroundColor: "rgba(0,0,0,0.04)" }}>
-                      <label className="font-black text-xs uppercase tracking-wide text-black mb-1 block">
-                        ↻ This occurrence only
-                        <span className="font-normal normal-case ml-1 opacity-50">
-                          — {new Date(occurrenceDate + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                        </span>
-                      </label>
-                      <textarea
-                        value={instanceNote}
-                        onChange={e => setInstanceNote(e.target.value)}
-                        rows={2}
-                        className="w-full border-2 border-black/30 bg-white text-sm p-2 resize-none focus:outline-none focus:border-black"
-                        placeholder="Theme, featured guest, topic for this date only…"
-                      />
-                      <p className="text-[10px] text-black/40 mt-0.5">Won't affect other dates in the series.</p>
-                    </div>
                   )}
                 </div>
               </div>
@@ -918,7 +921,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-4 md:gap-y-0">
 
-              {/* Left column — core identity */}
+              {/* Left column — core identity + scheduling */}
               <div className="space-y-3">
                 <div>
                   <label className={labelClass}>Event Name *</label>
@@ -949,16 +952,19 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                       className={inputClass} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Price</label>
-                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
-                      className={inputClass} placeholder="$20/person" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Ticket URL</label>
-                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
-                      className={inputClass} placeholder="https://…" />
+                {/* Recurring — below dates */}
+                <div>
+                  <label className={labelClass}>Recurring <span className="font-normal normal-case opacity-60">(optional)</span></label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <button type="button"
+                      onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
+                      className="flex items-center gap-1.5 px-3 py-1.5 border-2 text-xs font-black transition-colors"
+                      style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
+                    >↻ {form.isRecurring ? "Yes" : "No"}</button>
+                    {form.isRecurring && (
+                      <Input value={form.recurrenceLabel || ""} onChange={e => set("recurrenceLabel", e.target.value)}
+                        className={inputClass + " flex-1"} placeholder="Monthly, Weekly, Every 1st Friday…" />
+                    )}
                   </div>
                 </div>
               </div>
@@ -981,6 +987,18 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                         {artCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelClass}>Price</label>
+                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
+                      className={inputClass} placeholder="$20/person" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Ticket URL</label>
+                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
+                      className={inputClass} placeholder="https://…" />
                   </div>
                 </div>
                 <div>
@@ -1007,20 +1025,6 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                   {form.selloutRisk && (
                     <p className="text-xs text-gray-500 mt-0.5">{RISK_LABELS[form.selloutRisk]} — {riskPips(form.selloutRisk)}</p>
                   )}
-                </div>
-                <div>
-                  <label className={labelClass}>Recurring <span className="font-normal normal-case opacity-60">(optional)</span></label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <button type="button"
-                      onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
-                      className="flex items-center gap-1.5 px-3 py-1.5 border-2 text-xs font-black transition-colors"
-                      style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
-                    >↻ {form.isRecurring ? "Yes" : "No"}</button>
-                    {form.isRecurring && (
-                      <Input value={form.recurrenceLabel || ""} onChange={e => set("recurrenceLabel", e.target.value)}
-                        className={inputClass + " flex-1"} placeholder="Monthly, Weekly, Every 1st Friday…" />
-                    )}
-                  </div>
                 </div>
               </div>
             </div>
