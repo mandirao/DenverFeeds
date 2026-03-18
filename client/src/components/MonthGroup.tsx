@@ -1,7 +1,6 @@
 import { Event } from "@shared/schema";
 import EventItem from "@/components/EventItem";
 import { formatMonth, getWeekOfMonth } from "@/lib/utils";
-import { format } from "date-fns";
 
 interface MonthGroupProps {
   monthName: string;
@@ -17,27 +16,27 @@ interface MonthGroupProps {
 
 interface WeekProps {
   weekEvents: Event[];
-  isLastWeek: boolean;
   weekNumber: number;
+  totalWeeks: number;
 }
 
-function WeekGroup({ weekEvents, isLastWeek, weekNumber }: WeekProps) {
+function WeekGroup({ weekEvents, weekNumber, totalWeeks }: WeekProps) {
   if (weekEvents.length === 0) return null;
-  
+
   return (
     <div className="relative">
+      {totalWeeks > 1 && (
+        <div className="pt-2 pb-1">
+          <div className="text-black text-sm font-black uppercase">
+            WEEK {weekNumber}
+          </div>
+        </div>
+      )}
       <ul className="list-none pl-0 space-y-2 mb-3">
         {weekEvents.map((event) => (
           <EventItem key={event.id} event={event} />
         ))}
       </ul>
-      {!isLastWeek && (
-        <div className="pt-2 pb-1">
-          <div className="text-black text-sm font-black uppercase">
-            WEEK {weekNumber + 1}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -45,25 +44,23 @@ function WeekGroup({ weekEvents, isLastWeek, weekNumber }: WeekProps) {
 export function MonthGroup({ monthName, events }: MonthGroupProps) {
   if (!events || events.events.length === 0) return null;
 
-  // Extract and sort week keys
   const weekKeys = Object.keys(events.weekGroups).sort();
-  
+
   return (
     <div className="mb-6">
       <h2 className="text-xl text-black mb-3 font-black">{formatMonth(monthName)}</h2>
-      {weekKeys.map((weekKey, index) => {
+      {weekKeys.map((weekKey) => {
         const weekData = events.weekGroups[weekKey];
-        // Calculate week number from the first event in this week
-        const weekNumber = weekData.events.length > 0 
-          ? getWeekOfMonth(new Date(weekData.events[0].date)) 
+        const weekNumber = weekData.events.length > 0
+          ? getWeekOfMonth(new Date(weekData.events[0].date))
           : 1;
-        
+
         return (
-          <WeekGroup 
+          <WeekGroup
             key={weekKey}
             weekEvents={weekData.events}
-            isLastWeek={index === weekKeys.length - 1}
             weekNumber={weekNumber}
+            totalWeeks={weekKeys.length}
           />
         );
       })}
