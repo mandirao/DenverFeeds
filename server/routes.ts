@@ -1520,6 +1520,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI content refresh for art events
+  app.post("/api/ai/redo-art-event-content", async (req, res) => {
+    try {
+      const { name, venue, category, isRecurring, recurrenceLabel, dateStart, currentSummary, currentInstanceNote } = req.body;
+      if (!name) return res.status(400).json({ message: "Event name is required" });
+      const result = await llmService.redoArtEventAI({
+        name: name || "",
+        venue: venue || "",
+        category: category || "",
+        isRecurring: !!isRecurring,
+        recurrenceLabel: recurrenceLabel || "",
+        dateStart: dateStart || "",
+        currentSummary: currentSummary || "",
+        currentInstanceNote: currentInstanceNote || "",
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("Redo AI content error:", error);
+      res.status(500).json({ message: "Failed to refresh AI content" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

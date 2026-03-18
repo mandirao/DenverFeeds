@@ -389,6 +389,7 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
   const { toast } = useToast();
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [errorField, setErrorField] = useState<string | null>(null);
+  const [redoLoading, setRedoLoading] = useState(false);
   const occurrenceDate = event.dateStart;
   const [instanceNote, setInstanceNote] = useState<string>(
     (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? ""
@@ -461,6 +462,45 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
   const handleClose = () => {
     if (isDirty()) setShowConfirmClose(true);
     else onClose();
+  };
+
+  const handleRedoAI = async () => {
+    if (!form.name) {
+      toast({ title: "Event name required", variant: "destructive" });
+      return;
+    }
+    setRedoLoading(true);
+    try {
+      const res = await apiRequest({
+        endpoint: "/api/ai/redo-art-event-content",
+        method: "POST",
+        data: {
+          name: form.name,
+          venue: form.venue,
+          category: form.category,
+          isRecurring: form.isRecurring,
+          recurrenceLabel: form.recurrenceLabel,
+          dateStart: form.dateStart,
+          currentSummary: form.summary,
+          currentInstanceNote: instanceNote,
+        },
+      });
+      if (res.status === "no-info") {
+        if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
+        toast({
+          title: "Description polished ✓",
+          description: `No new occurrence details found yet — ${res.message}`,
+        });
+      } else {
+        if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
+        if (res.instanceNote !== undefined) setInstanceNote(res.instanceNote || "");
+        toast({ title: "Content refreshed ✨", description: "Description updated with latest details." });
+      }
+    } catch (e: any) {
+      toast({ title: "AI refresh failed", description: e?.message || "Something went wrong.", variant: "destructive" });
+    } finally {
+      setRedoLoading(false);
+    }
   };
 
   const inputClass = "border-2 border-black rounded-none bg-white text-sm";
@@ -633,7 +673,14 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
 
             {/* Description — full width at bottom */}
             <div>
-              <label className={labelClass}>Description <span className="font-normal normal-case opacity-60">(recommended)</span></label>
+              <div className="flex items-center justify-between mb-0.5">
+                <label className={labelClass + " mb-0"}>Description <span className="font-normal normal-case opacity-60">(recommended)</span></label>
+                <button type="button" onClick={handleRedoAI} disabled={redoLoading}
+                  className="flex items-center gap-1 px-2.5 py-1 border-2 border-black bg-white text-xs font-black uppercase tracking-wide hover:bg-black hover:text-[#41F2EE] transition-colors disabled:opacity-40"
+                  title={form.isRecurring ? "Search for this occurrence's latest details + polish description" : "Polish description with latest web info"}>
+                  {redoLoading ? "Searching…" : "✨ Refresh AI"}
+                </button>
+              </div>
               <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
                 className={`${inputClass} resize-none`} rows={3} maxLength={200}
                 placeholder="Smart, specific snapshot of the event." />
@@ -678,6 +725,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const [imageFileName, setImageFileName] = useState<string | null>(null);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [errorField, setErrorField] = useState<string | null>(null);
+  const [redoLoading, setRedoLoading] = useState(false);
   const { toast } = useToast();
 
   const switchMode = (mode: "screenshot" | "blurb") => {
@@ -784,6 +832,45 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const handleClose = () => {
     if (hasContent()) setShowConfirmClose(true);
     else forceClose();
+  };
+
+  const handleRedoAI = async () => {
+    if (!form.name) {
+      toast({ title: "Event name required", variant: "destructive" });
+      return;
+    }
+    setRedoLoading(true);
+    try {
+      const res = await apiRequest({
+        endpoint: "/api/ai/redo-art-event-content",
+        method: "POST",
+        data: {
+          name: form.name,
+          venue: form.venue,
+          category: form.category,
+          isRecurring: form.isRecurring,
+          recurrenceLabel: form.recurrenceLabel,
+          dateStart: form.dateStart,
+          currentSummary: form.summary,
+          currentInstanceNote: instanceNote,
+        },
+      });
+      if (res.status === "no-info") {
+        if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
+        toast({
+          title: "Description polished ✓",
+          description: `No new occurrence details found yet — ${res.message}`,
+        });
+      } else {
+        if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
+        if (res.instanceNote !== undefined) setInstanceNote(res.instanceNote || "");
+        toast({ title: "Content refreshed ✨", description: "Description updated with latest details." });
+      }
+    } catch (e: any) {
+      toast({ title: "AI refresh failed", description: e?.message || "Something went wrong.", variant: "destructive" });
+    } finally {
+      setRedoLoading(false);
+    }
   };
 
   const inputClass = "border-2 border-black rounded-none bg-white text-sm";
@@ -1057,7 +1144,14 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
             {/* Description — full width at bottom, easy to review after AI parse */}
             <div>
-              <label className={labelClass}>Description <span className="font-normal normal-case opacity-60">(recommended)</span></label>
+              <div className="flex items-center justify-between mb-0.5">
+                <label className={labelClass + " mb-0"}>Description <span className="font-normal normal-case opacity-60">(recommended)</span></label>
+                <button type="button" onClick={handleRedoAI} disabled={redoLoading}
+                  className="flex items-center gap-1 px-2.5 py-1 border-2 border-black bg-white text-xs font-black uppercase tracking-wide hover:bg-black hover:text-[#41F2EE] transition-colors disabled:opacity-40"
+                  title={form.isRecurring ? "Search for this occurrence's latest details + polish description" : "Polish description with latest web info"}>
+                  {redoLoading ? "Searching…" : "✨ Refresh AI"}
+                </button>
+              </div>
               <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
                 className={`${inputClass} resize-none`} rows={3} maxLength={200}
                 placeholder="Smart, specific snapshot — what it is, who's behind it, why it's worth noting." />

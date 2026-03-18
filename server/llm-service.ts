@@ -703,6 +703,112 @@ Return ONLY valid JSON (no markdown):
     };
   }
 
+  async redoArtEventAI(params: {
+    name: string;
+    venue: string;
+    category: string;
+    isRecurring: boolean;
+    recurrenceLabel: string;
+    dateStart: string;
+    currentSummary: string;
+    currentInstanceNote: string;
+  }): Promise<{
+    status: 'updated' | 'no-info';
+    summary?: string;
+    instanceNote?: string;
+    message?: string;
+  }> {
+    const client = new Anthropic({ apiKey: this.apiKey });
+    const { name, venue, category, isRecurring, recurrenceLabel, dateStart, currentSummary, currentInstanceNote } = params;
+
+    const dateLabel = dateStart
+      ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : '';
+    const monthYear = dateStart
+      ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      : '';
+
+    const searchQueries: string[] = [];
+    if (name && venue) searchQueries.push(`"${name}" "${venue}" Denver`);
+    else if (name) searchQueries.push(`"${name}" Denver event`);
+    if (isRecurring && monthYear) {
+      searchQueries.push(`"${name}" ${monthYear} Denver`);
+      if (venue) searchQueries.push(`"${venue}" ${monthYear}`);
+    } else if (monthYear && name) {
+      searchQueries.push(`"${name}" ${monthYear}`);
+    }
+
+    const searchResults = await Promise.all(searchQueries.map(q => this.serperSearch(q, 4)));
+    const searchContext = searchQueries.map((q, i) => {
+      const snippets = searchResults[i].map(r => `• ${r.title}: ${r.snippet}`).join('\n');
+      return `Search: "${q}"\n${snippets || '(no results)'}`;
+    }).join('\n\n');
+
+    const prompt = `You are improving an event listing for Artistry & Nerdery Live, a Denver/Boulder cultural event newsletter.
+
+EVENT DETAILS:
+- Name: ${name}
+- Venue: ${venue}
+- Category: ${category}
+- Date: ${dateLabel || 'unknown'}
+- Recurring: ${isRecurring ? `Yes — ${recurrenceLabel || 'recurring series'}` : 'No (one-time event)'}
+- Current description: "${currentSummary || '(none yet)'}"
+${isRecurring ? `- Current occurrence note: "${currentInstanceNote || '(none yet)'}"` : ''}
+
+WEB SEARCH RESULTS:
+${searchContext || '(no results found)'}
+
+TASK A — IMPROVE THE DESCRIPTION:
+Rewrite the description to be specific, sensory, and compelling. Max 200 chars.
+Voice: smart and curious, not academic. Like a knowledgeable friend, not a press release.
+No hype ("amazing," "incredible," "don't miss"). Lead with what makes this worth attending.
+Use real names of performers/speakers/artists if found in search results.
+If the current description is already excellent and nothing new was found, you may keep it as-is.
+
+${isRecurring ? `TASK B — FIND OCCURRENCE-SPECIFIC DETAILS:
+This is a recurring event. Look in the search results for specifics about THIS occurrence on ${dateLabel}:
+- Who is speaking/performing/guesting this month
+- What book/topic/theme is featured this time
+- Any special guest or one-time element
+
+If you found concrete details about THIS specific occurrence → put them in occurrenceNote (max 120 chars, e.g. "March: reading 'Tomorrow and Tomorrow' by Gabrielle Zevin").
+If results only contain generic series info with nothing specific to this date → set occurrenceNote to null and noNewInfo to true.
+If no search results at all → set occurrenceNote to null and noNewInfo to true.` : ''}
+
+Return ONLY valid JSON (no markdown):
+{
+  "summary": "improved description max 200 chars",${isRecurring ? `
+  "occurrenceNote": "specific detail for this date only max 120 chars, or null",
+  "noNewInfo": true or false,
+  "noNewInfoReason": "brief reason if noNewInfo is true, else empty string"` : `
+  "noNewInfo": false`}
+}`;
+
+    const message = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 500,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const raw = message.content[0].type === 'text' ? message.content[0].text : '{}';
+    const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const result = JSON.parse(cleaned);
+
+    if (isRecurring && result.noNewInfo) {
+      return {
+        status: 'no-info',
+        summary: (result.summary || currentSummary || '').substring(0, 200),
+        message: result.noNewInfoReason || 'No specific details for this occurrence found yet — check back closer to the date.',
+      };
+    }
+
+    return {
+      status: 'updated',
+      summary: (result.summary || currentSummary || '').substring(0, 200),
+      instanceNote: isRecurring ? (result.occurrenceNote ?? undefined) : undefined,
+    };
+  }
+
   private validateDate(dateString: string): string | null {
     if (!dateString) return null;
 
