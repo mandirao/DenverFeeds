@@ -669,6 +669,7 @@ const BLANK: Partial<InsertArtEvent> = {
 function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [blurb, setBlurb] = useState("");
   const [form, setForm] = useState<Partial<InsertArtEvent>>(BLANK);
+  const [instanceNote, setInstanceNote] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [inputMode, setInputMode] = useState<"screenshot" | "blurb">("screenshot");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -753,7 +754,11 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
       setTimeout(() => document.getElementById(`add-an-${missing.field}`)?.focus(), 50);
       return;
     }
-    createMutation.mutate(form as InsertArtEvent);
+    const payload: InsertArtEvent = { ...(form as InsertArtEvent) };
+    if (form.isRecurring && instanceNote.trim() && form.dateStart) {
+      payload.instanceNotes = { [form.dateStart]: instanceNote.trim() };
+    }
+    createMutation.mutate(payload);
   };
 
   const hasContent = () => {
@@ -765,6 +770,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     onClose();
     setBlurb("");
     setForm(BLANK);
+    setInstanceNote("");
     setShowForm(false);
     setInputMode("screenshot");
     setImagePreview(null);
@@ -966,6 +972,26 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                         className={inputClass + " flex-1"} placeholder="Monthly, Weekly, Every 1st Friday…" />
                     )}
                   </div>
+                  {form.isRecurring && (
+                    <div className="border-2 border-dashed border-black/40 p-2 mt-2" style={{ backgroundColor: "rgba(0,0,0,0.04)" }}>
+                      <label className="font-black text-xs uppercase tracking-wide text-black mb-1 block">
+                        ↻ This occurrence only
+                        {form.dateStart && (
+                          <span className="font-normal normal-case ml-1 opacity-50">
+                            — {new Date(form.dateStart + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                          </span>
+                        )}
+                      </label>
+                      <textarea
+                        value={instanceNote}
+                        onChange={e => setInstanceNote(e.target.value)}
+                        rows={2}
+                        className="w-full border-2 border-black/30 bg-white text-sm p-2 resize-none focus:outline-none focus:border-black"
+                        placeholder="Theme, featured guest, topic for this date only…"
+                      />
+                      <p className="text-[10px] text-black/40 mt-0.5">Won't affect other dates in the series.</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
