@@ -1245,6 +1245,7 @@ export default function ArtistryNerdery() {
   const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
   const [calEventDetail, setCalEventDetail] = useState<ArtEvent | null>(null);
   const [calDaySheet, setCalDaySheet] = useState<{ date: string; events: ArtEvent[] } | null>(null);
+  const [sortBy, setSortBy] = useState<"date" | "added">("date");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterDay, setFilterDay] = useState("all");
   const [filterDuration, setFilterDuration] = useState("all");
@@ -1264,9 +1265,10 @@ export default function ArtistryNerdery() {
 
   const expandedEvents = expandRecurringEvents(events);
 
-  const hasActiveFilters = filterCategory !== "all" || filterDay !== "all" || filterDuration !== "all";
+  const hasActiveFilters = sortBy !== "date" || filterCategory !== "all" || filterDay !== "all" || filterDuration !== "all";
 
   const resetFilters = () => {
+    setSortBy("date");
     setFilterCategory("all");
     setFilterDay("all");
     setFilterDuration("all");
@@ -1366,6 +1368,28 @@ export default function ArtistryNerdery() {
         {/* Filters */}
         {!isLoading && events.length > 0 && (
           <div className="mb-5">
+            {/* Sort pills */}
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={() => setSortBy("date")}
+                className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
+                  sortBy === "date" ? "bg-black text-white" : "text-black hover:border-white"
+                }`}
+                style={{ backgroundColor: sortBy === "date" ? "black" : AN_BG }}
+              >
+                Show All
+              </button>
+              <button
+                onClick={() => setSortBy("added")}
+                className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
+                  sortBy === "added" ? "bg-black text-white" : "text-black hover:border-white"
+                }`}
+                style={{ backgroundColor: sortBy === "added" ? "black" : AN_BG }}
+              >
+                Recently Added
+              </button>
+            </div>
+
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
                 {/* Category filter */}
@@ -1494,7 +1518,17 @@ export default function ArtistryNerdery() {
           />
         )}
 
-        {viewMode === "list" && Object.entries(grouped).map(([month, monthData]) => {
+        {viewMode === "list" && sortBy === "added" && (
+          <ul className="space-y-0">
+            {[...filteredEvents]
+              .sort((a, b) => b.id - a.id)
+              .map(ev => (
+                <ArtEventRow key={`${ev.id}-${ev.dateStart}`} event={ev} />
+              ))}
+          </ul>
+        )}
+
+        {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => {
           const weekKeys = Object.keys(monthData.weekGroups).sort();
           return (
             <div key={month} className="mb-6">
