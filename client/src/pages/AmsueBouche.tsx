@@ -370,19 +370,20 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
 
 // ── Edit Food Event Modal ──────────────────────────────────────────────────────
 
-function getMissingField(form: Partial<InsertFoodEvent>): string | null {
-  if (!form.emoji?.trim())     return "Emoji";
-  if (!form.name?.trim())      return "Event name";
-  if (!form.venue?.trim())     return "Venue / restaurant";
-  if (!form.dateStart?.trim()) return "Start date";
-  if (!form.cuisine?.trim())   return "Cuisine type";
-  if (!form.requester?.trim()) return "Your name";
+function getMissingField(form: Partial<InsertFoodEvent>): { field: string; label: string } | null {
+  if (!form.requester?.trim()) return { field: "requester", label: "Your name" };
+  if (!form.name?.trim())      return { field: "name",      label: "Event name" };
+  if (!form.venue?.trim())     return { field: "venue",     label: "Venue / restaurant" };
+  if (!form.dateStart?.trim()) return { field: "dateStart", label: "Start date" };
+  if (!form.emoji?.trim())     return { field: "emoji",     label: "Emoji" };
+  if (!form.cuisine?.trim())   return { field: "cuisine",   label: "Cuisine type" };
   return null;
 }
 
 function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () => void }) {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const [errorField, setErrorField] = useState<string | null>(null);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [form, setForm] = useState<Partial<InsertFoodEvent>>({
     emoji: event.emoji || "",
@@ -401,8 +402,10 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
     selloutRisk: event.selloutRisk ?? undefined,
   });
 
-  const set = (field: keyof InsertFoodEvent, value: string) =>
+  const set = (field: keyof InsertFoodEvent, value: string) => {
+    setErrorField(null);
     setForm(f => ({ ...f, [field]: value }));
+  };
 
   const hasChanges = () => {
     const keys = ['emoji', 'name', 'venue', 'neighborhood', 'dateStart', 'dateEnd', 'summary', 'cuisine', 'price', 'ticketUrl', 'sourceUrl', 'requester', 'announcedAt'] as const;
@@ -432,7 +435,9 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
     e.preventDefault();
     const missing = getMissingField(form);
     if (missing) {
-      toast({ title: `${missing} is required`, variant: "destructive" });
+      setErrorField(missing.field);
+      toast({ title: `${missing.label} is required`, variant: "destructive" });
+      setTimeout(() => document.getElementById(`edit-ab-${missing.field}`)?.focus(), 50);
       return;
     }
     updateMutation.mutate(form);
@@ -440,6 +445,7 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
 
   const inputClass = "border-2 border-black rounded-none bg-white text-sm";
   const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
+  const fieldErr = (f: string) => errorField === f ? " !border-red-500 ring-2 ring-red-200" : "";
 
   return (
     <>
@@ -612,6 +618,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const [imageMediaType, setImageMediaType] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const [errorField, setErrorField] = useState<string | null>(null);
   const { toast } = useToast();
 
   const switchMode = (mode: "screenshot" | "blurb") => {
@@ -625,8 +632,10 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     }
   };
 
-  const set = (field: keyof InsertFoodEvent, value: string) =>
+  const set = (field: keyof InsertFoodEvent, value: string) => {
+    setErrorField(null);
     setForm(f => ({ ...f, [field]: value }));
+  };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -682,7 +691,9 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     e.preventDefault();
     const missing = getMissingField(form);
     if (missing) {
-      toast({ title: `${missing} is required`, variant: "destructive" });
+      setErrorField(missing.field);
+      toast({ title: `${missing.label} is required`, variant: "destructive" });
+      setTimeout(() => document.getElementById(`add-ab-${missing.field}`)?.focus(), 50);
       return;
     }
     createMutation.mutate(form as InsertFoodEvent);
@@ -704,6 +715,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     setImageMediaType(null);
     setImageFileName(null);
     setShowConfirmClose(false);
+    setErrorField(null);
   };
 
   const handleClose = () => {
@@ -713,6 +725,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
   const inputClass = "border-2 border-black rounded-none bg-white text-sm";
   const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
+  const fieldErr = (f: string) => errorField === f ? " !border-red-500 ring-2 ring-red-200" : "";
 
   return (
     <>
@@ -830,39 +843,39 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-4">
 
-            {/* ── Back to AI ── */}
+            {/* Use AI instead — visible button */}
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="flex items-center gap-1.5 text-xs font-semibold text-black opacity-50 hover:opacity-100 transition-opacity"
+              className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide border border-black px-3 py-1.5 bg-white hover:bg-black hover:text-white transition-colors"
             >
               <Sparkles className="w-3 h-3" />
-              Use AI instead
+              ← Use AI instead
             </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-3 md:gap-y-0">
+            {/* Your Name — always first */}
+            <div>
+              <label className={labelClass}>Your Name *</label>
+              <Input id="add-ab-requester" value={form.requester || ""} onChange={e => set("requester", e.target.value)}
+                className={inputClass + fieldErr("requester")} placeholder="Mandi" />
+            </div>
 
-              {/* ── Left column ── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-4 md:gap-y-0">
+
+              {/* Left column — core identity */}
               <div className="space-y-3">
                 <div>
-                  <label className={labelClass}>Description *</label>
-                  <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-                    className={`${inputClass} resize-none`} rows={4} maxLength={200}
-                    placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
-                  <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
-                </div>
-                <div>
                   <label className={labelClass}>Event Name *</label>
-                  <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
-                    className={inputClass} placeholder="Hot Pot Pop-Up Nights" />
+                  <Input id="add-ab-name" value={form.name || ""} onChange={e => set("name", e.target.value)}
+                    className={inputClass + fieldErr("name")} placeholder="Hot Pot Pop-Up Nights" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className={labelClass}>Venue / Restaurant *</label>
-                    <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
-                      className={inputClass} placeholder="Hop Alley" />
+                    <Input id="add-ab-venue" value={form.venue || ""} onChange={e => set("venue", e.target.value)}
+                      className={inputClass + fieldErr("venue")} placeholder="Hop Alley" />
                   </div>
                   <div>
                     <label className={labelClass}>Neighborhood</label>
@@ -873,8 +886,8 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className={labelClass}>Start Date *</label>
-                    <Input type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
-                      className={inputClass} />
+                    <Input id="add-ab-dateStart" type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
+                      className={inputClass + fieldErr("dateStart")} />
                   </div>
                   <div>
                     <label className={labelClass}>End Date</label>
@@ -884,18 +897,18 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                 </div>
               </div>
 
-              {/* ── Right column ── */}
+              {/* Right column — metadata */}
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className={labelClass}>Emoji *</label>
-                    <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
-                      className={inputClass} placeholder="🫕" />
+                    <Input id="add-ab-emoji" value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
+                      className={inputClass + fieldErr("emoji")} placeholder="🫕" />
                   </div>
                   <div>
                     <label className={labelClass}>Cuisine *</label>
-                    <Select value={form.cuisine || ""} onValueChange={v => set("cuisine", v)}>
-                      <SelectTrigger className={inputClass}>
+                    <Select value={form.cuisine || ""} onValueChange={v => { setErrorField(null); set("cuisine", v); }}>
+                      <SelectTrigger id="add-ab-cuisine" className={inputClass + fieldErr("cuisine")}>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -922,11 +935,6 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                     className={inputClass} placeholder="https://instagram.com/p/… or eventbrite link" />
                 </div>
                 <div>
-                  <label className={labelClass}>Your Name *</label>
-                  <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
-                    className={inputClass} placeholder="Mandi" />
-                </div>
-                <div>
                   <label className={labelClass}>Announced <span className="font-normal normal-case opacity-60">(optional)</span></label>
                   <Input type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt", e.target.value)}
                     className={inputClass} />
@@ -935,19 +943,11 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                   <label className={labelClass}>Sellout Risk <span className="font-normal normal-case opacity-60">(optional)</span></label>
                   <div className="flex gap-1.5 mt-1">
                     {[1,2,3,4,5].map(n => (
-                      <button
-                        key={n}
-                        type="button"
+                      <button key={n} type="button"
                         onClick={() => setForm(f => ({ ...f, selloutRisk: f.selloutRisk === n ? undefined : n }))}
                         className="flex-1 py-1 border-2 text-xs font-black transition-colors"
-                        style={{
-                          borderColor: "black",
-                          backgroundColor: form.selloutRisk === n ? "black" : "white",
-                          color: form.selloutRisk === n ? "white" : "black",
-                        }}
-                      >
-                        {n}
-                      </button>
+                        style={{ borderColor: "black", backgroundColor: form.selloutRisk === n ? "black" : "white", color: form.selloutRisk === n ? "white" : "black" }}
+                      >{n}</button>
                     ))}
                   </div>
                   {form.selloutRisk && (
@@ -955,6 +955,15 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Description — full width at bottom, easy to review after AI parse */}
+            <div>
+              <label className={labelClass}>Description <span className="font-normal normal-case opacity-60">(recommended)</span></label>
+              <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
+                className={`${inputClass} resize-none`} rows={3} maxLength={200}
+                placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
+              <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
             </div>
 
             <div className="flex gap-2 pt-1">

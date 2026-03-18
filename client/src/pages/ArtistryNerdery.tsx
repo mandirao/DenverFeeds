@@ -374,13 +374,13 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
 
 // ── Edit Art Event Modal ───────────────────────────────────────────────────────
 
-function getMissingField(form: Partial<InsertArtEvent>): string | null {
-  if (!form.emoji?.trim())     return "Emoji";
-  if (!form.name?.trim())      return "Event name";
-  if (!form.venue?.trim())     return "Venue";
-  if (!form.dateStart?.trim()) return "Start date";
-  if (!form.category?.trim())  return "Category";
-  if (!form.requester?.trim()) return "Your name";
+function getMissingField(form: Partial<InsertArtEvent>): { field: string; label: string } | null {
+  if (!form.requester?.trim()) return { field: "requester", label: "Your name" };
+  if (!form.name?.trim())      return { field: "name",      label: "Event name" };
+  if (!form.venue?.trim())     return { field: "venue",     label: "Venue" };
+  if (!form.dateStart?.trim()) return { field: "dateStart", label: "Start date" };
+  if (!form.emoji?.trim())     return { field: "emoji",     label: "Emoji" };
+  if (!form.category?.trim())  return { field: "category",  label: "Category" };
   return null;
 }
 
@@ -388,6 +388,7 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
   const qc = useQueryClient();
   const { toast } = useToast();
   const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const [errorField, setErrorField] = useState<string | null>(null);
   const occurrenceDate = event.dateStart;
   const [instanceNote, setInstanceNote] = useState<string>(
     (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? ""
@@ -411,8 +412,10 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
     recurrenceLabel: event.recurrenceLabel || "",
   });
 
-  const set = (field: keyof InsertArtEvent, value: string) =>
+  const set = (field: keyof InsertArtEvent, value: string) => {
+    setErrorField(null);
     setForm(f => ({ ...f, [field]: value }));
+  };
 
   const isDirty = () => {
     const keys: (keyof InsertArtEvent)[] = ["emoji", "name", "venue", "neighborhood", "dateStart", "dateEnd", "summary", "category", "price", "ticketUrl", "sourceUrl", "requester", "announcedAt", "recurrenceLabel"];
@@ -440,7 +443,9 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
     e.preventDefault();
     const missing = getMissingField(form);
     if (missing) {
-      toast({ title: `${missing} is required`, variant: "destructive" });
+      setErrorField(missing.field);
+      toast({ title: `${missing.label} is required`, variant: "destructive" });
+      setTimeout(() => document.getElementById(`edit-an-${missing.field}`)?.focus(), 50);
       return;
     }
     const existingNotes = (event.instanceNotes as Record<string, string> | null | undefined) ?? {};
@@ -460,6 +465,7 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
 
   const inputClass = "border-2 border-black rounded-none bg-white text-sm";
   const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
+  const fieldErr = (f: string) => errorField === f ? " !border-red-500 ring-2 ring-red-200" : "";
 
   return (
     <>
@@ -486,27 +492,28 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-3">
+
+            {/* Your Name — always first */}
+            <div>
+              <label className={labelClass}>Your Name *</label>
+              <Input id="edit-an-requester" value={form.requester || ""} onChange={e => set("requester", e.target.value)}
+                className={inputClass + fieldErr("requester")} placeholder="Mandi" />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-3 md:gap-y-0">
 
-              {/* Left column */}
+              {/* Left column — core identity */}
               <div className="space-y-3">
                 <div>
-                  <label className={labelClass}>Description *</label>
-                  <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-                    className={`${inputClass} resize-none`} rows={4} maxLength={200}
-                    placeholder="Smart, specific snapshot of the event." />
-                  <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
-                </div>
-                <div>
                   <label className={labelClass}>Event Name *</label>
-                  <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
-                    className={inputClass} />
+                  <Input id="edit-an-name" value={form.name || ""} onChange={e => set("name", e.target.value)}
+                    className={inputClass + fieldErr("name")} />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className={labelClass}>Venue *</label>
-                    <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
-                      className={inputClass} />
+                    <Input id="edit-an-venue" value={form.venue || ""} onChange={e => set("venue", e.target.value)}
+                      className={inputClass + fieldErr("venue")} />
                   </div>
                   <div>
                     <label className={labelClass}>Neighborhood</label>
@@ -517,8 +524,8 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className={labelClass}>Start Date *</label>
-                    <Input type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
-                      className={inputClass} />
+                    <Input id="edit-an-dateStart" type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
+                      className={inputClass + fieldErr("dateStart")} />
                   </div>
                   <div>
                     <label className={labelClass}>End Date</label>
@@ -528,18 +535,18 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                 </div>
               </div>
 
-              {/* Right column */}
+              {/* Right column — metadata */}
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className={labelClass}>Emoji *</label>
-                    <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
-                      className={inputClass} placeholder="🎨" />
+                    <Input id="edit-an-emoji" value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
+                      className={inputClass + fieldErr("emoji")} placeholder="🎨" />
                   </div>
                   <div>
                     <label className={labelClass}>Category *</label>
-                    <Select value={form.category || ""} onValueChange={v => set("category", v)}>
-                      <SelectTrigger className={inputClass}>
+                    <Select value={form.category || ""} onValueChange={v => { setErrorField(null); set("category", v); }}>
+                      <SelectTrigger id="edit-an-category" className={inputClass + fieldErr("category")}>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -566,11 +573,6 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                     className={inputClass} placeholder="https://instagram.com/p/…" />
                 </div>
                 <div>
-                  <label className={labelClass}>Your Name *</label>
-                  <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
-                    className={inputClass} />
-                </div>
-                <div>
                   <label className={labelClass}>Announced <span className="font-normal normal-case opacity-60">(optional)</span></label>
                   <Input type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt", e.target.value)}
                     className={inputClass} />
@@ -579,19 +581,11 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                   <label className={labelClass}>Sellout Risk <span className="font-normal normal-case opacity-60">(optional)</span></label>
                   <div className="flex gap-1.5 mt-1">
                     {[1,2,3,4,5].map(n => (
-                      <button
-                        key={n}
-                        type="button"
+                      <button key={n} type="button"
                         onClick={() => setForm(f => ({ ...f, selloutRisk: f.selloutRisk === n ? undefined : n }))}
                         className="flex-1 py-1 border-2 text-xs font-black transition-colors"
-                        style={{
-                          borderColor: "black",
-                          backgroundColor: form.selloutRisk === n ? "black" : "white",
-                          color: form.selloutRisk === n ? "white" : "black",
-                        }}
-                      >
-                        {n}
-                      </button>
+                        style={{ borderColor: "black", backgroundColor: form.selloutRisk === n ? "black" : "white", color: form.selloutRisk === n ? "white" : "black" }}
+                      >{n}</button>
                     ))}
                   </div>
                   {form.selloutRisk && (
@@ -601,25 +595,27 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                 <div>
                   <label className={labelClass}>Recurring <span className="font-normal normal-case opacity-60">(optional)</span></label>
                   <div className="flex items-center gap-2 mt-1">
-                    <button
-                      type="button"
+                    <button type="button"
                       onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
                       className="flex items-center gap-1.5 px-3 py-1.5 border-2 text-xs font-black transition-colors"
                       style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
-                    >
-                      ↻ {form.isRecurring ? "Yes" : "No"}
-                    </button>
+                    >↻ {form.isRecurring ? "Yes" : "No"}</button>
                     {form.isRecurring && (
-                      <Input
-                        value={form.recurrenceLabel || ""}
-                        onChange={e => set("recurrenceLabel", e.target.value)}
-                        className={inputClass + " flex-1"}
-                        placeholder="Monthly, Weekly, Every 1st Friday…"
-                      />
+                      <Input value={form.recurrenceLabel || ""} onChange={e => set("recurrenceLabel", e.target.value)}
+                        className={inputClass + " flex-1"} placeholder="Monthly, Weekly, Every 1st Friday…" />
                     )}
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Description — full width at bottom */}
+            <div>
+              <label className={labelClass}>Description <span className="font-normal normal-case opacity-60">(recommended)</span></label>
+              <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
+                className={`${inputClass} resize-none`} rows={3} maxLength={200}
+                placeholder="Smart, specific snapshot of the event." />
+              <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
             </div>
 
             {event.isRecurring && (
@@ -679,6 +675,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const [imageMediaType, setImageMediaType] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const [errorField, setErrorField] = useState<string | null>(null);
   const { toast } = useToast();
 
   const switchMode = (mode: "screenshot" | "blurb") => {
@@ -692,8 +689,10 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     }
   };
 
-  const set = (field: keyof InsertArtEvent, value: string) =>
+  const set = (field: keyof InsertArtEvent, value: string) => {
+    setErrorField(null);
     setForm(f => ({ ...f, [field]: value }));
+  };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -748,7 +747,9 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     e.preventDefault();
     const missing = getMissingField(form);
     if (missing) {
-      toast({ title: `${missing} is required`, variant: "destructive" });
+      setErrorField(missing.field);
+      toast({ title: `${missing.label} is required`, variant: "destructive" });
+      setTimeout(() => document.getElementById(`add-an-${missing.field}`)?.focus(), 50);
       return;
     }
     createMutation.mutate(form as InsertArtEvent);
@@ -770,6 +771,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     setImageMediaType(null);
     setImageFileName(null);
     setShowConfirmClose(false);
+    setErrorField(null);
   };
 
   const handleClose = () => {
@@ -779,6 +781,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
   const inputClass = "border-2 border-black rounded-none bg-white text-sm";
   const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
+  const fieldErr = (f: string) => errorField === f ? " !border-red-500 ring-2 ring-red-200" : "";
 
   return (
     <>
@@ -896,38 +899,39 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-4">
 
+            {/* Use AI instead — visible button */}
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="flex items-center gap-1.5 text-xs font-semibold text-black opacity-50 hover:opacity-100 transition-opacity"
+              className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide border border-black px-3 py-1.5 bg-white hover:bg-black hover:text-white transition-colors"
             >
               <Sparkles className="w-3 h-3" />
-              Use AI instead
+              ← Use AI instead
             </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-3 md:gap-y-0">
+            {/* Your Name — always first */}
+            <div>
+              <label className={labelClass}>Your Name *</label>
+              <Input id="add-an-requester" value={form.requester || ""} onChange={e => set("requester", e.target.value)}
+                className={inputClass + fieldErr("requester")} placeholder="Mandi" />
+            </div>
 
-              {/* Left column */}
+            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-4 md:gap-y-0">
+
+              {/* Left column — core identity */}
               <div className="space-y-3">
                 <div>
-                  <label className={labelClass}>Description *</label>
-                  <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-                    className={`${inputClass} resize-none`} rows={4} maxLength={200}
-                    placeholder="Smart, specific snapshot — what it is, who's behind it, why it's worth noting." />
-                  <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
-                </div>
-                <div>
                   <label className={labelClass}>Event Name *</label>
-                  <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
-                    className={inputClass} placeholder="Saturn at Opposition" />
+                  <Input id="add-an-name" value={form.name || ""} onChange={e => set("name", e.target.value)}
+                    className={inputClass + fieldErr("name")} placeholder="Saturn at Opposition" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className={labelClass}>Venue *</label>
-                    <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
-                      className={inputClass} placeholder="Denver Art Museum" />
+                    <Input id="add-an-venue" value={form.venue || ""} onChange={e => set("venue", e.target.value)}
+                      className={inputClass + fieldErr("venue")} placeholder="Denver Art Museum" />
                   </div>
                   <div>
                     <label className={labelClass}>Neighborhood</label>
@@ -938,8 +942,8 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className={labelClass}>Start Date *</label>
-                    <Input type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
-                      className={inputClass} />
+                    <Input id="add-an-dateStart" type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
+                      className={inputClass + fieldErr("dateStart")} />
                   </div>
                   <div>
                     <label className={labelClass}>End Date</label>
@@ -949,18 +953,18 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                 </div>
               </div>
 
-              {/* Right column */}
+              {/* Right column — metadata */}
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className={labelClass}>Emoji *</label>
-                    <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
-                      className={inputClass} placeholder="🎨" />
+                    <Input id="add-an-emoji" value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
+                      className={inputClass + fieldErr("emoji")} placeholder="🎨" />
                   </div>
                   <div>
                     <label className={labelClass}>Category *</label>
-                    <Select value={form.category || ""} onValueChange={v => set("category", v)}>
-                      <SelectTrigger className={inputClass}>
+                    <Select value={form.category || ""} onValueChange={v => { setErrorField(null); set("category", v); }}>
+                      <SelectTrigger id="add-an-category" className={inputClass + fieldErr("category")}>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -987,11 +991,6 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                     className={inputClass} placeholder="https://instagram.com/p/…" />
                 </div>
                 <div>
-                  <label className={labelClass}>Your Name *</label>
-                  <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
-                    className={inputClass} placeholder="Mandi" />
-                </div>
-                <div>
                   <label className={labelClass}>Announced <span className="font-normal normal-case opacity-60">(optional)</span></label>
                   <Input type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt", e.target.value)}
                     className={inputClass} />
@@ -1000,19 +999,11 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                   <label className={labelClass}>Sellout Risk <span className="font-normal normal-case opacity-60">(optional)</span></label>
                   <div className="flex gap-1.5 mt-1">
                     {[1,2,3,4,5].map(n => (
-                      <button
-                        key={n}
-                        type="button"
+                      <button key={n} type="button"
                         onClick={() => setForm(f => ({ ...f, selloutRisk: f.selloutRisk === n ? undefined : n }))}
                         className="flex-1 py-1 border-2 text-xs font-black transition-colors"
-                        style={{
-                          borderColor: "black",
-                          backgroundColor: form.selloutRisk === n ? "black" : "white",
-                          color: form.selloutRisk === n ? "white" : "black",
-                        }}
-                      >
-                        {n}
-                      </button>
+                        style={{ borderColor: "black", backgroundColor: form.selloutRisk === n ? "black" : "white", color: form.selloutRisk === n ? "white" : "black" }}
+                      >{n}</button>
                     ))}
                   </div>
                   {form.selloutRisk && (
@@ -1022,25 +1013,27 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                 <div>
                   <label className={labelClass}>Recurring <span className="font-normal normal-case opacity-60">(optional)</span></label>
                   <div className="flex items-center gap-2 mt-1">
-                    <button
-                      type="button"
+                    <button type="button"
                       onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
                       className="flex items-center gap-1.5 px-3 py-1.5 border-2 text-xs font-black transition-colors"
                       style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
-                    >
-                      ↻ {form.isRecurring ? "Yes" : "No"}
-                    </button>
+                    >↻ {form.isRecurring ? "Yes" : "No"}</button>
                     {form.isRecurring && (
-                      <Input
-                        value={form.recurrenceLabel || ""}
-                        onChange={e => set("recurrenceLabel", e.target.value)}
-                        className={inputClass + " flex-1"}
-                        placeholder="Monthly, Weekly, Every 1st Friday…"
-                      />
+                      <Input value={form.recurrenceLabel || ""} onChange={e => set("recurrenceLabel", e.target.value)}
+                        className={inputClass + " flex-1"} placeholder="Monthly, Weekly, Every 1st Friday…" />
                     )}
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Description — full width at bottom, easy to review after AI parse */}
+            <div>
+              <label className={labelClass}>Description <span className="font-normal normal-case opacity-60">(recommended)</span></label>
+              <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
+                className={`${inputClass} resize-none`} rows={3} maxLength={200}
+                placeholder="Smart, specific snapshot — what it is, who's behind it, why it's worth noting." />
+              <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
             </div>
 
             <div className="flex gap-2 pt-1">
