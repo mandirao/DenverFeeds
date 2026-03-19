@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -1429,11 +1429,23 @@ export default function ArtistryNerdery() {
     setFilterDuration("all");
   };
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const tomorrowDate = new Date(); tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
+  const weekendDateSet = new Set<string>();
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(); d.setDate(d.getDate() + i);
+    if ([5, 6, 0].includes(d.getDay())) weekendDateSet.add(d.toISOString().split('T')[0]);
+  }
+
   const filteredEvents = expandedEvents.filter(ev => {
     if (filterCategory !== "all" && ev.category !== filterCategory) return false;
     if (filterDay !== "all") {
       const d = new Date(ev.dateStart + "T12:00:00");
-      if (d.getDay().toString() !== filterDay) return false;
+      if (filterDay === "today")   { if (ev.dateStart !== todayStr) return false; }
+      else if (filterDay === "tomorrow") { if (ev.dateStart !== tomorrowStr) return false; }
+      else if (filterDay === "weekend")  { if (!weekendDateSet.has(ev.dateStart)) return false; }
+      else { if (d.getDay().toString() !== filterDay) return false; }
     }
     if (filterDuration !== "all") {
       const isRecurring = ev.isRecurring === true;
@@ -1584,22 +1596,29 @@ export default function ArtistryNerdery() {
                   </SelectContent>
                 </Select>
 
-                {/* Day of week filter */}
+                {/* Day filter */}
                 <Select value={filterDay} onValueChange={setFilterDay}>
                   <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
                     filterDay !== "all" ? "bg-white text-black" : "text-black hover:border-white"
-                  }`} style={{ width: "120px", backgroundColor: filterDay !== "all" ? "white" : AN_BG }}>
+                  }`} style={{ width: "148px", backgroundColor: filterDay !== "all" ? "white" : AN_BG }}>
                     <SelectValue placeholder="Day" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[320px] overflow-y-auto">
                     <SelectItem value="all">All Days</SelectItem>
-                    <SelectItem value="0">Sunday</SelectItem>
-                    <SelectItem value="1">Monday</SelectItem>
-                    <SelectItem value="2">Tuesday</SelectItem>
-                    <SelectItem value="3">Wednesday</SelectItem>
-                    <SelectItem value="4">Thursday</SelectItem>
-                    <SelectItem value="5">Friday</SelectItem>
-                    <SelectItem value="6">Saturday</SelectItem>
+                    <SelectSeparator />
+                    <SelectLabel className="text-[10px] uppercase tracking-wider text-gray-400 px-2 pb-0.5">Upcoming</SelectLabel>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="tomorrow">Tomorrow</SelectItem>
+                    <SelectItem value="weekend">This Weekend</SelectItem>
+                    <SelectSeparator />
+                    <SelectLabel className="text-[10px] uppercase tracking-wider text-gray-400 px-2 pb-0.5">Day of Week</SelectLabel>
+                    <SelectItem value="0">Sundays</SelectItem>
+                    <SelectItem value="1">Mondays</SelectItem>
+                    <SelectItem value="2">Tuesdays</SelectItem>
+                    <SelectItem value="3">Wednesdays</SelectItem>
+                    <SelectItem value="4">Thursdays</SelectItem>
+                    <SelectItem value="5">Fridays</SelectItem>
+                    <SelectItem value="6">Saturdays</SelectItem>
                   </SelectContent>
                 </Select>
 
