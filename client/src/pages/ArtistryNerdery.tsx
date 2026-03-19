@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -1604,21 +1604,27 @@ export default function ArtistryNerdery() {
                     <SelectValue placeholder="Day" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[320px] overflow-y-auto">
-                    <SelectItem value="all">All Days</SelectItem>
+                    <SelectGroup>
+                      <SelectItem value="all">All Days</SelectItem>
+                    </SelectGroup>
                     <SelectSeparator />
-                    <SelectLabel className="text-[10px] uppercase tracking-wider text-gray-400 px-2 pb-0.5">Upcoming</SelectLabel>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="tomorrow">Tomorrow</SelectItem>
-                    <SelectItem value="weekend">This Weekend</SelectItem>
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px] uppercase tracking-wider text-gray-400 px-2 pb-0.5">Upcoming</SelectLabel>
+                      <SelectItem value="today">Today</SelectItem>
+                      <SelectItem value="tomorrow">Tomorrow</SelectItem>
+                      <SelectItem value="weekend">This Weekend</SelectItem>
+                    </SelectGroup>
                     <SelectSeparator />
-                    <SelectLabel className="text-[10px] uppercase tracking-wider text-gray-400 px-2 pb-0.5">Day of Week</SelectLabel>
-                    <SelectItem value="0">Sundays</SelectItem>
-                    <SelectItem value="1">Mondays</SelectItem>
-                    <SelectItem value="2">Tuesdays</SelectItem>
-                    <SelectItem value="3">Wednesdays</SelectItem>
-                    <SelectItem value="4">Thursdays</SelectItem>
-                    <SelectItem value="5">Fridays</SelectItem>
-                    <SelectItem value="6">Saturdays</SelectItem>
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px] uppercase tracking-wider text-gray-400 px-2 pb-0.5">Day of Week</SelectLabel>
+                      <SelectItem value="0">Sundays</SelectItem>
+                      <SelectItem value="1">Mondays</SelectItem>
+                      <SelectItem value="2">Tuesdays</SelectItem>
+                      <SelectItem value="3">Wednesdays</SelectItem>
+                      <SelectItem value="4">Thursdays</SelectItem>
+                      <SelectItem value="5">Fridays</SelectItem>
+                      <SelectItem value="6">Saturdays</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
 
