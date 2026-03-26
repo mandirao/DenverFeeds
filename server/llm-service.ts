@@ -52,7 +52,7 @@ export class LLMService {
     this.searchApiKey = process.env.SERPER_API_KEY || '';
 
     if (!this.apiKey) {
-      throw new Error('Anthropic API key not found in environment variables');
+      console.warn('Warning: ANTHROPIC_API_KEY not set. AI features will be unavailable.');
     }
   }
 
