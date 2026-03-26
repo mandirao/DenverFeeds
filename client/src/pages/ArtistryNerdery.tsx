@@ -1400,6 +1400,10 @@ export default function ArtistryNerdery() {
   const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
   const [calEventDetail, setCalEventDetail] = useState<ArtEvent | null>(null);
   const [calDaySheet, setCalDaySheet] = useState<{ date: string; events: ArtEvent[] } | null>(null);
+  const [calEventDetailFrom, setCalEventDetailFrom] = useState<{ date: string; events: ArtEvent[] } | null>(null);
+  const [calDetailMenuOpen, setCalDetailMenuOpen] = useState(false);
+  const [calDetailEditOpen, setCalDetailEditOpen] = useState(false);
+  const [calDetailDeleteConfirm, setCalDetailDeleteConfirm] = useState(false);
   const [sortBy, setSortBy] = useState<"date" | "added">("date");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterDay, setFilterDay] = useState("all");
@@ -1416,6 +1420,29 @@ export default function ArtistryNerdery() {
 
   const { data: events = [], isLoading } = useQuery<ArtEvent[]>({
     queryKey: ["/api/art-events"],
+  });
+
+  const { toast } = useToast();
+  const qcMain = useQueryClient();
+
+  const calDetailSoldOutMutation = useMutation({
+    mutationFn: () => apiRequest({ endpoint: `/api/art-events/${calEventDetail!.id}`, method: "PATCH", data: { soldOut: !calEventDetail!.soldOut } }),
+    onSuccess: () => {
+      qcMain.invalidateQueries({ queryKey: ["/api/art-events"] });
+      toast({ title: calEventDetail?.soldOut ? "Back on the list" : "Marked as sold out", description: calEventDetail?.name });
+      setCalEventDetail(null); setCalEventDetailFrom(null);
+    },
+    onError: () => toast({ title: "Error", description: "Couldn't update this event.", variant: "destructive" }),
+  });
+
+  const calDetailDeleteMutation = useMutation({
+    mutationFn: () => apiRequest({ endpoint: `/api/art-events/${calEventDetail!.id}`, method: "DELETE" }),
+    onSuccess: () => {
+      qcMain.invalidateQueries({ queryKey: ["/api/art-events"] });
+      toast({ title: "Deleted", description: `${calEventDetail?.name} removed.` });
+      setCalDetailDeleteConfirm(false); setCalEventDetail(null); setCalEventDetailFrom(null);
+    },
+    onError: () => toast({ title: "Error", description: "Couldn't delete this event.", variant: "destructive" }),
   });
 
   const expandedEvents = expandRecurringEvents(events);
@@ -1815,7 +1842,7 @@ export default function ArtistryNerdery() {
       />
 
       {/* Event detail dialog */}
-      <Dialog open={calEventDetail !== null} onOpenChange={open => { if (!open) setCalEventDetail(null); }}>
+      <Dialog open={calEventDetail !== null} onOpenChange={open => { if (!open) { setCalEventDetail(null); setCalEventDetailFrom(null); } }}>
         <DialogContent className="max-w-lg rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
           <DialogTitle className="sr-only">{calEventDetail?.name ?? "Event Details"}</DialogTitle>
           {calEventDetail && (() => {
@@ -1831,7 +1858,22 @@ export default function ArtistryNerdery() {
             const evCalUrl = createCalendarUrl(ev);
             return (
               <>
-                <div className="px-6 pt-6 pb-4" style={{ backgroundColor: AN_BG }}>
+                <div className="px-6 pt-5 pb-4" style={{ backgroundColor: AN_BG }}>
+                  {/* Back button row */}
+                  {calEventDetailFrom && (
+                    <button
+                      onClick={() => {
+                        const from = calEventDetailFrom;
+                        setCalEventDetail(null);
+                        setCalEventDetailFrom(null);
+                        setCalDaySheet(from);
+                      }}
+                      className="flex items-center gap-1 text-xs font-bold text-black/60 hover:text-black mb-3 transition-colors"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      {new Date(calEventDetailFrom.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </button>
+                  )}
                   <div className="flex items-start justify-between gap-3 mb-1">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-3xl flex-shrink-0">{ev.emoji}</span>
@@ -1851,9 +1893,40 @@ export default function ArtistryNerdery() {
                         </Tooltip>
                       </TooltipProvider>
                     </div>
-                    {ev.soldOut && (
-                      <span className="text-[10px] font-black uppercase bg-black text-white px-2 py-0.5 flex-shrink-0">SOLD OUT</span>
-                    )}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {ev.soldOut && (
+                        <span className="text-[10px] font-black uppercase bg-black text-white px-2 py-0.5">SOLD OUT</span>
+                      )}
+                      {/* 3-dot menu */}
+                      <DropdownMenu open={calDetailMenuOpen} onOpenChange={setCalDetailMenuOpen}>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20">
+                            <MoreVertical className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-36 border-none bg-gray-100 shadow-md rounded-sm font-sans">
+                          <DropdownMenuItem
+                            onClick={() => { setCalDetailMenuOpen(false); setCalDetailEditOpen(true); }}
+                            className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                          >
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => { setCalDetailMenuOpen(false); calDetailSoldOutMutation.mutate(); }}
+                            disabled={calDetailSoldOutMutation.isPending}
+                            className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                          >
+                            {ev.soldOut ? "Mark available" : "Sold out"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                            onClick={() => { setCalDetailMenuOpen(false); setTimeout(() => setCalDetailDeleteConfirm(true), 100); }}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border border-black/30 text-black/70">{ev.category}</span>
@@ -1942,6 +2015,33 @@ export default function ArtistryNerdery() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit modal for calendar event detail */}
+      {calDetailEditOpen && calEventDetail && (
+        <EditArtEventModal event={calEventDetail} onClose={() => setCalDetailEditOpen(false)} />
+      )}
+
+      {/* Delete confirmation for calendar event detail */}
+      <AlertDialog open={calDetailDeleteConfirm} onOpenChange={setCalDetailDeleteConfirm}>
+        <AlertDialogContent className="rounded-none border-2 border-black">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{calEventDetail?.name}" will be permanently removed from the feed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-none bg-red-600 hover:bg-red-700"
+              onClick={() => calDetailDeleteMutation.mutate()}
+              disabled={calDetailDeleteMutation.isPending}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Day sheet dialog — shows all events on a crowded day */}
       <Dialog open={calDaySheet !== null} onOpenChange={open => { if (!open) setCalDaySheet(null); }}>
         <DialogContent className="max-w-sm rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
@@ -1961,7 +2061,7 @@ export default function ArtistryNerdery() {
                   {calDaySheet.events.map((ev, i) => (
                     <button
                       key={`${ev.id}-${i}`}
-                      onClick={() => { setCalDaySheet(null); setCalEventDetail(ev); }}
+                      onClick={() => { setCalEventDetailFrom(calDaySheet); setCalDaySheet(null); setCalEventDetail(ev); }}
                       className="w-full text-left px-5 py-3 hover:bg-[#FEABDA]/40 transition-colors flex items-center gap-3"
                     >
                       <span className="text-xl flex-shrink-0">{ev.emoji}</span>
