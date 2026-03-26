@@ -1590,7 +1590,7 @@ export default function ArtistryNerdery() {
                 {viewMode !== "calendar" && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="flex items-center gap-1.5 px-3 py-1 border-2 border-black bg-white text-black font-black text-xs uppercase tracking-wide hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0 focus:outline-none">
+                      <button className="flex items-center gap-1.5 px-3 py-1 border border-black bg-white text-black font-medium text-sm hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0 focus:outline-none">
                         <ArrowUpDown className="w-3 h-3" />
                         {sortBy === "added" ? "Recently Added" : "Upcoming"}
                         <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
