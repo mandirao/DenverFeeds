@@ -635,7 +635,8 @@ export default function Home() {
                 >
                   Cheap Thrills
                 </button>
-                
+                </>)}
+
                 {/* Vertical separator */}
                 <div className="h-6 w-px bg-black opacity-40 mx-2 flex-shrink-0"></div>
                 
@@ -768,7 +769,6 @@ export default function Home() {
                     <SelectItem value="6">Saturday</SelectItem>
                   </SelectContent>
                 </Select>
-                </>)}
               </div>
             </div>
             
