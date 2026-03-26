@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { artCategories, type ArtEvent, type InsertArtEvent } from "@shared/schema";
-import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check } from "lucide-react";
 import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
@@ -1588,22 +1588,26 @@ export default function ArtistryNerdery() {
 
                 {/* Sort pills — hidden in calendar mode */}
                 {viewMode !== "calendar" && (
-                  <>
-                    <button
-                      onClick={() => setSortBy("date")}
-                      className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap`}
-                      style={{ backgroundColor: sortBy === "date" ? "white" : AN_BG }}
-                    >
-                      Show All
-                    </button>
-                    <button
-                      onClick={() => setSortBy("added")}
-                      className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap`}
-                      style={{ backgroundColor: sortBy === "added" ? "white" : AN_BG }}
-                    >
-                      Recently Added
-                    </button>
-                  </>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-1.5 px-3 py-1 border-2 border-black bg-white text-black font-black text-xs uppercase tracking-wide hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0 focus:outline-none">
+                        <ArrowUpDown className="w-3 h-3" />
+                        {sortBy === "added" ? "Recently Added" : "Upcoming"}
+                        <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-44 p-0">
+                      {([
+                        { label: "Upcoming", value: "date" as const },
+                        { label: "Recently Added", value: "added" as const },
+                      ]).map(opt => (
+                        <DropdownMenuItem key={opt.label} onClick={() => setSortBy(opt.value)} className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide rounded-none focus:bg-gray-100 hover:bg-gray-100 cursor-pointer">
+                          <span className="w-3.5 flex-shrink-0">{sortBy === opt.value ? <Check className="w-3 h-3" /> : null}</span>
+                          {opt.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
 
                 {/* Vertical separator */}

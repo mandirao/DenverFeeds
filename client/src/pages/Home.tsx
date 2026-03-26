@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, List, ChevronLeft, ChevronRight, MoreVertical } from "lucide-react";
+import { CalendarDays, List, ChevronLeft, ChevronRight, MoreVertical, ArrowUpDown, ChevronDown, Check } from "lucide-react";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
@@ -581,36 +581,30 @@ export default function Home() {
 
                 {/* Status Filters — hidden in calendar mode */}
                 {viewMode !== "calendar" && (<>
-                <button
-                  onClick={() => setFilters({ ...filters, status: "all" })}
-                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
-                    filters.status === "all" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
-                  }`}
-                >
-                  Show All
-                </button>
-                <button
-                  onClick={() => setFilters({ ...filters, status: "just-added" })}
-                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
-                    filters.status === "just-added" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
-                  }`}
-                >
-                  New
-                </button>
-                <button
-                  onClick={() => setFilters({ ...filters, status: "top-voted", sortBy: "votes" })}
-                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
-                    filters.status === "top-voted" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
-                  }`}
-                >
-                  Top Voted
-                </button>
+                {/* Sort dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1.5 px-3 py-1 border-2 border-black bg-white text-black font-black text-xs uppercase tracking-wide hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0 focus:outline-none">
+                      <ArrowUpDown className="w-3 h-3" />
+                      {filters.status === "just-added" ? "Recently Added" : filters.status === "top-voted" ? "Top Voted" : "Upcoming"}
+                      <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-44 p-0">
+                    {([
+                      { label: "Upcoming", onClick: () => setFilters({ ...filters, status: "all", sortBy: "date" }), active: filters.status !== "just-added" && filters.status !== "top-voted" },
+                      { label: "Recently Added", onClick: () => setFilters({ ...filters, status: "just-added", sortBy: "date" }), active: filters.status === "just-added" },
+                      { label: "Top Voted", onClick: () => setFilters({ ...filters, status: "top-voted", sortBy: "votes" }), active: filters.status === "top-voted" },
+                    ] as const).map(opt => (
+                      <DropdownMenuItem key={opt.label} onClick={opt.onClick} className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide rounded-none focus:bg-gray-100 hover:bg-gray-100 cursor-pointer">
+                        <span className="w-3.5 flex-shrink-0">{opt.active ? <Check className="w-3 h-3" /> : null}</span>
+                        {opt.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {/* Separator between sort and filter pills */}
+                <div className="h-6 w-px bg-black opacity-40 mx-1 flex-shrink-0" />
                 <button
                   onClick={() => setFilters({ ...filters, status: "scheduled" })}
                   className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
