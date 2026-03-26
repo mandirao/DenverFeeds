@@ -1270,7 +1270,8 @@ function CalendarMonthView({
                 {shown.map((ev, i) => {
                   const evIsPast = ev.dateStart < todayStr;
                   const seriesStillActive = ev.isRecurring && (!ev.dateEnd || ev.dateEnd === "" || ev.dateEnd >= todayStr);
-                  const dim = evIsPast && !seriesStillActive;
+                  const multiDayStillRunning = !ev.isRecurring && ev.dateEnd && ev.dateEnd !== "" && ev.dateEnd >= todayStr;
+                  const dim = evIsPast && !seriesStillActive && !multiDayStillRunning;
                   return (
                   <button
                     key={`${ev.id}-${ev.dateStart}-${i}`}
