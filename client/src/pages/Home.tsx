@@ -603,8 +603,20 @@ export default function Home() {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </>)}
+
                 {/* Separator between sort and filter pills */}
                 <div className="h-6 w-px bg-black opacity-40 mx-1 flex-shrink-0" />
+                <button
+                  onClick={() => setFilters({ ...filters, status: "cheap-thrills" })}
+                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
+                    filters.status === "cheap-thrills" 
+                      ? "bg-white text-black" 
+                      : "bg-[#FE6B41] text-black hover:border-white"
+                  }`}
+                >
+                  Cheap Thrills
+                </button>
                 <button
                   onClick={() => setFilters({ ...filters, status: "scheduled" })}
                   className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
@@ -625,17 +637,6 @@ export default function Home() {
                 >
                   Member Adds
                 </button>
-                <button
-                  onClick={() => setFilters({ ...filters, status: "cheap-thrills" })}
-                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
-                    filters.status === "cheap-thrills" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
-                  }`}
-                >
-                  Cheap Thrills
-                </button>
-                </>)}
 
                 {/* Vertical separator */}
                 <div className="h-6 w-px bg-black opacity-40 mx-2 flex-shrink-0"></div>
