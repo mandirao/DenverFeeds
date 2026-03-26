@@ -1063,6 +1063,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 export default function AmsueBouche() {
   const [addOpen, setAddOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<"date" | "added">("date");
 
   const { data: events = [], isLoading } = useQuery<FoodEvent[]>({
     queryKey: ["/api/food-events"],
@@ -1145,9 +1146,27 @@ export default function AmsueBouche() {
       {/* ── Feed ── */}
       <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
 
-        <p className="text-xs text-black mb-5 opacity-60 leading-snug">
-          Pop-ups fill up fast! If something looks good, act on it.
-        </p>
+        <div className="flex items-center justify-between mb-5">
+          <p className="text-xs text-black opacity-60 leading-snug">
+            Pop-ups fill up fast! If something looks good, act on it.
+          </p>
+          <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+            <button
+              onClick={() => setSortBy("date")}
+              className="px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap"
+              style={{ backgroundColor: sortBy === "date" ? "white" : AB_GOLD }}
+            >
+              Show All
+            </button>
+            <button
+              onClick={() => setSortBy("added")}
+              className="px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap"
+              style={{ backgroundColor: sortBy === "added" ? "white" : AB_GOLD }}
+            >
+              Recently Added
+            </button>
+          </div>
+        </div>
 
         {isLoading && (
           <div className="text-center py-16 text-gray-400">
@@ -1168,7 +1187,52 @@ export default function AmsueBouche() {
           </div>
         )}
 
-        {Object.entries(grouped).map(([month, monthData]) => {
+        {sortBy === "added" && (() => {
+          const now = new Date();
+          const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const dayOfWeek = todayDate.getDay();
+          const startOfWeek = new Date(todayDate);
+          startOfWeek.setDate(todayDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+          const getGroup = (ev: FoodEvent): "today" | "week" | "month" | "earlier" => {
+            if (!ev.createdAt) return "earlier";
+            const c = new Date(ev.createdAt);
+            const cDate = new Date(c.getFullYear(), c.getMonth(), c.getDate());
+            if (cDate.getTime() === todayDate.getTime()) return "today";
+            if (cDate >= startOfWeek) return "week";
+            if (c.getMonth() === now.getMonth() && c.getFullYear() === now.getFullYear()) return "month";
+            return "earlier";
+          };
+
+          const seen = new Set<number>();
+          const sorted = [...events]
+            .filter(ev => { if (seen.has(ev.id)) return false; seen.add(ev.id); return true; })
+            .sort((a, b) => b.id - a.id);
+          const buckets: { key: "today" | "week" | "month" | "earlier"; label: string; events: FoodEvent[] }[] = [
+            { key: "today",   label: "Added today",        events: [] },
+            { key: "week",    label: "Added this week",    events: [] },
+            { key: "month",   label: "Added this month",   events: [] },
+            { key: "earlier", label: "Added earlier",      events: [] },
+          ];
+          for (const ev of sorted) buckets.find(b => b.key === getGroup(ev))!.events.push(ev);
+
+          return buckets.filter(b => b.events.length > 0).map(bucket => (
+            <div key={bucket.key} className="mb-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-0.5 flex-1 bg-black" />
+                <h2 className="text-lg font-black uppercase text-black">{bucket.label.toUpperCase()}</h2>
+                <div className="h-0.5 flex-1 bg-black" />
+              </div>
+              <ul className="space-y-0">
+                {bucket.events.map(ev => (
+                  <FoodEventRow key={ev.id} event={ev} />
+                ))}
+              </ul>
+            </div>
+          ));
+        })()}
+
+        {sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => {
           const weekKeys = Object.keys(monthData.weekGroups).sort();
           return (
             <div key={month} className="mb-6">
