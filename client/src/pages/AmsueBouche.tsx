@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
-import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar } from "lucide-react";
+import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
@@ -1058,15 +1058,177 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   );
 }
 
+// ── Calendar helpers ──────────────────────────────────────────────────────────
+
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAY_HEADERS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function FoodCalendarMonthView({
+  events,
+  viewYear,
+  viewMonth,
+  onPrevMonth,
+  onNextMonth,
+  onEventClick,
+  onDayOverflowClick,
+}: {
+  events: FoodEvent[];
+  viewYear: number;
+  viewMonth: number;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onEventClick: (ev: FoodEvent) => void;
+  onDayOverflowClick: (date: string, events: FoodEvent[]) => void;
+}) {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const monthPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
+
+  const eventsByDay = new Map<string, FoodEvent[]>();
+  for (const ev of events) {
+    if (ev.dateStart.startsWith(monthPrefix)) {
+      const existing = eventsByDay.get(ev.dateStart) ?? [];
+      eventsByDay.set(ev.dateStart, [...existing, ev]);
+    } else if (ev.dateEnd && ev.dateEnd !== ev.dateStart) {
+      const monthStart = new Date(viewYear, viewMonth, 1);
+      const end = new Date(ev.dateEnd + 'T12:00:00');
+      const start = new Date(ev.dateStart + 'T12:00:00');
+      if (start < monthStart && end >= monthStart) {
+        const key = `${monthPrefix}-01`;
+        const existing = eventsByDay.get(key) ?? [];
+        eventsByDay.set(key, [...existing, ev]);
+      }
+    }
+  }
+
+  const cells: (number | null)[] = [
+    ...Array(firstDayOfWeek).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={onPrevMonth} className="p-1.5 text-black hover:text-[#FE6B41] transition-colors rounded-full hover:bg-black/10">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <h2 className="text-base font-black uppercase text-black tracking-wide">
+          {MONTH_NAMES[viewMonth]} {viewYear}
+        </h2>
+        <button onClick={onNextMonth} className="p-1.5 text-black hover:text-[#FE6B41] transition-colors rounded-full hover:bg-black/10">
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 mb-1">
+        {DAY_HEADERS.map(d => (
+          <div key={d} className="text-center text-[10px] font-black text-black/50 uppercase py-1 tracking-wider">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 border-l border-t border-black/15">
+        {cells.map((day, idx) => {
+          if (day === null) {
+            return (
+              <div key={`empty-${idx}`} className="border-r border-b border-black/15 min-h-[72px] sm:min-h-[90px]" style={{ backgroundColor: AB_GOLD }} />
+            );
+          }
+          const dayStr = `${monthPrefix}-${String(day).padStart(2, '0')}`;
+          const isToday = dayStr === todayStr;
+          const dayEvents = eventsByDay.get(dayStr) ?? [];
+          const MAX_SHOWN = 3;
+          const shown = dayEvents.slice(0, MAX_SHOWN);
+          const overflow = dayEvents.length - MAX_SHOWN;
+          return (
+            <div key={dayStr} className="border-r border-b border-black/15 p-1 min-h-[72px] sm:min-h-[90px]" style={{ backgroundColor: AB_GOLD }}>
+              <div className={`text-xs font-bold mb-1 w-5 h-5 flex items-center justify-center leading-none ${
+                isToday ? 'bg-black text-white rounded-full' : 'text-black'
+              }`}>
+                {day}
+              </div>
+              <div className="space-y-0.5">
+                {shown.map((ev, i) => (
+                  <button
+                    key={`${ev.id}-${ev.dateStart}-${i}`}
+                    onClick={() => onEventClick(ev)}
+                    className="w-full text-left text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 bg-black/10 hover:bg-black/20 active:bg-black/30 rounded text-black truncate transition-colors cursor-pointer"
+                    title={ev.name}
+                  >
+                    <span>{ev.emoji} </span>
+                    <span className="font-medium">{ev.name}</span>
+                  </button>
+                ))}
+                {overflow > 0 && (
+                  <button
+                    onClick={() => onDayOverflowClick(dayStr, dayEvents)}
+                    className="text-[9px] text-black/60 hover:text-black pl-1 font-semibold transition-colors cursor-pointer underline underline-offset-1"
+                  >
+                    +{overflow} more
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function AmsueBouche() {
   const [addOpen, setAddOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [calViewYear, setCalViewYear] = useState(() => new Date().getFullYear());
+  const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
+  const [calEventDetail, setCalEventDetail] = useState<FoodEvent | null>(null);
+  const [calDaySheet, setCalDaySheet] = useState<{ date: string; events: FoodEvent[] } | null>(null);
+  const [calEventDetailFrom, setCalEventDetailFrom] = useState<{ date: string; events: FoodEvent[] } | null>(null);
+  const [calDetailMenuOpen, setCalDetailMenuOpen] = useState(false);
+  const [calDetailEditOpen, setCalDetailEditOpen] = useState(false);
+  const [calDetailDeleteConfirm, setCalDetailDeleteConfirm] = useState(false);
   const [sortBy, setSortBy] = useState<"date" | "added">("date");
+
+  const prevCalMonth = () => {
+    if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
+    else setCalViewMonth(m => m - 1);
+  };
+  const nextCalMonth = () => {
+    if (calViewMonth === 11) { setCalViewMonth(0); setCalViewYear(y => y + 1); }
+    else setCalViewMonth(m => m + 1);
+  };
 
   const { data: events = [], isLoading } = useQuery<FoodEvent[]>({
     queryKey: ["/api/food-events"],
+  });
+
+  const { toast } = useToast();
+  const qcMain = useQueryClient();
+
+  const calDetailSoldOutMutation = useMutation({
+    mutationFn: () => apiRequest({ endpoint: `/api/food-events/${calEventDetail!.id}`, method: "PATCH", data: { soldOut: !calEventDetail!.soldOut } }),
+    onSuccess: () => {
+      qcMain.invalidateQueries({ queryKey: ["/api/food-events"] });
+      toast({ title: calEventDetail?.soldOut ? "Back on the menu" : "Marked as sold out", description: calEventDetail?.name });
+      setCalEventDetail(null); setCalEventDetailFrom(null);
+    },
+    onError: () => toast({ title: "Error", description: "Couldn't update this event.", variant: "destructive" }),
+  });
+
+  const calDetailDeleteMutation = useMutation({
+    mutationFn: () => apiRequest({ endpoint: `/api/food-events/${calEventDetail!.id}`, method: "DELETE" }),
+    onSuccess: () => {
+      qcMain.invalidateQueries({ queryKey: ["/api/food-events"] });
+      toast({ title: "Deleted", description: `${calEventDetail?.name} removed.` });
+      setCalDetailDeleteConfirm(false); setCalEventDetail(null); setCalEventDetailFrom(null);
+    },
+    onError: () => toast({ title: "Error", description: "Couldn't delete this event.", variant: "destructive" }),
   });
 
   type MonthBucket = { events: FoodEvent[]; weekGroups: Record<string, { events: FoodEvent[] }> };
@@ -1144,29 +1306,62 @@ export default function AmsueBouche() {
       </nav>
 
       {/* ── Feed ── */}
-      <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
+      <main className={`container mx-auto px-4 py-6 flex-1 transition-all duration-200 ${viewMode === "calendar" ? "max-w-5xl" : "max-w-2xl"}`}>
 
-        <div className="flex items-center justify-between mb-5">
-          <p className="text-xs text-black opacity-60 leading-snug">
-            Pop-ups fill up fast! If something looks good, act on it.
-          </p>
-          <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-            <button
-              onClick={() => setSortBy("date")}
-              className="px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap"
-              style={{ backgroundColor: sortBy === "date" ? "white" : AB_GOLD }}
-            >
-              Show All
-            </button>
-            <button
-              onClick={() => setSortBy("added")}
-              className="px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap"
-              style={{ backgroundColor: sortBy === "added" ? "white" : AB_GOLD }}
-            >
-              Recently Added
-            </button>
+        <p className="text-xs text-black mb-4 opacity-60 leading-snug">
+          Pop-ups fill up fast! If something looks good, act on it.
+        </p>
+
+        {/* Filter row */}
+        {!isLoading && events.length > 0 && (
+          <div className="mb-5">
+            <div className="overflow-x-auto scrollbar-hide">
+              <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
+                {/* View mode toggle */}
+                <div className="flex items-center gap-1 border border-black rounded-full overflow-hidden flex-shrink-0">
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`h-8 w-8 flex items-center justify-center transition-colors ${
+                      viewMode === "list" ? "bg-black text-white" : "text-black hover:bg-black/10"
+                    }`}
+                    title="List view"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("calendar")}
+                    className={`h-8 w-8 flex items-center justify-center transition-colors ${
+                      viewMode === "calendar" ? "bg-black text-white" : "text-black hover:bg-black/10"
+                    }`}
+                    title="Calendar view"
+                  >
+                    <CalendarDays className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Sort pills — hidden in calendar mode */}
+                {viewMode !== "calendar" && (
+                  <>
+                    <button
+                      onClick={() => setSortBy("date")}
+                      className="px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap"
+                      style={{ backgroundColor: sortBy === "date" ? "white" : AB_GOLD }}
+                    >
+                      Show All
+                    </button>
+                    <button
+                      onClick={() => setSortBy("added")}
+                      className="px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap"
+                      style={{ backgroundColor: sortBy === "added" ? "white" : AB_GOLD }}
+                    >
+                      Recently Added
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
         {isLoading && (
           <div className="text-center py-16 text-gray-400">
@@ -1187,7 +1382,19 @@ export default function AmsueBouche() {
           </div>
         )}
 
-        {sortBy === "added" && (() => {
+        {!isLoading && viewMode === "calendar" && (
+          <FoodCalendarMonthView
+            events={events}
+            viewYear={calViewYear}
+            viewMonth={calViewMonth}
+            onPrevMonth={prevCalMonth}
+            onNextMonth={nextCalMonth}
+            onEventClick={setCalEventDetail}
+            onDayOverflowClick={(date, evs) => setCalDaySheet({ date, events: evs })}
+          />
+        )}
+
+        {viewMode === "list" && sortBy === "added" && (() => {
           const now = new Date();
           const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
           const dayOfWeek = todayDate.getDay();
@@ -1232,7 +1439,7 @@ export default function AmsueBouche() {
           ));
         })()}
 
-        {sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => {
+        {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => {
           const weekKeys = Object.keys(monthData.weekGroups).sort();
           return (
             <div key={month} className="mb-6">
@@ -1296,6 +1503,213 @@ export default function AmsueBouche() {
         feedPath="/api/calendar/food-feed.ics"
         title="SUBSCRIBE TO POPUPS"
       />
+
+      {/* Calendar event detail dialog */}
+      <Dialog open={calEventDetail !== null} onOpenChange={open => { if (!open) { setCalEventDetail(null); setCalEventDetailFrom(null); } }}>
+        <DialogContent className="max-w-lg rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">{calEventDetail?.name ?? "Event Details"}</DialogTitle>
+          {calEventDetail && (() => {
+            const ev = calEventDetail;
+            const startDate = new Date(ev.dateStart + 'T12:00:00');
+            const endDate = ev.dateEnd ? new Date(ev.dateEnd + 'T12:00:00') : null;
+            const fmtOpts: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+            const dateStr = endDate && ev.dateEnd !== ev.dateStart
+              ? `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} – ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+              : startDate.toLocaleDateString('en-US', fmtOpts);
+            const evSearchUrl = createSearchUrl(ev);
+            const evMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.venue + " Denver CO")}`;
+            const evCalUrl = createCalendarUrl(ev);
+            return (
+              <>
+                <div className="px-6 pt-5 pb-4" style={{ backgroundColor: AB_GOLD }}>
+                  {calEventDetailFrom && (
+                    <button
+                      onClick={() => {
+                        const from = calEventDetailFrom;
+                        setCalEventDetail(null);
+                        setCalEventDetailFrom(null);
+                        setCalDaySheet(from);
+                      }}
+                      className="flex items-center gap-1 text-xs font-bold text-black/60 hover:text-black mb-3 transition-colors"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      {new Date(calEventDetailFrom.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </button>
+                  )}
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-3xl flex-shrink-0">{ev.emoji}</span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a href={evSearchUrl} target="_blank" rel="noopener noreferrer"
+                              className="text-xl font-black uppercase text-black leading-tight hover:underline cursor-pointer">
+                              {ev.name}
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Search on Google</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {ev.soldOut && (
+                        <span className="text-[10px] font-black uppercase bg-black text-white px-2 py-0.5">SOLD OUT</span>
+                      )}
+                      <DropdownMenu open={calDetailMenuOpen} onOpenChange={setCalDetailMenuOpen}>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-black">
+                            <MoreVertical className="h-3.5 w-3.5 text-black" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-36 border-none bg-gray-100 shadow-md rounded-sm font-sans">
+                          <DropdownMenuItem onClick={() => { setCalDetailMenuOpen(false); setCalDetailEditOpen(true); }}
+                            className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none">
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setCalDetailMenuOpen(false); calDetailSoldOutMutation.mutate(); }}
+                            disabled={calDetailSoldOutMutation.isPending}
+                            className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none">
+                            {ev.soldOut ? "Mark available" : "Sold out"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                            onClick={() => { setCalDetailMenuOpen(false); setTimeout(() => setCalDetailDeleteConfirm(true), 100); }}>
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border border-black/30 text-black/70">{ev.cuisine}</span>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 space-y-4 bg-white">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-black font-semibold">
+                      <span>📅</span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a href={evCalUrl} target="_blank" rel="noopener noreferrer" className="hover:underline cursor-pointer">
+                              {dateStr}
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Add to Google Calendar</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-black/80">
+                      <span>📍</span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a href={evMapsUrl} target="_blank" rel="noopener noreferrer" className="hover:underline cursor-pointer">
+                              {ev.venue}{ev.neighborhood ? `, ${ev.neighborhood}` : ''}
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Find on Google Maps</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    {ev.price && (
+                      <div className="flex items-center gap-2 text-sm text-black/80">
+                        <span>🎟</span>
+                        <span>{ev.price}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-sm text-black/90 leading-relaxed">{ev.summary}</p>
+
+                  {(ev.ticketUrl || ev.sourceUrl) && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {ev.ticketUrl && (
+                        <a href={ev.ticketUrl} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 bg-black text-white font-black uppercase text-xs tracking-wide px-4 py-2 hover:bg-[#FE6B41] transition-colors">
+                          Get Tickets ↗
+                        </a>
+                      )}
+                      {ev.sourceUrl && (
+                        <a href={ev.sourceUrl} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 border-2 border-black text-black font-black uppercase text-xs tracking-wide px-4 py-2 hover:bg-black hover:text-white transition-colors">
+                          Original Post ↗
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit modal for calendar event detail */}
+      {calDetailEditOpen && calEventDetail && (
+        <EditFoodEventModal event={calEventDetail} onClose={() => setCalDetailEditOpen(false)} />
+      )}
+
+      {/* Delete confirmation for calendar event detail */}
+      <AlertDialog open={calDetailDeleteConfirm} onOpenChange={setCalDetailDeleteConfirm}>
+        <AlertDialogContent className="rounded-none border-2 border-black">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{calEventDetail?.name}" will be permanently removed from the feed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-none bg-red-600 hover:bg-red-700"
+              onClick={() => calDetailDeleteMutation.mutate()}
+              disabled={calDetailDeleteMutation.isPending}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Day sheet dialog */}
+      <Dialog open={calDaySheet !== null} onOpenChange={open => { if (!open) setCalDaySheet(null); }}>
+        <DialogContent className="max-w-sm rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">
+            {calDaySheet ? `Events on ${new Date(calDaySheet.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}` : "Events"}
+          </DialogTitle>
+          {calDaySheet && (() => {
+            const d = new Date(calDaySheet.date + 'T12:00:00');
+            const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            return (
+              <>
+                <div className="px-5 pt-5 pb-3" style={{ backgroundColor: AB_GOLD }}>
+                  <h2 className="text-base font-black uppercase text-black">{label}</h2>
+                  <p className="text-xs text-black/60 mt-0.5">{calDaySheet.events.length} popup{calDaySheet.events.length !== 1 ? 's' : ''}</p>
+                </div>
+                <div className="divide-y divide-black/10 bg-white max-h-[60vh] overflow-y-auto">
+                  {calDaySheet.events.map((ev, i) => (
+                    <button
+                      key={`${ev.id}-${i}`}
+                      onClick={() => { setCalEventDetailFrom(calDaySheet); setCalDaySheet(null); setCalEventDetail(ev); }}
+                      className="w-full text-left px-5 py-3 hover:bg-[#FFF8E7] transition-colors flex items-center gap-3"
+                    >
+                      <span className="text-xl flex-shrink-0">{ev.emoji}</span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-black truncate">{ev.name}</div>
+                        <div className="text-xs text-black/60 truncate">{ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}</div>
+                        {ev.price && <div className="text-xs text-black/50">{ev.price}</div>}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-black/30 flex-shrink-0 ml-auto" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
