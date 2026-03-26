@@ -1542,6 +1542,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/ai/redo-food-event-content", async (req, res) => {
+    try {
+      const { name, venue, cuisine, dateStart, currentSummary } = req.body;
+      if (!name) return res.status(400).json({ message: "Event name is required" });
+      const result = await llmService.redoFoodEventAI({
+        name: name || "",
+        venue: venue || "",
+        cuisine: cuisine || "",
+        dateStart: dateStart || "",
+        currentSummary: currentSummary || "",
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("Redo food AI content error:", error);
+      res.status(500).json({ message: "Failed to refresh AI content" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

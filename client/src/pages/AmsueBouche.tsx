@@ -385,6 +385,7 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
   const { toast } = useToast();
   const [errorField, setErrorField] = useState<string | null>(null);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
+  const [redoLoading, setRedoLoading] = useState(false);
   const [form, setForm] = useState<Partial<InsertFoodEvent>>({
     emoji: event.emoji || "",
     name: event.name || "",
@@ -416,6 +417,37 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
   const tryClose = () => {
     if (hasChanges()) setShowConfirmClose(true);
     else onClose();
+  };
+
+  const handleRedoAI = async () => {
+    if (!form.name) {
+      toast({ title: "Event name required", variant: "destructive" });
+      return;
+    }
+    setRedoLoading(true);
+    try {
+      const res = await apiRequest({
+        endpoint: "/api/ai/redo-food-event-content",
+        method: "POST",
+        data: {
+          name: form.name,
+          venue: form.venue,
+          cuisine: form.cuisine,
+          dateStart: form.dateStart,
+          currentSummary: form.summary,
+        },
+      });
+      if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
+      if (res.status === "no-info") {
+        toast({ title: "Description polished ✓", description: res.message || "No new details found online." });
+      } else {
+        toast({ title: "Content refreshed ✨", description: "Description updated with latest details." });
+      }
+    } catch (e: any) {
+      toast({ title: "AI refresh failed", description: e?.message || "Something went wrong.", variant: "destructive" });
+    } finally {
+      setRedoLoading(false);
+    }
   };
 
   const updateMutation = useMutation({
@@ -505,7 +537,14 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
                 </div>
               </div>
               <div>
-                <label className={labelClass}>Description *</label>
+                <div className="flex items-center justify-between mb-0.5">
+                  <label className={labelClass + " mb-0"}>Description *</label>
+                  <button type="button" onClick={handleRedoAI} disabled={redoLoading}
+                    className="flex items-center gap-1 px-2.5 py-1 border-2 border-black bg-white text-xs font-black uppercase tracking-wide hover:bg-black hover:text-[#FFD700] transition-colors disabled:opacity-40"
+                    title="Polish description with latest web info">
+                    {redoLoading ? "Searching…" : "✨ Refresh AI"}
+                  </button>
+                </div>
                 <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
                   className={`${inputClass} resize-none`} rows={4} maxLength={200}
                   placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
@@ -619,6 +658,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const [imageFileName, setImageFileName] = useState<string | null>(null);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [errorField, setErrorField] = useState<string | null>(null);
+  const [redoLoading, setRedoLoading] = useState(false);
   const { toast } = useToast();
 
   const switchMode = (mode: "screenshot" | "blurb") => {
@@ -702,6 +742,37 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const hasContent = () => {
     const formHasContent = Object.values(form).some(v => v && v.toString().trim() !== "");
     return formHasContent || blurb.trim() !== "" || !!imageBase64;
+  };
+
+  const handleRedoAI = async () => {
+    if (!form.name) {
+      toast({ title: "Event name required", variant: "destructive" });
+      return;
+    }
+    setRedoLoading(true);
+    try {
+      const res = await apiRequest({
+        endpoint: "/api/ai/redo-food-event-content",
+        method: "POST",
+        data: {
+          name: form.name,
+          venue: form.venue,
+          cuisine: form.cuisine,
+          dateStart: form.dateStart,
+          currentSummary: form.summary,
+        },
+      });
+      if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
+      if (res.status === "no-info") {
+        toast({ title: "Description polished ✓", description: res.message || "No new details found online." });
+      } else {
+        toast({ title: "Content refreshed ✨", description: "Description updated with latest details." });
+      }
+    } catch (e: any) {
+      toast({ title: "AI refresh failed", description: e?.message || "Something went wrong.", variant: "destructive" });
+    } finally {
+      setRedoLoading(false);
+    }
   };
 
   const forceClose = () => {
@@ -959,7 +1030,14 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
             {/* Description — full width at bottom, easy to review after AI parse */}
             <div>
-              <label className={labelClass}>Description <span className="font-normal normal-case opacity-60">(recommended)</span></label>
+              <div className="flex items-center justify-between mb-0.5">
+                <label className={labelClass + " mb-0"}>Description <span className="font-normal normal-case opacity-60">(recommended)</span></label>
+                <button type="button" onClick={handleRedoAI} disabled={redoLoading}
+                  className="flex items-center gap-1 px-2.5 py-1 border-2 border-black bg-white text-xs font-black uppercase tracking-wide hover:bg-black hover:text-[#FFD700] transition-colors disabled:opacity-40"
+                  title="Polish description with latest web info">
+                  {redoLoading ? "Searching…" : "✨ Refresh AI"}
+                </button>
+              </div>
               <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
                 className={`${inputClass} resize-none`} rows={3} maxLength={200}
                 placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />

@@ -809,6 +809,81 @@ Return ONLY valid JSON (no markdown):
     };
   }
 
+  async redoFoodEventAI(params: {
+    name: string;
+    venue: string;
+    cuisine: string;
+    dateStart: string;
+    currentSummary: string;
+  }): Promise<{ status: 'updated' | 'no-info'; summary?: string; message?: string }> {
+    const client = new Anthropic({ apiKey: this.apiKey });
+    const { name, venue, cuisine, dateStart, currentSummary } = params;
+
+    const dateLabel = dateStart
+      ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : '';
+
+    const searchQueries: string[] = [];
+    if (name && venue) searchQueries.push(`"${name}" "${venue}" Denver food popup`);
+    else if (name) searchQueries.push(`"${name}" Denver food popup`);
+    if (name) searchQueries.push(`"${name}" Denver ${cuisine}`);
+
+    const searchResults = await Promise.all(searchQueries.map(q => this.serperSearch(q, 4)));
+    const searchContext = searchQueries.map((q, i) => {
+      const snippets = searchResults[i].map(r => `• ${r.title}: ${r.snippet}`).join('\n');
+      return `Search: "${q}"\n${snippets || '(no results)'}`;
+    }).join('\n\n');
+
+    const hasResults = searchResults.some(r => r.length > 0);
+
+    const prompt = `You are improving a food popup listing for Amuse Bouche Insider, a Denver foodie newsletter.
+
+EVENT DETAILS:
+- Name: ${name}
+- Venue: ${venue}
+- Cuisine: ${cuisine}
+- Date: ${dateLabel || 'unknown'}
+- Current description: "${currentSummary || '(none yet)'}"
+
+WEB SEARCH RESULTS:
+${searchContext || '(no results found)'}
+
+TASK: Rewrite the description to be sensory, specific, and compelling. Max 200 chars.
+Voice: like a knowledgeable food-obsessed friend — evocative but not breathless.
+No hype ("amazing," "incredible," "don't miss"). Lead with what makes this worth eating.
+Name the chef or collaborators if found in search results.
+If the current description is already excellent and nothing new was found, improve the prose but keep the core content.
+
+Return ONLY valid JSON (no markdown):
+{
+  "summary": "improved description max 200 chars",
+  "noNewInfo": ${hasResults ? 'false' : 'true'}
+}`;
+
+    const message = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 300,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const raw = message.content[0].type === 'text' ? message.content[0].text : '{}';
+    const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const result = JSON.parse(cleaned);
+
+    if (!hasResults && result.noNewInfo) {
+      return {
+        status: 'no-info',
+        summary: (result.summary || currentSummary || '').substring(0, 200),
+        message: 'No additional details found online yet — description polished.',
+      };
+    }
+
+    return {
+      status: 'updated',
+      summary: (result.summary || currentSummary || '').substring(0, 200),
+    };
+  }
+
   private validateDate(dateString: string): string | null {
     if (!dateString) return null;
 
