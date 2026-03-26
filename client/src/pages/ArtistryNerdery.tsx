@@ -1795,7 +1795,7 @@ export default function ArtistryNerdery() {
             <div className="flex items-center gap-3 mb-3">
               <div className="h-0.5 flex-1 bg-black" />
               <h2 className="text-lg font-black uppercase text-black flex items-center gap-2">
-                ⏳ STILL TIME
+                STILL TIME
               </h2>
               <div className="h-0.5 flex-1 bg-black" />
             </div>
