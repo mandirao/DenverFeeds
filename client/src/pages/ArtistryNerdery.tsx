@@ -1900,8 +1900,8 @@ export default function ArtistryNerdery() {
                       {/* 3-dot menu */}
                       <DropdownMenu open={calDetailMenuOpen} onOpenChange={setCalDetailMenuOpen}>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20">
-                            <MoreVertical className="h-3.5 w-3.5" />
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-black">
+                            <MoreVertical className="h-3.5 w-3.5 text-black" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-36 border-none bg-gray-100 shadow-md rounded-sm font-sans">
