@@ -1,15 +1,19 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Navbar } from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getNextMonths, denverBoulderVenues } from "@/components/EventFilters";
 import { cheapThrillsVenues } from "@shared/schema";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarDays, List, ChevronLeft, ChevronRight, MoreVertical } from "lucide-react";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
@@ -17,9 +21,162 @@ import WeekDivider from "@/components/WeekDivider";
 import JustAddedView from "@/components/JustAddedView";
 import { groupEventsByMonth, groupEventsByCreationTime, isRecentlyAdded, getAddedTimeCategory } from "@/lib/utils";
 import { venueOptions, VenueOption, Event, genres as schemaGenres } from "@shared/schema";
+import { apiRequest, queryClient as qc } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+const MUSIC_ORANGE = "#FE6B41";
+
+function ConcertCalendarMonthView({
+  events,
+  viewYear,
+  viewMonth,
+  onPrevMonth,
+  onNextMonth,
+  onEventClick,
+  onDayOverflowClick,
+}: {
+  events: Event[];
+  viewYear: number;
+  viewMonth: number;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onEventClick: (ev: Event) => void;
+  onDayOverflowClick: (date: string, evs: Event[]) => void;
+}) {
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const eventsByDate = events.reduce<Record<string, Event[]>>((acc, ev) => {
+    const d = new Date(ev.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(ev);
+    return acc;
+  }, {});
+
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={onPrevMonth} className="h-8 w-8 flex items-center justify-center border border-black rounded-full hover:bg-black/10 transition-colors">
+          <ChevronLeft className="w-4 h-4 text-black" />
+        </button>
+        <h2 className="font-black uppercase text-black text-lg tracking-wide">{monthLabel}</h2>
+        <button onClick={onNextMonth} className="h-8 w-8 flex items-center justify-center border border-black rounded-full hover:bg-black/10 transition-colors">
+          <ChevronRight className="w-4 h-4 text-black" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 border-t border-l border-black">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+          <div key={d} className="border-b border-r border-black px-1 py-1 text-[10px] font-black uppercase text-black/60 text-center bg-black/5">
+            {d}
+          </div>
+        ))}
+        {cells.map((day, idx) => {
+          if (day === null) return (
+            <div key={`empty-${idx}`} className="border-b border-r border-black bg-black/5 min-h-[80px]" />
+          );
+          const key = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const dayEvents = eventsByDate[key] || [];
+          const isToday = key === todayKey;
+          const MAX_VISIBLE = 3;
+          const visible = dayEvents.slice(0, MAX_VISIBLE);
+          const overflow = dayEvents.length - MAX_VISIBLE;
+          return (
+            <div key={key} className={`border-b border-r border-black min-h-[80px] p-1 flex flex-col ${isToday ? "bg-white/60" : "bg-white/20 hover:bg-white/30"} transition-colors`}>
+              <div className={`text-xs font-bold mb-0.5 w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0 ${isToday ? "bg-black text-white" : "text-black/70"}`}>
+                {day}
+              </div>
+              <div className="flex flex-col gap-0.5 flex-1">
+                {visible.map((ev, i) => (
+                  <button
+                    key={`${ev.id}-${i}`}
+                    onClick={() => onEventClick(ev)}
+                    className="text-left text-[10px] leading-tight px-1 py-0.5 rounded font-semibold text-black truncate transition-colors hover:opacity-80"
+                    style={{ backgroundColor: "#FEABDA" }}
+                    title={ev.artist}
+                  >
+                    {ev.emoji} {ev.artist}
+                  </button>
+                ))}
+                {overflow > 0 && (
+                  <button
+                    onClick={() => onDayOverflowClick(key, dayEvents)}
+                    className="text-[10px] text-black/60 font-bold hover:text-black transition-colors text-left px-1"
+                  >
+                    +{overflow} more
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
-  
+  const { toast } = useToast();
+  const queryClientHook = useQueryClient();
+
+  // Calendar view state
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const now = new Date();
+  const [calViewYear, setCalViewYear] = useState(now.getFullYear());
+  const [calViewMonth, setCalViewMonth] = useState(now.getMonth());
+  const prevCalMonth = () => {
+    if (calViewMonth === 0) { setCalViewYear(y => y - 1); setCalViewMonth(11); }
+    else setCalViewMonth(m => m - 1);
+  };
+  const nextCalMonth = () => {
+    if (calViewMonth === 11) { setCalViewYear(y => y + 1); setCalViewMonth(0); }
+    else setCalViewMonth(m => m + 1);
+  };
+
+  // Calendar event detail / day sheet
+  const [calEventDetail, setCalEventDetail] = useState<Event | null>(null);
+  const [calDaySheet, setCalDaySheet] = useState<{ date: string; events: Event[] } | null>(null);
+  const [calEventDetailFrom, setCalEventDetailFrom] = useState<{ date: string; events: Event[] } | null>(null);
+  const [calDetailMenuOpen, setCalDetailMenuOpen] = useState(false);
+  const [calDetailDeleteConfirm, setCalDetailDeleteConfirm] = useState(false);
+
+  const calDetailScheduleMutation = useMutation({
+    mutationFn: async () => {
+      if (!calEventDetail) return;
+      const endpoint = calEventDetail.isScheduled ? `/api/events/${calEventDetail.id}/unschedule` : `/api/events/${calEventDetail.id}/schedule`;
+      await apiRequest("POST", endpoint, undefined);
+    },
+    onSuccess: () => {
+      queryClientHook.invalidateQueries({ queryKey: ["/api/events"] });
+      if (calEventDetail) {
+        setCalEventDetail({ ...calEventDetail, isScheduled: !calEventDetail.isScheduled });
+        toast({ title: calEventDetail.isScheduled ? "Removed from scheduled" : "Marked as scheduled" });
+      }
+    },
+  });
+
+  const calDetailDeleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!calEventDetail) return;
+      await apiRequest("DELETE", `/api/events/${calEventDetail.id}`, undefined);
+    },
+    onSuccess: () => {
+      queryClientHook.invalidateQueries({ queryKey: ["/api/events"] });
+      setCalDetailDeleteConfirm(false);
+      setCalEventDetail(null);
+      setCalEventDetailFrom(null);
+      toast({ title: "Event deleted" });
+    },
+  });
+
   // Initialize filters from URL parameters using window.location.search
   // (wouter's useLocation only returns the pathname, not query params)
   const getFiltersFromURL = () => {
@@ -365,7 +522,7 @@ export default function Home() {
     <div className="min-h-screen bg-[#FE6B41]">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className={`container mx-auto px-4 py-8 transition-all duration-200 ${viewMode === "calendar" ? "max-w-5xl" : ""}`}>
         {/* Recent Events Banner - Only show in default view and if there are recent events */}
         {!isLoading && !error && events.length > 0 && filters.status === "all" && (() => {
           // Count events added in the last week (today + this_week)
@@ -404,7 +561,26 @@ export default function Home() {
           <div className="mb-6">
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
-                {/* Status Filters */}
+                {/* View toggle */}
+                <div className="flex items-center gap-1 border border-black rounded-full overflow-hidden flex-shrink-0 mr-1">
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`h-8 w-8 flex items-center justify-center transition-colors ${viewMode === "list" ? "bg-black text-white" : "text-black hover:bg-black/10"}`}
+                    title="List view"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("calendar")}
+                    className={`h-8 w-8 flex items-center justify-center transition-colors ${viewMode === "calendar" ? "bg-black text-white" : "text-black hover:bg-black/10"}`}
+                    title="Calendar view"
+                  >
+                    <CalendarDays className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Status Filters — hidden in calendar mode */}
+                {viewMode !== "calendar" && (<>
                 <button
                   onClick={() => setFilters({ ...filters, status: "all" })}
                   className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
@@ -598,6 +774,7 @@ export default function Home() {
                     <SelectItem value="6">Saturday</SelectItem>
                   </SelectContent>
                 </Select>
+                </>)}
               </div>
             </div>
             
@@ -621,6 +798,16 @@ export default function Home() {
             <div className="py-10 text-center">Loading events...</div>
           ) : error ? (
             <div className="py-10 text-center text-red-500">Error loading events</div>
+          ) : viewMode === "calendar" ? (
+            <ConcertCalendarMonthView
+              events={filteredEvents}
+              viewYear={calViewYear}
+              viewMonth={calViewMonth}
+              onPrevMonth={prevCalMonth}
+              onNextMonth={nextCalMonth}
+              onEventClick={setCalEventDetail}
+              onDayOverflowClick={(date, evs) => setCalDaySheet({ date, events: evs })}
+            />
           ) : !hasEvents ? (
             <EmptyState />
           ) : (
@@ -630,6 +817,211 @@ export default function Home() {
         </div>
       </main>
       <Footer />
+
+      {/* Calendar event detail dialog */}
+      <Dialog open={calEventDetail !== null} onOpenChange={open => { if (!open) { setCalEventDetail(null); setCalEventDetailFrom(null); } }}>
+        <DialogContent className="max-w-lg rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">{calEventDetail?.artist ?? "Event Details"}</DialogTitle>
+          {calEventDetail && (() => {
+            const ev = calEventDetail;
+            const evDate = new Date(ev.date);
+            const dateStr = evDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.venue + " Denver CO")}`;
+            const spotifyUrl = `https://open.spotify.com/search/${encodeURIComponent(ev.artist)}`;
+            const calendarUrl = (() => {
+              const d = evDate;
+              const pad = (n: number) => String(n).padStart(2, "0");
+              const dateParam = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+              const next = new Date(d); next.setDate(next.getDate() + 1);
+              const nextParam = `${next.getFullYear()}${pad(next.getMonth() + 1)}${pad(next.getDate())}`;
+              return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(ev.artist + " @ " + ev.venue)}&dates=${dateParam}/${nextParam}&details=${encodeURIComponent(ev.summary || "")}`;
+            })();
+            const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(ev.artist + " " + ev.venue + " concert")}`;
+            return (
+              <>
+                <div className="px-6 pt-5 pb-4" style={{ backgroundColor: MUSIC_ORANGE }}>
+                  {calEventDetailFrom && (
+                    <button
+                      onClick={() => {
+                        const from = calEventDetailFrom;
+                        setCalEventDetail(null);
+                        setCalEventDetailFrom(null);
+                        setCalDaySheet(from);
+                      }}
+                      className="flex items-center gap-1 text-xs font-bold text-black/60 hover:text-black mb-3 transition-colors"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      {new Date(calEventDetailFrom.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                    </button>
+                  )}
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-3xl flex-shrink-0">{ev.emoji}</span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a href={searchUrl} target="_blank" rel="noopener noreferrer"
+                              className="text-xl font-black uppercase text-black leading-tight hover:underline cursor-pointer">
+                              {ev.artist}
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Search on Google</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {ev.isScheduled && (
+                        <span className="text-[10px] font-black uppercase bg-black text-white px-2 py-0.5">SCHEDULED</span>
+                      )}
+                      <DropdownMenu open={calDetailMenuOpen} onOpenChange={setCalDetailMenuOpen}>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-black">
+                            <MoreVertical className="h-3.5 w-3.5 text-black" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 border-none bg-gray-100 shadow-md rounded-sm font-sans">
+                          <DropdownMenuItem onClick={() => { setCalDetailMenuOpen(false); calDetailScheduleMutation.mutate(); }}
+                            disabled={calDetailScheduleMutation.isPending}
+                            className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none">
+                            {ev.isScheduled ? "Remove from Scheduled" : "Mark as Scheduled"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                            onClick={() => { setCalDetailMenuOpen(false); setTimeout(() => setCalDetailDeleteConfirm(true), 100); }}>
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border border-black/30 text-black/70">{ev.genre}</span>
+                    {ev.requester && ev.requester !== "Mandi" && (
+                      <span className="text-[11px] text-black/60">🛎️ {ev.requester}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 space-y-4 bg-white">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-black font-semibold">
+                      <span>📅</span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a href={calendarUrl} target="_blank" rel="noopener noreferrer" className="hover:underline cursor-pointer">
+                              {dateStr}
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Add to Google Calendar</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-black/80">
+                      <span>📍</span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="hover:underline cursor-pointer">
+                              {ev.venue}
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Find on Google Maps</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    {ev.soundsLike && (
+                      <div className="flex items-center gap-2 text-sm text-black/70">
+                        <span>🎵</span>
+                        <span>Sounds like: {ev.soundsLike}</span>
+                      </div>
+                    )}
+                    {ev.upvotes && ev.upvotes > 0 ? (
+                      <div className="flex items-center gap-2 text-sm text-black/60">
+                        <span>🔥</span>
+                        <span>{ev.upvotes} vote{ev.upvotes !== 1 ? "s" : ""}</span>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <p className="text-sm text-black/90 leading-relaxed">{ev.summary}</p>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <a href={spotifyUrl} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 bg-black text-white font-black uppercase text-xs tracking-wide px-4 py-2 hover:bg-[#1DB954] transition-colors">
+                      Spotify ↗
+                    </a>
+                    <a href={searchUrl} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 border-2 border-black text-black font-black uppercase text-xs tracking-wide px-4 py-2 hover:bg-black hover:text-white transition-colors">
+                      Search ↗
+                    </a>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={calDetailDeleteConfirm} onOpenChange={setCalDetailDeleteConfirm}>
+        <AlertDialogContent className="rounded-none border-2 border-black">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{calEventDetail?.artist}" will be permanently removed from the feed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-none bg-red-600 hover:bg-red-700"
+              onClick={() => calDetailDeleteMutation.mutate()}
+              disabled={calDetailDeleteMutation.isPending}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Day sheet dialog */}
+      <Dialog open={calDaySheet !== null} onOpenChange={open => { if (!open) setCalDaySheet(null); }}>
+        <DialogContent className="max-w-sm rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">
+            {calDaySheet ? `Shows on ${new Date(calDaySheet.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}` : "Shows"}
+          </DialogTitle>
+          {calDaySheet && (() => {
+            const d = new Date(calDaySheet.date + "T12:00:00");
+            const label = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+            return (
+              <>
+                <div className="px-5 pt-5 pb-3" style={{ backgroundColor: MUSIC_ORANGE }}>
+                  <h2 className="text-base font-black uppercase text-black">{label}</h2>
+                  <p className="text-xs text-black/60 mt-0.5">{calDaySheet.events.length} show{calDaySheet.events.length !== 1 ? "s" : ""}</p>
+                </div>
+                <div className="divide-y divide-black/10 bg-white max-h-[60vh] overflow-y-auto">
+                  {calDaySheet.events.map((ev, i) => (
+                    <button
+                      key={`${ev.id}-${i}`}
+                      onClick={() => { setCalEventDetailFrom(calDaySheet); setCalDaySheet(null); setCalEventDetail(ev); }}
+                      className="w-full text-left px-5 py-3 hover:bg-orange-50 transition-colors flex items-center gap-3"
+                    >
+                      <span className="text-xl flex-shrink-0">{ev.emoji}</span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold text-black truncate">{ev.artist}</div>
+                        <div className="text-xs text-black/60 truncate">{ev.venue}</div>
+                        <div className="text-xs text-black/50">{ev.genre}</div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-black/30 flex-shrink-0 ml-auto" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
