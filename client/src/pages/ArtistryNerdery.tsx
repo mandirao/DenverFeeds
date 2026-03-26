@@ -1267,23 +1267,17 @@ function CalendarMonthView({
                 {day}
               </div>
               <div className="space-y-0.5">
-                {shown.map((ev, i) => {
-                  const evIsPast = ev.dateStart < todayStr;
-                  const seriesStillActive = ev.isRecurring && (!ev.dateEnd || ev.dateEnd === "" || ev.dateEnd >= todayStr);
-                  const multiDayStillRunning = !ev.isRecurring && ev.dateEnd && ev.dateEnd !== "" && ev.dateEnd >= todayStr;
-                  const dim = evIsPast && !seriesStillActive && !multiDayStillRunning;
-                  return (
+                {shown.map((ev, i) => (
                   <button
                     key={`${ev.id}-${ev.dateStart}-${i}`}
                     onClick={() => onEventClick(ev)}
-                    className={`w-full text-left text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 bg-black/10 hover:bg-black/20 active:bg-black/30 rounded text-black truncate transition-colors cursor-pointer${dim ? " opacity-40 grayscale" : ""}`}
+                    className="w-full text-left text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 bg-black/10 hover:bg-black/20 active:bg-black/30 rounded text-black truncate transition-colors cursor-pointer"
                     title={ev.name}
                   >
                     <span>{ev.emoji} </span>
                     <span className="font-medium">{ev.name}</span>
                   </button>
-                  );
-                })}
+                ))}
                 {overflow > 0 && (
                   <button
                     onClick={() => onDayOverflowClick(dayStr, dayEvents)}
@@ -1906,8 +1900,8 @@ export default function ArtistryNerdery() {
                       {/* 3-dot menu */}
                       <DropdownMenu open={calDetailMenuOpen} onOpenChange={setCalDetailMenuOpen}>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-black">
-                            <MoreVertical className="h-3.5 w-3.5 text-black" />
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20">
+                            <MoreVertical className="h-3.5 w-3.5" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-36 border-none bg-gray-100 shadow-md rounded-sm font-sans">
