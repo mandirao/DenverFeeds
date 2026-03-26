@@ -1484,8 +1484,23 @@ export default function ArtistryNerdery() {
     return true;
   });
 
+  // "Still Time" — already started, not yet over; dedupe by id, sort by soonest closing
+  const stillTimeEvents = filteredEvents
+    .filter(ev => {
+      if (!ev.dateEnd || ev.dateEnd === "" || ev.dateEnd === ev.dateStart) return false;
+      return ev.dateStart < todayStr && ev.dateEnd >= todayStr;
+    })
+    .filter((ev, idx, arr) => arr.findIndex(e => e.id === ev.id) === idx)
+    .sort((a, b) => (a.dateEnd ?? "").localeCompare(b.dateEnd ?? ""));
+
+  // Events that haven't started yet — feed into the normal month groups
+  const upcomingFilteredEvents = filteredEvents.filter(ev => {
+    if (!ev.dateEnd || ev.dateEnd === "" || ev.dateEnd === ev.dateStart) return true;
+    return !(ev.dateStart < todayStr && ev.dateEnd >= todayStr);
+  });
+
   type MonthBucket = { events: ArtEvent[]; weekGroups: Record<string, { events: ArtEvent[] }> };
-  const grouped = filteredEvents.reduce<Record<string, MonthBucket>>((acc, ev) => {
+  const grouped = upcomingFilteredEvents.reduce<Record<string, MonthBucket>>((acc, ev) => {
     const monthKey = getMonthLabel(ev.dateStart);
     const eventDate = new Date(ev.dateStart + "T12:00:00");
     const nowDate = new Date();
@@ -1774,6 +1789,24 @@ export default function ArtistryNerdery() {
             </div>
           ));
         })()}
+
+        {viewMode === "list" && sortBy === "date" && stillTimeEvents.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-0.5 flex-1 bg-black" />
+              <h2 className="text-lg font-black uppercase text-black flex items-center gap-2">
+                ⏳ STILL TIME
+              </h2>
+              <div className="h-0.5 flex-1 bg-black" />
+            </div>
+            <p className="text-xs text-black opacity-50 mb-3 -mt-1 text-center tracking-wide uppercase">Already open · listed by closing date</p>
+            <ul className="space-y-0">
+              {stillTimeEvents.map(ev => (
+                <ArtEventRow key={`still-${ev.id}`} event={ev} />
+              ))}
+            </ul>
+          </div>
+        )}
 
         {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => {
           const weekKeys = Object.keys(monthData.weekGroups).sort();
