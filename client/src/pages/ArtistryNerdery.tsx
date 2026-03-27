@@ -1837,7 +1837,7 @@ export default function ArtistryNerdery() {
                   onClick={() => setStillTimeExpanded(true)}
                   className="text-black text-sm font-bold underline hover:opacity-60 transition-opacity focus:outline-none block mx-auto"
                 >
-                  Show {stillTimeHiddenCount} more open now
+                  Show {stillTimeHiddenCount} more already open
                 </button>
                 <p className="text-xs text-black opacity-40 mt-1 tracking-wide uppercase">listed by closing date</p>
               </div>
