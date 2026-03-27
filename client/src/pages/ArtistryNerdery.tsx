@@ -1394,6 +1394,7 @@ function expandRecurringEvents(events: ArtEvent[]): ArtEvent[] {
 
 export default function ArtistryNerdery() {
   const [addOpen, setAddOpen] = useState(false);
+  const [stillTimeExpanded, setStillTimeExpanded] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [calViewYear, setCalViewYear] = useState(() => new Date().getFullYear());
@@ -1502,6 +1503,11 @@ export default function ArtistryNerdery() {
     })
     .filter((ev, idx, arr) => arr.findIndex(e => e.id === ev.id) === idx)
     .sort((a, b) => (a.dateEnd ?? "").localeCompare(b.dateEnd ?? ""));
+
+  const STILL_VISIBLE = 4;
+  const stillTimeTruncated = stillTimeEvents.length > STILL_VISIBLE && !stillTimeExpanded;
+  const visibleStillTimeEvents = stillTimeTruncated ? stillTimeEvents.slice(0, STILL_VISIBLE) : stillTimeEvents;
+  const stillTimeHiddenCount = stillTimeEvents.length - STILL_VISIBLE;
 
   // Events that haven't started yet — feed into the normal month groups
   const upcomingFilteredEvents = filteredEvents.filter(ev => {
@@ -1809,12 +1815,32 @@ export default function ArtistryNerdery() {
               </h2>
               <div className="h-0.5 flex-1 bg-black" />
             </div>
-            <p className="text-xs text-black opacity-50 mb-3 -mt-1 text-center tracking-wide uppercase">Already open · listed by closing date</p>
-            <ul className="space-y-0">
-              {stillTimeEvents.map(ev => (
-                <ArtEventRow key={`still-${ev.id}`} event={ev} />
-              ))}
-            </ul>
+            {!stillTimeTruncated && (
+              <p className="text-xs text-black opacity-50 mb-3 -mt-1 text-center tracking-wide uppercase">Already open · listed by closing date</p>
+            )}
+            <div className="relative">
+              <ul className="space-y-0">
+                {visibleStillTimeEvents.map(ev => (
+                  <ArtEventRow key={`still-${ev.id}`} event={ev} />
+                ))}
+              </ul>
+              {stillTimeTruncated && (
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: `linear-gradient(to bottom, transparent 40%, ${AN_BG} 100%)` }}
+                />
+              )}
+            </div>
+            {stillTimeTruncated && (
+              <div className="text-center mt-3">
+                <button
+                  onClick={() => setStillTimeExpanded(true)}
+                  className="text-black text-sm font-bold underline hover:opacity-60 transition-opacity focus:outline-none"
+                >
+                  View {stillTimeHiddenCount} more show{stillTimeHiddenCount !== 1 ? "s" : ""} already open. Listed by closing date.
+                </button>
+              </div>
+            )}
           </div>
         )}
 
