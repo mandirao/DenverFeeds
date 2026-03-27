@@ -1621,6 +1621,15 @@ export default function AmsueBouche() {
           </div>
         )}
 
+        {!isLoading && events.length > 0 && filteredEvents.length === 0 && viewMode === "list" && (
+          <div className="text-center py-16">
+            <p className="text-lg text-black uppercase mb-2">No events match your filters.</p>
+            <button onClick={resetFilters} className="text-black text-sm underline hover:text-white transition-colors">
+              ✕ clear filters
+            </button>
+          </div>
+        )}
+
         {!isLoading && viewMode === "calendar" && (
           <FoodCalendarMonthView
             events={filteredEvents}
