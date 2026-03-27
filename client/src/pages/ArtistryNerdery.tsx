@@ -1459,11 +1459,21 @@ export default function ArtistryNerdery() {
   const todayStr = new Date().toISOString().split('T')[0];
   const tomorrowDate = new Date(); tomorrowDate.setDate(tomorrowDate.getDate() + 1);
   const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
-  const weekendDateSet = new Set<string>();
-  for (let i = 0; i < 14; i++) {
-    const d = new Date(); d.setDate(d.getDate() + i);
-    if ([5, 6, 0].includes(d.getDay())) weekendDateSet.add(d.toISOString().split('T')[0]);
-  }
+  const weekendDateSet = (() => {
+    const s = new Set<string>();
+    const today = new Date();
+    const dow = today.getDay(); // 0=Sun, 6=Sat
+    if (dow === 0) {
+      s.add(today.toISOString().split("T")[0]);
+    } else {
+      const daysUntilSat = dow === 6 ? 0 : 6 - dow;
+      const sat = new Date(today); sat.setDate(today.getDate() + daysUntilSat);
+      const sun = new Date(sat); sun.setDate(sat.getDate() + 1);
+      s.add(sat.toISOString().split("T")[0]);
+      s.add(sun.toISOString().split("T")[0]);
+    }
+    return s;
+  })();
 
   const filteredEvents = expandedEvents.filter(ev => {
     if (filterCategory !== "all" && ev.category !== filterCategory) return false;

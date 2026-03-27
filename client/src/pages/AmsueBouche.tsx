@@ -1382,11 +1382,16 @@ export default function AmsueBouche() {
   const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; })();
   const weekendDates = (() => {
     const s = new Set<string>();
-    const d = new Date();
-    for (let i = 0; i < 14; i++) {
-      const day = d.getDay();
-      if (day === 0 || day === 6) s.add(d.toISOString().split("T")[0]);
-      d.setDate(d.getDate() + 1);
+    const today = new Date();
+    const dow = today.getDay(); // 0=Sun, 6=Sat
+    if (dow === 0) {
+      s.add(today.toISOString().split("T")[0]);
+    } else {
+      const daysUntilSat = dow === 6 ? 0 : 6 - dow;
+      const sat = new Date(today); sat.setDate(today.getDate() + daysUntilSat);
+      const sun = new Date(sat); sun.setDate(sat.getDate() + 1);
+      s.add(sat.toISOString().split("T")[0]);
+      s.add(sun.toISOString().split("T")[0]);
     }
     return s;
   })();
@@ -1552,7 +1557,7 @@ export default function AmsueBouche() {
                   <SelectContent className="max-h-[320px] overflow-y-auto">
                     <SelectItem value="all">All Cuisine</SelectItem>
                     <SelectSeparator />
-                    {cuisineTypes.map(c => (
+                    {[...cuisineTypes].sort().map(c => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
@@ -1582,18 +1587,18 @@ export default function AmsueBouche() {
                   </SelectContent>
                 </Select>
 
-                {/* Clear filters */}
-                {hasActiveFilters && (
-                  <button
-                    onClick={resetFilters}
-                    className="px-3 py-1 rounded-full border border-black text-sm font-medium text-black hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0"
-                    style={{ backgroundColor: AB_GOLD }}
-                  >
-                    Clear
-                  </button>
-                )}
               </div>
             </div>
+            {hasActiveFilters && (
+              <div className="mt-2">
+                <button
+                  onClick={resetFilters}
+                  className="text-black text-sm hover:text-white transition-colors focus:outline-none underline"
+                >
+                  ✕ clear filters
+                </button>
+              </div>
+            )}
           </div>
         )}
 
