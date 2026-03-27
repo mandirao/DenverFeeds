@@ -1728,19 +1728,23 @@ export default function AmsueBouche() {
 
       {/* ── Footer ── */}
       <footer className="py-4 px-4" style={{ backgroundColor: AB_GOLD }}>
-        <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Link href="/"
-              className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline flex items-center gap-1">
-              <List className="w-4 h-4" />SETLIST SOCIAL FEED
-            </Link>
+        <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Link href="/" className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">Setlist Social Feed</Link>
             <span className="text-black opacity-40">|</span>
-            <button onClick={() => setAddOpen(true)}
-              className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline">
-              ADD A POPUP
+            <span className="text-sm font-bold text-black uppercase">Amuse-Bouche Insider</span>
+            <span className="text-black opacity-40">|</span>
+            <Link href="/artistry-nerdistry" className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">Artistry/Nerdistry Live</Link>
+            <span className="text-black opacity-40">|</span>
+            <button onClick={() => setCalendarOpen(true)} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
+              Subscribe to Calendar
+            </button>
+            <span className="text-black opacity-40">|</span>
+            <button onClick={() => setAddOpen(true)} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
+              Add a Popup
             </button>
           </div>
-          <span className="text-sm text-black">© {new Date().getFullYear()} Amuse Bouche</span>
+          <span className="text-sm text-black whitespace-nowrap">© {new Date().getFullYear()} Amuse-Bouche Insider</span>
         </div>
       </footer>
 

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, List, Upload, Calendar } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -21,11 +21,8 @@ export function Footer() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [csvError, setCsvError] = useState<string | null>(null);
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
-
-  // Determine if we're on the Add Show or Playlists page
-  const isAddPage = location === "/add" || location === "/playlists";
 
   // Add multiple events (CSV) mutation
   const addEventsBulkMutation = useMutation({
@@ -189,33 +186,28 @@ export function Footer() {
   };
 
   return (
-    <footer className="bg-[#FE6B41] py-4 mt-8">
-      <div className="container mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
-        <div className="mb-4 sm:mb-0 flex items-center space-x-2">
-          <button 
-            onClick={() => setCalendarOpen(true)}
-            className="text-black hover:text-[#41F2EE] transition-colors flex items-center underline text-sm"
-          >
-            <Calendar className="w-4 h-4 mr-1" /> SUBSCRIBE TO CALENDAR
+    <footer className="bg-[#FE6B41] py-4 mt-8 px-4">
+      <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-sm font-bold text-black uppercase">Setlist Social Feed</span>
+          <span className="text-black opacity-40">|</span>
+          <Link href="/amuse-bouche" className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">Amuse-Bouche Insider</Link>
+          <span className="text-black opacity-40">|</span>
+          <Link href="/artistry-nerdistry" className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">Artistry/Nerdistry Live</Link>
+          <span className="text-black opacity-40">|</span>
+          <button onClick={() => setCalendarOpen(true)} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
+            Subscribe to Calendar
           </button>
-          <span className="text-black">|</span>
-          {isAddPage ? (
-            <Link href="/" className="text-black hover:text-[#41F2EE] transition-colors flex items-center underline text-sm">
-              <List className="w-4 h-4 mr-1" /> VIEW SHOWS
-            </Link>
-          ) : (
-            <button
-              onClick={() => setCsvModalOpen(true)} 
-              className="text-black hover:text-[#41F2EE] transition-colors flex items-center underline text-sm"
-            >
-              <Upload className="w-4 h-4 mr-1" /> UPLOAD EVENTS CSV
-            </button>
-          )}
+          <span className="text-black opacity-40">|</span>
+          <Link href="/add" className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
+            Add a Show
+          </Link>
+          <span className="text-black opacity-40">|</span>
+          <button onClick={() => setCsvModalOpen(true)} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
+            Upload Events CSV
+          </button>
         </div>
-
-        <div className="text-sm text-black">
-          <span>© {new Date().getFullYear()} Setlist Social Feed.</span>
-        </div>
+        <span className="text-sm text-black whitespace-nowrap">© {new Date().getFullYear()} Setlist Social Feed</span>
       </div>
 
       {/* Calendar Subscription Dialog */}

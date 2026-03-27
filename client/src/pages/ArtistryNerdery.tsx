@@ -1859,24 +1859,23 @@ export default function ArtistryNerdery() {
 
       {/* Footer */}
       <footer className="py-4 px-4" style={{ backgroundColor: AN_BG }}>
-        <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Link href="/"
-              className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline flex items-center gap-1">
-              <List className="w-4 h-4" />SETLIST SOCIAL FEED
-            </Link>
+        <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Link href="/" className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">Setlist Social Feed</Link>
             <span className="text-black opacity-40">|</span>
-            <Link href="/amuse-bouche"
-              className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline">
-              AMUSE-BOUCHE
-            </Link>
+            <Link href="/amuse-bouche" className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">Amuse-Bouche Insider</Link>
             <span className="text-black opacity-40">|</span>
-            <button onClick={() => setAddOpen(true)}
-              className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline">
-              ADD AN EVENT
+            <span className="text-sm font-bold text-black uppercase">Artistry/Nerdistry Live</span>
+            <span className="text-black opacity-40">|</span>
+            <button onClick={() => setCalendarOpen(true)} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
+              Subscribe to Calendar
+            </button>
+            <span className="text-black opacity-40">|</span>
+            <button onClick={() => setAddOpen(true)} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
+              Add an Event
             </button>
           </div>
-          <span className="text-sm text-black">© {new Date().getFullYear()} Artistry/Nerdistry Live</span>
+          <span className="text-sm text-black whitespace-nowrap">© {new Date().getFullYear()} Artistry/Nerdistry Live</span>
         </div>
       </footer>
 
