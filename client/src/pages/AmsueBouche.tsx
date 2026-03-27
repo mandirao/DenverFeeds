@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -1337,6 +1337,8 @@ export default function AmsueBouche() {
   const [calDetailEditOpen, setCalDetailEditOpen] = useState(false);
   const [calDetailDeleteConfirm, setCalDetailDeleteConfirm] = useState(false);
   const [sortBy, setSortBy] = useState<"date" | "added">("date");
+  const [filterCuisine, setFilterCuisine] = useState("all");
+  const [filterDay, setFilterDay] = useState("all");
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
@@ -1376,8 +1378,37 @@ export default function AmsueBouche() {
 
   const expandedEvents = expandRecurringFoodEvents(events);
 
+  const todayStr = new Date().toISOString().split("T")[0];
+  const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; })();
+  const weekendDates = (() => {
+    const s = new Set<string>();
+    const d = new Date();
+    for (let i = 0; i < 14; i++) {
+      const day = d.getDay();
+      if (day === 0 || day === 6) s.add(d.toISOString().split("T")[0]);
+      d.setDate(d.getDate() + 1);
+    }
+    return s;
+  })();
+
+  const filteredEvents = expandedEvents.filter(ev => {
+    if (filterCuisine !== "all" && ev.cuisine !== filterCuisine) return false;
+    if (filterDay !== "all") {
+      const [y, mo, dy] = ev.dateStart.split("-").map(Number);
+      const d = new Date(y, mo - 1, dy);
+      if (filterDay === "today")    { if (ev.dateStart !== todayStr) return false; }
+      else if (filterDay === "tomorrow") { if (ev.dateStart !== tomorrowStr) return false; }
+      else if (filterDay === "weekend")  { if (!weekendDates.has(ev.dateStart)) return false; }
+      else { if (d.getDay().toString() !== filterDay) return false; }
+    }
+    return true;
+  });
+
+  const hasActiveFilters = filterCuisine !== "all" || filterDay !== "all";
+  const resetFilters = () => { setFilterCuisine("all"); setFilterDay("all"); setSortBy("date"); };
+
   type MonthBucket = { events: FoodEvent[]; weekGroups: Record<string, { events: FoodEvent[] }> };
-  const grouped = expandedEvents.reduce<Record<string, MonthBucket>>((acc, ev) => {
+  const grouped = filteredEvents.reduce<Record<string, MonthBucket>>((acc, ev) => {
     const monthKey = getMonthLabel(ev.dateStart);
     const eventDate = new Date(ev.dateStart + "T12:00:00");
     const nowDate = new Date();
@@ -1507,6 +1538,60 @@ export default function AmsueBouche() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
+
+                {/* Separator */}
+                <div className="h-6 w-px bg-black opacity-40 mx-1 flex-shrink-0" />
+
+                {/* Cuisine filter */}
+                <Select value={filterCuisine} onValueChange={setFilterCuisine}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filterCuisine !== "all" ? "bg-white text-black" : "text-black hover:border-white"
+                  }`} style={{ width: "160px", backgroundColor: filterCuisine !== "all" ? "white" : AB_GOLD }}>
+                    <SelectValue placeholder="All Cuisine" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[320px] overflow-y-auto">
+                    <SelectItem value="all">All Cuisine</SelectItem>
+                    <SelectSeparator />
+                    {cuisineTypes.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Day of week filter */}
+                <Select value={filterDay} onValueChange={setFilterDay}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filterDay !== "all" ? "bg-white text-black" : "text-black hover:border-white"
+                  }`} style={{ width: "148px", backgroundColor: filterDay !== "all" ? "white" : AB_GOLD }}>
+                    <SelectValue placeholder="All Days" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[320px] overflow-y-auto">
+                    <SelectItem value="all">All Days</SelectItem>
+                    <SelectSeparator />
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="tomorrow">Tomorrow</SelectItem>
+                    <SelectItem value="weekend">This Weekend</SelectItem>
+                    <SelectSeparator />
+                    <SelectItem value="0">Sundays</SelectItem>
+                    <SelectItem value="1">Mondays</SelectItem>
+                    <SelectItem value="2">Tuesdays</SelectItem>
+                    <SelectItem value="3">Wednesdays</SelectItem>
+                    <SelectItem value="4">Thursdays</SelectItem>
+                    <SelectItem value="5">Fridays</SelectItem>
+                    <SelectItem value="6">Saturdays</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Clear filters */}
+                {hasActiveFilters && (
+                  <button
+                    onClick={resetFilters}
+                    className="px-3 py-1 rounded-full border border-black text-sm font-medium text-black hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0"
+                    style={{ backgroundColor: AB_GOLD }}
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1533,7 +1618,7 @@ export default function AmsueBouche() {
 
         {!isLoading && viewMode === "calendar" && (
           <FoodCalendarMonthView
-            events={expandedEvents}
+            events={filteredEvents}
             viewYear={calViewYear}
             viewMonth={calViewMonth}
             onPrevMonth={prevCalMonth}
@@ -1561,7 +1646,7 @@ export default function AmsueBouche() {
           };
 
           const seen = new Set<number>();
-          const sorted = [...events]
+          const sorted = [...filteredEvents]
             .filter(ev => { if (seen.has(ev.id)) return false; seen.add(ev.id); return true; })
             .sort((a, b) => b.id - a.id);
           const buckets: { key: "today" | "week" | "month" | "earlier"; label: string; events: FoodEvent[] }[] = [
