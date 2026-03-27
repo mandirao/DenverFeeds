@@ -181,15 +181,15 @@ export default function Home() {
   // (wouter's useLocation only returns the pathname, not query params)
   const getFiltersFromURL = () => {
     const params = new URLSearchParams(window.location.search);
-    const status = params.get('status') || "all";
+    const sortParam = params.get('sortBy') || 'date';
     return {
       month: params.get('month') || "all",
-      genre: params.get('genre') || "all", 
-      status: status,
+      genre: params.get('genre') || "all",
+      status: params.get('status') || "all",
       location: params.get('location') || "all",
       venue: params.get('venue') || "all",
       dayOfWeek: params.get('dayOfWeek') || "all",
-      sortBy: status === "top-voted" ? "votes" : "date"
+      sortBy: sortParam,
     };
   };
 
@@ -197,17 +197,13 @@ export default function Home() {
   
   // Update URL when filters change
   const setFilters = (newFilters: typeof filters) => {
-    const finalFilters = {
-      ...newFilters,
-      sortBy: newFilters.status === "top-voted" ? "votes" : "date"
-    };
-    
+    const finalFilters = { ...newFilters };
     setFiltersState(finalFilters);
     
     const params = new URLSearchParams();
     Object.entries(finalFilters).forEach(([key, value]) => {
-      if (key !== "sortBy" && value !== "all" && value !== "date") {
-        params.set(key, value);
+      if (value !== "all" && value !== "date") {
+        params.set(key, value as string);
       }
     });
     
@@ -279,11 +275,6 @@ export default function Home() {
     // Status filter
     if (filters.status === "scheduled" && !event.isScheduled) {
       return false;
-    } else if (filters.status === "top-voted") {
-      // Only show unscheduled events with at least 1 vote
-      if (event.isScheduled || !event.upvotes || event.upvotes < 1) {
-        return false;
-      }
     } else if (filters.status === "member-picks") {
       // Only show events not added by Mandi and with a requester field (for the 🛎️ emoji)
       if (event.requester === "Mandi" || !event.requester || event.requester.trim() === "") {
@@ -356,9 +347,9 @@ export default function Home() {
     return true;
   });
   
-  // Sort events based on sortBy option and status
+  // Sort events based on sortBy option
   const sortedEvents = [...filteredEvents].sort((a, b) => {
-    if (filters.status === "top-voted" || filters.sortBy === "votes") {
+    if (filters.sortBy === "votes") {
       // Sort by votes (highest first)
       const aVotes = a.upvotes || 0;
       const bVotes = b.upvotes || 0;
@@ -383,9 +374,10 @@ export default function Home() {
     let count = 0;
     if (filters.month !== "all") count++;
     if (filters.genre !== "all") count++;
-    if (filters.location !== "all") count++; // "All Regions" is the cleared state
+    if (filters.location !== "all") count++;
     if (filters.venue !== "all") count++;
     if (filters.dayOfWeek !== "all") count++;
+    if (filters.status !== "all") count++;
     return count;
   };
   
@@ -408,24 +400,11 @@ export default function Home() {
   // Determine if we should group by month/week or show a flat list
   let displayContent;
   
-  if (filters.status === "top-voted") {
-    // For top-voted, we show a flat list without month/week grouping
-    // Filter out events with 0 votes
-    const eventsWithVotes = sortedEvents.filter(event => (event.upvotes || 0) > 0);
-    
-    // Create subtitle if month or genre filters are applied
-    let filterSubtitle = '';
-    if (filters.month !== 'all' && filters.genre !== 'all') {
-      filterSubtitle = `${filters.genre} in ${filters.month}`;
-    } else if (filters.month !== 'all') {
-      filterSubtitle = filters.month;
-    } else if (filters.genre !== 'all') {
-      filterSubtitle = filters.genre;
-    }
-    
+  if (filters.sortBy === "votes") {
+    // Top Voted: flat list sorted by votes, only events with >0 votes and not yet scheduled
+    const eventsWithVotes = sortedEvents.filter(event => (event.upvotes || 0) > 0 && !event.isScheduled);
     displayContent = (
       <div className="mb-6">
-        {filterSubtitle && <p className="text-white text-sm mb-4 opacity-80">{filterSubtitle}</p>}
         <ul className="list-none pl-0 space-y-2 mb-3">
           {eventsWithVotes.map(event => (
             <EventItem key={event.id} event={event} />
@@ -433,71 +412,18 @@ export default function Home() {
         </ul>
       </div>
     );
-  } else if (filters.status === "member-picks") {
-    // For member picks, group by month with month headers
-    const groupedEvents = groupEventsByMonth(sortedEvents);
-    displayContent = (
-      <>
-        {Object.entries(groupedEvents).map(([month, monthEvents]) => (
-          <MonthGroup 
-            key={month} 
-            monthName={month} 
-            events={monthEvents} 
-          />
-        ))}
-      </>
-    );
-  } else if (filters.status === "just-added") {
-    // Special case for 'Just Added' - we now use the JustAddedView component
-    // Create subtitle if month or genre filters are applied
-    let filterSubtitle = '';
-    if (filters.month !== 'all' && filters.genre !== 'all') {
-      filterSubtitle = `${filters.genre} in ${filters.month}`;
-    } else if (filters.month !== 'all') {
-      filterSubtitle = filters.month;
-    } else if (filters.genre !== 'all') {
-      filterSubtitle = filters.genre;
-    }
-    
+  } else if (filters.sortBy === "just-added") {
+    // Recently Added: group by when they were added (today / this week / this month / earlier)
     displayContent = (
       <JustAddedView 
         events={filteredEvents} 
-        subtitle={filterSubtitle} 
+        subtitle="" 
       />
     );
-  } else if (filters.status === "cheap-thrills") {
-    // For cheap thrills events, group by month with month headers
-    const groupedEvents = groupEventsByMonth(sortedEvents);
-    displayContent = (
-      <>
-        {Object.entries(groupedEvents).map(([month, monthEvents]) => (
-          <MonthGroup 
-            key={month} 
-            monthName={month} 
-            events={monthEvents} 
-          />
-        ))}
-      </>
-    );
-  } else if (filters.status === "scheduled") {
-    // For scheduled events, group by month with month headers
-    const groupedEvents = groupEventsByMonth(sortedEvents);
-    displayContent = (
-      <>
-        {Object.entries(groupedEvents).map(([month, monthEvents]) => (
-          <MonthGroup 
-            key={month} 
-            monthName={month} 
-            events={monthEvents} 
-          />
-        ))}
-      </>
-    );
   } else {
-    // Standard view with events grouped by month
+    // Upcoming (date) sort: month/week grouping for all content filters
     displayContent = (
       <>
-        {/* Display events grouped by month without additional heading */}
         {Object.entries(groupedByMonthAndWeek).map(([month, monthEvents]) => (
           <MonthGroup 
             key={month} 
@@ -510,10 +436,10 @@ export default function Home() {
   }
   
   // Check if we have events to display after filtering
-  const hasEvents = filters.status === "top-voted" || filters.status === "just-added"
-    ? sortedEvents.length > 0 
-    : filters.status === "member-picks" || filters.status === "scheduled" || filters.status === "cheap-thrills"
-    ? Object.entries(groupEventsByMonth(sortedEvents)).length > 0
+  const hasEvents = filters.sortBy === "votes"
+    ? sortedEvents.filter(e => (e.upvotes || 0) > 0 && !e.isScheduled).length > 0
+    : filters.sortBy === "just-added"
+    ? filteredEvents.length > 0
     : Object.entries(groupedByMonthAndWeek).length > 0;
 
 
@@ -524,7 +450,7 @@ export default function Home() {
       
       <main className={`container mx-auto px-4 py-8 transition-all duration-200 ${viewMode === "calendar" ? "max-w-5xl" : ""}`}>
         {/* Recent Events Banner - Only show in default view and if there are recent events */}
-        {!isLoading && !error && events.length > 0 && filters.status === "all" && (() => {
+        {!isLoading && !error && events.length > 0 && filters.status === "all" && filters.sortBy !== "just-added" && (() => {
           // Count events added in the last week (today + this_week)
           const recentEvents = events.filter(event => {
             const category = getAddedTimeCategory(event.createdAt);
@@ -544,7 +470,7 @@ export default function Home() {
                   <>
                     {recentEvents.length} shows added in the last week. {' '}
                     <button 
-                      onClick={() => setFilters({ ...filters, status: "just-added" })}
+                      onClick={() => setFilters({ ...filters, sortBy: "just-added" })}
                       className="text-white hover:text-[#41F2EE] underline font-light focus:outline-none"
                     >
                       Review + vote
@@ -586,15 +512,15 @@ export default function Home() {
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-black bg-white text-black font-medium text-sm hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0 focus:outline-none">
                       <ArrowUpDown className="w-3 h-3" />
-                      {filters.status === "just-added" ? "Recently Added" : filters.status === "top-voted" ? "Top Voted" : "Upcoming"}
+                      {filters.sortBy === "just-added" ? "Recently Added" : filters.sortBy === "votes" ? "Top Voted" : "Upcoming"}
                       <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-44 p-0">
                     {([
-                      { label: "Upcoming", onClick: () => setFilters({ ...filters, status: "all", sortBy: "date" }), active: filters.status !== "just-added" && filters.status !== "top-voted" },
-                      { label: "Recently Added", onClick: () => setFilters({ ...filters, status: "just-added", sortBy: "date" }), active: filters.status === "just-added" },
-                      { label: "Top Voted", onClick: () => setFilters({ ...filters, status: "top-voted", sortBy: "votes" }), active: filters.status === "top-voted" },
+                      { label: "Upcoming", onClick: () => setFilters({ ...filters, sortBy: "date" }), active: filters.sortBy === "date" },
+                      { label: "Recently Added", onClick: () => setFilters({ ...filters, sortBy: "just-added" }), active: filters.sortBy === "just-added" },
+                      { label: "Top Voted", onClick: () => setFilters({ ...filters, sortBy: "votes" }), active: filters.sortBy === "votes" },
                     ] as const).map(opt => (
                       <DropdownMenuItem key={opt.label} onClick={opt.onClick} className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide rounded-none focus:bg-gray-100 hover:bg-gray-100 cursor-pointer">
                         <span className="w-3.5 flex-shrink-0">{opt.active ? <Check className="w-3 h-3" /> : null}</span>
@@ -608,7 +534,7 @@ export default function Home() {
                 {/* Separator between sort and filter pills */}
                 <div className="h-6 w-px bg-black opacity-40 mx-1 flex-shrink-0" />
                 <button
-                  onClick={() => setFilters({ ...filters, status: "cheap-thrills" })}
+                  onClick={() => setFilters({ ...filters, status: filters.status === "cheap-thrills" ? "all" : "cheap-thrills" })}
                   className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
                     filters.status === "cheap-thrills" 
                       ? "bg-white text-black" 
@@ -618,7 +544,7 @@ export default function Home() {
                   Cheap Thrills
                 </button>
                 <button
-                  onClick={() => setFilters({ ...filters, status: "scheduled" })}
+                  onClick={() => setFilters({ ...filters, status: filters.status === "scheduled" ? "all" : "scheduled" })}
                   className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
                     filters.status === "scheduled" 
                       ? "bg-white text-black" 
@@ -628,7 +554,7 @@ export default function Home() {
                   Scheduled
                 </button>
                 <button
-                  onClick={() => setFilters({ ...filters, status: "member-picks" })}
+                  onClick={() => setFilters({ ...filters, status: filters.status === "member-picks" ? "all" : "member-picks" })}
                   className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
                     filters.status === "member-picks" 
                       ? "bg-white text-black" 
