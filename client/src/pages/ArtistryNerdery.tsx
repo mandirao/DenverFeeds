@@ -1835,9 +1835,20 @@ export default function ArtistryNerdery() {
               <div className="text-center mt-3">
                 <button
                   onClick={() => setStillTimeExpanded(true)}
-                  className="text-black text-sm font-bold underline hover:opacity-60 transition-opacity focus:outline-none"
+                  className="text-black text-sm font-bold underline hover:opacity-60 transition-opacity focus:outline-none block mx-auto"
                 >
-                  View {stillTimeHiddenCount} more show{stillTimeHiddenCount !== 1 ? "s" : ""} already open. Listed by closing date.
+                  Show {stillTimeHiddenCount} more open now
+                </button>
+                <p className="text-xs text-black opacity-40 mt-1 tracking-wide uppercase">listed by closing date</p>
+              </div>
+            )}
+            {!stillTimeTruncated && stillTimeEvents.length > STILL_VISIBLE && (
+              <div className="text-center mt-2">
+                <button
+                  onClick={() => setStillTimeExpanded(false)}
+                  className="text-black text-xs underline hover:opacity-60 transition-opacity focus:outline-none opacity-50"
+                >
+                  ↑ show less
                 </button>
               </div>
             )}
