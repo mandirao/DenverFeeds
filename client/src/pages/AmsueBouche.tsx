@@ -100,6 +100,76 @@ function createCalendarUrl(event: FoodEvent): string {
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&location=${loc}&details=${details}&dates=${start}/${end}`;
 }
 
+// ── Recurring event helpers ───────────────────────────────────────────────────
+
+function classifyRecurrence(label: string | null | undefined): 'weekly' | 'biweekly' | 'monthly' | 'annual' | 'irregular' {
+  if (!label) return 'monthly';
+  const l = label.toLowerCase();
+  if (l.includes('annual') || l.includes('yearly') || l.includes('seasonal')) return 'annual';
+  if (l.includes('bi-week') || l.includes('biweek') || l.includes('every other week') ||
+      /\d+(st|nd|rd|th)?.{0,5}&.{0,5}\d+(st|nd|rd|th)?/.test(l)) return 'biweekly';
+  if (l.includes('week')) return 'weekly';
+  if (l.includes('month') || l.includes('every 1st') || l.includes('every first') ||
+      l.includes('every last') || /every \d+(st|nd|rd|th)/.test(l)) return 'monthly';
+  return 'irregular';
+}
+
+function addCalDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function addCalMonths(dateStr: string, months: number): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().split('T')[0];
+}
+
+function expandRecurringFoodEvents(events: FoodEvent[]): FoodEvent[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split('T')[0];
+  const result: FoodEvent[] = [];
+
+  for (const ev of events) {
+    if (!ev.isRecurring) { result.push(ev); continue; }
+
+    const type = classifyRecurrence(ev.recurrenceLabel);
+    const spanDays = ev.dateEnd && ev.dateEnd !== '' && ev.dateEnd !== ev.dateStart
+      ? Math.round((new Date(ev.dateEnd + 'T12:00:00').getTime() - new Date(ev.dateStart + 'T12:00:00').getTime()) / 86400000)
+      : 0;
+    const makeOccurrence = (dateStart: string): FoodEvent => ({
+      ...ev, dateStart,
+      dateEnd: spanDays > 0 ? addCalDays(dateStart, spanDays) : (ev.dateEnd ?? ''),
+    });
+
+    if (type === 'annual') {
+      const monthDay = ev.dateStart.slice(5);
+      const yr = today.getFullYear();
+      const thisYearOcc = `${yr}-${monthDay}`;
+      if (thisYearOcc >= todayStr) result.push(makeOccurrence(thisYearOcc));
+      else if (today.getMonth() === 0) result.push(makeOccurrence(`${yr + 1}-${monthDay}`));
+      continue;
+    }
+    if (type === 'irregular') {
+      let d = ev.dateStart;
+      while (d < todayStr) d = addCalMonths(d, 1);
+      result.push(makeOccurrence(d));
+      continue;
+    }
+    const periodDays = type === 'weekly' ? 7 : type === 'biweekly' ? 14 : null;
+    let d = ev.dateStart;
+    if (periodDays) { while (d < todayStr) d = addCalDays(d, periodDays); }
+    else { while (d < todayStr) d = addCalMonths(d, 1); }
+    for (let i = 0; i < 2; i++) {
+      result.push(makeOccurrence(d));
+      if (i < 1) d = periodDays ? addCalDays(d, periodDays) : addCalMonths(d, 1);
+    }
+  }
+  return result.sort((a, b) => a.dateStart.localeCompare(b.dateStart));
+}
+
 // ── Event Row (inline sentence style, matching Setlist Social) ────────────────
 
 function FoodEventRow({ event }: { event: FoodEvent }) {
@@ -224,7 +294,19 @@ function FoodEventRow({ event }: { event: FoodEvent }) {
             </TooltipProvider>
             {"). "}
 
+            {event.isRecurring && (
+              <span className="inline-flex items-center align-middle mr-1.5 text-[11px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-black/10 text-black/70">
+                ↻ {event.recurrenceLabel || "Recurring"}
+              </span>
+            )}
+
             {event.summary}
+
+            {event.isRecurring && (event.instanceNotes as Record<string, string> | null | undefined)?.[event.dateStart] && (
+              <span className="block text-xs text-black/60 mt-0.5 ml-1">
+                ↳ {(event.instanceNotes as Record<string, string>)[event.dateStart]}
+              </span>
+            )}
 
             {event.cuisine && (
               <span className="italic"> {event.cuisine}.</span>
@@ -386,6 +468,10 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
   const [errorField, setErrorField] = useState<string | null>(null);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [redoLoading, setRedoLoading] = useState(false);
+  const occurrenceDate = event.dateStart;
+  const [instanceNote, setInstanceNote] = useState(
+    (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? ""
+  );
   const [form, setForm] = useState<Partial<InsertFoodEvent>>({
     emoji: event.emoji || "",
     name: event.name || "",
@@ -401,6 +487,8 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
     requester: event.requester || "",
     announcedAt: event.announcedAt || "",
     selloutRisk: event.selloutRisk ?? undefined,
+    isRecurring: event.isRecurring ?? false,
+    recurrenceLabel: event.recurrenceLabel || "",
   });
 
   const set = (field: keyof InsertFoodEvent, value: string) => {
@@ -409,9 +497,12 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
   };
 
   const hasChanges = () => {
-    const keys = ['emoji', 'name', 'venue', 'neighborhood', 'dateStart', 'dateEnd', 'summary', 'cuisine', 'price', 'ticketUrl', 'sourceUrl', 'requester', 'announcedAt'] as const;
+    const keys = ['emoji', 'name', 'venue', 'neighborhood', 'dateStart', 'dateEnd', 'summary', 'cuisine', 'price', 'ticketUrl', 'sourceUrl', 'requester', 'announcedAt', 'recurrenceLabel'] as const;
+    const originalNote = (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? "";
     return keys.some(k => (form[k] || "") !== ((event[k as keyof FoodEvent] as string) || ""))
-      || (form.selloutRisk ?? null) !== (event.selloutRisk ?? null);
+      || (form.selloutRisk ?? null) !== (event.selloutRisk ?? null)
+      || (form.isRecurring ?? false) !== (event.isRecurring ?? false)
+      || instanceNote !== originalNote;
   };
 
   const tryClose = () => {
@@ -451,7 +542,7 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
   };
 
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<InsertFoodEvent>) =>
+    mutationFn: (data: Partial<InsertFoodEvent> & { instanceNotes?: Record<string, string> }) =>
       apiRequest({ endpoint: `/api/food-events/${event.id}`, method: "PATCH", data }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["/api/food-events"] });
@@ -472,7 +563,11 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
       setTimeout(() => document.getElementById(`edit-ab-${missing.field}`)?.focus(), 50);
       return;
     }
-    updateMutation.mutate(form);
+    const existingNotes = (event.instanceNotes as Record<string, string> | null | undefined) ?? {};
+    const updatedNotes = instanceNote.trim()
+      ? { ...existingNotes, [occurrenceDate]: instanceNote.trim() }
+      : Object.fromEntries(Object.entries(existingNotes).filter(([k]) => k !== occurrenceDate));
+    updateMutation.mutate({ ...form, instanceNotes: updatedNotes });
   };
 
   const inputClass = "border-2 border-black rounded-none bg-white text-sm";
@@ -535,6 +630,27 @@ function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () 
                   <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
                     className={inputClass} />
                 </div>
+              </div>
+              <div>
+                <label className={labelClass}>Recurring?</label>
+                <div className="flex items-center gap-2">
+                  <button type="button"
+                    onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
+                    className="px-3 py-1 border-2 text-xs font-black uppercase transition-colors"
+                    style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
+                  >↻ {form.isRecurring ? "Yes" : "No"}</button>
+                  {form.isRecurring && (
+                    <Input value={form.recurrenceLabel || ""} onChange={e => set("recurrenceLabel", e.target.value)}
+                      className={inputClass + " flex-1"} placeholder="e.g. Every Thursday, 1st Sunday monthly…" />
+                  )}
+                </div>
+                {form.isRecurring && (
+                  <div className="mt-2">
+                    <label className={labelClass}>Note for this occurrence <span className="font-normal normal-case opacity-60">(optional)</span></label>
+                    <Input value={instanceNote} onChange={e => setInstanceNote(e.target.value)}
+                      className={inputClass} placeholder="e.g. Special prix-fixe menu this week" />
+                  </div>
+                )}
               </div>
               <div>
                 <div className="flex items-center justify-between mb-0.5">
@@ -645,6 +761,7 @@ const BLANK: Partial<InsertFoodEvent> = {
   dateStart: "", dateEnd: "", summary: "",
   cuisine: "", price: "", ticketUrl: "", sourceUrl: "", rawBlurb: "", requester: "",
   announcedAt: "", selloutRisk: undefined,
+  isRecurring: false, recurrenceLabel: "",
 };
 
 function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -659,6 +776,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [redoLoading, setRedoLoading] = useState(false);
+  const [instanceNote, setInstanceNote] = useState("");
   const { toast } = useToast();
 
   const switchMode = (mode: "screenshot" | "blurb") => {
@@ -736,7 +854,11 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
       setTimeout(() => document.getElementById(`add-ab-${missing.field}`)?.focus(), 50);
       return;
     }
-    createMutation.mutate(form as InsertFoodEvent);
+    const payload: InsertFoodEvent = { ...(form as InsertFoodEvent) };
+    if (form.isRecurring && instanceNote.trim() && form.dateStart) {
+      (payload as any).instanceNotes = { [form.dateStart]: instanceNote.trim() };
+    }
+    createMutation.mutate(payload);
   };
 
   const hasContent = () => {
@@ -965,6 +1087,27 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                     <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
                       className={inputClass} />
                   </div>
+                </div>
+                <div>
+                  <label className={labelClass}>Recurring?</label>
+                  <div className="flex items-center gap-2">
+                    <button type="button"
+                      onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
+                      className="px-3 py-1 border-2 text-xs font-black uppercase transition-colors"
+                      style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
+                    >↻ {form.isRecurring ? "Yes" : "No"}</button>
+                    {form.isRecurring && (
+                      <Input value={form.recurrenceLabel || ""} onChange={e => set("recurrenceLabel", e.target.value)}
+                        className={inputClass + " flex-1"} placeholder="e.g. Every Thursday, 1st Sunday monthly…" />
+                    )}
+                  </div>
+                  {form.isRecurring && (
+                    <div className="mt-2">
+                      <label className={labelClass}>Note for first occurrence <span className="font-normal normal-case opacity-60">(optional)</span></label>
+                      <Input value={instanceNote} onChange={e => setInstanceNote(e.target.value)}
+                        className={inputClass} placeholder="e.g. Opening night menu" />
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -1231,8 +1374,10 @@ export default function AmsueBouche() {
     onError: () => toast({ title: "Error", description: "Couldn't delete this event.", variant: "destructive" }),
   });
 
+  const expandedEvents = expandRecurringFoodEvents(events);
+
   type MonthBucket = { events: FoodEvent[]; weekGroups: Record<string, { events: FoodEvent[] }> };
-  const grouped = events.reduce<Record<string, MonthBucket>>((acc, ev) => {
+  const grouped = expandedEvents.reduce<Record<string, MonthBucket>>((acc, ev) => {
     const monthKey = getMonthLabel(ev.dateStart);
     const eventDate = new Date(ev.dateStart + "T12:00:00");
     const nowDate = new Date();
@@ -1388,7 +1533,7 @@ export default function AmsueBouche() {
 
         {!isLoading && viewMode === "calendar" && (
           <FoodCalendarMonthView
-            events={events}
+            events={expandedEvents}
             viewYear={calViewYear}
             viewMonth={calViewMonth}
             onPrevMonth={prevCalMonth}

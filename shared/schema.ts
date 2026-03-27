@@ -452,6 +452,9 @@ export const foodEvents = pgTable("food_events", {
   soldOut: boolean("sold_out").notNull().default(false),
   announcedAt: text("announced_at"),
   selloutRisk: integer("sellout_risk"),
+  isRecurring: boolean("is_recurring").notNull().default(false),
+  recurrenceLabel: text("recurrence_label"),
+  instanceNotes: jsonb("instance_notes").$type<Record<string, string>>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
