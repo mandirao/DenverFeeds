@@ -83,11 +83,17 @@ function createSearchUrl(event: ArtEvent): string {
   return `https://www.google.com/search?q=${encodeURIComponent(parts.join(" "))}`;
 }
 
+function formatTime(hhmm: string): string {
+  const [hStr, mStr] = hhmm.split(":");
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return m === 0 ? `${h12} ${ampm}` : `${h12}:${mStr} ${ampm}`;
+}
+
 function createCalendarUrl(event: ArtEvent): string {
   const toGCal = (d: string) => d.replace(/-/g, "");
-  const start = toGCal(event.dateStart);
-  const endDate = event.dateEnd ? event.dateEnd : event.dateStart;
-  const end = toGCal(new Date(new Date(endDate + "T12:00:00").getTime() + 86400000).toISOString().slice(0, 10));
   const text = encodeURIComponent(event.name);
   const loc = encodeURIComponent(`${event.venue}${event.neighborhood ? ", " + event.neighborhood : ""}, Denver CO`);
   const detailsParts: string[] = [];
@@ -95,7 +101,17 @@ function createCalendarUrl(event: ArtEvent): string {
   if (event.ticketUrl) detailsParts.push(`Tickets: ${event.ticketUrl}`);
   if (event.sourceUrl) detailsParts.push(`More info: ${event.sourceUrl}`);
   const details = encodeURIComponent(detailsParts.join("\n"));
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&location=${loc}&details=${details}&dates=${start}/${end}`;
+  const hasTime = event.startTime && /^\d{1,2}:\d{2}$/.test(event.startTime);
+  if (hasTime) {
+    const [hStr, mStr] = event.startTime!.split(":");
+    const startDT = `${toGCal(event.dateStart)}T${hStr.padStart(2,"0")}${mStr}00`;
+    const endH = (parseInt(hStr) + 2) % 24;
+    const endDT = `${toGCal(event.dateStart)}T${String(endH).padStart(2,"0")}${mStr}00`;
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&location=${loc}&details=${details}&dates=${startDT}/${endDT}`;
+  }
+  const endDate = event.dateEnd ? event.dateEnd : event.dateStart;
+  const end = toGCal(new Date(new Date(endDate + "T12:00:00").getTime() + 86400000).toISOString().slice(0, 10));
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&location=${loc}&details=${details}&dates=${toGCal(event.dateStart)}/${end}`;
 }
 
 // ── Event Row ─────────────────────────────────────────────────────────────────
@@ -220,6 +236,9 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
                 <TooltipContent><p>Add to Google Calendar</p></TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            {event.startTime && /^\d{1,2}:\d{2}$/.test(event.startTime) && (
+              <span className="text-black/60">{", "}{formatTime(event.startTime)}</span>
+            )}
             {"). "}
 
             {event.summary}
@@ -401,6 +420,7 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
     neighborhood: event.neighborhood || "",
     dateStart: event.dateStart || "",
     dateEnd: event.dateEnd || "",
+    startTime: event.startTime || "",
     summary: event.summary || "",
     category: event.category || "",
     price: event.price || "",
@@ -419,7 +439,7 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
   };
 
   const isDirty = () => {
-    const keys: (keyof InsertArtEvent)[] = ["emoji", "name", "venue", "neighborhood", "dateStart", "dateEnd", "summary", "category", "price", "ticketUrl", "sourceUrl", "requester", "announcedAt", "recurrenceLabel"];
+    const keys: (keyof InsertArtEvent)[] = ["emoji", "name", "venue", "neighborhood", "dateStart", "dateEnd", "startTime", "summary", "category", "price", "ticketUrl", "sourceUrl", "requester", "announcedAt", "recurrenceLabel"];
     const originalNote = (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? "";
     return keys.some(k => (form[k] || "") !== ((event[k as keyof ArtEvent] as string) || ""))
       || form.selloutRisk !== (event.selloutRisk ?? undefined)
@@ -573,6 +593,11 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                       className={inputClass} />
                   </div>
                 </div>
+                <div>
+                  <label className={labelClass}>Start Time <span className="font-normal normal-case opacity-60">(approximate)</span></label>
+                  <Input type="time" value={form.startTime || ""} onChange={e => set("startTime", e.target.value)}
+                    className={inputClass} placeholder="19:00" />
+                </div>
                 {/* Recurring — below dates */}
                 <div>
                   <label className={labelClass}>Recurring <span className="font-normal normal-case opacity-60">(optional)</span></label>
@@ -708,7 +733,7 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
 
 const BLANK: Partial<InsertArtEvent> = {
   emoji: "", name: "", venue: "", neighborhood: "",
-  dateStart: "", dateEnd: "", summary: "",
+  dateStart: "", dateEnd: "", startTime: "", summary: "",
   category: "", price: "", ticketUrl: "", sourceUrl: "", rawBlurb: "", requester: "",
   announcedAt: "", selloutRisk: undefined, isRecurring: false, recurrenceLabel: "",
 };
@@ -1044,6 +1069,11 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                     <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
                       className={inputClass} />
                   </div>
+                </div>
+                <div>
+                  <label className={labelClass}>Start Time <span className="font-normal normal-case opacity-60">(approximate)</span></label>
+                  <Input type="time" value={form.startTime || ""} onChange={e => set("startTime", e.target.value)}
+                    className={inputClass} placeholder="19:00" />
                 </div>
                 {/* Recurring — below dates */}
                 <div>
@@ -2032,7 +2062,7 @@ export default function ArtistryNerdery() {
                               rel="noopener noreferrer"
                               className="hover:underline cursor-pointer"
                             >
-                              {dateStr}
+                              {dateStr}{ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && <span className="font-normal opacity-60 ml-1">· {formatTime(ev.startTime)}</span>}
                             </a>
                           </TooltipTrigger>
                           <TooltipContent><p>Add to Google Calendar</p></TooltipContent>

@@ -381,6 +381,7 @@ Respond with ONLY valid JSON, no markdown formatting:
     neighborhood: string;
     dateStart: string;
     dateEnd: string;
+    startTime: string;
     emoji: string;
     summary: string;
     cuisine: string;
@@ -410,6 +411,7 @@ Return this exact JSON structure (no markdown, no code blocks):
   "draftSummary": "raw factual notes about the event — food, vibe, key details. Not the final summary, just the raw material.",
   "notableNames": ["array of any named chefs, DJs, collaborators, pop-up brands worth researching — empty array if none"],
   "cuisine": "one of: Hot Pot & Shabu, Japanese, Korean, Chinese, Thai & Southeast Asian, Indian & South Asian, Mexican & Latin, Italian, French, Mediterranean, Seafood, BBQ & Southern, Brunch & Breakfast, Dessert & Pastry, Cocktails & Wine, Tasting Menu, Farm-to-Table, Fusion, American, Other",
+  "startTime": "HH:MM in 24hr format. Extract if explicitly stated. If not stated: guess based on context — dinner/supper popup → '18:30', brunch event → '10:00', lunch popup → '12:00', cocktails/drinks/happy hour → '17:00', late night → '21:00'. If multi-day (dateEnd differs from dateStart), use empty string. If genuinely no context, default to '18:00'.",
   "price": "price string like '$55/person' or empty string if unknown",
   "ticketUrl": "reservation/ticket URL if mentioned or clearly implied platform URL, else empty string",
   "announcedAt": "YYYY-MM-DD date when this was first announced/posted — check in order: (1) relative timestamp visible in image like '3d' or '2 days ago' subtracted from today, (2) date pattern in file name, (3) empty string if unknown",
@@ -533,6 +535,7 @@ Return ONLY valid JSON (no markdown):
       neighborhood: pass2.neighborhood || pass1.neighborhood || '',
       dateStart: pass1.dateStart || '',
       dateEnd: pass1.dateEnd || '',
+      startTime: pass1.startTime || '',
       emoji: pass1.emoji || '🍴',
       summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
       cuisine: pass1.cuisine || 'Other',
@@ -550,6 +553,7 @@ Return ONLY valid JSON (no markdown):
     neighborhood: string;
     dateStart: string;
     dateEnd: string;
+    startTime: string;
     emoji: string;
     summary: string;
     category: string;
@@ -580,6 +584,7 @@ Return this exact JSON structure (no markdown, no code blocks):
   "draftSummary": "raw factual notes — theme, format, speakers, vibe, key details. Not the final summary.",
   "notableNames": ["array of any named artists, scientists, authors, performers, organizations worth researching — empty array if none"],
   "category": "one of: Theater & Musicals, Comedy & Storytelling, Film & Cinema, Dance & Movement, Music & Performance, Galleries & Exhibitions, Workshops & Classes, Science & Nature, Books & Talks, Markets & Pop-Ups, Wellness & Community, Parties & Social — choose the closest fit: Theater & Musicals = plays/musicals/opera/broadway touring shows; Comedy & Storytelling = stand-up/improv/story slams/storytelling shows/comedy nights; Film & Cinema = film festivals/screenings/documentary events; Dance & Movement = ballet/modern dance/concert dance/dance nights; Music & Performance = live concerts/jazz/classical/open mic/DJ sets; Galleries & Exhibitions = gallery openings/art exhibits/museum shows/studio tours (viewing, not making); Workshops & Classes = hands-on art classes/figure drawing/pottery/craft nights/making workshops (participatory); Science & Nature = astronomy/science talks/nature/natural history; Books & Talks = book clubs/author events/lectures/seminars/literary panels/salons; Markets & Pop-Ups = artisan markets/craft fairs/swap meets/pop-up shops; Wellness & Community = meditation/yoga/community social events/seasonal gatherings; Parties & Social = dance parties/themed parties/club nights/warehouse raves/costume parties/seasonal bashes/social mixers",
+  "startTime": "HH:MM in 24hr format. Extract if explicitly stated. If not stated: guess based on category and context — evening events/receptions/openings → '18:00', comedy/theater/film screening/show → '19:30', dance party/rave/club night → '21:00', morning talk/workshop/class → '10:00', afternoon event → '14:00', market/fair → '10:00', book club/salon → '18:30'. If multi-day exhibition (dateEnd differs from dateStart and it's a gallery/museum show), use empty string.",
   "price": "price string like '$15/person' or 'Free' or empty string if unknown",
   "ticketUrl": "ticket/registration URL if mentioned, else empty string",
   "announcedAt": "YYYY-MM-DD date when first announced/posted — check: (1) relative timestamp in image like '3d' or '2 days ago' subtracted from today, (2) date pattern in file name, (3) empty string if unknown",
@@ -690,6 +695,7 @@ Return ONLY valid JSON (no markdown):
       neighborhood: pass2.neighborhood || pass1.neighborhood || '',
       dateStart: pass1.dateStart || '',
       dateEnd: pass1.dateEnd || '',
+      startTime: pass1.startTime || '',
       emoji: pass1.emoji || '🎨',
       summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
       category: pass1.category || 'Other',

@@ -852,8 +852,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'X-WR-CALDESC:Denver area foodie popups & events',
       ];
 
+      const toLocalDT = (date: string, time: string) => {
+        const [h, m] = time.split(':');
+        return `${toDateStr(date)}T${h.padStart(2,'0')}${m.padStart(2,'0')}00`;
+      };
+      const addHours = (date: string, time: string, hrs: number) => {
+        const [h, m] = time.split(':');
+        const totalMin = parseInt(h)*60 + parseInt(m) + Math.round(hrs*60);
+        const nh = Math.floor(totalMin/60) % 24;
+        const nm = totalMin % 60;
+        const dateOffset = Math.floor((parseInt(h)*60 + parseInt(m) + Math.round(hrs*60)) / (24*60));
+        if (dateOffset > 0) {
+          const dt = new Date(date + "T12:00:00");
+          dt.setDate(dt.getDate() + dateOffset);
+          return `${dt.toISOString().split('T')[0].replace(/-/g,'')}T${String(nh).padStart(2,'0')}${String(nm).padStart(2,'0')}00`;
+        }
+        return `${toDateStr(date)}T${String(nh).padStart(2,'0')}${String(nm).padStart(2,'0')}00`;
+      };
+
       upcoming.forEach(ev => {
         const endDateStr = ev.dateEnd && ev.dateEnd !== ev.dateStart ? nextDay(ev.dateEnd) : nextDay(ev.dateStart);
+        const hasTime = ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime);
         let desc = `${ev.name} at ${ev.venue}`;
         if (ev.summary) desc += `\n${ev.summary}`;
         if (ev.cuisine) desc += `\nCuisine: ${ev.cuisine}`;
@@ -862,8 +881,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lines.push('BEGIN:VEVENT');
         lines.push(`UID:food-${ev.id}@setlistsocial.com`);
         lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
-        lines.push(`DTSTART;VALUE=DATE:${toDateStr(ev.dateStart)}`);
-        lines.push(`DTEND;VALUE=DATE:${endDateStr}`);
+        if (hasTime) {
+          lines.push(`DTSTART;TZID=America/Denver:${toLocalDT(ev.dateStart, ev.startTime!)}`);
+          lines.push(`DTEND;TZID=America/Denver:${addHours(ev.dateStart, ev.startTime!, 2)}`);
+        } else {
+          lines.push(`DTSTART;VALUE=DATE:${toDateStr(ev.dateStart)}`);
+          lines.push(`DTEND;VALUE=DATE:${endDateStr}`);
+        }
         lines.push(foldLine(`SUMMARY:${escapeIcal(ev.name + ' @ ' + ev.venue)}`));
         lines.push(foldLine(`DESCRIPTION:${escapeIcal(desc)}`));
         lines.push(foldLine(`LOCATION:${escapeIcal(ev.venue + ', Denver CO')}`));
@@ -912,8 +936,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'X-WR-CALDESC:Denver area art\\, science\\, cultural & literary events',
       ];
 
+      const toLocalDT2 = (date: string, time: string) => {
+        const [h, m] = time.split(':');
+        return `${toDateStr(date)}T${h.padStart(2,'0')}${m.padStart(2,'0')}00`;
+      };
+      const addHours2 = (date: string, time: string, hrs: number) => {
+        const [h, m] = time.split(':');
+        const totalMin = parseInt(h)*60 + parseInt(m) + Math.round(hrs*60);
+        const nh = Math.floor(totalMin/60) % 24;
+        const nm = totalMin % 60;
+        const dateOffset = Math.floor((parseInt(h)*60 + parseInt(m) + Math.round(hrs*60)) / (24*60));
+        if (dateOffset > 0) {
+          const dt = new Date(date + "T12:00:00");
+          dt.setDate(dt.getDate() + dateOffset);
+          return `${dt.toISOString().split('T')[0].replace(/-/g,'')}T${String(nh).padStart(2,'0')}${String(nm).padStart(2,'0')}00`;
+        }
+        return `${toDateStr(date)}T${String(nh).padStart(2,'0')}${String(nm).padStart(2,'0')}00`;
+      };
+
       upcoming.forEach(ev => {
         const endDateStr = ev.dateEnd && ev.dateEnd !== ev.dateStart ? nextDay(ev.dateEnd) : nextDay(ev.dateStart);
+        const hasTime = ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime);
         let desc = `${ev.name} at ${ev.venue}`;
         if (ev.summary) desc += `\n${ev.summary}`;
         if (ev.category) desc += `\nCategory: ${ev.category}`;
@@ -922,8 +965,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lines.push('BEGIN:VEVENT');
         lines.push(`UID:art-${ev.id}@setlistsocial.com`);
         lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
-        lines.push(`DTSTART;VALUE=DATE:${toDateStr(ev.dateStart)}`);
-        lines.push(`DTEND;VALUE=DATE:${endDateStr}`);
+        if (hasTime) {
+          lines.push(`DTSTART;TZID=America/Denver:${toLocalDT2(ev.dateStart, ev.startTime!)}`);
+          lines.push(`DTEND;TZID=America/Denver:${addHours2(ev.dateStart, ev.startTime!, 2)}`);
+        } else {
+          lines.push(`DTSTART;VALUE=DATE:${toDateStr(ev.dateStart)}`);
+          lines.push(`DTEND;VALUE=DATE:${endDateStr}`);
+        }
         lines.push(foldLine(`SUMMARY:${escapeIcal(ev.name + ' @ ' + ev.venue)}`));
         lines.push(foldLine(`DESCRIPTION:${escapeIcal(desc)}`));
         lines.push(foldLine(`LOCATION:${escapeIcal(ev.venue + ', Denver CO')}`));
