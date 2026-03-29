@@ -1417,7 +1417,13 @@ function expandRecurringEvents(events: ArtEvent[]): ArtEvent[] {
     }
   }
 
-  return result.sort((a, b) => a.dateStart.localeCompare(b.dateStart));
+  return result.sort((a, b) => {
+    const dateCompare = a.dateStart.localeCompare(b.dateStart);
+    if (dateCompare !== 0) return dateCompare;
+    const aTime = a.startTime && /^\d{1,2}:\d{2}$/.test(a.startTime) ? a.startTime : '23:59';
+    const bTime = b.startTime && /^\d{1,2}:\d{2}$/.test(b.startTime) ? b.startTime : '23:59';
+    return aTime.localeCompare(bTime);
+  });
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
