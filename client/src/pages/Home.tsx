@@ -48,8 +48,7 @@ function ConcertCalendarMonthView({
   const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   const eventsByDate = events.reduce<Record<string, Event[]>>((acc, ev) => {
-    const d = new Date(ev.date);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const key = ev.date.toString().slice(0, 10); // extract YYYY-MM-DD without UTC conversion
     if (!acc[key]) acc[key] = [];
     acc[key].push(ev);
     return acc;
@@ -745,7 +744,7 @@ export default function Home() {
           <DialogTitle className="sr-only">{calEventDetail?.artist ?? "Event Details"}</DialogTitle>
           {calEventDetail && (() => {
             const ev = calEventDetail;
-            const evDate = new Date(ev.date);
+            const evDate = new Date(ev.date.toString().slice(0, 10) + "T12:00:00");
             const dateStr = evDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
             const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.venue + " Denver CO")}`;
             const spotifyUrl = `https://open.spotify.com/search/${encodeURIComponent(ev.artist)}`;
