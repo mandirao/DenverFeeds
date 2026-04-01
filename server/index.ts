@@ -101,6 +101,21 @@ app.use((req, res, next) => {
   next();
 });
 
+// Hostname-based routing: each custom domain lands on its own feed
+app.use((req, res, next) => {
+  const host = req.hostname || '';
+  // Only redirect when hitting the root path so deep links still work
+  if (req.path === '/') {
+    if (host.includes('amuseboucheinsider')) {
+      return res.redirect(301, '/amuse-bouche');
+    }
+    if (host.includes('artistrynerdistry')) {
+      return res.redirect(301, '/artistry-nerdistry');
+    }
+  }
+  next();
+});
+
 (async () => {
   const server = await registerRoutes(app);
 
