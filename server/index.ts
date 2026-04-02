@@ -101,33 +101,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Hostname-based routing: each custom domain lands on its own feed
-app.use((req, res, next) => {
-  // Use req.headers.host directly — more reliable behind Replit's proxy than req.hostname
-  const host = (req.headers.host || req.hostname || '').toLowerCase();
-  // Only redirect when hitting the root path so deep links still work
-  if (req.path === '/') {
-    if (host.includes('amuseboucheinsider')) {
-      return res.redirect(302, '/amuse-bouche');
-    }
-    if (host.includes('artistrynerdistry')) {
-      return res.redirect(302, '/artistry-nerdistry');
-    }
-  }
-  next();
-});
-
-// Temporary debug endpoint — remove after confirming domain routing works
-app.get('/api/debug-host', (req, res) => {
-  res.json({
-    hostname: req.hostname,
-    headersHost: req.headers.host,
-    xForwardedHost: req.headers['x-forwarded-host'],
-    xForwardedFor: req.headers['x-forwarded-for'],
-    path: req.path,
-    protocol: req.protocol,
-  });
-});
 
 (async () => {
   const server = await registerRoutes(app);

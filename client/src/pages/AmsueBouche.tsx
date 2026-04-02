@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { siteUrls } from "@/lib/siteConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1480,14 +1481,14 @@ export default function AmsueBouche() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="rounded-none border-2 border-black bg-black text-white p-0 min-w-[240px]">
                   <DropdownMenuItem asChild className="rounded-none focus:bg-[#FEABDA] focus:text-black px-4 py-3 cursor-pointer">
-                    <Link href="/" className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
+                    <a href={siteUrls.setlist} className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
                       🎵 SETLIST SOCIAL FEED
-                    </Link>
+                    </a>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild className="rounded-none focus:bg-[#F2F0FF] focus:text-black px-4 py-3 cursor-pointer">
-                    <Link href="/artistry-nerdistry" className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
+                    <a href={siteUrls.artistryNerdistry} className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
                       🎨 ARTISTRY/NERDISTRY LIVE
-                    </Link>
+                    </a>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1765,11 +1766,11 @@ export default function AmsueBouche() {
       <footer className="py-4 px-4" style={{ backgroundColor: AB_GOLD }}>
         <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <Link href="/" className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">Setlist Social Feed</Link>
+            <a href={siteUrls.setlist} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">Setlist Social Feed</a>
             <span className="text-black opacity-40">|</span>
             <span className="text-sm font-bold text-black uppercase">Amuse-Bouche Insider</span>
             <span className="text-black opacity-40">|</span>
-            <Link href="/artistry-nerdistry" className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">Artistry/Nerdistry Live</Link>
+            <a href={siteUrls.artistryNerdistry} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">Artistry/Nerdistry Live</a>
             <span className="text-black opacity-40">|</span>
             <button onClick={() => setCalendarOpen(true)} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
               Subscribe to Calendar

@@ -11,11 +11,18 @@ import AmsueBouche from "@/pages/AmsueBouche";
 import ArtistryNerdery from "@/pages/ArtistryNerdery";
 import NotFound from "@/pages/not-found";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { onAmuseBouche, onArtistryNerdistry } from "@/lib/siteConfig";
+
+function RootPage() {
+  if (onAmuseBouche) return <AmsueBouche />;
+  if (onArtistryNerdistry) return <ArtistryNerdery />;
+  return <Home />;
+}
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <Route path="/" component={RootPage} />
       <Route path="/add" component={AddEvent} />
       <Route path="/playlists" component={Playlists} />
       <Route path="/discovery" component={DiscoveryAdmin} />

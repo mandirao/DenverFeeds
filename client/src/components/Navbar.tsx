@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Music, Users, Calendar, ChevronDown } from "lucide-react";
 import { CalendarSubscribeModal } from "./CalendarSubscribeModal";
+import { siteUrls } from "@/lib/siteConfig";
 
 export function Navbar() {
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -21,14 +22,14 @@ export function Navbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="rounded-none border-2 border-black bg-black text-white p-0 min-w-[240px]">
                 <DropdownMenuItem asChild className="rounded-none focus:bg-[#FFF8E7] focus:text-black px-4 py-3 cursor-pointer">
-                  <Link href="/amuse-bouche" className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
+                  <a href={siteUrls.amuseBouche} className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
                     🍽️ AMUSE-BOUCHE INSIDER
-                  </Link>
+                  </a>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-none focus:bg-[#F2F0FF] focus:text-black px-4 py-3 cursor-pointer">
-                  <Link href="/artistry-nerdistry" className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
+                  <a href={siteUrls.artistryNerdistry} className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
                     🎨 ARTISTRY/NERDISTRY LIVE
-                  </Link>
+                  </a>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
