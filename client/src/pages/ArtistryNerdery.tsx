@@ -594,11 +594,13 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                       className={inputClass} />
                   </div>
                 </div>
+                {!(form.dateEnd && form.dateEnd !== form.dateStart) && (
                 <div>
                   <label className={labelClass}>Start Time <span className="font-normal normal-case opacity-60">(approximate)</span></label>
                   <Input type="time" value={form.startTime || ""} onChange={e => set("startTime", e.target.value)}
                     className={inputClass} placeholder="19:00" />
                 </div>
+                )}
                 {/* Recurring — below dates */}
                 <div>
                   <label className={labelClass}>Recurring <span className="font-normal normal-case opacity-60">(optional)</span></label>
@@ -1160,11 +1162,13 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                     </button>
                   </div>
                 )}
+                {!useSpecificDates && !(form.dateEnd && form.dateEnd !== form.dateStart) && (
                 <div>
                   <label className={labelClass}>Start Time <span className="font-normal normal-case opacity-60">(approximate)</span></label>
                   <Input type="time" value={form.startTime || ""} onChange={e => set("startTime", e.target.value)}
                     className={inputClass} placeholder="19:00" />
                 </div>
+                )}
                 {/* Recurring — below dates */}
                 <div>
                   <label className={labelClass}>Recurring <span className="font-normal normal-case opacity-60">(optional)</span></label>
