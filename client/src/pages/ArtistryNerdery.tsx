@@ -752,6 +752,9 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [redoLoading, setRedoLoading] = useState(false);
+  const [useSpecificDates, setUseSpecificDates] = useState(false);
+  const [specificDates, setSpecificDates] = useState<string[]>([]);
+  const [newDateInput, setNewDateInput] = useState("");
   const { toast } = useToast();
 
   const switchMode = (mode: "screenshot" | "blurb") => {
@@ -795,10 +798,18 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
         ...(imageBase64 ? { imageBase64, imageMediaType, fileName: imageFileName } : {}),
       },
     }),
-    onSuccess: (data) => {
-      setForm({ ...data, rawBlurb: blurb, sourceUrl: form.sourceUrl || "", requester: form.requester || "" });
+    onSuccess: (data: any) => {
+      const { specificDates: aiDates, ...rest } = data;
+      if (Array.isArray(aiDates) && aiDates.length >= 2) {
+        setSpecificDates(aiDates);
+        setUseSpecificDates(true);
+        setForm({ ...rest, dateStart: "", dateEnd: "", rawBlurb: blurb, sourceUrl: form.sourceUrl || "", requester: form.requester || "" });
+        toast({ title: "Parsed!", description: `${aiDates.length} dates detected — review the series below.` });
+      } else {
+        setForm({ ...rest, rawBlurb: blurb, sourceUrl: form.sourceUrl || "", requester: form.requester || "" });
+        toast({ title: "Parsed!", description: "Review the details below." });
+      }
       setShowForm(true);
-      toast({ title: "Parsed!", description: "Review the details below." });
     },
     onError: () => {
       toast({ title: "Parse failed", description: "Fill in the form manually.", variant: "destructive" });
@@ -821,6 +832,22 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (useSpecificDates) {
+      if (specificDates.length < 1) {
+        toast({ title: "Add at least one date", variant: "destructive" });
+        return;
+      }
+      const baseChecks = ["requester", "name", "venue", "emoji", "category"] as const;
+      for (const field of baseChecks) {
+        if (!(form as any)[field]?.trim()) {
+          setErrorField(field);
+          toast({ title: `${field === "requester" ? "Your name" : field.charAt(0).toUpperCase() + field.slice(1)} is required`, variant: "destructive" });
+          return;
+        }
+      }
+      batchCreateMutation.mutate(specificDates);
+      return;
+    }
     const missing = getMissingField(form);
     if (missing) {
       setErrorField(missing.field);
@@ -840,6 +867,21 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     return formHasContent || blurb.trim() !== "" || !!imageBase64;
   };
 
+  const batchCreateMutation = useMutation({
+    mutationFn: (dates: string[]) =>
+      Promise.all(dates.map(date =>
+        apiRequest({ endpoint: "/api/art-events", method: "POST", data: { ...(form as InsertArtEvent), dateStart: date, dateEnd: "" } })
+      )),
+    onSuccess: (_, dates) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/art-events"] });
+      toast({ title: `${dates.length} events added!`, description: "All dates are live on the feed." });
+      forceClose();
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e?.message || "Couldn't add all events.", variant: "destructive" });
+    },
+  });
+
   const forceClose = () => {
     onClose();
     setBlurb("");
@@ -853,6 +895,9 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
     setImageFileName(null);
     setShowConfirmClose(false);
     setErrorField(null);
+    setUseSpecificDates(false);
+    setSpecificDates([]);
+    setNewDateInput("");
   };
 
   const handleClose = () => {
@@ -1059,18 +1104,61 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
                       className={inputClass} placeholder="Capitol Hill…" />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Start Date *</label>
-                    <Input id="add-an-dateStart" type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
-                      className={inputClass + fieldErr("dateStart")} />
+                {useSpecificDates ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className={labelClass}>Specific Dates *</label>
+                      <button type="button" onClick={() => {
+                        setUseSpecificDates(false);
+                        if (specificDates.length > 0) set("dateStart", specificDates[0]);
+                        setSpecificDates([]);
+                      }} className="text-xs text-gray-500 underline hover:text-black normal-case font-normal">
+                        Switch to date range
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 min-h-[28px]">
+                      {specificDates.map(d => (
+                        <span key={d} className="flex items-center gap-1 bg-black text-white text-xs font-bold px-2 py-1">
+                          {new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          <button type="button" onClick={() => setSpecificDates(prev => prev.filter(x => x !== d))} className="hover:text-[#41F2EE] leading-none ml-0.5">×</button>
+                        </span>
+                      ))}
+                      {specificDates.length === 0 && <span className="text-xs text-gray-400 italic">No dates added yet</span>}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input type="date" value={newDateInput} onChange={e => setNewDateInput(e.target.value)} className={inputClass + " flex-1"} />
+                      <button type="button" onClick={() => {
+                        if (newDateInput && !specificDates.includes(newDateInput)) {
+                          setSpecificDates(prev => [...prev, newDateInput].sort());
+                          setNewDateInput("");
+                        }
+                      }} className="px-3 py-1.5 bg-black text-white text-xs font-black uppercase border-2 border-black hover:text-[#41F2EE] transition-colors whitespace-nowrap">
+                        + Add
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className={labelClass}>End Date</label>
-                    <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
-                      className={inputClass} />
+                ) : (
+                  <div className="space-y-1.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className={labelClass}>Start Date *</label>
+                        <Input id="add-an-dateStart" type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
+                          className={inputClass + fieldErr("dateStart")} />
+                      </div>
+                      <div>
+                        <label className={labelClass}>End Date</label>
+                        <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
+                          className={inputClass} />
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => {
+                      setUseSpecificDates(true);
+                      if (form.dateStart) { setSpecificDates([form.dateStart]); set("dateStart", ""); set("dateEnd", ""); }
+                    }} className="text-xs text-gray-500 underline hover:text-black normal-case font-normal">
+                      + Add specific dates instead (series / irregular schedule)
+                    </button>
                   </div>
-                </div>
+                )}
                 <div>
                   <label className={labelClass}>Start Time <span className="font-normal normal-case opacity-60">(approximate)</span></label>
                   <Input type="time" value={form.startTime || ""} onChange={e => set("startTime", e.target.value)}
@@ -1190,9 +1278,15 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
             </div>
 
             <div className="flex gap-2 pt-1">
-              <button type="submit" disabled={createMutation.isPending}
+              <button type="submit" disabled={createMutation.isPending || batchCreateMutation.isPending}
                 className="w-full px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
-                {createMutation.isPending ? "Adding…" : "Add Event"}
+                {batchCreateMutation.isPending
+                  ? `Adding ${specificDates.length} events…`
+                  : createMutation.isPending
+                  ? "Adding…"
+                  : useSpecificDates && specificDates.length > 1
+                  ? `Add ${specificDates.length} Events`
+                  : "Add Event"}
               </button>
             </div>
           </form>
