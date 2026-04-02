@@ -10,7 +10,7 @@ const isProd =
   hostname.includes('artistrynerdistry');
 
 export const siteUrls = {
-  setlist: isProd ? 'https://setlistsocial.com' : '/',
+  setlist: isProd ? 'https://setlistsocialfeed.com' : '/',
   amuseBouche: isProd ? 'https://amuseboucheinsider.com' : '/amuse-bouche',
   artistryNerdistry: isProd ? 'https://artistrynerdistry.com' : '/artistry-nerdistry',
 };
