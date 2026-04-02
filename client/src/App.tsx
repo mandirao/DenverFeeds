@@ -13,6 +13,13 @@ import NotFound from "@/pages/not-found";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { onAmuseBouche, onArtistryNerdistry } from "@/lib/siteConfig";
 
+// Set the browser tab title based on which domain is active
+document.title = onAmuseBouche
+  ? 'Amuse-Bouche Insider'
+  : onArtistryNerdistry
+  ? 'Artistry/Nerdistry Live'
+  : 'Setlist Social Feed';
+
 function RootPage() {
   if (onAmuseBouche) return <AmsueBouche />;
   if (onArtistryNerdistry) return <ArtistryNerdery />;
