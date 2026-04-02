@@ -410,6 +410,9 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const [errorField, setErrorField] = useState<string | null>(null);
   const [redoLoading, setRedoLoading] = useState(false);
+  const [useSpecificDates, setUseSpecificDates] = useState(false);
+  const [specificDates, setSpecificDates] = useState<string[]>([]);
+  const [newDateInput, setNewDateInput] = useState("");
   const occurrenceDate = event.dateStart;
   const [instanceNote, setInstanceNote] = useState<string>(
     (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? ""
@@ -461,8 +464,44 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
     },
   });
 
+  const batchExpandMutation = useMutation({
+    mutationFn: async (dates: string[]) => {
+      const basePayload = { ...(form as InsertArtEvent), instanceNotes: undefined };
+      await apiRequest({ endpoint: `/api/art-events/${event.id}`, method: "PATCH", data: { ...basePayload, dateStart: dates[0], dateEnd: "" } });
+      if (dates.length > 1) {
+        await Promise.all(dates.slice(1).map(date =>
+          apiRequest({ endpoint: "/api/art-events", method: "POST", data: { ...basePayload, dateStart: date, dateEnd: "" } })
+        ));
+      }
+    },
+    onSuccess: (_, dates) => {
+      qc.invalidateQueries({ queryKey: ["/api/art-events"] });
+      toast({ title: dates.length > 1 ? `Event split into ${dates.length} dates!` : "Updated!", description: "Changes saved." });
+      onClose();
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e?.message || "Couldn't save.", variant: "destructive" });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (useSpecificDates) {
+      if (specificDates.length < 1) {
+        toast({ title: "Add at least one date", variant: "destructive" });
+        return;
+      }
+      const baseChecks = ["requester", "name", "venue", "emoji", "category"] as const;
+      for (const field of baseChecks) {
+        if (!(form as any)[field]?.trim()) {
+          setErrorField(field);
+          toast({ title: `${field === "requester" ? "Your name" : field.charAt(0).toUpperCase() + field.slice(1)} is required`, variant: "destructive" });
+          return;
+        }
+      }
+      batchExpandMutation.mutate(specificDates);
+      return;
+    }
     const missing = getMissingField(form);
     if (missing) {
       setErrorField(missing.field);
@@ -582,19 +621,63 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                       className={inputClass} placeholder="RiNo, LoHi…" />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Start Date *</label>
-                    <Input id="edit-an-dateStart" type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
-                      className={inputClass + fieldErr("dateStart")} />
+                {useSpecificDates ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className={labelClass}>Specific Dates *</label>
+                      <button type="button" onClick={() => {
+                        setUseSpecificDates(false);
+                        if (specificDates.length > 0) set("dateStart", specificDates[0]);
+                        setSpecificDates([]);
+                      }} className="text-xs text-gray-500 underline hover:text-black normal-case font-normal">
+                        Switch to date range
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 italic">This event updates to the first date; new events are created for the rest.</p>
+                    <div className="flex flex-wrap gap-1.5 min-h-[28px]">
+                      {specificDates.map(d => (
+                        <span key={d} className="flex items-center gap-1 bg-black text-white text-xs font-bold px-2 py-1">
+                          {new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          <button type="button" onClick={() => setSpecificDates(prev => prev.filter(x => x !== d))} className="hover:text-[#41F2EE] leading-none ml-0.5">×</button>
+                        </span>
+                      ))}
+                      {specificDates.length === 0 && <span className="text-xs text-gray-400 italic">No dates added yet</span>}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input type="date" value={newDateInput} onChange={e => setNewDateInput(e.target.value)} className={inputClass + " flex-1"} />
+                      <button type="button" onClick={() => {
+                        if (newDateInput && !specificDates.includes(newDateInput)) {
+                          setSpecificDates(prev => [...prev, newDateInput].sort());
+                          setNewDateInput("");
+                        }
+                      }} className="px-3 py-1.5 bg-black text-white text-xs font-black uppercase border-2 border-black hover:text-[#41F2EE] transition-colors whitespace-nowrap">
+                        + Add
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className={labelClass}>End Date</label>
-                    <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
-                      className={inputClass} />
+                ) : (
+                  <div className="space-y-1.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className={labelClass}>Start Date *</label>
+                        <Input id="edit-an-dateStart" type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
+                          className={inputClass + fieldErr("dateStart")} />
+                      </div>
+                      <div>
+                        <label className={labelClass}>End Date</label>
+                        <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
+                          className={inputClass} />
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => {
+                      setUseSpecificDates(true);
+                      setSpecificDates(event.dateStart ? [event.dateStart] : []);
+                    }} className="text-xs text-gray-500 underline hover:text-black normal-case font-normal">
+                      + Split into specific dates (series / irregular schedule)
+                    </button>
                   </div>
-                </div>
-                {!(form.dateEnd && form.dateEnd !== form.dateStart) && (
+                )}
+                {!useSpecificDates && !(form.dateEnd && form.dateEnd !== form.dateStart) && (
                 <div>
                   <label className={labelClass}>Start Time <span className="font-normal normal-case opacity-60">(approximate)</span></label>
                   <Input type="time" value={form.startTime || ""} onChange={e => set("startTime", e.target.value)}
@@ -720,9 +803,13 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
                 className="px-4 py-2.5 border-2 border-black bg-white font-black uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
                 Cancel
               </button>
-              <button type="submit" disabled={updateMutation.isPending}
+              <button type="submit" disabled={updateMutation.isPending || batchExpandMutation.isPending}
                 className="flex-1 px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
-                {updateMutation.isPending ? "Saving…" : "Save Changes"}
+                {(updateMutation.isPending || batchExpandMutation.isPending)
+                  ? "Saving…"
+                  : useSpecificDates && specificDates.length > 1
+                    ? `Save as ${specificDates.length} Events`
+                    : "Save Changes"}
               </button>
             </DialogFooter>
           </form>
