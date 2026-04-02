@@ -514,7 +514,7 @@ function EditArtEventModal({ event, onClose }: { event: ArtEvent; onClose: () =>
         });
       } else {
         if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
-        if (res.instanceNote !== undefined) setInstanceNote(res.instanceNote || "");
+        if (res.instanceNote) setInstanceNote(res.instanceNote);
         toast({ title: "Content refreshed ✨", description: "Description updated with latest details." });
       }
     } catch (e: any) {
@@ -799,7 +799,8 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
       },
     }),
     onSuccess: (data: any) => {
-      const { specificDates: aiDates, ...rest } = data;
+      const { specificDates: aiDates, instanceNote: aiNote, ...rest } = data;
+      if (aiNote) setInstanceNote(aiNote);
       if (Array.isArray(aiDates) && aiDates.length >= 2) {
         setSpecificDates(aiDates);
         setUseSpecificDates(true);
@@ -934,7 +935,7 @@ function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }
         });
       } else {
         if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
-        if (res.instanceNote !== undefined) setInstanceNote(res.instanceNote || "");
+        if (res.instanceNote) setInstanceNote(res.instanceNote);
         toast({ title: "Content refreshed ✨", description: "Description updated with latest details." });
       }
     } catch (e: any) {

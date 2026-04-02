@@ -563,6 +563,7 @@ Return ONLY valid JSON (no markdown):
     selloutRisk: number | null;
     isRecurring: boolean;
     recurrenceLabel: string;
+    instanceNote: string;
     specificDates: string[];
   }> {
     const client = new Anthropic({ apiKey: this.apiKey });
@@ -591,6 +592,7 @@ Return this exact JSON structure (no markdown, no code blocks):
   "announcedAt": "YYYY-MM-DD date when first announced/posted — check: (1) relative timestamp in image like '3d' or '2 days ago' subtracted from today, (2) date pattern in file name, (3) empty string if unknown",
   "isRecurring": true if this is a recurring/regular event (monthly, weekly, every first Friday, ongoing series, annual, etc.) — false if it's a one-time event,
   "recurrenceLabel": "short human-readable recurrence pattern if isRecurring is true, e.g. 'Monthly', 'Weekly', 'Every 1st Friday', 'Annual', 'Bi-weekly Thursdays' — empty string if not recurring",
+  "occurrenceNote": "ONLY for recurring events: if the source explicitly mentions what is SPECIFIC to THIS occurrence (e.g. 'this month we're reading X', 'featuring artist Y', 'theme: Z this week') — extract that detail in ≤120 chars. Empty string if nothing occurrence-specific is mentioned or if isRecurring is false.",
   "specificDates": ["YYYY-MM-DD", ...] // ONLY populate if 2 or more specific non-contiguous dates are explicitly listed (e.g. "Jul 8, Aug 22, Sep 13" or "March 5 & April 2 & May 7"). Return them sorted ascending. Use empty array [] for single dates, continuous ranges, weekly/monthly patterns, or ongoing exhibitions. Never guess dates — only include dates explicitly named in the source.
   "selloutRisk": integer 1-5 estimating how fast this will sell out:
     5 = Instant sellout — famous venue (Denver Art Museum special, Meow Wolf ticketed, Red Rocks comedy), single night, explicitly limited capacity, famous speaker/performer
@@ -708,6 +710,7 @@ Return ONLY valid JSON (no markdown):
         ? Math.round(pass1.selloutRisk) : null,
       isRecurring: pass1.isRecurring === true,
       recurrenceLabel: pass1.recurrenceLabel || '',
+      instanceNote: (pass1.isRecurring && typeof pass1.occurrenceNote === 'string') ? pass1.occurrenceNote : '',
       specificDates: Array.isArray(pass1.specificDates)
         ? pass1.specificDates.filter((d: any) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
         : [],
@@ -816,7 +819,7 @@ Return ONLY valid JSON (no markdown):
     return {
       status: 'updated',
       summary: (result.summary || currentSummary || '').substring(0, 200),
-      instanceNote: isRecurring ? (result.occurrenceNote ?? undefined) : undefined,
+      instanceNote: isRecurring ? (result.occurrenceNote || undefined) : undefined,
     };
   }
 
