@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import Papa from "papaparse";
 import { CalendarSubscribeModal } from "./CalendarSubscribeModal";
@@ -23,6 +23,7 @@ export function Footer() {
   const [csvError, setCsvError] = useState<string | null>(null);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const qc = useQueryClient();
 
   // Add multiple events (CSV) mutation
   const addEventsBulkMutation = useMutation({
@@ -44,6 +45,7 @@ export function Footer() {
 
         if (data.results.skipped === 0) {
           setCsvModalOpen(false);
+          qc.invalidateQueries({ queryKey: ["/api/events"] });
           navigate("/");
         }
       } else {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Navbar } from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -10,6 +10,7 @@ import EventForm, { EventFormValues } from "@/components/EventForm";
 export default function AddEvent() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const qc = useQueryClient();
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
 
   // Add single event mutation
@@ -26,6 +27,7 @@ export default function AddEvent() {
         title: "Event Added",
         description: "The event has been added successfully!",
       });
+      qc.invalidateQueries({ queryKey: ["/api/events"] });
       navigate("/");
     },
     onError: (error: any) => {

@@ -220,10 +220,11 @@ export default function Home() {
   }, []);
 
   // Fetch events - with refetchOnMount: always to ensure a fresh load every time
-  const { data: events = [], isLoading, error } = useQuery<Event[]>({
+  const { data: events = [], isLoading, error, refetch } = useQuery<Event[]>({
     queryKey: ["/api/events"],
     refetchOnMount: 'always',  // This forces a refresh every time the component mounts
     staleTime: 0,              // Consider data stale immediately
+    retry: 2,                  // Retry up to 2 times on failure before showing error
   });
 
   // Use the genres list directly from schema
@@ -717,7 +718,12 @@ export default function Home() {
           {isLoading ? (
             <div className="py-10 text-center">Loading events...</div>
           ) : error ? (
-            <div className="py-10 text-center text-red-500">Error loading events</div>
+            <div className="py-10 text-center text-red-500 flex flex-col items-center gap-3">
+              <span>Error loading events</span>
+              <button onClick={() => refetch()} className="px-4 py-2 bg-black text-white text-sm font-black uppercase hover:bg-gray-800 transition-colors">
+                Try Again
+              </button>
+            </div>
           ) : viewMode === "calendar" ? (
             <ConcertCalendarMonthView
               events={filteredEvents}
