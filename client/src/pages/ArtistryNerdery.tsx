@@ -333,14 +333,14 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
                 onClick={() => { setIsMenuOpen(false); setIsEditOpen(true); }}
                 className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
               >
-                Edit
+                Edit details
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => { setIsMenuOpen(false); soldOutMutation.mutate(); }}
                 disabled={soldOutMutation.isPending}
                 className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
               >
-                {event.soldOut ? "Mark available" : "Sold out"}
+                {event.soldOut ? "Mark available" : "Mark sold out"}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => { setIsMenuOpen(false); duplicateMutation.mutate(); }}
@@ -356,7 +356,7 @@ function ArtEventRow({ event }: { event: ArtEvent }) {
                   setTimeout(() => setShowDeleteConfirm(true), 100);
                 }}
               >
-                Delete
+                Delete event
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -2215,20 +2215,20 @@ export default function ArtistryNerdery() {
                             onClick={() => { setCalDetailMenuOpen(false); setCalDetailEditOpen(true); }}
                             className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                           >
-                            Edit
+                            Edit details
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => { setCalDetailMenuOpen(false); calDetailSoldOutMutation.mutate(); }}
                             disabled={calDetailSoldOutMutation.isPending}
                             className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                           >
-                            {ev.soldOut ? "Mark available" : "Sold out"}
+                            {ev.soldOut ? "Mark available" : "Mark sold out"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                             onClick={() => { setCalDetailMenuOpen(false); setTimeout(() => setCalDetailDeleteConfirm(true), 100); }}
                           >
-                            Delete
+                            Delete event
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

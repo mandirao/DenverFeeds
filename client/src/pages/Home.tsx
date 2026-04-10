@@ -814,7 +814,7 @@ export default function Home() {
                           <DropdownMenuItem
                             className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                             onClick={() => { setCalDetailMenuOpen(false); setTimeout(() => setCalDetailDeleteConfirm(true), 100); }}>
-                            Delete
+                            Delete event
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
