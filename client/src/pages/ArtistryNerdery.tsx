@@ -2038,9 +2038,7 @@ export default function ArtistryNerdery() {
               </h2>
               <div className="h-0.5 flex-1 bg-black" />
             </div>
-            {!stillTimeTruncated && (
-              <p className="text-xs text-black opacity-50 mb-3 -mt-1 text-center tracking-wide uppercase">Already open · listed by closing date</p>
-            )}
+            <p className="text-xs text-black opacity-50 mb-3 -mt-1 text-center tracking-wide uppercase">closing soonest first</p>
             <div className="relative">
               <ul className="space-y-0">
                 {visibleStillTimeEvents.map(ev => (
@@ -2060,9 +2058,8 @@ export default function ArtistryNerdery() {
                   onClick={() => setStillTimeExpanded(true)}
                   className="text-black text-sm font-bold underline hover:opacity-60 transition-opacity focus:outline-none block mx-auto"
                 >
-                  Show {stillTimeHiddenCount} more already open
+                  Show {stillTimeHiddenCount} more worth catching
                 </button>
-                <p className="text-xs text-black opacity-40 mt-1 tracking-wide uppercase">listed by closing date</p>
               </div>
             )}
             {!stillTimeTruncated && stillTimeEvents.length > STILL_VISIBLE && (
