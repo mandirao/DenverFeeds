@@ -2038,7 +2038,7 @@ export default function ArtistryNerdery() {
               </h2>
               <div className="h-0.5 flex-1 bg-black" />
             </div>
-            <p className="text-xs text-black opacity-50 mb-3 -mt-1 text-center tracking-wide uppercase">closing soonest first</p>
+
             <div className="relative">
               <ul className="space-y-0">
                 {visibleStillTimeEvents.map(ev => (
