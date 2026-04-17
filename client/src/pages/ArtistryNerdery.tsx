@@ -2056,9 +2056,9 @@ export default function ArtistryNerdery() {
               <div className="text-center mt-3">
                 <button
                   onClick={() => setStillTimeExpanded(true)}
-                  className="text-black text-sm font-bold underline hover:opacity-60 transition-opacity focus:outline-none block mx-auto"
+                  className="text-black text-xs underline hover:opacity-60 transition-opacity focus:outline-none opacity-50"
                 >
-                  Show {stillTimeHiddenCount} more worth catching
+                  ↓ {stillTimeHiddenCount} more worth catching
                 </button>
               </div>
             )}
