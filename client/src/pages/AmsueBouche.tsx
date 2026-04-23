@@ -1497,97 +1497,126 @@ function RestaurantModal({ mode, initial, onClose }: {
 
   const isValid = form.name.trim() && form.description.trim() && form.cuisine.length > 0 && form.pricePoint && form.neighborhood;
 
+  const cuisineChips = (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <Label className="text-xs font-bold uppercase">Cuisine Tags * <span className="font-normal normal-case opacity-50">(up to 3)</span></Label>
+        {form.cuisine.length > 0 && (
+          <span className="text-[10px] text-black/50">{form.cuisine.length}/3</span>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {[...cuisineTypes].sort().map(c => {
+          const selected = form.cuisine.includes(c);
+          const maxed = form.cuisine.length >= 3 && !selected;
+          return (
+            <button key={c} type="button"
+              onClick={() => !maxed && toggleCuisine(c)}
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors ${
+                selected
+                  ? "bg-black text-white border-black"
+                  : maxed
+                    ? "bg-white text-black/25 border-black/10 cursor-not-allowed"
+                    : "bg-white text-black/55 border-black/20 hover:border-black hover:text-black"
+              }`}>
+              {c}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-md rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
+      <DialogContent className="max-w-md sm:max-w-2xl rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
         <DialogTitle className="sr-only">{mode === "add" ? "Add Restaurant" : "Edit Restaurant"}</DialogTitle>
-        <div className="px-6 pt-5 pb-4" style={{ backgroundColor: AB_ORANGE }}>
+        <div className="px-6 pt-4 pb-3" style={{ backgroundColor: AB_ORANGE }}>
           <h2 className="font-black uppercase text-black text-lg">
             {mode === "add" ? "Add Restaurant" : "Edit Restaurant"}
           </h2>
         </div>
-        <div className="px-6 py-4 space-y-3 bg-white overflow-y-auto max-h-[70vh]">
-          <div className="flex gap-3">
-            <div className="w-20 flex-shrink-0">
-              <Label className="text-xs font-bold uppercase">Emoji</Label>
-              <Input value={form.emoji} onChange={e => setForm(f => ({ ...f, emoji: e.target.value }))}
-                className="mt-1 rounded-none border-black text-center text-xl" maxLength={4} />
-            </div>
-            <div className="flex-1">
-              <Label className="text-xs font-bold uppercase">Name *</Label>
-              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Restaurant name" className="mt-1 rounded-none border-black" />
-            </div>
-          </div>
-          <button type="button" onClick={handleAIFill} disabled={aiLoading}
-            className="w-full flex items-center justify-center gap-2 py-2 text-sm font-black uppercase border-2 border-black hover:opacity-80 transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: "#41F2EE" }}>
-            <Sparkles className="w-4 h-4" />
-            {aiLoading ? "Searching the web…" : "AI Fill — auto-fill all fields"}
-          </button>
-          <div>
-            <Label className="text-xs font-bold uppercase">Description *</Label>
-            <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              placeholder="Sound, vibe, what to order, who it's for…" rows={3}
-              className="mt-1 rounded-none border-black resize-none" />
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <Label className="text-xs font-bold uppercase">Cuisine Tags * <span className="font-normal normal-case opacity-50">(up to 3)</span></Label>
-              {form.cuisine.length > 0 && (
-                <span className="text-[10px] text-black/50">{form.cuisine.length}/3 selected</span>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {[...cuisineTypes].sort().map(c => {
-                const selected = form.cuisine.includes(c);
-                const maxed = form.cuisine.length >= 3 && !selected;
-                return (
-                  <button key={c} type="button"
-                    onClick={() => !maxed && toggleCuisine(c)}
-                    className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition-colors ${
-                      selected
-                        ? "bg-black text-white border-black"
-                        : maxed
-                          ? "bg-white text-black/30 border-black/15 cursor-not-allowed"
-                          : "bg-white text-black/60 border-black/25 hover:border-black hover:text-black"
-                    }`}>
-                    {c}
+
+        {/* Body: single column on mobile, two columns on desktop */}
+        <div className="bg-white sm:flex sm:divide-x sm:divide-black/10">
+          {/* Left column — main fields */}
+          <div className="px-6 py-4 space-y-3 flex-1 overflow-y-auto max-h-[75vh] sm:max-h-none sm:overflow-visible">
+            {/* Emoji + Name row */}
+            <div className="flex gap-3">
+              <div className="w-16 flex-shrink-0">
+                <Label className="text-xs font-bold uppercase">Emoji</Label>
+                <Input value={form.emoji} onChange={e => setForm(f => ({ ...f, emoji: e.target.value }))}
+                  className="mt-1 rounded-none border-black text-center text-xl h-9" maxLength={4} />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs font-bold uppercase">Name *</Label>
+                  <button type="button" onClick={handleAIFill} disabled={aiLoading}
+                    className="flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 border border-black hover:opacity-75 transition-opacity disabled:opacity-40"
+                    style={{ backgroundColor: aiLoading ? "#e5e5e5" : "#41F2EE" }}>
+                    <Sparkles className="w-2.5 h-2.5" />
+                    {aiLoading ? "Searching…" : "AI Fill"}
                   </button>
-                );
-              })}
+                </div>
+                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Restaurant name" className="rounded-none border-black h-9" />
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <Label className="text-xs font-bold uppercase">Description *</Label>
+              <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="What to order, the vibe, who it's for…" rows={3}
+                className="mt-1 rounded-none border-black resize-none" />
+            </div>
+
+            {/* Price + Neighborhood */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-bold uppercase">Price *</Label>
+                <Select value={form.pricePoint} onValueChange={v => setForm(f => ({ ...f, pricePoint: v }))}>
+                  <SelectTrigger className="mt-1 rounded-none border-black h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {restaurantPricePoints.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs font-bold uppercase">Neighborhood *</Label>
+                <Select value={form.neighborhood} onValueChange={v => setForm(f => ({ ...f, neighborhood: v }))}>
+                  <SelectTrigger className="mt-1 rounded-none border-black h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-64 overflow-y-auto">
+                    {denverNeighborhoods.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Hot New */}
+            <div className="flex items-center gap-2.5">
+              <input type="checkbox" id="hotNew" checked={form.hotNew}
+                onChange={e => setForm(f => ({ ...f, hotNew: e.target.checked }))}
+                className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
+              <label htmlFor="hotNew" className="text-xs font-bold uppercase cursor-pointer select-none">
+                🔥 Hot New <span className="font-normal normal-case opacity-50">(opened this year)</span>
+              </label>
+            </div>
+
+            {/* Cuisine chips — mobile only */}
+            <div className="sm:hidden pt-1">
+              {cuisineChips}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs font-bold uppercase">Price *</Label>
-              <Select value={form.pricePoint} onValueChange={v => setForm(f => ({ ...f, pricePoint: v }))}>
-                <SelectTrigger className="mt-1 rounded-none border-black h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {restaurantPricePoints.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs font-bold uppercase">Neighborhood *</Label>
-              <Select value={form.neighborhood} onValueChange={v => setForm(f => ({ ...f, neighborhood: v }))}>
-                <SelectTrigger className="mt-1 rounded-none border-black h-9"><SelectValue /></SelectTrigger>
-                <SelectContent className="max-h-64 overflow-y-auto">
-                  {denverNeighborhoods.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex items-center gap-2.5 pt-1">
-            <input type="checkbox" id="hotNew" checked={form.hotNew}
-              onChange={e => setForm(f => ({ ...f, hotNew: e.target.checked }))}
-              className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
-            <label htmlFor="hotNew" className="text-xs font-bold uppercase cursor-pointer select-none">
-              🔥 Hot New Restaurant <span className="font-normal normal-case opacity-50">(opened this year)</span>
-            </label>
+
+          {/* Right column — cuisine chips, desktop only */}
+          <div className="hidden sm:block w-56 px-5 py-4 flex-shrink-0">
+            {cuisineChips}
           </div>
         </div>
-        <div className="px-6 py-4 bg-white border-t border-black/10 flex gap-2">
+
+        {/* Footer */}
+        <div className="px-6 py-3 bg-white border-t border-black/10 flex gap-2">
           <Button variant="outline" onClick={onClose} className="rounded-none border-black flex-1">Cancel</Button>
           <Button onClick={() => mutation.mutate()} disabled={!isValid || mutation.isPending}
             className="rounded-none flex-1 font-black uppercase text-black hover:opacity-80"
