@@ -1447,6 +1447,8 @@ function RestaurantModal({ mode, initial, onClose }: {
     hotNew: initial?.hotNew ?? false,
   });
 
+  const [aiLoading, setAiLoading] = useState(false);
+
   const toggleCuisine = (c: string) => {
     setForm(f => {
       const has = f.cuisine.includes(c);
@@ -1454,6 +1456,31 @@ function RestaurantModal({ mode, initial, onClose }: {
       if (f.cuisine.length >= 3) return f;
       return { ...f, cuisine: [...f.cuisine, c] };
     });
+  };
+
+  const handleAIFill = async () => {
+    if (!form.name.trim()) {
+      toast({ title: "Enter a name first", description: "Type the restaurant name, then click AI Fill.", variant: "destructive" });
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const result = await apiRequest({ endpoint: "/api/ai/fill-restaurant", method: "POST", data: { name: form.name.trim() } });
+      setForm(f => ({
+        ...f,
+        ...(result.emoji ? { emoji: result.emoji } : {}),
+        ...(result.description ? { description: result.description } : {}),
+        ...(result.cuisine?.length ? { cuisine: result.cuisine } : {}),
+        ...(result.pricePoint ? { pricePoint: result.pricePoint } : {}),
+        ...(result.neighborhood ? { neighborhood: result.neighborhood } : {}),
+        ...(typeof result.hotNew === "boolean" ? { hotNew: result.hotNew } : {}),
+      }));
+      toast({ title: "Filled with AI ✨", description: "Review and adjust any details before saving." });
+    } catch {
+      toast({ title: "AI fill failed", description: "Check the restaurant name and try again.", variant: "destructive" });
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const mutation = useMutation({
@@ -1492,6 +1519,12 @@ function RestaurantModal({ mode, initial, onClose }: {
                 placeholder="Restaurant name" className="mt-1 rounded-none border-black" />
             </div>
           </div>
+          <button type="button" onClick={handleAIFill} disabled={aiLoading}
+            className="w-full flex items-center justify-center gap-2 py-2 text-sm font-black uppercase border-2 border-black hover:opacity-80 transition-opacity disabled:opacity-50"
+            style={{ backgroundColor: "#41F2EE" }}>
+            <Sparkles className="w-4 h-4" />
+            {aiLoading ? "Searching the web…" : "AI Fill — auto-fill all fields"}
+          </button>
           <div>
             <Label className="text-xs font-bold uppercase">Description *</Label>
             <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}

@@ -1608,6 +1608,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI fill for restaurant fields
+  app.post("/api/ai/fill-restaurant", async (req, res) => {
+    try {
+      const { name } = req.body;
+      if (!name?.trim()) return res.status(400).json({ message: "Restaurant name is required" });
+      const result = await llmService.fillRestaurantAI(name.trim());
+      res.json(result);
+    } catch (error) {
+      console.error("Fill restaurant AI error:", error);
+      res.status(500).json({ message: "Failed to fill restaurant details" });
+    }
+  });
+
   // ── Restaurants (Best of Denver) ─────────────────────────────────────────
   app.get("/api/restaurants", async (_req, res) => {
     try {

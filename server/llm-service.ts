@@ -898,6 +898,96 @@ Return ONLY valid JSON (no markdown):
     };
   }
 
+  async fillRestaurantAI(name: string): Promise<{
+    emoji?: string;
+    description?: string;
+    cuisine?: string[];
+    pricePoint?: string;
+    neighborhood?: string;
+    hotNew?: boolean;
+  }> {
+    const client = new Anthropic({ apiKey: this.apiKey });
+
+    const searchQueries = [
+      `"${name}" Denver restaurant review`,
+      `"${name}" Denver menu cuisine neighborhood`,
+      `"${name}" Denver 2024 2025 new opening`,
+    ];
+
+    const searchResults = await Promise.all(searchQueries.map(q => this.serperSearch(q, 4)));
+    const searchContext = searchQueries.map((q, i) => {
+      const snippets = searchResults[i].map(r => `• ${r.title}: ${r.snippet}`).join('\n');
+      return `Search: "${q}"\n${snippets || '(no results)'}`;
+    }).join('\n\n');
+
+    const currentYear = new Date().getFullYear();
+
+    const cuisineOptions = [
+      'African','American','BBQ & Southern','Brunch & Breakfast','Chinese','Cocktails & Wine',
+      'Colombian','Dessert & Pastry','Eastern European','Farm-to-Table','Filipino','French',
+      'Fusion','Hot Pot & Shabu','Indian & South Asian','Israeli','Italian','Japanese','Korean',
+      'Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
+      'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
+    ];
+
+    const neighborhoodOptions = [
+      'Baker & South Broadway','Capitol Hill & Uptown','Cherry Creek & Glendale','Downtown & LoDo',
+      'DTC & Tech Center','Highlands & LoHi',"Sloan's Lake",'RiNo & Five Points',
+      'Stapleton & Central Park','Sunnyside & Berkeley','Wash Park & Platt Park','Other'
+    ];
+
+    const prompt = `You are filling in a restaurant listing for "Best of Denver" — a curated guide for a foodie meetup group.
+
+RESTAURANT NAME: "${name}"
+
+WEB SEARCH RESULTS:
+${searchContext || '(no results found)'}
+
+TASK: Based on the search results, fill in all fields for this Denver restaurant. Return valid JSON only (no markdown).
+
+VALID CUISINE TAGS (pick 1–3 that best fit): ${cuisineOptions.join(', ')}
+VALID NEIGHBORHOODS (pick one): ${neighborhoodOptions.join(', ')}
+VALID PRICE POINTS: $, $$, $$$, $$$$
+
+VOICE GUIDE for description: Casual cool, like Oh My Rockness or Pitchfork food writing.
+- Lead with what makes this place worth going — the signature dish, the vibe, or the chef's approach
+- Describe the actual food: specific dishes, flavors, textures  
+- Max 350 characters. No filler ("amazing," "incredible," "don't miss," "must-try")
+- If it's a Michelin star restaurant, you may mention the star count naturally
+- Mention notable awards or accolades briefly if well-known
+
+hotNew = true only if the restaurant opened in ${currentYear} or late ${currentYear - 1}
+
+Return ONLY valid JSON:
+{
+  "emoji": "single most fitting emoji for this cuisine/vibe",
+  "description": "compelling 300-350 char description",
+  "cuisine": ["Tag1", "Tag2"],
+  "pricePoint": "$$",
+  "neighborhood": "one of the valid neighborhoods",
+  "hotNew": false
+}`;
+
+    const message = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 500,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const raw = message.content[0].type === 'text' ? message.content[0].text : '{}';
+    const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const result = JSON.parse(cleaned);
+
+    return {
+      emoji: result.emoji || undefined,
+      description: result.description ? String(result.description).substring(0, 400) : undefined,
+      cuisine: Array.isArray(result.cuisine) ? result.cuisine.slice(0, 3) : undefined,
+      pricePoint: result.pricePoint || undefined,
+      neighborhood: result.neighborhood || undefined,
+      hotNew: typeof result.hotNew === 'boolean' ? result.hotNew : false,
+    };
+  }
+
   private validateDate(dateString: string): string | null {
     if (!dateString) return null;
 
