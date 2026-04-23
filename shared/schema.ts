@@ -543,11 +543,13 @@ export type ArtEvent = typeof artEvents.$inferSelect;
 
 export const denverNeighborhoods = [
   'Baker & South Broadway',
+  'Boulder',
   'Capitol Hill & Uptown',
   'Cherry Creek & Glendale',
   'Downtown & LoDo',
   'DTC & Tech Center',
   'Highlands & LoHi',
+  'Lakewood',
   'RiNo & Five Points',
   "Sloan's Lake",
   'Stapleton & Central Park',

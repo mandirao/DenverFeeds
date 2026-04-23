@@ -910,8 +910,8 @@ Return ONLY valid JSON (no markdown):
 
     const searchQueries = [
       `"${name}" Denver restaurant review`,
-      `"${name}" Denver menu cuisine neighborhood`,
-      `"${name}" Denver 2024 2025 new opening`,
+      `"${name}" Denver address location neighborhood`,
+      `"${name}" Denver menu cuisine`,
     ];
 
     const searchResults = await Promise.all(searchQueries.map(q => this.serperSearch(q, 4)));
@@ -931,8 +931,8 @@ Return ONLY valid JSON (no markdown):
     ];
 
     const neighborhoodOptions = [
-      'Baker & South Broadway','Capitol Hill & Uptown','Cherry Creek & Glendale','Downtown & LoDo',
-      'DTC & Tech Center','Highlands & LoHi',"Sloan's Lake",'RiNo & Five Points',
+      'Baker & South Broadway','Boulder','Capitol Hill & Uptown','Cherry Creek & Glendale','Downtown & LoDo',
+      'DTC & Tech Center','Highlands & LoHi','Lakewood',"Sloan's Lake",'RiNo & Five Points',
       'Stapleton & Central Park','Sunnyside & Berkeley','Wash Park & Platt Park','Other'
     ];
 
@@ -946,7 +946,26 @@ ${searchContext || '(no results found)'}
 TASK: Based on the search results, fill in all fields for this Denver restaurant. Return valid JSON only (no markdown).
 
 VALID CUISINE TAGS (pick 1–3 that best fit): ${cuisineOptions.join(', ')}
-VALID NEIGHBORHOODS (pick one): ${neighborhoodOptions.join(', ')}
+
+VALID NEIGHBORHOODS (pick exactly one):
+${neighborhoodOptions.join(', ')}
+
+Neighborhood guidance — use the street address or area mentioned in search results to pick the best match:
+- Downtown & LoDo = downtown Denver, LoDo, Union Station area, Larimer Square, Wynkoop St
+- RiNo & Five Points = River North, Five Points, Brighton Blvd, Welton St
+- Highlands & LoHi = LoHi, Highland, 32nd Ave, Tennyson St
+- Baker & South Broadway = South Broadway, Baker neighborhood, Sth Pearl St
+- Capitol Hill & Uptown = Capitol Hill, Uptown, 17th Ave, Colfax area
+- Cherry Creek & Glendale = Cherry Creek, Glendale, 2nd Ave, Fillmore St
+- Wash Park & Platt Park = Wash Park, Platt Park, South Pearl St restaurants
+- Sunnyside & Berkeley = Sunnyside, Berkeley, 38th Ave, Tennyson west of I-70
+- Sloan's Lake = Sloan's Lake, Edgewater, 17th Ave west corridor
+- Stapleton & Central Park = Stapleton, Central Park, Northfield
+- DTC & Tech Center = Denver Tech Center, Greenwood Village, Englewood
+- Lakewood = Lakewood, Belmar, West Colfax west of Sheridan
+- Boulder = Boulder, Pearl Street, University Hill
+IMPORTANT: Only use "Other" if you truly cannot determine the neighborhood from the search results. If you see a street address or area name, commit to the best match above.
+
 VALID PRICE POINTS: $, $$, $$$, $$$$
 
 VOICE GUIDE for description: Casual cool, like Oh My Rockness or Pitchfork food writing.
