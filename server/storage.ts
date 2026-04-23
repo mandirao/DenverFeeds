@@ -1,4 +1,4 @@
-import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent, discoveredArtists, type DiscoveredArtist, type InsertDiscoveredArtist, venues, type Venue, type InsertVenue, foodEvents, type FoodEvent, type InsertFoodEvent, artEvents, type ArtEvent, type InsertArtEvent } from "@shared/schema";
+import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent, discoveredArtists, type DiscoveredArtist, type InsertDiscoveredArtist, venues, type Venue, type InsertVenue, foodEvents, type FoodEvent, type InsertFoodEvent, artEvents, type ArtEvent, type InsertArtEvent, restaurants, type Restaurant, type InsertRestaurant } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, count, desc, gt } from "drizzle-orm";
 import { spotifyService } from "./spotify";
@@ -84,6 +84,13 @@ export interface IStorage {
   updateVenue(id: number, data: Partial<Venue>): Promise<Venue | undefined>;
   updateVenueEventCount(venueName: string): Promise<void>;
   autoTrackArtistAndVenue(artist: string, venue: string): Promise<void>;
+
+  // Restaurant methods for Best of Denver
+  getAllRestaurants(): Promise<Restaurant[]>;
+  getRestaurantById(id: number): Promise<Restaurant | undefined>;
+  createRestaurant(restaurant: InsertRestaurant): Promise<Restaurant>;
+  updateRestaurant(id: number, data: Partial<Restaurant>): Promise<Restaurant | undefined>;
+  deleteRestaurant(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -683,6 +690,30 @@ export class DatabaseStorage implements IStorage {
         priority: countResult.count > 10 ? 'high' : countResult.count > 3 ? 'medium' : 'low'
       });
     }
+  }
+
+  async getAllRestaurants(): Promise<Restaurant[]> {
+    return db.select().from(restaurants).orderBy(restaurants.name);
+  }
+
+  async getRestaurantById(id: number): Promise<Restaurant | undefined> {
+    const result = await db.select().from(restaurants).where(eq(restaurants.id, id));
+    return result[0];
+  }
+
+  async createRestaurant(restaurant: InsertRestaurant): Promise<Restaurant> {
+    const result = await db.insert(restaurants).values(restaurant).returning();
+    return result[0];
+  }
+
+  async updateRestaurant(id: number, data: Partial<Restaurant>): Promise<Restaurant | undefined> {
+    const result = await db.update(restaurants).set(data).where(eq(restaurants.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteRestaurant(id: number): Promise<boolean> {
+    const result = await db.delete(restaurants).where(eq(restaurants.id, id)).returning();
+    return result.length > 0;
   }
 
   async autoTrackArtistAndVenue(artist: string, venue: string): Promise<void> {

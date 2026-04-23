@@ -1608,6 +1608,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── Restaurants (Best of Denver) ─────────────────────────────────────────
+  app.get("/api/restaurants", async (_req, res) => {
+    try {
+      const list = await storage.getAllRestaurants();
+      res.json(list);
+    } catch (e) {
+      res.status(500).json({ message: "Failed to fetch restaurants" });
+    }
+  });
+
+  app.post("/api/restaurants", async (req, res) => {
+    try {
+      const { insertRestaurantSchema } = await import("@shared/schema");
+      const data = insertRestaurantSchema.parse(req.body);
+      const restaurant = await storage.createRestaurant(data);
+      res.status(201).json(restaurant);
+    } catch (e) {
+      if (e instanceof ZodError) return res.status(400).json({ message: fromZodError(e).toString() });
+      res.status(500).json({ message: "Failed to create restaurant" });
+    }
+  });
+
+  app.patch("/api/restaurants/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updated = await storage.updateRestaurant(id, req.body);
+      if (!updated) return res.status(404).json({ message: "Restaurant not found" });
+      res.json(updated);
+    } catch (e) {
+      res.status(500).json({ message: "Failed to update restaurant" });
+    }
+  });
+
+  app.delete("/api/restaurants/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const ok = await storage.deleteRestaurant(id);
+      if (!ok) return res.status(404).json({ message: "Restaurant not found" });
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ message: "Failed to delete restaurant" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

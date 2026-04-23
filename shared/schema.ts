@@ -524,4 +524,50 @@ export const insertArtEventSchema = createInsertSchema(artEvents).omit({
 
 export type InsertArtEvent = z.infer<typeof insertArtEventSchema>;
 export type ArtEvent = typeof artEvents.$inferSelect;
+
+// ── Restaurants (Best of Denver) ─────────────────────────────────────────────
+
+export const denverNeighborhoods = [
+  'Baker & South Broadway',
+  'Capitol Hill & Uptown',
+  'Cherry Creek & Glendale',
+  'Downtown & LoDo',
+  'DTC & Tech Center',
+  'Highlands & LoHi',
+  'RiNo & Five Points',
+  "Sloan's Lake",
+  'Stapleton & Central Park',
+  'Sunnyside & Berkeley',
+  'Wash Park & Platt Park',
+  'Other',
+] as const;
+export type DenverNeighborhood = typeof denverNeighborhoods[number];
+
+export const restaurantPricePoints = ['$', '$$', '$$$', '$$$$'] as const;
+export type RestaurantPricePoint = typeof restaurantPricePoints[number];
+
+export const restaurants = pgTable("restaurants", {
+  id: serial("id").primaryKey(),
+  emoji: text("emoji").notNull().default("🍽️"),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  cuisine: text("cuisine").notNull(),
+  pricePoint: text("price_point").notNull(),
+  neighborhood: text("neighborhood").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRestaurantSchema = createInsertSchema(restaurants).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  name: z.string().min(1, "Restaurant name is required"),
+  description: z.string().min(1, "Description is required"),
+  cuisine: z.string().min(1, "Cuisine is required"),
+  pricePoint: z.string().min(1, "Price point is required"),
+  neighborhood: z.string().min(1, "Neighborhood is required"),
+});
+
+export type InsertRestaurant = z.infer<typeof insertRestaurantSchema>;
+export type Restaurant = typeof restaurants.$inferSelect;
 export type Venue = typeof venues.$inferSelect;

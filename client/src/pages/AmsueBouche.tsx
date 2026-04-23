@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
+import { cuisineTypes, denverNeighborhoods, restaurantPricePoints, type FoodEvent, type InsertFoodEvent, type Restaurant } from "@shared/schema";
 import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
@@ -1358,6 +1358,160 @@ function FoodCalendarMonthView({
   );
 }
 
+// ── Restaurant Row ────────────────────────────────────────────────────────────
+
+function RestaurantRow({ restaurant, onEdit, onDelete }: {
+  restaurant: Restaurant;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(restaurant.name + " Denver restaurant")}`;
+  return (
+    <li className="flex items-start gap-3 py-3.5 border-b border-black/10 group last:border-0">
+      <span className="text-2xl flex-shrink-0 mt-0.5">{restaurant.emoji}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <a href={searchUrl} target="_blank" rel="noopener noreferrer"
+              className="font-black uppercase text-black text-sm leading-tight hover:underline decoration-dotted underline-offset-2">
+              {restaurant.name}
+            </a>
+            <p className="text-sm text-black/75 mt-0.5 leading-snug">{restaurant.description}</p>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              <span className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{restaurant.cuisine}</span>
+              <span className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{restaurant.pricePoint}</span>
+              <span className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{restaurant.neighborhood}</span>
+            </div>
+          </div>
+          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm"
+                className="h-7 w-7 p-0 flex items-center justify-center rounded-full bg-transparent opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+                <MoreVertical className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36 border-none bg-gray-100 shadow-md rounded-sm font-sans">
+              <DropdownMenuItem onClick={() => { setMenuOpen(false); onEdit(); }}
+                className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none">
+                Edit details
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                onClick={() => { setMenuOpen(false); onDelete(); }}>
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+// ── Restaurant Modal (Add + Edit) ─────────────────────────────────────────────
+
+function RestaurantModal({ mode, initial, onClose }: {
+  mode: "add" | "edit";
+  initial?: Restaurant;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [form, setForm] = useState({
+    emoji: initial?.emoji ?? "🍽️",
+    name: initial?.name ?? "",
+    description: initial?.description ?? "",
+    cuisine: initial?.cuisine ?? cuisineTypes[0],
+    pricePoint: initial?.pricePoint ?? "$$",
+    neighborhood: initial?.neighborhood ?? denverNeighborhoods[0],
+  });
+
+  const mutation = useMutation({
+    mutationFn: () => mode === "add"
+      ? apiRequest({ endpoint: "/api/restaurants", method: "POST", data: form })
+      : apiRequest({ endpoint: `/api/restaurants/${initial!.id}`, method: "PATCH", data: form }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/restaurants"] });
+      toast({ title: mode === "add" ? "Restaurant added!" : "Restaurant updated!" });
+      onClose();
+    },
+    onError: () => toast({ title: "Error", description: "Something went wrong.", variant: "destructive" }),
+  });
+
+  const isValid = form.name.trim() && form.description.trim() && form.cuisine && form.pricePoint && form.neighborhood;
+
+  return (
+    <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-md rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
+        <DialogTitle className="sr-only">{mode === "add" ? "Add Restaurant" : "Edit Restaurant"}</DialogTitle>
+        <div className="px-6 pt-5 pb-4" style={{ backgroundColor: AB_ORANGE }}>
+          <h2 className="font-black uppercase text-black text-lg">
+            {mode === "add" ? "Add Restaurant" : "Edit Restaurant"}
+          </h2>
+        </div>
+        <div className="px-6 py-4 space-y-3 bg-white">
+          <div className="flex gap-3">
+            <div className="w-20 flex-shrink-0">
+              <Label className="text-xs font-bold uppercase">Emoji</Label>
+              <Input value={form.emoji} onChange={e => setForm(f => ({ ...f, emoji: e.target.value }))}
+                className="mt-1 rounded-none border-black text-center text-xl" maxLength={4} />
+            </div>
+            <div className="flex-1">
+              <Label className="text-xs font-bold uppercase">Name *</Label>
+              <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Restaurant name" className="mt-1 rounded-none border-black" />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs font-bold uppercase">Description *</Label>
+            <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              placeholder="Sound, vibe, what to order, who it's for…" rows={3}
+              className="mt-1 rounded-none border-black resize-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-bold uppercase">Cuisine *</Label>
+              <Select value={form.cuisine} onValueChange={v => setForm(f => ({ ...f, cuisine: v }))}>
+                <SelectTrigger className="mt-1 rounded-none border-black h-9"><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-64 overflow-y-auto">
+                  {[...cuisineTypes].sort().map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs font-bold uppercase">Price *</Label>
+              <Select value={form.pricePoint} onValueChange={v => setForm(f => ({ ...f, pricePoint: v }))}>
+                <SelectTrigger className="mt-1 rounded-none border-black h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {restaurantPricePoints.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs font-bold uppercase">Neighborhood *</Label>
+            <Select value={form.neighborhood} onValueChange={v => setForm(f => ({ ...f, neighborhood: v }))}>
+              <SelectTrigger className="mt-1 rounded-none border-black h-9"><SelectValue /></SelectTrigger>
+              <SelectContent className="max-h-64 overflow-y-auto">
+                {denverNeighborhoods.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="px-6 py-4 bg-white border-t border-black/10 flex gap-2">
+          <Button variant="outline" onClick={onClose} className="rounded-none border-black flex-1">Cancel</Button>
+          <Button onClick={() => mutation.mutate()} disabled={!isValid || mutation.isPending}
+            className="rounded-none flex-1 font-black uppercase text-black hover:opacity-80"
+            style={{ backgroundColor: AB_ORANGE }}>
+            {mutation.isPending ? "Saving…" : mode === "add" ? "Add Restaurant" : "Save Changes"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function AmsueBouche() {
@@ -1375,6 +1529,13 @@ export default function AmsueBouche() {
   const [sortBy, setSortBy] = useState<"date" | "added">("date");
   const [filterCuisine, setFilterCuisine] = useState("all");
   const [filterDay, setFilterDay] = useState("all");
+  const [pageTab, setPageTab] = useState<"events" | "bestOf">("events");
+  const [restaurantAddOpen, setRestaurantAddOpen] = useState(false);
+  const [restaurantToEdit, setRestaurantToEdit] = useState<Restaurant | null>(null);
+  const [restaurantToDelete, setRestaurantToDelete] = useState<Restaurant | null>(null);
+  const [filterRCuisine, setFilterRCuisine] = useState("all");
+  const [filterRNeighborhood, setFilterRNeighborhood] = useState("all");
+  const [filterRPrice, setFilterRPrice] = useState("all");
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
@@ -1387,6 +1548,10 @@ export default function AmsueBouche() {
 
   const { data: events = [], isLoading } = useQuery<FoodEvent[]>({
     queryKey: ["/api/food-events"],
+  });
+
+  const { data: restaurantList = [], isLoading: restaurantsLoading } = useQuery<Restaurant[]>({
+    queryKey: ["/api/restaurants"],
   });
 
   const { toast } = useToast();
@@ -1411,6 +1576,26 @@ export default function AmsueBouche() {
     },
     onError: () => toast({ title: "Error", description: "Couldn't delete this event.", variant: "destructive" }),
   });
+
+  const deleteRestaurantMutation = useMutation({
+    mutationFn: (id: number) => apiRequest({ endpoint: `/api/restaurants/${id}`, method: "DELETE" }),
+    onSuccess: () => {
+      qcMain.invalidateQueries({ queryKey: ["/api/restaurants"] });
+      toast({ title: "Removed", description: `${restaurantToDelete?.name} deleted.` });
+      setRestaurantToDelete(null);
+    },
+    onError: () => toast({ title: "Error", description: "Couldn't delete.", variant: "destructive" }),
+  });
+
+  const filteredRestaurants = restaurantList.filter(r => {
+    if (filterRCuisine !== "all" && r.cuisine !== filterRCuisine) return false;
+    if (filterRNeighborhood !== "all" && r.neighborhood !== filterRNeighborhood) return false;
+    if (filterRPrice !== "all" && r.pricePoint !== filterRPrice) return false;
+    return true;
+  });
+
+  const hasActiveRestaurantFilters = filterRCuisine !== "all" || filterRNeighborhood !== "all" || filterRPrice !== "all";
+  const resetRestaurantFilters = () => { setFilterRCuisine("all"); setFilterRNeighborhood("all"); setFilterRPrice("all"); };
 
   const expandedEvents = expandRecurringFoodEvents(events);
 
@@ -1471,7 +1656,7 @@ export default function AmsueBouche() {
       <nav className="sticky top-0 z-50 shadow-md px-4 py-3" style={{ backgroundColor: AB_ORANGE }}>
         <div className="container mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
-            <div className="flex items-baseline gap-3">
+            <div className="flex items-baseline gap-3 flex-wrap">
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-1 group outline-none">
                   <h1 className="text-3xl md:text-4xl text-black group-hover:text-[#41F2EE] transition-colors font-black">
@@ -1513,16 +1698,38 @@ export default function AmsueBouche() {
                 <Users className="h-4 w-4" />
                 <span>Meetup</span>
               </a>
-              <button onClick={() => setAddOpen(true)}
-                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
-                <Plus className="w-4 h-4" />Popup
-              </button>
+              {pageTab === "events"
+                ? <button onClick={() => setAddOpen(true)}
+                    className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
+                    <Plus className="w-4 h-4" />Popup
+                  </button>
+                : <button onClick={() => setRestaurantAddOpen(true)}
+                    className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
+                    <Plus className="w-4 h-4" />Restaurant
+                  </button>
+              }
             </div>
+          </div>
+          {/* Tab row */}
+          <div className="flex gap-0 mt-2 -mb-0.5">
+            <button
+              onClick={() => setPageTab("events")}
+              className={`text-xs font-black uppercase tracking-wider px-4 py-1.5 transition-colors ${pageTab === "events" ? "bg-black text-[#FEABDA]" : "text-black hover:bg-black/15"}`}
+            >
+              Popups
+            </button>
+            <button
+              onClick={() => setPageTab("bestOf")}
+              className={`text-xs font-black uppercase tracking-wider px-4 py-1.5 transition-colors ${pageTab === "bestOf" ? "bg-black text-[#FEABDA]" : "text-black hover:bg-black/15"}`}
+            >
+              Best Of Denver
+            </button>
           </div>
         </div>
       </nav>
 
       {/* ── Feed ── */}
+      {pageTab === "events" && (
       <main className={`container mx-auto px-4 py-6 flex-1 transition-all duration-200 ${viewMode === "calendar" ? "max-w-5xl" : "max-w-2xl"}`}>
 
         <p className="text-xs text-black mb-4 opacity-60 leading-snug">
@@ -1761,6 +1968,122 @@ export default function AmsueBouche() {
           );
         })}
       </main>
+      )}
+
+      {/* ── Best Of Denver ── */}
+      {pageTab === "bestOf" && (
+        <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
+          <p className="text-xs text-black mb-4 opacity-60 leading-snug">
+            The group's picks — Denver spots worth going back to.
+          </p>
+
+          {/* Filter row */}
+          {restaurantList.length > 0 && (
+            <div className="mb-5">
+              <div className="overflow-x-auto scrollbar-hide">
+                <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
+                  <Select value={filterRCuisine} onValueChange={setFilterRCuisine}>
+                    <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0`}
+                      style={{ width: "160px", backgroundColor: filterRCuisine !== "all" ? "white" : AB_GOLD }}>
+                      <SelectValue placeholder="All Cuisine" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[320px] overflow-y-auto">
+                      <SelectItem value="all">All Cuisine</SelectItem>
+                      <SelectSeparator />
+                      {[...new Set(restaurantList.map(r => r.cuisine))].sort().map(c => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterRNeighborhood} onValueChange={setFilterRNeighborhood}>
+                    <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0`}
+                      style={{ width: "190px", backgroundColor: filterRNeighborhood !== "all" ? "white" : AB_GOLD }}>
+                      <SelectValue placeholder="All Neighborhoods" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[320px] overflow-y-auto">
+                      <SelectItem value="all">All Neighborhoods</SelectItem>
+                      <SelectSeparator />
+                      {denverNeighborhoods.map(n => (
+                        <SelectItem key={n} value={n}>{n}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterRPrice} onValueChange={setFilterRPrice}>
+                    <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0`}
+                      style={{ width: "110px", backgroundColor: filterRPrice !== "all" ? "white" : AB_GOLD }}>
+                      <SelectValue placeholder="All Prices" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Prices</SelectItem>
+                      <SelectSeparator />
+                      {restaurantPricePoints.map(p => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {hasActiveRestaurantFilters && (
+                    <button onClick={resetRestaurantFilters}
+                      className="text-xs font-bold underline text-black opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap flex-shrink-0">
+                      Clear filters
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Restaurant list */}
+          {restaurantsLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex gap-3 py-3 border-b border-black/10 animate-pulse">
+                  <div className="w-8 h-8 bg-black/10 rounded-full flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-black/10 rounded w-1/3" />
+                    <div className="h-3 bg-black/10 rounded w-2/3" />
+                    <div className="flex gap-2">
+                      <div className="h-3 bg-black/10 rounded w-16" />
+                      <div className="h-3 bg-black/10 rounded w-8" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : restaurantList.length === 0 ? (
+            <div className="text-center py-16 text-black/50">
+              <p className="text-4xl mb-3">🍽️</p>
+              <p className="font-bold uppercase text-sm mb-1">No restaurants yet</p>
+              <p className="text-xs mb-4">Add the group's favorite Denver spots.</p>
+              <button onClick={() => setRestaurantAddOpen(true)}
+                className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
+                Add a Restaurant
+              </button>
+            </div>
+          ) : filteredRestaurants.length === 0 ? (
+            <div className="text-center py-12 text-black/50">
+              <p className="text-sm font-bold uppercase mb-2">No matches</p>
+              <button onClick={resetRestaurantFilters}
+                className="text-xs font-bold underline text-black opacity-50 hover:opacity-80 transition-opacity">
+                Clear filters
+              </button>
+            </div>
+          ) : (
+            <ul className="divide-y-0">
+              {filteredRestaurants.map(r => (
+                <RestaurantRow
+                  key={r.id}
+                  restaurant={r}
+                  onEdit={() => setRestaurantToEdit(r)}
+                  onDelete={() => setRestaurantToDelete(r)}
+                />
+              ))}
+            </ul>
+          )}
+        </main>
+      )}
 
       {/* ── Footer ── */}
       <footer className="py-4 px-4" style={{ backgroundColor: AB_GOLD }}>
@@ -1785,6 +2108,32 @@ export default function AmsueBouche() {
       </footer>
 
       <AddEventModal open={addOpen} onClose={() => setAddOpen(false)} />
+
+      {restaurantAddOpen && (
+        <RestaurantModal mode="add" onClose={() => setRestaurantAddOpen(false)} />
+      )}
+      {restaurantToEdit && (
+        <RestaurantModal mode="edit" initial={restaurantToEdit} onClose={() => setRestaurantToEdit(null)} />
+      )}
+      <AlertDialog open={!!restaurantToDelete} onOpenChange={open => { if (!open) setRestaurantToDelete(null); }}>
+        <AlertDialogContent className="rounded-none border-2 border-black">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this restaurant?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{restaurantToDelete?.name}" will be permanently removed from the list.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-none">Cancel</AlertDialogCancel>
+            <AlertDialogAction className="rounded-none bg-red-600 hover:bg-red-700"
+              onClick={() => restaurantToDelete && deleteRestaurantMutation.mutate(restaurantToDelete.id)}
+              disabled={deleteRestaurantMutation.isPending}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <CalendarSubscribeModal
         open={calendarOpen}
         onOpenChange={setCalendarOpen}
