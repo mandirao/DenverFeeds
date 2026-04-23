@@ -1373,13 +1373,32 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <a href={searchUrl} target="_blank" rel="noopener noreferrer"
-              className="font-black uppercase text-black text-sm leading-tight hover:underline decoration-dotted underline-offset-2">
-              {restaurant.name}
-            </a>
+            <div className="flex items-center gap-2 flex-wrap">
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <a href={searchUrl} target="_blank" rel="noopener noreferrer"
+                      className="font-black uppercase text-black text-sm leading-tight underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity">
+                      {restaurant.name}
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
+                    Opens Google search
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              {restaurant.hotNew && (
+                <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-white"
+                  style={{ backgroundColor: "#FE6B41" }}>
+                  🔥 Hot New
+                </span>
+              )}
+            </div>
             <p className="text-sm text-black/75 mt-0.5 leading-snug">{restaurant.description}</p>
             <div className="flex flex-wrap gap-1.5 mt-2">
-              <span className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{restaurant.cuisine}</span>
+              {(restaurant.cuisine ?? []).map(c => (
+                <span key={c} className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{c}</span>
+              ))}
               <span className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{restaurant.pricePoint}</span>
               <span className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{restaurant.neighborhood}</span>
             </div>
@@ -1422,10 +1441,20 @@ function RestaurantModal({ mode, initial, onClose }: {
     emoji: initial?.emoji ?? "🍽️",
     name: initial?.name ?? "",
     description: initial?.description ?? "",
-    cuisine: initial?.cuisine ?? cuisineTypes[0],
+    cuisine: (initial?.cuisine ?? []) as string[],
     pricePoint: initial?.pricePoint ?? "$$",
     neighborhood: initial?.neighborhood ?? denverNeighborhoods[0],
+    hotNew: initial?.hotNew ?? false,
   });
+
+  const toggleCuisine = (c: string) => {
+    setForm(f => {
+      const has = f.cuisine.includes(c);
+      if (has) return { ...f, cuisine: f.cuisine.filter(x => x !== c) };
+      if (f.cuisine.length >= 3) return f;
+      return { ...f, cuisine: [...f.cuisine, c] };
+    });
+  };
 
   const mutation = useMutation({
     mutationFn: () => mode === "add"
@@ -1439,7 +1468,7 @@ function RestaurantModal({ mode, initial, onClose }: {
     onError: () => toast({ title: "Error", description: "Something went wrong.", variant: "destructive" }),
   });
 
-  const isValid = form.name.trim() && form.description.trim() && form.cuisine && form.pricePoint && form.neighborhood;
+  const isValid = form.name.trim() && form.description.trim() && form.cuisine.length > 0 && form.pricePoint && form.neighborhood;
 
   return (
     <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
@@ -1450,7 +1479,7 @@ function RestaurantModal({ mode, initial, onClose }: {
             {mode === "add" ? "Add Restaurant" : "Edit Restaurant"}
           </h2>
         </div>
-        <div className="px-6 py-4 space-y-3 bg-white">
+        <div className="px-6 py-4 space-y-3 bg-white overflow-y-auto max-h-[70vh]">
           <div className="flex gap-3">
             <div className="w-20 flex-shrink-0">
               <Label className="text-xs font-bold uppercase">Emoji</Label>
@@ -1469,16 +1498,34 @@ function RestaurantModal({ mode, initial, onClose }: {
               placeholder="Sound, vibe, what to order, who it's for…" rows={3}
               className="mt-1 rounded-none border-black resize-none" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs font-bold uppercase">Cuisine *</Label>
-              <Select value={form.cuisine} onValueChange={v => setForm(f => ({ ...f, cuisine: v }))}>
-                <SelectTrigger className="mt-1 rounded-none border-black h-9"><SelectValue /></SelectTrigger>
-                <SelectContent className="max-h-64 overflow-y-auto">
-                  {[...cuisineTypes].sort().map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <Label className="text-xs font-bold uppercase">Cuisine Tags * <span className="font-normal normal-case opacity-50">(up to 3)</span></Label>
+              {form.cuisine.length > 0 && (
+                <span className="text-[10px] text-black/50">{form.cuisine.length}/3 selected</span>
+              )}
             </div>
+            <div className="flex flex-wrap gap-1.5">
+              {[...cuisineTypes].sort().map(c => {
+                const selected = form.cuisine.includes(c);
+                const maxed = form.cuisine.length >= 3 && !selected;
+                return (
+                  <button key={c} type="button"
+                    onClick={() => !maxed && toggleCuisine(c)}
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition-colors ${
+                      selected
+                        ? "bg-black text-white border-black"
+                        : maxed
+                          ? "bg-white text-black/30 border-black/15 cursor-not-allowed"
+                          : "bg-white text-black/60 border-black/25 hover:border-black hover:text-black"
+                    }`}>
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs font-bold uppercase">Price *</Label>
               <Select value={form.pricePoint} onValueChange={v => setForm(f => ({ ...f, pricePoint: v }))}>
@@ -1488,15 +1535,23 @@ function RestaurantModal({ mode, initial, onClose }: {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label className="text-xs font-bold uppercase">Neighborhood *</Label>
+              <Select value={form.neighborhood} onValueChange={v => setForm(f => ({ ...f, neighborhood: v }))}>
+                <SelectTrigger className="mt-1 rounded-none border-black h-9"><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-64 overflow-y-auto">
+                  {denverNeighborhoods.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div>
-            <Label className="text-xs font-bold uppercase">Neighborhood *</Label>
-            <Select value={form.neighborhood} onValueChange={v => setForm(f => ({ ...f, neighborhood: v }))}>
-              <SelectTrigger className="mt-1 rounded-none border-black h-9"><SelectValue /></SelectTrigger>
-              <SelectContent className="max-h-64 overflow-y-auto">
-                {denverNeighborhoods.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-2.5 pt-1">
+            <input type="checkbox" id="hotNew" checked={form.hotNew}
+              onChange={e => setForm(f => ({ ...f, hotNew: e.target.checked }))}
+              className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
+            <label htmlFor="hotNew" className="text-xs font-bold uppercase cursor-pointer select-none">
+              🔥 Hot New Restaurant <span className="font-normal normal-case opacity-50">(opened this year)</span>
+            </label>
           </div>
         </div>
         <div className="px-6 py-4 bg-white border-t border-black/10 flex gap-2">
@@ -1588,7 +1643,7 @@ export default function AmsueBouche() {
   });
 
   const filteredRestaurants = restaurantList.filter(r => {
-    if (filterRCuisine !== "all" && r.cuisine !== filterRCuisine) return false;
+    if (filterRCuisine !== "all" && !(r.cuisine ?? []).includes(filterRCuisine)) return false;
     if (filterRNeighborhood !== "all" && r.neighborhood !== filterRNeighborhood) return false;
     if (filterRPrice !== "all" && r.pricePoint !== filterRPrice) return false;
     return true;
@@ -1990,7 +2045,7 @@ export default function AmsueBouche() {
                     <SelectContent className="max-h-[320px] overflow-y-auto">
                       <SelectItem value="all">All Cuisine</SelectItem>
                       <SelectSeparator />
-                      {[...new Set(restaurantList.map(r => r.cuisine))].sort().map(c => (
+                      {[...new Set(restaurantList.flatMap(r => r.cuisine ?? []))].sort().map(c => (
                         <SelectItem key={c} value={c}>{c}</SelectItem>
                       ))}
                     </SelectContent>

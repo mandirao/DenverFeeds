@@ -551,9 +551,10 @@ export const restaurants = pgTable("restaurants", {
   emoji: text("emoji").notNull().default("🍽️"),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  cuisine: text("cuisine").notNull(),
+  cuisine: text("cuisine").array().notNull(),
   pricePoint: text("price_point").notNull(),
   neighborhood: text("neighborhood").notNull(),
+  hotNew: boolean("hot_new").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -563,9 +564,10 @@ export const insertRestaurantSchema = createInsertSchema(restaurants).omit({
 }).extend({
   name: z.string().min(1, "Restaurant name is required"),
   description: z.string().min(1, "Description is required"),
-  cuisine: z.string().min(1, "Cuisine is required"),
+  cuisine: z.array(z.string()).min(1, "At least one cuisine tag is required"),
   pricePoint: z.string().min(1, "Price point is required"),
   neighborhood: z.string().min(1, "Neighborhood is required"),
+  hotNew: z.boolean().optional().default(false),
 });
 
 export type InsertRestaurant = z.infer<typeof insertRestaurantSchema>;
