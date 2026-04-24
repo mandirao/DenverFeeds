@@ -599,6 +599,7 @@ export const denverNeighborhoods = [
   'Sunnyside & Berkeley',
   'University Hills',
   'Wash Park & Platt Park',
+  'Westminster',
   'Other',
 ] as const;
 export type DenverNeighborhood = typeof denverNeighborhoods[number];

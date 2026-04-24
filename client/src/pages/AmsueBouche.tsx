@@ -1675,6 +1675,9 @@ export default function AmsueBouche() {
   const [filterRCuisine, setFilterRCuisine] = useState("all");
   const [filterRNeighborhood, setFilterRNeighborhood] = useState("all");
   const [filterRPrice, setFilterRPrice] = useState("all");
+  const [filterRHotNew, setFilterRHotNew] = useState(false);
+  const [filterRMichelin, setFilterRMichelin] = useState(false);
+  const [sortRestaurantsAZ, setSortRestaurantsAZ] = useState(false);
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
@@ -1726,15 +1729,22 @@ export default function AmsueBouche() {
     onError: () => toast({ title: "Error", description: "Couldn't delete.", variant: "destructive" }),
   });
 
-  const filteredRestaurants = restaurantList.filter(r => {
-    if (filterRCuisine !== "all" && !(r.cuisine ?? []).includes(filterRCuisine)) return false;
-    if (filterRNeighborhood !== "all" && r.neighborhood !== filterRNeighborhood) return false;
-    if (filterRPrice !== "all" && r.pricePoint !== filterRPrice) return false;
-    return true;
-  });
+  const filteredRestaurants = restaurantList
+    .filter(r => {
+      if (filterRCuisine !== "all" && !(r.cuisine ?? []).includes(filterRCuisine)) return false;
+      if (filterRNeighborhood !== "all" && r.neighborhood !== filterRNeighborhood) return false;
+      if (filterRPrice !== "all" && r.pricePoint !== filterRPrice) return false;
+      if (filterRHotNew && !r.hotNew) return false;
+      if (filterRMichelin && !r.michelinStar) return false;
+      return true;
+    })
+    .sort((a, b) => sortRestaurantsAZ ? a.name.trim().localeCompare(b.name.trim()) : 0);
 
-  const hasActiveRestaurantFilters = filterRCuisine !== "all" || filterRNeighborhood !== "all" || filterRPrice !== "all";
-  const resetRestaurantFilters = () => { setFilterRCuisine("all"); setFilterRNeighborhood("all"); setFilterRPrice("all"); };
+  const hasActiveRestaurantFilters = filterRCuisine !== "all" || filterRNeighborhood !== "all" || filterRPrice !== "all" || filterRHotNew || filterRMichelin || sortRestaurantsAZ;
+  const resetRestaurantFilters = () => {
+    setFilterRCuisine("all"); setFilterRNeighborhood("all"); setFilterRPrice("all");
+    setFilterRHotNew(false); setFilterRMichelin(false); setSortRestaurantsAZ(false);
+  };
 
   const expandedEvents = expandRecurringFoodEvents(events);
 
@@ -2166,10 +2176,31 @@ export default function AmsueBouche() {
                     </SelectContent>
                   </Select>
 
+                  <button
+                    onClick={() => setFilterRHotNew(v => !v)}
+                    className={`text-xs font-bold px-3 py-1 rounded-full border whitespace-nowrap flex-shrink-0 transition-colors ${filterRHotNew ? "bg-black text-white border-black" : "border-black/30 text-black/60 hover:border-black hover:text-black"}`}
+                    style={{ backgroundColor: filterRHotNew ? "black" : AB_GOLD }}>
+                    🔥 Hot &amp; New
+                  </button>
+
+                  <button
+                    onClick={() => setFilterRMichelin(v => !v)}
+                    className={`text-xs font-bold px-3 py-1 rounded-full border whitespace-nowrap flex-shrink-0 transition-colors ${filterRMichelin ? "bg-black text-white border-black" : "border-black/30 text-black/60 hover:border-black hover:text-black"}`}
+                    style={{ backgroundColor: filterRMichelin ? "black" : AB_GOLD }}>
+                    ⭐ Michelin
+                  </button>
+
+                  <button
+                    onClick={() => setSortRestaurantsAZ(v => !v)}
+                    className={`text-xs font-bold px-3 py-1 rounded-full border whitespace-nowrap flex-shrink-0 transition-colors ${sortRestaurantsAZ ? "bg-black text-white border-black" : "border-black/30 text-black/60 hover:border-black hover:text-black"}`}
+                    style={{ backgroundColor: sortRestaurantsAZ ? "black" : AB_GOLD }}>
+                    A–Z
+                  </button>
+
                   {hasActiveRestaurantFilters && (
                     <button onClick={resetRestaurantFilters}
                       className="text-xs font-bold underline text-black opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap flex-shrink-0">
-                      Clear filters
+                      Clear
                     </button>
                   )}
                 </div>

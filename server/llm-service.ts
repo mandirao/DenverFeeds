@@ -100,6 +100,7 @@ export class LLMService {
     if (/wash park|platt park|pearl st s|old south pearl/.test(a)) return 'Wash Park & Platt Park';
     if (/sloan.?s lake|edgewater/.test(a)) return "Sloan's Lake";
     if (/stapleton|central park|northfield/.test(a)) return 'Stapleton & Central Park';
+    if (/westminster|orchard town center/.test(a)) return 'Westminster';
 
     // Zip-code based (fallback when street name doesn't match)
     const zipMatch = address.match(/\b(8\d{4})\b/);
@@ -119,6 +120,11 @@ export class LLMService {
       '80219': 'Baker & South Broadway',
       '80220': 'Stapleton & Central Park',
       '80223': 'Baker & South Broadway',
+      '80021': 'Westminster',
+      '80030': 'Westminster',
+      '80031': 'Westminster',
+      '80234': 'Westminster',
+      '80235': 'Westminster',
     };
     if (zip && zipMap[zip]) return zipMap[zip];
 
@@ -1038,7 +1044,7 @@ Return ONLY valid JSON (no markdown):
     const neighborhoodOptions = [
       'Aurora','Baker & South Broadway','Boulder','Capitol Hill & Uptown','Cherry Creek & Glendale','Downtown & LoDo',
       'DTC & Tech Center','Federal Blvd','Highlands & LoHi','Lakewood',"Sloan's Lake",'RiNo & Five Points',
-      'Stapleton & Central Park','Sunnyside & Berkeley','University Hills','Wash Park & Platt Park','Other'
+      'Stapleton & Central Park','Sunnyside & Berkeley','University Hills','Wash Park & Platt Park','Westminster','Other'
     ];
 
     const neighborhoodMap = `Neighborhood mapping (use this to match what you know to the valid option):
@@ -1057,7 +1063,8 @@ Return ONLY valid JSON (no markdown):
 - "DTC & Tech Center" = Denver Tech Center, Greenwood Village, Englewood, Centennial
 - "Lakewood" = Lakewood, Belmar, Alameda Corridor west of Sheridan
 - "Boulder" = Boulder, Pearl Street Mall, University Hill, The Hill
-- "Aurora" = Aurora, Stapleton adjacent east, Fitzsimons, Buckingham Square area`;
+- "Aurora" = Aurora, Stapleton adjacent east, Fitzsimons, Buckingham Square area
+- "Westminster" = Westminster, Broomfield adjacent south, Orchard Town Center, Sheridan Blvd corridor north of Denver`;
 
     const neighborhoodInstruction = detectedNeighborhood
       ? `NEIGHBORHOOD (CONFIRMED via Google Maps address "${verifiedAddress}"): "${detectedNeighborhood}" — use this exact value, do not change it.`
