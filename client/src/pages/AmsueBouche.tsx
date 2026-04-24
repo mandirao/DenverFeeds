@@ -44,8 +44,8 @@ const SUBURB_NEIGHBORHOODS = ['Aurora', 'Boulder', 'DTC & Tech Center', 'Golden'
 const BAR_CUISINES = new Set(['Bar & Pub', 'Dive Bar', 'Cocktails & Wine']);
 const SHOP_CUISINES = new Set(['Grocery & Market']);
 // Tags that describe venue type/attributes, not cuisine — shown separately in modal, no count limit
-const VENUE_ATTR_TAGS = new Set(['Bar & Pub', 'Dive Bar', 'Cocktails & Wine', 'Grocery & Market', 'Happy Hour', 'Patio & Outdoor']);
-const VENUE_ATTR_LIST = ['Bar & Pub', 'Dive Bar', 'Cocktails & Wine', 'Grocery & Market', 'Happy Hour', 'Patio & Outdoor'];
+const VENUE_ATTR_TAGS = new Set(['Bar & Pub', 'Dive Bar', 'Cocktails & Wine', 'Grocery & Market', 'Happy Hour', 'Patio']);
+const VENUE_ATTR_LIST = ['Bar & Pub', 'Dive Bar', 'Cocktails & Wine', 'Grocery & Market', 'Happy Hour', 'Patio'];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

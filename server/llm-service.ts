@@ -1040,7 +1040,7 @@ Return ONLY valid JSON (no markdown):
       'Jewish Deli','Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
       'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
     ];
-    const venueAttrOptions = ['Bar & Pub','Dive Bar','Cocktails & Wine','Grocery & Market','Happy Hour','Patio & Outdoor'];
+    const venueAttrOptions = ['Bar & Pub','Dive Bar','Cocktails & Wine','Grocery & Market','Happy Hour','Patio'];
 
     const neighborhoodOptions = [
       'Aurora','Baker & South Broadway','Boulder','Capitol Hill & Uptown','Cherry Creek & Glendale','Downtown & LoDo',
@@ -1095,7 +1095,7 @@ VENUE ATTRIBUTES — pick any that apply (these are separate from cuisine tags, 
 - "Cocktails & Wine" = serious cocktail program or wine focus — use alongside "Bar & Pub" if relevant, or alone for wine bars.
 - "Grocery & Market" = specialty grocer, artisan market, food shop, cheese shop, butcher, wine shop. NOT a restaurant.
 - "Happy Hour" = the place is known for a good happy hour deal.
-- "Patio & Outdoor" = notable outdoor seating — patio, rooftop bar, beer garden, parklet.
+- "Patio" = notable outdoor seating — patio, rooftop bar, beer garden, parklet.
 Valid venue attributes: ${venueAttrOptions.join(', ')}
 If the entry is a bar, pub, or market — do NOT describe it as a restaurant. Write the description to match what the place actually is.
 
@@ -1178,11 +1178,12 @@ Return ONLY valid JSON:
       'brunch': 'Brunch & Breakfast',
       'breakfast': 'Brunch & Breakfast',
       'happy hour': 'Happy Hour',
-      'patio': 'Patio & Outdoor',
-      'rooftop': 'Patio & Outdoor',
-      'outdoor': 'Patio & Outdoor',
-      'outdoor seating': 'Patio & Outdoor',
-      'beer garden': 'Patio & Outdoor',
+      'patio': 'Patio',
+      'rooftop': 'Patio',
+      'outdoor': 'Patio',
+      'outdoor seating': 'Patio',
+      'beer garden': 'Patio',
+      'patio & outdoor': 'Patio',
     };
     const validFoodCuisines = new Set([
       'African','American','BBQ & Southern','British & Irish','Brunch & Breakfast','Chinese',
@@ -1191,7 +1192,7 @@ Return ONLY valid JSON:
       'Jewish Deli','Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
       'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
     ]);
-    const validVenueAttrs = new Set(['Bar & Pub','Dive Bar','Cocktails & Wine','Grocery & Market','Happy Hour','Patio & Outdoor']);
+    const validVenueAttrs = new Set(['Bar & Pub','Dive Bar','Cocktails & Wine','Grocery & Market','Happy Hour','Patio']);
     const allValid = new Set([...validFoodCuisines, ...validVenueAttrs]);
 
     const normalize = (tags: string[], maxFood: number): string[] => {
