@@ -2102,7 +2102,7 @@ export default function AmsueBouche() {
       {pageTab === "bestOf" && (
         <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
           <p className="text-xs text-black mb-4 opacity-60 leading-snug">
-            The group's picks — Denver spots worth going back to.
+            Denver spots worth going back to.
           </p>
 
           {/* Filter row */}
