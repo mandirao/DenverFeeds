@@ -1399,6 +1399,12 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
                   🔥 Hot New
                 </span>
               )}
+              {(restaurant as any).fixture && (
+                <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-white"
+                  style={{ backgroundColor: "#2C4A6E" }}>
+                  📌 Fixture
+                </span>
+              )}
             </div>
             <p className="text-sm text-black/75 mt-0.5 leading-snug">{restaurant.description}</p>
             <div className="flex flex-wrap gap-1.5 mt-2">
@@ -1452,6 +1458,7 @@ function RestaurantModal({ mode, initial, onClose }: {
     neighborhood: initial?.neighborhood ?? denverNeighborhoods[0],
     hotNew: initial?.hotNew ?? false,
     michelinStar: initial?.michelinStar ?? false,
+    fixture: (initial as any)?.fixture ?? false,
   });
 
   const [aiLoading, setAiLoading] = useState(false);
@@ -1601,14 +1608,24 @@ function RestaurantModal({ mode, initial, onClose }: {
               </div>
             </div>
 
-            {/* Hot New */}
-            <div className="flex items-center gap-2.5">
-              <input type="checkbox" id="hotNew" checked={form.hotNew}
-                onChange={e => setForm(f => ({ ...f, hotNew: e.target.checked }))}
-                className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
-              <label htmlFor="hotNew" className="text-xs font-bold uppercase cursor-pointer select-none">
-                🔥 Hot New <span className="font-normal normal-case opacity-50">(opened this year)</span>
-              </label>
+            {/* Hot New + Fixture */}
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <div className="flex items-center gap-2.5">
+                <input type="checkbox" id="hotNew" checked={form.hotNew}
+                  onChange={e => setForm(f => ({ ...f, hotNew: e.target.checked }))}
+                  className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
+                <label htmlFor="hotNew" className="text-xs font-bold uppercase cursor-pointer select-none">
+                  🔥 Hot &amp; New <span className="font-normal normal-case opacity-50">(opened this year)</span>
+                </label>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <input type="checkbox" id="fixture" checked={(form as any).fixture ?? false}
+                  onChange={e => setForm(f => ({ ...f, fixture: e.target.checked } as any))}
+                  className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
+                <label htmlFor="fixture" className="text-xs font-bold uppercase cursor-pointer select-none">
+                  📌 Fixture <span className="font-normal normal-case opacity-50">(a Denver institution)</span>
+                </label>
+              </div>
             </div>
 
             {/* Cuisine chips — mobile only */}
@@ -1675,9 +1692,7 @@ export default function AmsueBouche() {
   const [filterRCuisine, setFilterRCuisine] = useState("all");
   const [filterRNeighborhood, setFilterRNeighborhood] = useState("all");
   const [filterRPrice, setFilterRPrice] = useState("all");
-  const [filterRHotNew, setFilterRHotNew] = useState(false);
-  const [filterRMichelin, setFilterRMichelin] = useState(false);
-  const [sortRestaurantsAZ, setSortRestaurantsAZ] = useState(false);
+  const [filterRBadge, setFilterRBadge] = useState<"all" | "hotNew" | "michelin" | "fixture">("all");
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
@@ -1734,16 +1749,17 @@ export default function AmsueBouche() {
       if (filterRCuisine !== "all" && !(r.cuisine ?? []).includes(filterRCuisine)) return false;
       if (filterRNeighborhood !== "all" && r.neighborhood !== filterRNeighborhood) return false;
       if (filterRPrice !== "all" && r.pricePoint !== filterRPrice) return false;
-      if (filterRHotNew && !r.hotNew) return false;
-      if (filterRMichelin && !r.michelinStar) return false;
+      if (filterRBadge === "hotNew" && !r.hotNew) return false;
+      if (filterRBadge === "michelin" && !r.michelinStar) return false;
+      if (filterRBadge === "fixture" && !(r as any).fixture) return false;
       return true;
     })
-    .sort((a, b) => sortRestaurantsAZ ? a.name.trim().localeCompare(b.name.trim()) : 0);
+    .sort((a, b) => a.name.trim().localeCompare(b.name.trim()));
 
-  const hasActiveRestaurantFilters = filterRCuisine !== "all" || filterRNeighborhood !== "all" || filterRPrice !== "all" || filterRHotNew || filterRMichelin || sortRestaurantsAZ;
+  const hasActiveRestaurantFilters = filterRCuisine !== "all" || filterRNeighborhood !== "all" || filterRPrice !== "all" || filterRBadge !== "all";
   const resetRestaurantFilters = () => {
     setFilterRCuisine("all"); setFilterRNeighborhood("all"); setFilterRPrice("all");
-    setFilterRHotNew(false); setFilterRMichelin(false); setSortRestaurantsAZ(false);
+    setFilterRBadge("all");
   };
 
   const expandedEvents = expandRecurringFoodEvents(events);
@@ -2176,26 +2192,19 @@ export default function AmsueBouche() {
                     </SelectContent>
                   </Select>
 
-                  <button
-                    onClick={() => setFilterRHotNew(v => !v)}
-                    className={`text-xs font-bold px-3 py-1 rounded-full border whitespace-nowrap flex-shrink-0 transition-colors ${filterRHotNew ? "bg-black text-white border-black" : "border-black/30 text-black/60 hover:border-black hover:text-black"}`}
-                    style={{ backgroundColor: filterRHotNew ? "black" : AB_GOLD }}>
-                    🔥 Hot &amp; New
-                  </button>
-
-                  <button
-                    onClick={() => setFilterRMichelin(v => !v)}
-                    className={`text-xs font-bold px-3 py-1 rounded-full border whitespace-nowrap flex-shrink-0 transition-colors ${filterRMichelin ? "bg-black text-white border-black" : "border-black/30 text-black/60 hover:border-black hover:text-black"}`}
-                    style={{ backgroundColor: filterRMichelin ? "black" : AB_GOLD }}>
-                    ⭐ Michelin
-                  </button>
-
-                  <button
-                    onClick={() => setSortRestaurantsAZ(v => !v)}
-                    className={`text-xs font-bold px-3 py-1 rounded-full border whitespace-nowrap flex-shrink-0 transition-colors ${sortRestaurantsAZ ? "bg-black text-white border-black" : "border-black/30 text-black/60 hover:border-black hover:text-black"}`}
-                    style={{ backgroundColor: sortRestaurantsAZ ? "black" : AB_GOLD }}>
-                    A–Z
-                  </button>
+                  <Select value={filterRBadge} onValueChange={v => setFilterRBadge(v as any)}>
+                    <SelectTrigger className="rounded-full border border-black text-sm h-8 px-3 flex-shrink-0"
+                      style={{ width: "150px", backgroundColor: filterRBadge !== "all" ? "white" : AB_GOLD }}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All spots</SelectItem>
+                      <SelectSeparator />
+                      <SelectItem value="hotNew">🔥 Hot &amp; New</SelectItem>
+                      <SelectItem value="michelin">⭐ Michelin</SelectItem>
+                      <SelectItem value="fixture">📌 Fixture</SelectItem>
+                    </SelectContent>
+                  </Select>
 
                   {hasActiveRestaurantFilters && (
                     <button onClick={resetRestaurantFilters}
