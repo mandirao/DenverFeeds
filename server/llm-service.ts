@@ -1000,14 +1000,14 @@ Return ONLY valid JSON (no markdown):
     const client = new Anthropic({ apiKey: this.apiKey });
 
     // Places lookup — gets real street address for neighborhood detection
-    const placeResult = await this.serperPlaces(`${name} Denver restaurant`);
+    const placeResult = await this.serperPlaces(`${name} Denver`);
     const verifiedAddress = placeResult?.address || '';
     const detectedNeighborhood = this.addressToNeighborhood(verifiedAddress);
 
     const searchQueries = [
-      `${name} Denver menu dishes signature`,
-      `${name} Denver review chef eater infatuation`,
-      `${name} Denver dining room atmosphere experience`,
+      `${name} Denver specialties signature items`,
+      `${name} Denver review eater infatuation best of`,
+      `${name} Denver atmosphere experience`,
     ];
 
     // Fetch provided source URL (free — no Serper credits needed)
@@ -1025,10 +1025,10 @@ Return ONLY valid JSON (no markdown):
     const currentYear = new Date().getFullYear();
 
     const cuisineOptions = [
-      'African','American','BBQ & Southern','Brunch & Breakfast','Chinese','Cocktails & Wine',
-      'Colombian','Dessert & Pastry','Eastern European','Farm-to-Table','Filipino','French',
-      'Fusion','Hot Pot & Shabu','Indian & South Asian','Israeli','Italian','Japanese','Korean',
-      'Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
+      'African','American','Bar & Pub','BBQ & Southern','Brunch & Breakfast','Chinese','Cocktails & Wine',
+      'Colombian','Dessert & Pastry','Dive Bar','Eastern European','Farm-to-Table','Filipino','French',
+      'Fusion','Grocery & Market','Hot Pot & Shabu','Indian & South Asian','Israeli','Italian','Japanese',
+      'Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
       'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
     ];
 
@@ -1060,7 +1060,7 @@ Return ONLY valid JSON (no markdown):
         ? `VERIFIED ADDRESS from Google Maps: "${verifiedAddress}"\n${neighborhoodMap}\nMatch the address to the correct neighborhood above. Only use "Other" if completely outside Denver metro.`
         : `NEIGHBORHOOD: Use your knowledge of where "${name}" is in Denver and match it to the correct option using this guide:\n${neighborhoodMap}\nIMPORTANT: "Other" is only for restaurants not covered by any of these areas. If you know the restaurant is in LoHi, RiNo, Wash Park, Capitol Hill, etc. — match it to the combined label above. Do not use "Other" as a fallback when you know the area.`;
 
-    const prompt = `You are filling in a restaurant listing for "Best of Denver" — a curated guide for a foodie meetup group.
+    const prompt = `You are filling in a listing for "Best of Denver" — a curated guide for a foodie meetup group. Entries are not always restaurants: they can be bars, pubs, dive bars, specialty grocers, and markets worth knowing about.
 
 RESTAURANT NAME: "${name}"
 
@@ -1075,6 +1075,12 @@ ${searchContext || '(no results found)'}
 TASK: Based on the above, fill in all fields. Return valid JSON only (no markdown).
 
 VALID CUISINE TAGS (pick 1–3 that best fit): ${cuisineOptions.join(', ')}
+
+CATEGORY GUIDANCE for non-restaurant entries:
+- "Bar & Pub" = a bar or pub where drinking is the primary draw — craft beer spots, whisky bars, British/Irish pubs, wine bars, cocktail bars. Use this for Pint's Pub, neighborhood pubs, serious cocktail bars. Can combine with "Cocktails & Wine" if relevant.
+- "Dive Bar" = unpretentious, no-frills bar with character — cash only, cheap drinks, sticky floors, locals only. Do NOT use "Bar & Pub" and "Dive Bar" together; pick the one that fits better.
+- "Grocery & Market" = specialty grocer, artisan market, or food shop — NOT a restaurant. Use for places like Marczyk Fine Foods, butcher shops, cheese shops, wine shops, specialty delis. The description should focus on what makes the selection or sourcing exceptional, not dishes.
+If the entry is a bar, pub, or market — do NOT describe it as a restaurant. Write the description to match what the place actually is.
 
 VALID NEIGHBORHOODS (pick exactly one): ${neighborhoodOptions.join(', ')}
 

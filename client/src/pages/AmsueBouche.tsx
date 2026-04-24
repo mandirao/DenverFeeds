@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import { cuisineTypes, denverNeighborhoods, restaurantPricePoints, type FoodEvent, type InsertFoodEvent, type Restaurant } from "@shared/schema";
+import { cuisineTypes, restaurantCuisineTypes, denverNeighborhoods, restaurantPricePoints, type FoodEvent, type InsertFoodEvent, type Restaurant } from "@shared/schema";
 import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
@@ -1514,7 +1514,7 @@ function RestaurantModal({ mode, initial, onClose }: {
         )}
       </div>
       <div className="flex flex-wrap gap-1">
-        {[...cuisineTypes].sort().map(c => {
+        {[...restaurantCuisineTypes].sort().map(c => {
           const selected = form.cuisine.includes(c);
           const maxed = form.cuisine.length >= 3 && !selected;
           return (

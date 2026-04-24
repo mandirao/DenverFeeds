@@ -2,6 +2,47 @@ import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb, rea
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Cuisine/category types for Best of Denver restaurant & spot listings
+export const restaurantCuisineTypes = [
+  'African',
+  'American',
+  'Bar & Pub',
+  'BBQ & Southern',
+  'Brunch & Breakfast',
+  'Chinese',
+  'Cocktails & Wine',
+  'Colombian',
+  'Dessert & Pastry',
+  'Dive Bar',
+  'Eastern European',
+  'Farm-to-Table',
+  'Filipino',
+  'French',
+  'Fusion',
+  'Grocery & Market',
+  'Hot Pot & Shabu',
+  'Indian & South Asian',
+  'Israeli',
+  'Italian',
+  'Japanese',
+  'Korean',
+  'Mediterranean',
+  'Mexican & Latin',
+  'Pan Asian',
+  'Pan Latin',
+  'Pizza',
+  'Seafood',
+  'Small Plates',
+  'Steakhouse',
+  'Sushi',
+  'Taiwanese',
+  'Tasting Menu',
+  'Thai & Southeast Asian',
+  'Vegan',
+  'Vietnamese',
+  'Other'
+];
+
 // Cuisine types for Amuse Bouche food popup events
 export const cuisineTypes = [
   'African',
