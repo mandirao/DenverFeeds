@@ -103,6 +103,17 @@ export default function DiscoveryAdmin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Service health check
+  const { data: serviceHealth } = useQuery({
+    queryKey: ["/api/admin/service-health"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/service-health");
+      return r.json();
+    },
+    refetchInterval: 60_000, // re-check every minute
+    staleTime: 30_000,
+  });
+
   // Fetch artists
   const { data: artists = [], isLoading: artistsLoading } = useQuery({
     queryKey: ["/api/artists"],
@@ -421,6 +432,25 @@ export default function DiscoveryAdmin() {
           </div>
         </div>
       </div>
+
+      {/* Service health banner */}
+      {serviceHealth && Object.values(serviceHealth).some((s: any) => !s.ok) && (
+        <div className="bg-yellow-50 border-b border-yellow-300 px-4 py-2">
+          <div className="container mx-auto flex flex-wrap gap-x-6 gap-y-1 items-center text-sm">
+            <span className="font-bold text-yellow-800 uppercase text-xs tracking-wide">⚠ Service Status</span>
+            {Object.entries(serviceHealth).map(([name, status]: [string, any]) => (
+              <span key={name} className={`flex items-center gap-1 text-xs font-medium ${status.ok ? 'text-green-700' : 'text-red-700'}`}>
+                {status.ok ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                <span className="capitalize">{name}</span>: {status.message}
+                {!status.ok && name === 'serper' && (
+                  <a href="https://serper.dev" target="_blank" rel="noopener noreferrer"
+                    className="underline ml-1 text-red-600 hover:text-red-800">Top up at serper.dev →</a>
+                )}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="artist-review" className="space-y-6">

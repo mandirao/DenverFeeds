@@ -1665,6 +1665,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API service health check — checks Serper and Anthropic key availability
+  app.get("/api/admin/service-health", async (_req, res) => {
+    const results: Record<string, { ok: boolean; message: string }> = {};
+
+    // Check Serper
+    const serperKey = process.env.SERPER_API_KEY || '';
+    if (!serperKey) {
+      results.serper = { ok: false, message: "API key not configured" };
+    } else {
+      try {
+        const r = await fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: { 'X-API-KEY': serperKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ q: 'test', num: 1 }),
+          signal: AbortSignal.timeout(5000),
+        });
+        if (r.ok) {
+          results.serper = { ok: true, message: "Connected" };
+        } else {
+          const body = await r.json().catch(() => ({}));
+          results.serper = { ok: false, message: (body as any).message || `HTTP ${r.status}` };
+        }
+      } catch {
+        results.serper = { ok: false, message: "Request failed" };
+      }
+    }
+
+    // Check Anthropic key presence (no API call needed — just verify key exists)
+    const anthropicKey = process.env.ANTHROPIC_API_KEY || '';
+    results.anthropic = anthropicKey
+      ? { ok: true, message: "Key configured" }
+      : { ok: false, message: "API key not configured" };
+
+    res.json(results);
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
