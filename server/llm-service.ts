@@ -1028,17 +1028,21 @@ VALID NEIGHBORHOODS (pick exactly one): ${neighborhoodOptions.join(', ')}
 
 VALID PRICE POINTS: $, $$, $$$, $$$$
 
-DESCRIPTION — Write in Eater's editorial voice: confident, specific, never breathless. Short punchy sentences, no filler.
-Target 300–400 characters. Pack in as many of these elements as the search results support:
+DESCRIPTION — match the tone and density of these real examples exactly:
 
-1. HOOK (lead sentence): the single most compelling credential — Michelin star, James Beard award, chef pedigree, notable alumni, or what makes it distinctly worth going. Examples: "One Michelin star." / "James Beard-nominated Chef X." / "Two Mercantile alums." / "One of Eater's 38 essential Denver restaurants."
-2. CONCEPT / IDENTITY: What kind of restaurant is it? Any theme, philosophy, or origin story worth noting (e.g. "nixtamal-focused interior Mexican", "Israeli mezze with North African inflections", "Name nods to the German word for ramp").
-3. SIGNATURE DISHES: 1–3 specific, real dish names with sensory detail — textures, flavors, pairings. Not vague ("great pasta") — specific ("hand-rolled pici with wild boar ragù"). Use em dashes for compact lists.
-4. DRINK / FORMAT: Note the drink program, tasting menu with price, happy hour, or recurring special format if notable ("$45 three-course feast", "knockout natural wine list", "one of Denver's best happy hours").
-5. VIBE / UNEXPECTED ANGLE: Land on the room's energy (intimate, buzzy, communal, romantic, farmhouse-chic) or what defies expectations ("The trendy spot with real culinary chops", "Not really Italian despite the pasta focus").
-6. PUBLICATION NOD (if found in search): Slip in any accolade naturally at start or end ("Best new in 2025", "One of Denver's most consistently acclaimed Italian tables").
+"James Beard Award 2022, Best Chef Mountain region. Chef Caroline Glover's heartfelt Aurora restaurant. Signatures: grilled beef tongue and marrow toast, roast chicken with bitter greens, ever-changing ice cream sandwiches. Boutique wine list and knockout cocktails seal the feel-good experience."
 
-BANNED WORDS: amazing, incredible, vibrant, beloved, don't miss, must-try, delicious (unless quoting), hidden gem.
+"One Michelin star. Intimate 18-seat restaurant. Multi-course tasting menu ($215/person) changes with the seasons. Vivacious, unpredictable courses — seared pork belly with rutabaga and apple, snapper with turnip and shiso, chocolate honeycomb with pomegranate pate de fruit."
+
+"Three Michelin recognitions. Old-world Italian ingredients meet modernist touches — beaded tapioca crackers alongside classic tartare, eight-year-aged carnaroli risotto, Castelmagno cheese cheesecake. One of Denver's most consistently acclaimed Italian tables."
+
+"The trendy spot with real culinary chops. Two Mercantile alums in a buzzy RiNo room. Serious technique under the surface. Best new in 2025."
+
+WHAT MAKES THESE WORK: short declarative sentences, real dish names with specific sensory detail, a lead that hooks immediately (award/star/chef/angle), and a landing note on vibe or surprise. Pick 3–4 elements naturally — credentials, signature dishes, drink or format, vibe, unexpected angle, accolade — and weave them together. Do not follow a rigid order.
+
+Draw on your own knowledge of this restaurant AND the search results. Do not hedge or apologize for limited info — write confidently about what you know.
+
+BANNED: amazing, incredible, vibrant, beloved, don't miss, must-try, hidden gem, "details remain scarce", "not much is known", "limited information".
 
 hotNew = true only if the restaurant opened in ${currentYear} or late ${currentYear - 1}
 
