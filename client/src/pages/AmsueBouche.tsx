@@ -1387,6 +1387,12 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              {restaurant.michelinStar && (
+                <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-white"
+                  style={{ backgroundColor: "#8B1A1A" }}>
+                  ⭐ Michelin Star
+                </span>
+              )}
               {restaurant.hotNew && (
                 <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-white"
                   style={{ backgroundColor: "#FE6B41" }}>
@@ -1445,6 +1451,7 @@ function RestaurantModal({ mode, initial, onClose }: {
     pricePoint: initial?.pricePoint ?? "$$",
     neighborhood: initial?.neighborhood ?? denverNeighborhoods[0],
     hotNew: initial?.hotNew ?? false,
+    michelinStar: initial?.michelinStar ?? false,
   });
 
   const [aiLoading, setAiLoading] = useState(false);
@@ -1474,6 +1481,7 @@ function RestaurantModal({ mode, initial, onClose }: {
         ...(result.pricePoint ? { pricePoint: result.pricePoint } : {}),
         ...(result.neighborhood ? { neighborhood: result.neighborhood } : {}),
         ...(typeof result.hotNew === "boolean" ? { hotNew: result.hotNew } : {}),
+        ...(typeof result.michelinStar === "boolean" ? { michelinStar: result.michelinStar } : {}),
       }));
       toast({ title: "Filled with AI ✨", description: "Review and adjust any details before saving." });
     } catch {
@@ -1594,13 +1602,23 @@ function RestaurantModal({ mode, initial, onClose }: {
             </div>
 
             {/* Hot New */}
-            <div className="flex items-center gap-2.5">
-              <input type="checkbox" id="hotNew" checked={form.hotNew}
-                onChange={e => setForm(f => ({ ...f, hotNew: e.target.checked }))}
-                className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
-              <label htmlFor="hotNew" className="text-xs font-bold uppercase cursor-pointer select-none">
-                🔥 Hot New <span className="font-normal normal-case opacity-50">(opened this year)</span>
-              </label>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <div className="flex items-center gap-2.5">
+                <input type="checkbox" id="michelinStar" checked={form.michelinStar}
+                  onChange={e => setForm(f => ({ ...f, michelinStar: e.target.checked }))}
+                  className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
+                <label htmlFor="michelinStar" className="text-xs font-bold uppercase cursor-pointer select-none">
+                  ⭐ Michelin Star
+                </label>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <input type="checkbox" id="hotNew" checked={form.hotNew}
+                  onChange={e => setForm(f => ({ ...f, hotNew: e.target.checked }))}
+                  className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
+                <label htmlFor="hotNew" className="text-xs font-bold uppercase cursor-pointer select-none">
+                  🔥 Hot New <span className="font-normal normal-case opacity-50">(opened this year)</span>
+                </label>
+              </div>
             </div>
 
             {/* Cuisine chips — mobile only */}

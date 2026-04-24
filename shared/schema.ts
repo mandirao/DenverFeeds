@@ -572,6 +572,7 @@ export const restaurants = pgTable("restaurants", {
   pricePoint: text("price_point").notNull(),
   neighborhood: text("neighborhood").notNull(),
   hotNew: boolean("hot_new").notNull().default(false),
+  michelinStar: boolean("michelin_star").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
