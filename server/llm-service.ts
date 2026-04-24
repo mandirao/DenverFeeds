@@ -1028,18 +1028,24 @@ VALID NEIGHBORHOODS (pick exactly one): ${neighborhoodOptions.join(', ')}
 
 VALID PRICE POINTS: $, $$, $$$, $$$$
 
-VOICE GUIDE for description: Casual cool, like Oh My Rockness or Pitchfork food writing.
-- Lead with what makes this place worth going — the signature dish, the vibe, or the chef's approach
-- Describe the actual food: specific dishes, flavors, textures
-- Max 350 characters. No filler ("amazing," "incredible," "don't miss," "must-try")
-- Mention Michelin stars or notable awards briefly if well-known
+DESCRIPTION — Write in Eater's editorial voice: confident, specific, never breathless. Short punchy sentences, no filler.
+Target 300–400 characters. Pack in as many of these elements as the search results support:
+
+1. HOOK (lead sentence): the single most compelling credential — Michelin star, James Beard award, chef pedigree, notable alumni, or what makes it distinctly worth going. Examples: "One Michelin star." / "James Beard-nominated Chef X." / "Two Mercantile alums." / "One of Eater's 38 essential Denver restaurants."
+2. CONCEPT / IDENTITY: What kind of restaurant is it? Any theme, philosophy, or origin story worth noting (e.g. "nixtamal-focused interior Mexican", "Israeli mezze with North African inflections", "Name nods to the German word for ramp").
+3. SIGNATURE DISHES: 1–3 specific, real dish names with sensory detail — textures, flavors, pairings. Not vague ("great pasta") — specific ("hand-rolled pici with wild boar ragù"). Use em dashes for compact lists.
+4. DRINK / FORMAT: Note the drink program, tasting menu with price, happy hour, or recurring special format if notable ("$45 three-course feast", "knockout natural wine list", "one of Denver's best happy hours").
+5. VIBE / UNEXPECTED ANGLE: Land on the room's energy (intimate, buzzy, communal, romantic, farmhouse-chic) or what defies expectations ("The trendy spot with real culinary chops", "Not really Italian despite the pasta focus").
+6. PUBLICATION NOD (if found in search): Slip in any accolade naturally at start or end ("Best new in 2025", "One of Denver's most consistently acclaimed Italian tables").
+
+BANNED WORDS: amazing, incredible, vibrant, beloved, don't miss, must-try, delicious (unless quoting), hidden gem.
 
 hotNew = true only if the restaurant opened in ${currentYear} or late ${currentYear - 1}
 
 Return ONLY valid JSON:
 {
   "emoji": "single most fitting emoji for this cuisine/vibe",
-  "description": "compelling 300-350 char description",
+  "description": "300-400 char Eater-style description",
   "cuisine": ["Tag1", "Tag2"],
   "pricePoint": "$$",
   "neighborhood": "one of the valid neighborhoods",
@@ -1048,7 +1054,7 @@ Return ONLY valid JSON:
 
     const message = await client.messages.create({
       model: 'claude-opus-4-5',
-      max_tokens: 500,
+      max_tokens: 700,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -1058,7 +1064,7 @@ Return ONLY valid JSON:
 
     return {
       emoji: result.emoji || undefined,
-      description: result.description ? String(result.description).substring(0, 400) : undefined,
+      description: result.description ? String(result.description).substring(0, 500) : undefined,
       cuisine: Array.isArray(result.cuisine) ? result.cuisine.slice(0, 3) : undefined,
       pricePoint: result.pricePoint || undefined,
       // Use our deterministic address lookup if available — Claude can't override it
