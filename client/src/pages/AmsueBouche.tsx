@@ -1654,7 +1654,21 @@ export default function AmsueBouche() {
   const [sortBy, setSortBy] = useState<"date" | "added">("date");
   const [filterCuisine, setFilterCuisine] = useState("all");
   const [filterDay, setFilterDay] = useState("all");
-  const [pageTab, setPageTab] = useState<"events" | "bestOf">("events");
+  const [pageTab, setPageTab] = useState<"events" | "bestOf">(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") === "best-of" ? "bestOf" : "events";
+  });
+
+  const switchTab = (tab: "events" | "bestOf") => {
+    setPageTab(tab);
+    const url = new URL(window.location.href);
+    if (tab === "bestOf") {
+      url.searchParams.set("tab", "best-of");
+    } else {
+      url.searchParams.delete("tab");
+    }
+    window.history.replaceState({}, "", url.toString());
+  };
   const [restaurantAddOpen, setRestaurantAddOpen] = useState(false);
   const [restaurantToEdit, setRestaurantToEdit] = useState<Restaurant | null>(null);
   const [restaurantToDelete, setRestaurantToDelete] = useState<Restaurant | null>(null);
@@ -1842,13 +1856,13 @@ export default function AmsueBouche() {
       <div className="border-b border-black/12 px-4" style={{ backgroundColor: AB_GOLD }}>
         <div className="max-w-2xl mx-auto flex">
           <button
-            onClick={() => setPageTab("events")}
+            onClick={() => switchTab("events")}
             className={`text-xs font-black uppercase tracking-widest px-5 py-2.5 border-b-2 transition-colors ${pageTab === "events" ? "border-black text-black" : "border-transparent text-black/35 hover:text-black"}`}
           >
             Popups
           </button>
           <button
-            onClick={() => setPageTab("bestOf")}
+            onClick={() => switchTab("bestOf")}
             className={`text-xs font-black uppercase tracking-widest px-5 py-2.5 border-b-2 transition-colors ${pageTab === "bestOf" ? "border-black text-black" : "border-transparent text-black/35 hover:text-black"}`}
           >
             Best Of Denver
