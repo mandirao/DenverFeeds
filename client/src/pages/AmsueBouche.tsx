@@ -1847,7 +1847,7 @@ export default function AmsueBouche() {
   const filteredRestaurants = restaurantList
     .filter(r => {
       const cuisine = r.cuisine ?? [];
-      if (filterRVenueType === "bar" && !cuisine.some(c => BAR_CUISINES.has(c))) return false;
+      if (filterRVenueType === "bar" && !cuisine.includes('Bar & Pub')) return false;
       if (filterRVenueType === "shop" && !cuisine.some(c => SHOP_CUISINES.has(c))) return false;
       if (filterRVenueType === "restaurant" && !cuisine.some(c => !BAR_CUISINES.has(c) && !SHOP_CUISINES.has(c))) return false;
       if (filterRCuisine !== "all" && !cuisine.includes(filterRCuisine)) return false;
@@ -2265,7 +2265,7 @@ export default function AmsueBouche() {
                       <SelectItem value="all">All Types</SelectItem>
                       <SelectSeparator />
                       <SelectItem value="restaurant">Restaurants</SelectItem>
-                      <SelectItem value="bar">Bars &amp; Drinks</SelectItem>
+                      <SelectItem value="bar">Bars</SelectItem>
                       <SelectItem value="shop">Shops</SelectItem>
                     </SelectContent>
                   </Select>
