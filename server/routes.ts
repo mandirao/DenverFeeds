@@ -1611,9 +1611,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI fill for restaurant fields
   app.post("/api/ai/fill-restaurant", async (req, res) => {
     try {
-      const { name } = req.body;
+      const { name, sourceUrl } = req.body;
       if (!name?.trim()) return res.status(400).json({ message: "Restaurant name is required" });
-      const result = await llmService.fillRestaurantAI(name.trim());
+      const result = await llmService.fillRestaurantAI(name.trim(), sourceUrl?.trim() || undefined);
       res.json(result);
     } catch (error) {
       console.error("Fill restaurant AI error:", error);

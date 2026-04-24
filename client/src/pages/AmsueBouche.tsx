@@ -1455,6 +1455,7 @@ function RestaurantModal({ mode, initial, onClose }: {
   });
 
   const [aiLoading, setAiLoading] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState('');
 
   const toggleCuisine = (c: string) => {
     setForm(f => {
@@ -1472,7 +1473,7 @@ function RestaurantModal({ mode, initial, onClose }: {
     }
     setAiLoading(true);
     try {
-      const result = await apiRequest({ endpoint: "/api/ai/fill-restaurant", method: "POST", data: { name: form.name.trim() } });
+      const result = await apiRequest({ endpoint: "/api/ai/fill-restaurant", method: "POST", data: { name: form.name.trim(), sourceUrl: sourceUrl.trim() || undefined } });
       setForm(f => ({
         ...f,
         ...(result.emoji ? { emoji: result.emoji } : {}),
@@ -1569,6 +1570,14 @@ function RestaurantModal({ mode, initial, onClose }: {
                 <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="Restaurant name" className="rounded-none border-black h-9" />
               </div>
+            </div>
+
+            {/* Source URL for AI Fill */}
+            <div>
+              <Label className="text-xs font-bold uppercase opacity-50">Source URL <span className="font-normal normal-case">(optional — paste website or review link to ground AI Fill)</span></Label>
+              <Input value={sourceUrl} onChange={e => setSourceUrl(e.target.value)}
+                placeholder="https://denver.eater.com/… or restaurant's own site"
+                className="mt-1 rounded-none border-black/30 h-8 text-sm placeholder:text-black/30" />
             </div>
 
             {/* Description */}

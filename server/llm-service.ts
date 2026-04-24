@@ -964,7 +964,32 @@ Return ONLY valid JSON (no markdown):
     };
   }
 
-  async fillRestaurantAI(name: string): Promise<{
+  private async fetchUrlText(url: string): Promise<string> {
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RestaurantBot/1.0)' },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) return '';
+      const html = await res.text();
+      // Strip scripts, styles, and tags; collapse whitespace
+      const text = html
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+      return text.substring(0, 6000);
+    } catch {
+      return '';
+    }
+  }
+
+  async fillRestaurantAI(name: string, sourceUrl?: string): Promise<{
     emoji?: string;
     description?: string;
     cuisine?: string[];
@@ -984,6 +1009,12 @@ Return ONLY valid JSON (no markdown):
       `${name} Denver review chef eater infatuation`,
       `${name} Denver dining room atmosphere experience`,
     ];
+
+    // Fetch provided source URL (free — no Serper credits needed)
+    let urlContent = '';
+    if (sourceUrl?.trim()) {
+      urlContent = await this.fetchUrlText(sourceUrl.trim());
+    }
 
     const searchResults = await Promise.all(searchQueries.map(q => this.serperSearch(q, 4)));
     const searchContext = searchQueries.map((q, i) => {
@@ -1035,7 +1066,10 @@ RESTAURANT NAME: "${name}"
 
 ${neighborhoodInstruction}
 
-WEB SEARCH RESULTS:
+${urlContent ? `SOURCE URL CONTENT (treat this as the primary ground truth — use chef names, dishes, and facts directly from here):
+${urlContent}
+
+` : ''}WEB SEARCH RESULTS:
 ${searchContext || '(no results found)'}
 
 TASK: Based on the above, fill in all fields. Return valid JSON only (no markdown).
