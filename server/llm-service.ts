@@ -1007,11 +1007,26 @@ Return ONLY valid JSON (no markdown):
       'Stapleton & Central Park','Sunnyside & Berkeley','Wash Park & Platt Park','Other'
     ];
 
+    const neighborhoodMap = `Neighborhood mapping (use this to match what you know to the valid option):
+- "Downtown & LoDo" = downtown Denver, LoDo, Union Station, Larimer Square, Wynkoop, Wazee, Blake St, Market St, 16th St Mall
+- "RiNo & Five Points" = RiNo, River North, Five Points, Brighton Blvd, Welton St
+- "Highlands & LoHi" = LoHi, Lower Highlands, Highland neighborhood, 32nd Ave, Platte St, Tennyson St (south end)
+- "Sunnyside & Berkeley" = Sunnyside, Berkeley, Tennyson St (north), 38th Ave, 44th Ave
+- "Baker & South Broadway" = Baker, South Broadway, S. Broadway, South Pearl St (lower end)
+- "Capitol Hill & Uptown" = Capitol Hill, Uptown, Colfax Ave, 14th–18th Ave corridor, Congress Park
+- "Cherry Creek & Glendale" = Cherry Creek, Cherry Creek North, Glendale, 2nd Ave, Fillmore St
+- "Wash Park & Platt Park" = Washington Park, Wash Park, Platt Park, South Pearl St (upper end), Old South Pearl
+- "Sloan's Lake" = Sloan's Lake, Edgewater, West 17th Ave corridor, West Colfax (inner)
+- "Stapleton & Central Park" = Stapleton, Central Park, Northfield, East 29th Ave Town Center
+- "DTC & Tech Center" = Denver Tech Center, Greenwood Village, Englewood, Centennial
+- "Lakewood" = Lakewood, Belmar, Alameda Corridor west of Sheridan
+- "Boulder" = Boulder, Pearl Street Mall, University Hill, The Hill`;
+
     const neighborhoodInstruction = detectedNeighborhood
       ? `NEIGHBORHOOD (CONFIRMED via Google Maps address "${verifiedAddress}"): "${detectedNeighborhood}" — use this exact value, do not change it.`
       : verifiedAddress
-        ? `VERIFIED ADDRESS from Google Maps: "${verifiedAddress}"\nUse this address to pick the best neighborhood from the valid list. Only use "Other" if the address is completely outside Denver metro.`
-        : `NEIGHBORHOOD: Use your own knowledge of where "${name}" is located in Denver to pick the correct neighborhood from the valid list. You know where Denver restaurants are located — use that knowledge. Only use "Other" for restaurants that are genuinely not in any of the listed neighborhoods.`;
+        ? `VERIFIED ADDRESS from Google Maps: "${verifiedAddress}"\n${neighborhoodMap}\nMatch the address to the correct neighborhood above. Only use "Other" if completely outside Denver metro.`
+        : `NEIGHBORHOOD: Use your knowledge of where "${name}" is in Denver and match it to the correct option using this guide:\n${neighborhoodMap}\nIMPORTANT: "Other" is only for restaurants not covered by any of these areas. If you know the restaurant is in LoHi, RiNo, Wash Park, Capitol Hill, etc. — match it to the combined label above. Do not use "Other" as a fallback when you know the area.`;
 
     const prompt = `You are filling in a restaurant listing for "Best of Denver" — a curated guide for a foodie meetup group.
 
