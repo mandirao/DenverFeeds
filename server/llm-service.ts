@@ -1095,7 +1095,7 @@ VENUE ATTRIBUTES — pick any that apply (these are separate from cuisine tags, 
 - "Cocktails & Wine" = serious cocktail program or wine focus — use alongside "Bar & Pub" if relevant, or alone for wine bars.
 - "Grocery & Market" = specialty grocer, artisan market, food shop, cheese shop, butcher, wine shop. NOT a restaurant.
 - "Happy Hour" = the place is known for a good happy hour deal.
-- "Patio" = notable outdoor seating — patio, rooftop bar, beer garden, parklet.
+- "Patio" = the place has a notable outdoor seating area — rooftop bar, patio, beer garden, parklet, or sidewalk seating worth mentioning. Apply this proactively; many Denver restaurants and bars have patios.
 Valid venue attributes: ${venueAttrOptions.join(', ')}
 If the entry is a bar, pub, or market — do NOT describe it as a restaurant. Write the description to match what the place actually is.
 

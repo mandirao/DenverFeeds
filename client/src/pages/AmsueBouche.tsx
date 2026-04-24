@@ -1410,6 +1410,9 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              {restaurant.pricePoint && (
+                <span className="text-[11px] font-bold text-black/50 leading-none">{restaurant.pricePoint}</span>
+              )}
               {restaurant.michelinStar && (
                 <TooltipProvider delayDuration={100}>
                   <Tooltip>
@@ -1464,7 +1467,6 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
               {(restaurant.cuisine ?? []).map(c => (
                 <span key={c} className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{c}</span>
               ))}
-              <span className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{restaurant.pricePoint}</span>
               <span className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{restaurant.neighborhood}</span>
             </div>
           </div>
