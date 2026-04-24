@@ -1849,7 +1849,7 @@ export default function AmsueBouche() {
   const filteredRestaurants = restaurantList
     .filter(r => {
       const cuisine = r.cuisine ?? [];
-      if (filterRVenueType === "bar" && !cuisine.some(c => BAR_CUISINES.has(c))) return false;
+      if (filterRVenueType === "bar" && !cuisine.includes('Bar')) return false;
       if (filterRVenueType === "shop" && !cuisine.some(c => SHOP_CUISINES.has(c))) return false;
       if (filterRVenueType === "restaurant" && !cuisine.some(c => !BAR_CUISINES.has(c) && !SHOP_CUISINES.has(c))) return false;
       if (filterRCuisine !== "all" && !cuisine.includes(filterRCuisine)) return false;
