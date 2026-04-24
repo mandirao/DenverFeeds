@@ -22,6 +22,7 @@ export const restaurantCuisineTypes = [
   'Fusion',
   'German & Austrian',
   'Grocery & Market',
+  'Happy Hour',
   'Hot Pot & Shabu',
   'Indian & South Asian',
   'Israeli',

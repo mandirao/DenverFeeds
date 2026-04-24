@@ -1033,13 +1033,14 @@ Return ONLY valid JSON (no markdown):
 
     const currentYear = new Date().getFullYear();
 
-    const cuisineOptions = [
-      'African','American','Bar & Pub','BBQ & Southern','Brunch & Breakfast','Chinese','Cocktails & Wine',
-      'Colombian','Dessert & Pastry','Dive Bar','Eastern European','Farm-to-Table','Filipino','French',
-      'Fusion','Grocery & Market','Hot Pot & Shabu','Indian & South Asian','Israeli','Italian','Japanese',
-      'Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
+    const foodCuisineOptions = [
+      'African','American','BBQ & Southern','British & Irish','Brunch & Breakfast','Chinese',
+      'Colombian','Dessert & Pastry','Eastern European','Farm-to-Table','Filipino','French',
+      'Fusion','German & Austrian','Hot Pot & Shabu','Indian & South Asian','Israeli','Italian','Japanese',
+      'Jewish Deli','Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
       'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
     ];
+    const venueAttrOptions = ['Bar & Pub','Dive Bar','Cocktails & Wine','Grocery & Market','Happy Hour'];
 
     const neighborhoodOptions = [
       'Aurora','Baker & South Broadway','Boulder','Capitol Hill & Uptown','Cherry Creek & Glendale','Downtown & LoDo',
@@ -1086,12 +1087,15 @@ ${searchContext || '(no results found)'}
 
 TASK: Based on the above, fill in all fields. Return valid JSON only (no markdown).
 
-VALID CUISINE TAGS (pick 1–3 that best fit): ${cuisineOptions.join(', ')}
+CUISINE TAGS — food-focused, pick 1–3: ${foodCuisineOptions.join(', ')}
 
-CATEGORY GUIDANCE for non-restaurant entries:
-- "Bar & Pub" = a bar or pub where drinking is the primary draw — craft beer spots, whisky bars, British/Irish pubs, wine bars, cocktail bars. Use this for Pint's Pub, neighborhood pubs, serious cocktail bars. Can combine with "Cocktails & Wine" if relevant.
-- "Dive Bar" = unpretentious, no-frills bar with character — cash only, cheap drinks, sticky floors, locals only. Do NOT use "Bar & Pub" and "Dive Bar" together; pick the one that fits better.
-- "Grocery & Market" = specialty grocer, artisan market, or food shop — NOT a restaurant. Use for places like Marczyk Fine Foods, butcher shops, cheese shops, wine shops, specialty delis. The description should focus on what makes the selection or sourcing exceptional, not dishes.
+VENUE ATTRIBUTES — pick any that apply (these are separate from cuisine tags, no limit):
+- "Bar & Pub" = drinking is the primary draw — craft beer, whisky bars, British/Irish pubs, cocktail bars. Do NOT combine with "Dive Bar".
+- "Dive Bar" = unpretentious, no-frills bar with character — cash only, cheap drinks, sticky floors. Do NOT combine with "Bar & Pub".
+- "Cocktails & Wine" = serious cocktail program or wine focus — use alongside "Bar & Pub" if relevant, or alone for wine bars.
+- "Grocery & Market" = specialty grocer, artisan market, food shop, cheese shop, butcher, wine shop. NOT a restaurant.
+- "Happy Hour" = the place is known for a good happy hour deal.
+Valid venue attributes: ${venueAttrOptions.join(', ')}
 If the entry is a bar, pub, or market — do NOT describe it as a restaurant. Write the description to match what the place actually is.
 
 VALID NEIGHBORHOODS (pick exactly one): ${neighborhoodOptions.join(', ')}
@@ -1130,11 +1134,13 @@ Return ONLY valid JSON:
 {
   "emoji": "single most fitting emoji for this cuisine/vibe",
   "description": "300-400 char Eater-style description",
-  "cuisine": ["Tag1", "Tag2"],
+  "cuisine": ["FoodTag1", "FoodTag2"],
+  "venueAttributes": ["Bar & Pub"],
   "pricePoint": "$$",
   "neighborhood": "one of the valid neighborhoods",
   "hotNew": false
-}`;
+}
+"cuisine" = food-focused tags only (max 3). "venueAttributes" = venue type/attribute tags (any from the valid list above, or empty array).`;
 
     const message = await client.messages.create({
       model: 'claude-opus-4-5',
@@ -1149,7 +1155,7 @@ Return ONLY valid JSON:
     console.log(`[fillRestaurantAI] Raw Claude response for "${name}":`, JSON.stringify(result));
 
     // Normalize cuisine tags — map fuzzy Claude responses to valid exact values
-    const cuisineNormMap: Record<string, string> = {
+    const normMap: Record<string, string> = {
       'grocery': 'Grocery & Market',
       'market': 'Grocery & Market',
       'specialty market': 'Grocery & Market',
@@ -1162,7 +1168,7 @@ Return ONLY valid JSON:
       'beer bar': 'Bar & Pub',
       'whisky bar': 'Bar & Pub',
       'whiskey bar': 'Bar & Pub',
-      'wine bar': 'Bar & Pub',
+      'wine bar': 'Cocktails & Wine',
       'cocktail bar': 'Bar & Pub',
       'dive': 'Dive Bar',
       'dive bar': 'Dive Bar',
@@ -1170,28 +1176,34 @@ Return ONLY valid JSON:
       'southern': 'BBQ & Southern',
       'brunch': 'Brunch & Breakfast',
       'breakfast': 'Brunch & Breakfast',
+      'happy hour': 'Happy Hour',
     };
-    const validCuisines = new Set([
-      'African','American','Bar & Pub','BBQ & Southern','Brunch & Breakfast','Chinese','Cocktails & Wine',
-      'Colombian','Dessert & Pastry','Dive Bar','Eastern European','Farm-to-Table','Filipino','French',
-      'Fusion','Grocery & Market','Hot Pot & Shabu','Indian & South Asian','Israeli','Italian','Japanese',
-      'Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
+    const validFoodCuisines = new Set([
+      'African','American','BBQ & Southern','British & Irish','Brunch & Breakfast','Chinese',
+      'Colombian','Dessert & Pastry','Eastern European','Farm-to-Table','Filipino','French',
+      'Fusion','German & Austrian','Hot Pot & Shabu','Indian & South Asian','Israeli','Italian','Japanese',
+      'Jewish Deli','Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
       'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
     ]);
-    const normalizeCuisine = (tags: string[]): string[] => {
-      return tags
-        .map(t => {
-          const lower = t.toLowerCase().trim();
-          if (validCuisines.has(t)) return t; // already valid
-          return cuisineNormMap[lower] || t;   // try fuzzy map, else keep as-is
-        })
-        .filter(t => validCuisines.has(t))     // drop anything still not valid
-        .slice(0, 3);
+    const validVenueAttrs = new Set(['Bar & Pub','Dive Bar','Cocktails & Wine','Grocery & Market','Happy Hour']);
+    const allValid = new Set([...validFoodCuisines, ...validVenueAttrs]);
+
+    const normalize = (tags: string[], maxFood: number): string[] => {
+      const mapped = tags.map(t => {
+        if (allValid.has(t)) return t;
+        return normMap[t.toLowerCase().trim()] || t;
+      }).filter(t => allValid.has(t));
+      const food = mapped.filter(t => validFoodCuisines.has(t)).slice(0, maxFood);
+      const attrs = mapped.filter(t => validVenueAttrs.has(t));
+      return [...food, ...attrs];
     };
 
     const rawCuisine = Array.isArray(result.cuisine) ? result.cuisine : [];
-    const normalizedCuisine = normalizeCuisine(rawCuisine);
-    console.log(`[fillRestaurantAI] Cuisine: raw=${JSON.stringify(rawCuisine)} → normalized=${JSON.stringify(normalizedCuisine)}`);
+    const rawAttrs = Array.isArray(result.venueAttributes) ? result.venueAttributes : [];
+    // Merge and normalize: food tags capped at 3, venue attrs uncapped
+    const mergedRaw = [...rawCuisine, ...rawAttrs];
+    const normalizedCuisine = normalize(mergedRaw, 3);
+    console.log(`[fillRestaurantAI] Cuisine: raw=${JSON.stringify(mergedRaw)} → normalized=${JSON.stringify(normalizedCuisine)}`);
     console.log(`[fillRestaurantAI] Neighborhood: detected=${detectedNeighborhood} | claude=${result.neighborhood} → using=${detectedNeighborhood || result.neighborhood}`);
 
     return {

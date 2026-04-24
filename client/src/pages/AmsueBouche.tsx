@@ -43,6 +43,9 @@ const SUBURB_NEIGHBORHOODS = ['Aurora', 'Boulder', 'DTC & Tech Center', 'Golden'
 
 const BAR_CUISINES = new Set(['Bar & Pub', 'Dive Bar', 'Cocktails & Wine']);
 const SHOP_CUISINES = new Set(['Grocery & Market']);
+// Tags that describe venue type/attributes, not cuisine — shown separately in modal, no count limit
+const VENUE_ATTR_TAGS = new Set(['Bar & Pub', 'Dive Bar', 'Cocktails & Wine', 'Grocery & Market', 'Happy Hour']);
+const VENUE_ATTR_LIST = ['Bar & Pub', 'Dive Bar', 'Cocktails & Wine', 'Grocery & Market', 'Happy Hour'];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1518,7 +1521,8 @@ function RestaurantModal({ mode, initial, onClose }: {
     setForm(f => {
       const has = f.cuisine.includes(c);
       if (has) return { ...f, cuisine: f.cuisine.filter(x => x !== c) };
-      if (f.cuisine.length >= 3) return f;
+      const foodCount = f.cuisine.filter(x => !VENUE_ATTR_TAGS.has(x)).length;
+      if (!VENUE_ATTR_TAGS.has(c) && foodCount >= 3) return f;
       return { ...f, cuisine: [...f.cuisine, c] };
     });
   };
@@ -1563,32 +1567,56 @@ function RestaurantModal({ mode, initial, onClose }: {
 
   const isValid = form.name.trim() && form.description.trim() && form.cuisine.length > 0 && form.pricePoint && form.neighborhood;
 
+  const foodCuisineCount = form.cuisine.filter(c => !VENUE_ATTR_TAGS.has(c)).length;
   const cuisineChips = (
-    <div>
-      <div className="flex items-center justify-between mb-1.5">
-        <Label className="text-xs font-bold uppercase">Cuisine Tags * <span className="font-normal normal-case opacity-50">(up to 3)</span></Label>
-        {form.cuisine.length > 0 && (
-          <span className="text-[10px] text-black/50">{form.cuisine.length}/3</span>
-        )}
+    <div className="space-y-3">
+      {/* Food cuisine tags — max 3 */}
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <Label className="text-xs font-bold uppercase">Cuisine * <span className="font-normal normal-case opacity-50">(up to 3)</span></Label>
+          {foodCuisineCount > 0 && (
+            <span className="text-[10px] text-black/50">{foodCuisineCount}/3</span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {[...restaurantCuisineTypes].filter(c => !VENUE_ATTR_TAGS.has(c)).sort().map(c => {
+            const selected = form.cuisine.includes(c);
+            const maxed = foodCuisineCount >= 3 && !selected;
+            return (
+              <button key={c} type="button"
+                onClick={() => !maxed && toggleCuisine(c)}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors ${
+                  selected
+                    ? "bg-black text-white border-black"
+                    : maxed
+                      ? "bg-white text-black/25 border-black/10 cursor-not-allowed"
+                      : "bg-white text-black/55 border-black/20 hover:border-black hover:text-black"
+                }`}>
+                {c}
+              </button>
+            );
+          })}
+        </div>
       </div>
-      <div className="flex flex-wrap gap-1">
-        {[...restaurantCuisineTypes].sort().map(c => {
-          const selected = form.cuisine.includes(c);
-          const maxed = form.cuisine.length >= 3 && !selected;
-          return (
-            <button key={c} type="button"
-              onClick={() => !maxed && toggleCuisine(c)}
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors ${
-                selected
-                  ? "bg-black text-white border-black"
-                  : maxed
-                    ? "bg-white text-black/25 border-black/10 cursor-not-allowed"
+      {/* Venue attributes — unlimited */}
+      <div>
+        <Label className="text-xs font-bold uppercase">Venue Attributes <span className="font-normal normal-case opacity-50">(pick any)</span></Label>
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {VENUE_ATTR_LIST.map(c => {
+            const selected = form.cuisine.includes(c);
+            return (
+              <button key={c} type="button"
+                onClick={() => toggleCuisine(c)}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors ${
+                  selected
+                    ? "bg-black text-white border-black"
                     : "bg-white text-black/55 border-black/20 hover:border-black hover:text-black"
-              }`}>
-              {c}
-            </button>
-          );
-        })}
+                }`}>
+                {c}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
