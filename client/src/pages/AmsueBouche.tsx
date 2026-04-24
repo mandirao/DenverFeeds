@@ -1462,12 +1462,14 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
                 </TooltipProvider>
               )}
             </div>
-            <p className="text-sm text-black/75 mt-0.5 leading-snug">{restaurant.description}</p>
+            {restaurant.neighborhood && (
+              <p className="text-[11px] text-black/40 font-medium mt-0.5 leading-none">{restaurant.neighborhood}</p>
+            )}
+            <p className="text-sm text-black/75 mt-1 leading-snug">{restaurant.description}</p>
             <div className="flex flex-wrap gap-1.5 mt-2">
               {(restaurant.cuisine ?? []).map(c => (
                 <span key={c} className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{c}</span>
               ))}
-              <span className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{restaurant.neighborhood}</span>
             </div>
           </div>
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
@@ -1788,11 +1790,11 @@ export default function AmsueBouche() {
   const [restaurantAddOpen, setRestaurantAddOpen] = useState(false);
   const [restaurantToEdit, setRestaurantToEdit] = useState<Restaurant | null>(null);
   const [restaurantToDelete, setRestaurantToDelete] = useState<Restaurant | null>(null);
-  const [filterRVenueType, setFilterRVenueType] = useState<"all" | "restaurant" | "bar" | "shop">("all");
+  const [filterRVenueType, setFilterRVenueType] = useState<"all" | "restaurant" | "bar" | "divebar" | "cocktailbar" | "shop">("all");
   const [filterRCuisine, setFilterRCuisine] = useState("all");
   const [filterRNeighborhood, setFilterRNeighborhood] = useState("all");
   const [filterRPrice, setFilterRPrice] = useState("all");
-  const [filterRBadge, setFilterRBadge] = useState<"all" | "hotNew" | "michelin" | "fixture" | "foodTruck">("all");
+  const [filterRBadge, setFilterRBadge] = useState<"all" | "hotNew" | "michelin" | "fixture" | "foodTruck" | "happyHour" | "patio">("all");
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
@@ -1848,6 +1850,8 @@ export default function AmsueBouche() {
     .filter(r => {
       const cuisine = r.cuisine ?? [];
       if (filterRVenueType === "bar" && !cuisine.includes('Bar & Pub')) return false;
+      if (filterRVenueType === "divebar" && !cuisine.includes('Dive Bar')) return false;
+      if (filterRVenueType === "cocktailbar" && !cuisine.includes('Cocktails & Wine')) return false;
       if (filterRVenueType === "shop" && !cuisine.some(c => SHOP_CUISINES.has(c))) return false;
       if (filterRVenueType === "restaurant" && !cuisine.some(c => !BAR_CUISINES.has(c) && !SHOP_CUISINES.has(c))) return false;
       if (filterRCuisine !== "all" && !cuisine.includes(filterRCuisine)) return false;
@@ -1858,6 +1862,8 @@ export default function AmsueBouche() {
       if (filterRBadge === "michelin" && !r.michelinStar) return false;
       if (filterRBadge === "fixture" && !(r as any).fixture) return false;
       if (filterRBadge === "foodTruck" && !(r as any).foodTruck) return false;
+      if (filterRBadge === "happyHour" && !cuisine.includes('Happy Hour')) return false;
+      if (filterRBadge === "patio" && !cuisine.includes('Patio')) return false;
       return true;
     })
     .sort((a, b) => a.name.trim().localeCompare(b.name.trim()));
@@ -2266,6 +2272,8 @@ export default function AmsueBouche() {
                       <SelectSeparator />
                       <SelectItem value="restaurant">Restaurants</SelectItem>
                       <SelectItem value="bar">Bars</SelectItem>
+                      <SelectItem value="divebar">Dive Bars</SelectItem>
+                      <SelectItem value="cocktailbar">Cocktail Bars</SelectItem>
                       <SelectItem value="shop">Shops</SelectItem>
                     </SelectContent>
                   </Select>
@@ -2278,7 +2286,7 @@ export default function AmsueBouche() {
                     <SelectContent className="max-h-[320px] overflow-y-auto">
                       <SelectItem value="all">All Cuisine</SelectItem>
                       <SelectSeparator />
-                      {[...new Set(restaurantList.flatMap(r => r.cuisine ?? []))].sort().map(c => (
+                      {[...new Set(restaurantList.flatMap(r => r.cuisine ?? []))].filter(c => !VENUE_ATTR_TAGS.has(c)).sort().map(c => (
                         <SelectItem key={c} value={c}>{c}</SelectItem>
                       ))}
                     </SelectContent>
@@ -2336,6 +2344,8 @@ export default function AmsueBouche() {
                       <SelectItem value="michelin">⭐ Michelin</SelectItem>
                       <SelectItem value="fixture">📌 Fixture</SelectItem>
                       <SelectItem value="foodTruck">🚚 Food Truck</SelectItem>
+                      <SelectItem value="happyHour">⏰ Happy Hour</SelectItem>
+                      <SelectItem value="patio">☀️ Patio</SelectItem>
                     </SelectContent>
                   </Select>
 
