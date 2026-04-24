@@ -85,7 +85,21 @@ export class LLMService {
     // DTC & Tech Center
     if (/\b(greenwood village|englewood|80111|80112|80237|80246|80222|80224|80231|tech center|dtc)\b/.test(a)) return 'DTC & Tech Center';
 
-    // Zip-code based (most reliable)
+    // Street/area name keywords — checked BEFORE zip codes because street names are more specific.
+    // (e.g. "2200 E Colfax Ave 80206" should be Capitol Hill & Uptown, not Cherry Creek)
+    if (/wynkoop|wazee|blake st|market st|larimer st|lodo|union station|lo ?do/.test(a)) return 'Downtown & LoDo';
+    if (/brighton blvd|walnut st|rino|river north|five points|welton/.test(a)) return 'RiNo & Five Points';
+    if (/lohi|lo ?hi|highlands|32nd ave|platte st/.test(a)) return 'Highlands & LoHi';
+    if (/tennyson|berkeley|38th ave/.test(a)) return 'Sunnyside & Berkeley';
+    if (/sunnyside|44th ave/.test(a)) return 'Sunnyside & Berkeley';
+    if (/south broadway|s broadway|baker/.test(a)) return 'Baker & South Broadway';
+    if (/capitol hill|uptown|colfax|17th ave|18th ave|congress park/.test(a)) return 'Capitol Hill & Uptown';
+    if (/cherry creek|2nd ave|fillmore|glendale/.test(a)) return 'Cherry Creek & Glendale';
+    if (/wash park|platt park|pearl st s|old south pearl/.test(a)) return 'Wash Park & Platt Park';
+    if (/sloan.?s lake|edgewater/.test(a)) return "Sloan's Lake";
+    if (/stapleton|central park|northfield/.test(a)) return 'Stapleton & Central Park';
+
+    // Zip-code based (fallback when street name doesn't match)
     const zipMatch = address.match(/\b(8\d{4})\b/);
     const zip = zipMatch?.[1];
     const zipMap: Record<string, string> = {
@@ -93,7 +107,7 @@ export class LLMService {
       '80203': 'Capitol Hill & Uptown',
       '80204': 'Highlands & LoHi',
       '80205': 'RiNo & Five Points',
-      '80206': 'Cherry Creek & Glendale',
+      '80206': 'Cherry Creek & Glendale', // Cherry Creek/Congress Park — street check above handles Colfax addresses
       '80207': 'Stapleton & Central Park',
       '80209': 'Wash Park & Platt Park',
       '80210': 'Wash Park & Platt Park',
@@ -105,19 +119,6 @@ export class LLMService {
       '80223': 'Baker & South Broadway',
     };
     if (zip && zipMap[zip]) return zipMap[zip];
-
-    // Street/area name keywords as fallback
-    if (/wynkoop|wazee|blake st|market st|larimer st|lodo|union station|lo ?do/.test(a)) return 'Downtown & LoDo';
-    if (/brighton blvd|walnut st|rino|river north|five points|welton/.test(a)) return 'RiNo & Five Points';
-    if (/lohi|lo ?hi|highlands|32nd ave|platte st/.test(a)) return 'Highlands & LoHi';
-    if (/tennyson|berkeley|38th ave/.test(a)) return 'Sunnyside & Berkeley';
-    if (/sunnyside|44th ave/.test(a)) return 'Sunnyside & Berkeley';
-    if (/south broadway|s broadway|baker/.test(a)) return 'Baker & South Broadway';
-    if (/capitol hill|uptown|colfax|17th ave|18th ave/.test(a)) return 'Capitol Hill & Uptown';
-    if (/cherry creek|2nd ave|fillmore|glendale/.test(a)) return 'Cherry Creek & Glendale';
-    if (/wash park|platt park|pearl st s/.test(a)) return 'Wash Park & Platt Park';
-    if (/sloan.?s lake|edgewater/.test(a)) return "Sloan's Lake";
-    if (/stapleton|central park|northfield/.test(a)) return 'Stapleton & Central Park';
 
     return null;
   }
@@ -1134,10 +1135,58 @@ Return ONLY valid JSON:
     const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
     const result = JSON.parse(cleaned);
 
+    console.log(`[fillRestaurantAI] Raw Claude response for "${name}":`, JSON.stringify(result));
+
+    // Normalize cuisine tags — map fuzzy Claude responses to valid exact values
+    const cuisineNormMap: Record<string, string> = {
+      'grocery': 'Grocery & Market',
+      'market': 'Grocery & Market',
+      'specialty market': 'Grocery & Market',
+      'specialty grocery': 'Grocery & Market',
+      'grocery store': 'Grocery & Market',
+      'food market': 'Grocery & Market',
+      'bar': 'Bar & Pub',
+      'pub': 'Bar & Pub',
+      'bar and pub': 'Bar & Pub',
+      'beer bar': 'Bar & Pub',
+      'whisky bar': 'Bar & Pub',
+      'whiskey bar': 'Bar & Pub',
+      'wine bar': 'Bar & Pub',
+      'cocktail bar': 'Bar & Pub',
+      'dive': 'Dive Bar',
+      'dive bar': 'Dive Bar',
+      'bbq': 'BBQ & Southern',
+      'southern': 'BBQ & Southern',
+      'brunch': 'Brunch & Breakfast',
+      'breakfast': 'Brunch & Breakfast',
+    };
+    const validCuisines = new Set([
+      'African','American','Bar & Pub','BBQ & Southern','Brunch & Breakfast','Chinese','Cocktails & Wine',
+      'Colombian','Dessert & Pastry','Dive Bar','Eastern European','Farm-to-Table','Filipino','French',
+      'Fusion','Grocery & Market','Hot Pot & Shabu','Indian & South Asian','Israeli','Italian','Japanese',
+      'Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
+      'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
+    ]);
+    const normalizeCuisine = (tags: string[]): string[] => {
+      return tags
+        .map(t => {
+          const lower = t.toLowerCase().trim();
+          if (validCuisines.has(t)) return t; // already valid
+          return cuisineNormMap[lower] || t;   // try fuzzy map, else keep as-is
+        })
+        .filter(t => validCuisines.has(t))     // drop anything still not valid
+        .slice(0, 3);
+    };
+
+    const rawCuisine = Array.isArray(result.cuisine) ? result.cuisine : [];
+    const normalizedCuisine = normalizeCuisine(rawCuisine);
+    console.log(`[fillRestaurantAI] Cuisine: raw=${JSON.stringify(rawCuisine)} → normalized=${JSON.stringify(normalizedCuisine)}`);
+    console.log(`[fillRestaurantAI] Neighborhood: detected=${detectedNeighborhood} | claude=${result.neighborhood} → using=${detectedNeighborhood || result.neighborhood}`);
+
     return {
       emoji: result.emoji || undefined,
       description: result.description ? String(result.description).replace(/ — /g, '—').replace(/ – /g, '—').substring(0, 500) : undefined,
-      cuisine: Array.isArray(result.cuisine) ? result.cuisine.slice(0, 3) : undefined,
+      cuisine: normalizedCuisine.length ? normalizedCuisine : undefined,
       pricePoint: result.pricePoint || undefined,
       // Use our deterministic address lookup if available — Claude can't override it
       neighborhood: detectedNeighborhood || result.neighborhood || undefined,
