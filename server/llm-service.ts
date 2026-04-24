@@ -92,9 +92,11 @@ export class LLMService {
     if (/lohi|lo ?hi|highlands|32nd ave|platte st/.test(a)) return 'Highlands & LoHi';
     if (/tennyson|berkeley|38th ave/.test(a)) return 'Sunnyside & Berkeley';
     if (/sunnyside|44th ave/.test(a)) return 'Sunnyside & Berkeley';
+    if (/federal blvd|federal boulevard|villa park|barnum|harvey park/.test(a)) return 'Federal Blvd';
     if (/south broadway|s broadway|baker/.test(a)) return 'Baker & South Broadway';
     if (/capitol hill|uptown|colfax|17th ave|18th ave|congress park/.test(a)) return 'Capitol Hill & Uptown';
     if (/cherry creek|2nd ave|fillmore|glendale/.test(a)) return 'Cherry Creek & Glendale';
+    if (/university hills|harvard gulch/.test(a)) return 'University Hills';
     if (/wash park|platt park|pearl st s|old south pearl/.test(a)) return 'Wash Park & Platt Park';
     if (/sloan.?s lake|edgewater/.test(a)) return "Sloan's Lake";
     if (/stapleton|central park|northfield/.test(a)) return 'Stapleton & Central Park';
@@ -1034,9 +1036,9 @@ Return ONLY valid JSON (no markdown):
     ];
 
     const neighborhoodOptions = [
-      'Baker & South Broadway','Boulder','Capitol Hill & Uptown','Cherry Creek & Glendale','Downtown & LoDo',
-      'DTC & Tech Center','Highlands & LoHi','Lakewood',"Sloan's Lake",'RiNo & Five Points',
-      'Stapleton & Central Park','Sunnyside & Berkeley','Wash Park & Platt Park','Other'
+      'Aurora','Baker & South Broadway','Boulder','Capitol Hill & Uptown','Cherry Creek & Glendale','Downtown & LoDo',
+      'DTC & Tech Center','Federal Blvd','Highlands & LoHi','Lakewood',"Sloan's Lake",'RiNo & Five Points',
+      'Stapleton & Central Park','Sunnyside & Berkeley','University Hills','Wash Park & Platt Park','Other'
     ];
 
     const neighborhoodMap = `Neighborhood mapping (use this to match what you know to the valid option):
@@ -1044,9 +1046,11 @@ Return ONLY valid JSON (no markdown):
 - "RiNo & Five Points" = RiNo, River North, Five Points, Brighton Blvd, Welton St
 - "Highlands & LoHi" = LoHi, Lower Highlands, Highland neighborhood, 32nd Ave, Platte St, Tennyson St (south end)
 - "Sunnyside & Berkeley" = Sunnyside, Berkeley, Tennyson St (north), 38th Ave, 44th Ave
+- "Federal Blvd" = Federal Blvd corridor, Federal Boulevard, Villa Park, Barnum, Harvey Park, West Denver Vietnamese corridor (Little Saigon), Morrison Rd
 - "Baker & South Broadway" = Baker, South Broadway, S. Broadway, South Pearl St (lower end)
 - "Capitol Hill & Uptown" = Capitol Hill, Uptown, Colfax Ave, 14th–18th Ave corridor, Congress Park
 - "Cherry Creek & Glendale" = Cherry Creek, Cherry Creek North, Glendale, 2nd Ave, Fillmore St
+- "University Hills" = University Hills, University of Denver area, Colorado Blvd south of Evans, Hampden Ave corridor, Harvard Gulch
 - "Wash Park & Platt Park" = Washington Park, Wash Park, Platt Park, South Pearl St (upper end), Old South Pearl
 - "Sloan's Lake" = Sloan's Lake, Edgewater, West 17th Ave corridor, West Colfax (inner)
 - "Stapleton & Central Park" = Stapleton, Central Park, Northfield, East 29th Ave Town Center
