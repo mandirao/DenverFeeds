@@ -6,15 +6,16 @@ import { z } from "zod";
 export const restaurantCuisineTypes = [
   'African',
   'American',
-  'Bar & Pub',
+  'Bar',
   'BBQ & Southern',
+  'Beer',
   'British & Irish',
   'Brunch & Breakfast',
   'Chinese',
-  'Cocktails & Wine',
+  'Cocktails',
   'Colombian',
   'Dessert & Pastry',
-  'Dive Bar',
+  'Dive',
   'Eastern European',
   'Farm-to-Table',
   'Filipino',
@@ -35,6 +36,7 @@ export const restaurantCuisineTypes = [
   'Mexican & Latin',
   'Pan Asian',
   'Pan Latin',
+  'Patio',
   'Pizza',
   'Seafood',
   'Small Plates',
@@ -45,6 +47,7 @@ export const restaurantCuisineTypes = [
   'Thai & Southeast Asian',
   'Vegan',
   'Vietnamese',
+  'Wine',
   'Other'
 ];
 

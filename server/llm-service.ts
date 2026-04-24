@@ -1040,7 +1040,7 @@ Return ONLY valid JSON (no markdown):
       'Jewish Deli','Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
       'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
     ];
-    const venueAttrOptions = ['Bar & Pub','Dive Bar','Cocktails & Wine','Grocery & Market','Happy Hour','Patio'];
+    const venueAttrOptions = ['Bar','Dive','Cocktails','Beer','Wine','Grocery & Market','Happy Hour','Patio'];
 
     const neighborhoodOptions = [
       'Aurora','Baker & South Broadway','Boulder','Capitol Hill & Uptown','Cherry Creek & Glendale','Downtown & LoDo',
@@ -1090,9 +1090,11 @@ TASK: Based on the above, fill in all fields. Return valid JSON only (no markdow
 CUISINE TAGS — food-focused, pick 1–3: ${foodCuisineOptions.join(', ')}
 
 VENUE ATTRIBUTES — pick any that apply (these are separate from cuisine tags, no limit):
-- "Bar & Pub" = drinking is the primary draw — craft beer, whisky bars, British/Irish pubs, cocktail bars. Do NOT combine with "Dive Bar".
-- "Dive Bar" = unpretentious, no-frills bar with character — cash only, cheap drinks, sticky floors. Do NOT combine with "Bar & Pub".
-- "Cocktails & Wine" = serious cocktail program or wine focus — use alongside "Bar & Pub" if relevant, or alone for wine bars.
+- "Bar" = drinking is the primary draw — craft beer spots, whisky bars, British/Irish pubs, cocktail bars, neighborhood bars. Do NOT combine with "Dive".
+- "Dive" = unpretentious, no-frills bar with character — cash only, cheap drinks, sticky floors. Do NOT combine with "Bar".
+- "Cocktails" = serious cocktail program — use for craft cocktail bars or alongside "Bar" if relevant.
+- "Beer" = notable craft beer focus — brewery taprooms, bottle shops with taps, dedicated beer bars.
+- "Wine" = wine-focused — wine bars, natural wine spots, wine shops with pour programs.
 - "Grocery & Market" = specialty grocer, artisan market, food shop, cheese shop, butcher, wine shop. NOT a restaurant.
 - "Happy Hour" = the place is known for a good happy hour deal.
 - "Patio" = the place has a notable outdoor seating area — rooftop bar, patio, beer garden, parklet, or sidewalk seating worth mentioning. Apply this proactively; many Denver restaurants and bars have patios.
@@ -1163,16 +1165,22 @@ Return ONLY valid JSON:
       'specialty grocery': 'Grocery & Market',
       'grocery store': 'Grocery & Market',
       'food market': 'Grocery & Market',
-      'bar': 'Bar & Pub',
-      'pub': 'Bar & Pub',
-      'bar and pub': 'Bar & Pub',
-      'beer bar': 'Bar & Pub',
-      'whisky bar': 'Bar & Pub',
-      'whiskey bar': 'Bar & Pub',
-      'wine bar': 'Cocktails & Wine',
-      'cocktail bar': 'Bar & Pub',
-      'dive': 'Dive Bar',
-      'dive bar': 'Dive Bar',
+      'bar': 'Bar',
+      'pub': 'Bar',
+      'bar & pub': 'Bar',
+      'bar and pub': 'Bar',
+      'beer bar': 'Bar',
+      'whisky bar': 'Bar',
+      'whiskey bar': 'Bar',
+      'cocktail bar': 'Bar',
+      'dive bar': 'Dive',
+      'dive': 'Dive',
+      'cocktails & wine': 'Cocktails',
+      'cocktails and wine': 'Cocktails',
+      'cocktail': 'Cocktails',
+      'wine bar': 'Wine',
+      'craft beer': 'Beer',
+      'beer garden': 'Patio',
       'bbq': 'BBQ & Southern',
       'southern': 'BBQ & Southern',
       'brunch': 'Brunch & Breakfast',
@@ -1192,7 +1200,7 @@ Return ONLY valid JSON:
       'Jewish Deli','Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
       'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
     ]);
-    const validVenueAttrs = new Set(['Bar & Pub','Dive Bar','Cocktails & Wine','Grocery & Market','Happy Hour','Patio']);
+    const validVenueAttrs = new Set(['Bar','Dive','Cocktails','Beer','Wine','Grocery & Market','Happy Hour','Patio']);
     const allValid = new Set([...validFoodCuisines, ...validVenueAttrs]);
 
     const normalize = (tags: string[], maxFood: number): string[] => {

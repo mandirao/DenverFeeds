@@ -41,11 +41,11 @@ const INNER_DENVER_NEIGHBORHOODS = new Set([
 ]);
 const SUBURB_NEIGHBORHOODS = ['Aurora', 'Boulder', 'DTC & Tech Center', 'Golden', 'Lakewood', 'Westminster', 'Other'];
 
-const BAR_CUISINES = new Set(['Bar & Pub', 'Dive Bar', 'Cocktails & Wine']);
+const BAR_CUISINES = new Set(['Bar', 'Dive', 'Cocktails', 'Beer', 'Wine']);
 const SHOP_CUISINES = new Set(['Grocery & Market']);
 // Tags that describe venue type/attributes, not cuisine — shown separately in modal, no count limit
-const VENUE_ATTR_TAGS = new Set(['Bar & Pub', 'Dive Bar', 'Cocktails & Wine', 'Grocery & Market', 'Happy Hour', 'Patio']);
-const VENUE_ATTR_LIST = ['Bar & Pub', 'Dive Bar', 'Cocktails & Wine', 'Grocery & Market', 'Happy Hour', 'Patio'];
+const VENUE_ATTR_TAGS = new Set(['Bar', 'Dive', 'Cocktails', 'Beer', 'Wine', 'Grocery & Market', 'Happy Hour', 'Patio']);
+const VENUE_ATTR_LIST = ['Bar', 'Dive', 'Cocktails', 'Beer', 'Wine', 'Grocery & Market', 'Happy Hour', 'Patio'];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1790,7 +1790,7 @@ export default function AmsueBouche() {
   const [restaurantAddOpen, setRestaurantAddOpen] = useState(false);
   const [restaurantToEdit, setRestaurantToEdit] = useState<Restaurant | null>(null);
   const [restaurantToDelete, setRestaurantToDelete] = useState<Restaurant | null>(null);
-  const [filterRVenueType, setFilterRVenueType] = useState<"all" | "restaurant" | "bar" | "divebar" | "cocktailbar" | "shop">("all");
+  const [filterRVenueType, setFilterRVenueType] = useState<"all" | "restaurant" | "bar" | "shop">("all");
   const [filterRCuisine, setFilterRCuisine] = useState("all");
   const [filterRNeighborhood, setFilterRNeighborhood] = useState("all");
   const [filterRPrice, setFilterRPrice] = useState("all");
@@ -1849,9 +1849,7 @@ export default function AmsueBouche() {
   const filteredRestaurants = restaurantList
     .filter(r => {
       const cuisine = r.cuisine ?? [];
-      if (filterRVenueType === "bar" && !cuisine.includes('Bar & Pub')) return false;
-      if (filterRVenueType === "divebar" && !cuisine.includes('Dive Bar')) return false;
-      if (filterRVenueType === "cocktailbar" && !cuisine.includes('Cocktails & Wine')) return false;
+      if (filterRVenueType === "bar" && !cuisine.some(c => BAR_CUISINES.has(c))) return false;
       if (filterRVenueType === "shop" && !cuisine.some(c => SHOP_CUISINES.has(c))) return false;
       if (filterRVenueType === "restaurant" && !cuisine.some(c => !BAR_CUISINES.has(c) && !SHOP_CUISINES.has(c))) return false;
       if (filterRCuisine !== "all" && !cuisine.includes(filterRCuisine)) return false;
@@ -2271,9 +2269,7 @@ export default function AmsueBouche() {
                       <SelectItem value="all">All Types</SelectItem>
                       <SelectSeparator />
                       <SelectItem value="restaurant">Restaurants</SelectItem>
-                      <SelectItem value="bar">Bars</SelectItem>
-                      <SelectItem value="divebar">Dive Bars</SelectItem>
-                      <SelectItem value="cocktailbar">Cocktail Bars</SelectItem>
+                      <SelectItem value="bar">Bars & Drinks</SelectItem>
                       <SelectItem value="shop">Shops</SelectItem>
                     </SelectContent>
                   </Select>
