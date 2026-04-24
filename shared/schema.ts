@@ -25,6 +25,7 @@ export const restaurantCuisineTypes = [
   'Happy Hour',
   'Hot Pot & Shabu',
   'Indian & South Asian',
+  'Islander',
   'Israeli',
   'Italian',
   'Japanese',

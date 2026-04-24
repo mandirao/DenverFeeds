@@ -1036,7 +1036,7 @@ Return ONLY valid JSON (no markdown):
     const foodCuisineOptions = [
       'African','American','BBQ & Southern','British & Irish','Brunch & Breakfast','Chinese',
       'Colombian','Dessert & Pastry','Eastern European','Farm-to-Table','Filipino','French',
-      'Fusion','German & Austrian','Hot Pot & Shabu','Indian & South Asian','Israeli','Italian','Japanese',
+      'Fusion','German & Austrian','Hot Pot & Shabu','Indian & South Asian','Islander','Israeli','Italian','Japanese',
       'Jewish Deli','Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
       'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
     ];
@@ -1181,7 +1181,7 @@ Return ONLY valid JSON:
     const validFoodCuisines = new Set([
       'African','American','BBQ & Southern','British & Irish','Brunch & Breakfast','Chinese',
       'Colombian','Dessert & Pastry','Eastern European','Farm-to-Table','Filipino','French',
-      'Fusion','German & Austrian','Hot Pot & Shabu','Indian & South Asian','Israeli','Italian','Japanese',
+      'Fusion','German & Austrian','Hot Pot & Shabu','Indian & South Asian','Islander','Israeli','Italian','Japanese',
       'Jewish Deli','Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
       'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
     ]);
