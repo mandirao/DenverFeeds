@@ -1033,9 +1033,9 @@ DESCRIPTION — match the tone and density of these real examples exactly:
 
 "James Beard Award 2022, Best Chef Mountain region. Chef Caroline Glover's heartfelt Aurora restaurant. Signatures: grilled beef tongue and marrow toast, roast chicken with bitter greens, ever-changing ice cream sandwiches. Boutique wine list and knockout cocktails seal the feel-good experience."
 
-"One Michelin star. Intimate 18-seat restaurant. Multi-course tasting menu ($215/person) changes with the seasons. Vivacious, unpredictable courses — seared pork belly with rutabaga and apple, snapper with turnip and shiso, chocolate honeycomb with pomegranate pate de fruit."
+"One Michelin star. Intimate 18-seat restaurant. Multi-course tasting menu ($215/person) changes with the seasons. Vivacious, unpredictable courses—seared pork belly with rutabaga and apple, snapper with turnip and shiso, chocolate honeycomb with pomegranate pate de fruit."
 
-"Three Michelin recognitions. Old-world Italian ingredients meet modernist touches — beaded tapioca crackers alongside classic tartare, eight-year-aged carnaroli risotto, Castelmagno cheese cheesecake. One of Denver's most consistently acclaimed Italian tables."
+"Three Michelin recognitions. Old-world Italian ingredients meet modernist touches—beaded tapioca crackers alongside classic tartare, eight-year-aged carnaroli risotto, Castelmagno cheese cheesecake. One of Denver's most consistently acclaimed Italian tables."
 
 "The trendy spot with real culinary chops. Two Mercantile alums in a buzzy RiNo room. Serious technique under the surface. Best new in 2025."
 
@@ -1044,6 +1044,8 @@ WHAT MAKES THESE WORK: short declarative sentences, real dish names with specifi
 WRITE WITH CONVICTION: You are a food writer who knows this restaurant well. Write in present tense. Every sentence states a fact, not a guess. If you know something about this restaurant from your training — specific dishes, the chef, the dining room, the reputation — use that knowledge directly. Do not wait for search results to confirm what you already know.
 
 NEVER USE these hedging words or phrases: "likely," "probably," "appears to," "seems to," "expect," "presumably," "one would expect," "should offer," "may feature," "details remain," "scarce," "not much is known," "limited information," "promises," "concept." If you aren't certain of a specific dish name, describe the style and format directly and confidently — "Wagyu tartare and dry-aged ribeye headline the menu" not "the menu likely features premium cuts."
+
+EM DASHES: always write em dashes with no spaces on either side — like this: "word—word" not "word — word".
 
 BANNED WORDS: amazing, incredible, vibrant, beloved, don't miss, must-try, hidden gem.
 
@@ -1071,7 +1073,7 @@ Return ONLY valid JSON:
 
     return {
       emoji: result.emoji || undefined,
-      description: result.description ? String(result.description).substring(0, 500) : undefined,
+      description: result.description ? String(result.description).replace(/ — /g, '—').replace(/ – /g, '—').substring(0, 500) : undefined,
       cuisine: Array.isArray(result.cuisine) ? result.cuisine.slice(0, 3) : undefined,
       pricePoint: result.pricePoint || undefined,
       // Use our deterministic address lookup if available — Claude can't override it
