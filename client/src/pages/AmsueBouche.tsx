@@ -2232,9 +2232,9 @@ export default function AmsueBouche() {
                     <SelectContent>
                       <SelectItem value="all">All Types</SelectItem>
                       <SelectSeparator />
-                      <SelectItem value="restaurant">🍽️ Restaurants</SelectItem>
-                      <SelectItem value="bar">🍸 Bars &amp; Drinks</SelectItem>
-                      <SelectItem value="shop">🛒 Shops</SelectItem>
+                      <SelectItem value="restaurant">Restaurants</SelectItem>
+                      <SelectItem value="bar">Bars &amp; Drinks</SelectItem>
+                      <SelectItem value="shop">Shops</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -2260,7 +2260,7 @@ export default function AmsueBouche() {
                     <SelectContent className="max-h-[340px] overflow-y-auto">
                       <SelectItem value="all">All Neighborhoods</SelectItem>
                       <SelectSeparator />
-                      <SelectItem value="inner_denver">🏙️ Inner Denver</SelectItem>
+                      <SelectItem value="inner_denver">Inner Denver</SelectItem>
                       <SelectSeparator />
                       <SelectGroup>
                         <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Denver proper</SelectLabel>
