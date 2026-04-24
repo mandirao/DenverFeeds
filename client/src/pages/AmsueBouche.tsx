@@ -1626,7 +1626,7 @@ function RestaurantModal({ mode, initial, onClose }: {
               </div>
             </div>
 
-            {/* Hot New + Fixture */}
+            {/* Hot New + Michelin + Fixture */}
             <div className="flex flex-wrap gap-x-6 gap-y-2">
               <div className="flex items-center gap-2.5">
                 <input type="checkbox" id="hotNew" checked={form.hotNew}
@@ -1634,6 +1634,14 @@ function RestaurantModal({ mode, initial, onClose }: {
                   className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
                 <label htmlFor="hotNew" className="text-xs font-bold uppercase cursor-pointer select-none">
                   🔥 Hot &amp; New <span className="font-normal normal-case opacity-50">(opened this year)</span>
+                </label>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <input type="checkbox" id="michelinStar" checked={form.michelinStar}
+                  onChange={e => setForm(f => ({ ...f, michelinStar: e.target.checked }))}
+                  className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
+                <label htmlFor="michelinStar" className="text-xs font-bold uppercase cursor-pointer select-none">
+                  ⭐ Michelin <span className="font-normal normal-case opacity-50">(Michelin starred or recognized)</span>
                 </label>
               </div>
               <div className="flex items-center gap-2.5">
