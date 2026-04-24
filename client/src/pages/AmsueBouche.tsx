@@ -1632,9 +1632,9 @@ function RestaurantModal({ mode, initial, onClose }: {
         </div>
 
         {/* Body: single column on mobile, two columns on desktop */}
-        <div className="bg-white sm:flex sm:divide-x sm:divide-black/10">
+        <div className="bg-white sm:flex sm:divide-x sm:divide-black/10 overflow-y-auto max-h-[calc(90vh-120px)]">
           {/* Left column — main fields */}
-          <div className="px-6 py-4 space-y-3 flex-1 overflow-y-auto max-h-[75vh] sm:max-h-none sm:overflow-visible">
+          <div className="px-6 py-4 space-y-3 flex-1">
             {/* Emoji + Name row */}
             <div className="flex gap-3">
               <div className="w-16 flex-shrink-0">
@@ -1661,8 +1661,8 @@ function RestaurantModal({ mode, initial, onClose }: {
             <div>
               <Label className="text-xs font-bold uppercase">Description *</Label>
               <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="What to order, the vibe, who it's for…" rows={3}
-                className="mt-1 rounded-none border-black resize-none" />
+                placeholder="What to order, the vibe, who it's for…" rows={5}
+                className="mt-1 rounded-none border-black resize-y min-h-[100px]" />
             </div>
 
             {/* Price + Neighborhood */}
@@ -1688,7 +1688,7 @@ function RestaurantModal({ mode, initial, onClose }: {
             </div>
 
             {/* Hot New + Michelin + Fixture */}
-            <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
               <div className="flex items-center gap-2.5">
                 <input type="checkbox" id="hotNew" checked={form.hotNew}
                   onChange={e => setForm(f => ({ ...f, hotNew: e.target.checked }))}
@@ -1730,8 +1730,10 @@ function RestaurantModal({ mode, initial, onClose }: {
           </div>
 
           {/* Right column — cuisine chips, desktop only */}
-          <div className="hidden sm:block w-56 px-5 py-4 flex-shrink-0">
-            {cuisineChips}
+          <div className="hidden sm:flex sm:flex-col w-72 px-5 py-4 flex-shrink-0">
+            <div className="overflow-y-auto flex-1 pr-1" style={{ maxHeight: "calc(90vh - 200px)" }}>
+              {cuisineChips}
+            </div>
           </div>
         </div>
 
