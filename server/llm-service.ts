@@ -68,7 +68,8 @@ export class LLMService {
       const data = await response.json();
       const place = data.places?.[0];
       return place ? { title: place.title, address: place.address || '', category: place.category || '' } : null;
-    } catch {
+    } catch (err) {
+      console.log(`[serperPlaces] exception: ${err}`);
       return null;
     }
   }
@@ -973,7 +974,7 @@ Return ONLY valid JSON (no markdown):
   }> {
     const client = new Anthropic({ apiKey: this.apiKey });
 
-    // Places lookup first — gets the real street address from Google Maps
+    // Places lookup — gets real street address for neighborhood detection
     const placeResult = await this.serperPlaces(`${name} Denver restaurant`);
     const verifiedAddress = placeResult?.address || '';
     const detectedNeighborhood = this.addressToNeighborhood(verifiedAddress);
@@ -1010,7 +1011,7 @@ Return ONLY valid JSON (no markdown):
       ? `NEIGHBORHOOD (CONFIRMED via Google Maps address "${verifiedAddress}"): "${detectedNeighborhood}" — use this exact value, do not change it.`
       : verifiedAddress
         ? `VERIFIED ADDRESS from Google Maps: "${verifiedAddress}"\nUse this address to pick the best neighborhood from the valid list. Only use "Other" if the address is completely outside Denver metro.`
-        : `NEIGHBORHOOD: Pick from the valid list below. Only use "Other" if no location info is available.`;
+        : `NEIGHBORHOOD: Use your own knowledge of where "${name}" is located in Denver to pick the correct neighborhood from the valid list. You know where Denver restaurants are located — use that knowledge. Only use "Other" for restaurants that are genuinely not in any of the listed neighborhoods.`;
 
     const prompt = `You are filling in a restaurant listing for "Best of Denver" — a curated guide for a foodie meetup group.
 
