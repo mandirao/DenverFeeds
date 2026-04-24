@@ -1455,7 +1455,6 @@ function RestaurantModal({ mode, initial, onClose }: {
   });
 
   const [aiLoading, setAiLoading] = useState(false);
-  const [sourceUrl, setSourceUrl] = useState('');
 
   const toggleCuisine = (c: string) => {
     setForm(f => {
@@ -1473,7 +1472,7 @@ function RestaurantModal({ mode, initial, onClose }: {
     }
     setAiLoading(true);
     try {
-      const result = await apiRequest({ endpoint: "/api/ai/fill-restaurant", method: "POST", data: { name: form.name.trim(), sourceUrl: sourceUrl.trim() || undefined } });
+      const result = await apiRequest({ endpoint: "/api/ai/fill-restaurant", method: "POST", data: { name: form.name.trim() } });
       setForm(f => ({
         ...f,
         ...(result.emoji ? { emoji: result.emoji } : {}),
@@ -1572,14 +1571,6 @@ function RestaurantModal({ mode, initial, onClose }: {
               </div>
             </div>
 
-            {/* Source URL for AI Fill */}
-            <div>
-              <Label className="text-xs font-bold uppercase opacity-50">Source URL <span className="font-normal normal-case">(optional — paste website or review link to ground AI Fill)</span></Label>
-              <Input value={sourceUrl} onChange={e => setSourceUrl(e.target.value)}
-                placeholder="https://denver.eater.com/… or restaurant's own site"
-                className="mt-1 rounded-none border-black/30 h-8 text-sm placeholder:text-black/30" />
-            </div>
-
             {/* Description */}
             <div>
               <Label className="text-xs font-bold uppercase">Description *</Label>
@@ -1611,23 +1602,13 @@ function RestaurantModal({ mode, initial, onClose }: {
             </div>
 
             {/* Hot New */}
-            <div className="flex flex-wrap gap-x-6 gap-y-2">
-              <div className="flex items-center gap-2.5">
-                <input type="checkbox" id="michelinStar" checked={form.michelinStar}
-                  onChange={e => setForm(f => ({ ...f, michelinStar: e.target.checked }))}
-                  className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
-                <label htmlFor="michelinStar" className="text-xs font-bold uppercase cursor-pointer select-none">
-                  ⭐ Michelin Star
-                </label>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <input type="checkbox" id="hotNew" checked={form.hotNew}
-                  onChange={e => setForm(f => ({ ...f, hotNew: e.target.checked }))}
-                  className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
-                <label htmlFor="hotNew" className="text-xs font-bold uppercase cursor-pointer select-none">
-                  🔥 Hot New <span className="font-normal normal-case opacity-50">(opened this year)</span>
-                </label>
-              </div>
+            <div className="flex items-center gap-2.5">
+              <input type="checkbox" id="hotNew" checked={form.hotNew}
+                onChange={e => setForm(f => ({ ...f, hotNew: e.target.checked }))}
+                className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
+              <label htmlFor="hotNew" className="text-xs font-bold uppercase cursor-pointer select-none">
+                🔥 Hot New <span className="font-normal normal-case opacity-50">(opened this year)</span>
+              </label>
             </div>
 
             {/* Cuisine chips — mobile only */}
