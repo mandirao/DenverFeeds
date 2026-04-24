@@ -56,6 +56,71 @@ export class LLMService {
     }
   }
 
+  private async serperPlaces(query: string): Promise<{ title: string; address: string; category?: string } | null> {
+    if (!this.searchApiKey) return null;
+    try {
+      const response = await fetch('https://google.serper.dev/places', {
+        method: 'POST',
+        headers: { 'X-API-KEY': this.searchApiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: query, gl: 'us', hl: 'en' }),
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      const place = data.places?.[0];
+      return place ? { title: place.title, address: place.address || '', category: place.category || '' } : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private addressToNeighborhood(address: string): string | null {
+    if (!address) return null;
+    const a = address.toLowerCase();
+
+    // Boulder
+    if (/\b(boulder|80301|80302|80303|80304|80305)\b/.test(a)) return 'Boulder';
+    // Lakewood
+    if (/\b(lakewood|belmar|80214|80215|80226|80227|80228)\b/.test(a)) return 'Lakewood';
+    // DTC & Tech Center
+    if (/\b(greenwood village|englewood|80111|80112|80237|80246|80222|80224|80231|tech center|dtc)\b/.test(a)) return 'DTC & Tech Center';
+
+    // Zip-code based (most reliable)
+    const zipMatch = address.match(/\b(8\d{4})\b/);
+    const zip = zipMatch?.[1];
+    const zipMap: Record<string, string> = {
+      '80202': 'Downtown & LoDo',
+      '80203': 'Capitol Hill & Uptown',
+      '80204': 'Highlands & LoHi',
+      '80205': 'RiNo & Five Points',
+      '80206': 'Cherry Creek & Glendale',
+      '80207': 'Stapleton & Central Park',
+      '80209': 'Wash Park & Platt Park',
+      '80210': 'Wash Park & Platt Park',
+      '80211': 'Highlands & LoHi',
+      '80212': 'Sunnyside & Berkeley',
+      '80218': 'Capitol Hill & Uptown',
+      '80219': 'Baker & South Broadway',
+      '80220': 'Stapleton & Central Park',
+      '80223': 'Baker & South Broadway',
+    };
+    if (zip && zipMap[zip]) return zipMap[zip];
+
+    // Street/area name keywords as fallback
+    if (/wynkoop|wazee|blake st|market st|larimer st|lodo|union station|lo ?do/.test(a)) return 'Downtown & LoDo';
+    if (/brighton blvd|walnut st|rino|river north|five points|welton/.test(a)) return 'RiNo & Five Points';
+    if (/lohi|lo ?hi|highlands|32nd ave|platte st/.test(a)) return 'Highlands & LoHi';
+    if (/tennyson|berkeley|38th ave/.test(a)) return 'Sunnyside & Berkeley';
+    if (/sunnyside|44th ave/.test(a)) return 'Sunnyside & Berkeley';
+    if (/south broadway|s broadway|baker/.test(a)) return 'Baker & South Broadway';
+    if (/capitol hill|uptown|colfax|17th ave|18th ave/.test(a)) return 'Capitol Hill & Uptown';
+    if (/cherry creek|2nd ave|fillmore|glendale/.test(a)) return 'Cherry Creek & Glendale';
+    if (/wash park|platt park|pearl st s/.test(a)) return 'Wash Park & Platt Park';
+    if (/sloan.?s lake|edgewater/.test(a)) return "Sloan's Lake";
+    if (/stapleton|central park|northfield/.test(a)) return 'Stapleton & Central Park';
+
+    return null;
+  }
+
   private async serperSearch(query: string, num: number = 5): Promise<SearchResult[]> {
     if (!this.searchApiKey) return [];
 
@@ -908,9 +973,13 @@ Return ONLY valid JSON (no markdown):
   }> {
     const client = new Anthropic({ apiKey: this.apiKey });
 
+    // Places lookup first — gets the real street address from Google Maps
+    const placeResult = await this.serperPlaces(`${name} Denver restaurant`);
+    const verifiedAddress = placeResult?.address || '';
+    const detectedNeighborhood = this.addressToNeighborhood(verifiedAddress);
+
     const searchQueries = [
       `"${name}" Denver restaurant review`,
-      `"${name}" Denver address location neighborhood`,
       `"${name}" Denver menu cuisine`,
     ];
 
@@ -936,44 +1005,34 @@ Return ONLY valid JSON (no markdown):
       'Stapleton & Central Park','Sunnyside & Berkeley','Wash Park & Platt Park','Other'
     ];
 
+    const neighborhoodInstruction = detectedNeighborhood
+      ? `NEIGHBORHOOD (CONFIRMED via Google Maps address "${verifiedAddress}"): "${detectedNeighborhood}" — use this exact value, do not change it.`
+      : verifiedAddress
+        ? `VERIFIED ADDRESS from Google Maps: "${verifiedAddress}"\nUse this address to pick the best neighborhood from the valid list. Only use "Other" if the address is completely outside Denver metro.`
+        : `NEIGHBORHOOD: Pick from the valid list below. Only use "Other" if no location info is available.`;
+
     const prompt = `You are filling in a restaurant listing for "Best of Denver" — a curated guide for a foodie meetup group.
 
 RESTAURANT NAME: "${name}"
 
+${neighborhoodInstruction}
+
 WEB SEARCH RESULTS:
 ${searchContext || '(no results found)'}
 
-TASK: Based on the search results, fill in all fields for this Denver restaurant. Return valid JSON only (no markdown).
+TASK: Based on the above, fill in all fields. Return valid JSON only (no markdown).
 
 VALID CUISINE TAGS (pick 1–3 that best fit): ${cuisineOptions.join(', ')}
 
-VALID NEIGHBORHOODS (pick exactly one):
-${neighborhoodOptions.join(', ')}
-
-Neighborhood guidance — use the street address or area mentioned in search results to pick the best match:
-- Downtown & LoDo = downtown Denver, LoDo, Union Station area, Larimer Square, Wynkoop St
-- RiNo & Five Points = River North, Five Points, Brighton Blvd, Welton St
-- Highlands & LoHi = LoHi, Highland, 32nd Ave, Tennyson St
-- Baker & South Broadway = South Broadway, Baker neighborhood, Sth Pearl St
-- Capitol Hill & Uptown = Capitol Hill, Uptown, 17th Ave, Colfax area
-- Cherry Creek & Glendale = Cherry Creek, Glendale, 2nd Ave, Fillmore St
-- Wash Park & Platt Park = Wash Park, Platt Park, South Pearl St restaurants
-- Sunnyside & Berkeley = Sunnyside, Berkeley, 38th Ave, Tennyson west of I-70
-- Sloan's Lake = Sloan's Lake, Edgewater, 17th Ave west corridor
-- Stapleton & Central Park = Stapleton, Central Park, Northfield
-- DTC & Tech Center = Denver Tech Center, Greenwood Village, Englewood
-- Lakewood = Lakewood, Belmar, West Colfax west of Sheridan
-- Boulder = Boulder, Pearl Street, University Hill
-IMPORTANT: Only use "Other" if you truly cannot determine the neighborhood from the search results. If you see a street address or area name, commit to the best match above.
+VALID NEIGHBORHOODS (pick exactly one): ${neighborhoodOptions.join(', ')}
 
 VALID PRICE POINTS: $, $$, $$$, $$$$
 
 VOICE GUIDE for description: Casual cool, like Oh My Rockness or Pitchfork food writing.
 - Lead with what makes this place worth going — the signature dish, the vibe, or the chef's approach
-- Describe the actual food: specific dishes, flavors, textures  
+- Describe the actual food: specific dishes, flavors, textures
 - Max 350 characters. No filler ("amazing," "incredible," "don't miss," "must-try")
-- If it's a Michelin star restaurant, you may mention the star count naturally
-- Mention notable awards or accolades briefly if well-known
+- Mention Michelin stars or notable awards briefly if well-known
 
 hotNew = true only if the restaurant opened in ${currentYear} or late ${currentYear - 1}
 
@@ -1002,7 +1061,8 @@ Return ONLY valid JSON:
       description: result.description ? String(result.description).substring(0, 400) : undefined,
       cuisine: Array.isArray(result.cuisine) ? result.cuisine.slice(0, 3) : undefined,
       pricePoint: result.pricePoint || undefined,
-      neighborhood: result.neighborhood || undefined,
+      // Use our deterministic address lookup if available — Claude can't override it
+      neighborhood: detectedNeighborhood || result.neighborhood || undefined,
       hotNew: typeof result.hotNew === 'boolean' ? result.hotNew : false,
     };
   }
