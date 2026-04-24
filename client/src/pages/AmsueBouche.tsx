@@ -1835,23 +1835,26 @@ export default function AmsueBouche() {
               }
             </div>
           </div>
-          {/* Tab row */}
-          <div className="flex gap-0 mt-2 -mb-0.5">
-            <button
-              onClick={() => setPageTab("events")}
-              className={`text-xs font-black uppercase tracking-wider px-4 py-1.5 transition-colors ${pageTab === "events" ? "bg-black text-[#FEABDA]" : "text-black hover:bg-black/15"}`}
-            >
-              Popups
-            </button>
-            <button
-              onClick={() => setPageTab("bestOf")}
-              className={`text-xs font-black uppercase tracking-wider px-4 py-1.5 transition-colors ${pageTab === "bestOf" ? "bg-black text-[#FEABDA]" : "text-black hover:bg-black/15"}`}
-            >
-              Best Of Denver
-            </button>
-          </div>
         </div>
       </nav>
+
+      {/* Section tabs — below nav, part of content flow */}
+      <div className="border-b border-black/12 px-4" style={{ backgroundColor: AB_GOLD }}>
+        <div className="max-w-2xl mx-auto flex">
+          <button
+            onClick={() => setPageTab("events")}
+            className={`text-xs font-black uppercase tracking-widest px-5 py-2.5 border-b-2 transition-colors ${pageTab === "events" ? "border-black text-black" : "border-transparent text-black/35 hover:text-black"}`}
+          >
+            Popups
+          </button>
+          <button
+            onClick={() => setPageTab("bestOf")}
+            className={`text-xs font-black uppercase tracking-widest px-5 py-2.5 border-b-2 transition-colors ${pageTab === "bestOf" ? "border-black text-black" : "border-transparent text-black/35 hover:text-black"}`}
+          >
+            Best Of Denver
+          </button>
+        </div>
+      </div>
 
       {/* ── Feed ── */}
       {pageTab === "events" && (
