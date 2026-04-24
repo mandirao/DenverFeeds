@@ -21,6 +21,14 @@
   pointer-events: auto !important;
 }
 
+/* Prevent iOS scroll-chaining inside Radix dropdowns.
+   Without this, scrolling inside a Select list on mobile leaks to the page
+   and snaps the viewport to the top. */
+[data-radix-select-viewport] {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Hide scrollbars for horizontal scrolling */
 .scrollbar-hide {
   -ms-overflow-style: none;
