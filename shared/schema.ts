@@ -622,6 +622,7 @@ export const restaurants = pgTable("restaurants", {
   hotNew: boolean("hot_new").notNull().default(false),
   michelinStar: boolean("michelin_star").notNull().default(false),
   fixture: boolean("fixture").notNull().default(false),
+  foodTruck: boolean("food_truck").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

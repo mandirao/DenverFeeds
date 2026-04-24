@@ -1440,6 +1440,18 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
                   </Tooltip>
                 </TooltipProvider>
               )}
+              {(restaurant as any).foodTruck && (
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-base leading-none cursor-default select-none">🚚</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
+                      Food Truck
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
             <p className="text-sm text-black/75 mt-0.5 leading-snug">{restaurant.description}</p>
             <div className="flex flex-wrap gap-1.5 mt-2">
@@ -1494,6 +1506,7 @@ function RestaurantModal({ mode, initial, onClose }: {
     hotNew: initial?.hotNew ?? false,
     michelinStar: initial?.michelinStar ?? false,
     fixture: (initial as any)?.fixture ?? false,
+    foodTruck: (initial as any)?.foodTruck ?? false,
   });
 
   const [aiLoading, setAiLoading] = useState(false);
@@ -1669,6 +1682,14 @@ function RestaurantModal({ mode, initial, onClose }: {
                   📌 Fixture <span className="font-normal normal-case opacity-50">(a Denver institution)</span>
                 </label>
               </div>
+              <div className="flex items-center gap-2.5">
+                <input type="checkbox" id="foodTruck" checked={(form as any).foodTruck ?? false}
+                  onChange={e => setForm(f => ({ ...f, foodTruck: e.target.checked } as any))}
+                  className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
+                <label htmlFor="foodTruck" className="text-xs font-bold uppercase cursor-pointer select-none">
+                  🚚 Food Truck
+                </label>
+              </div>
             </div>
 
             {/* Cuisine chips — mobile only */}
@@ -1735,7 +1756,7 @@ export default function AmsueBouche() {
   const [filterRCuisine, setFilterRCuisine] = useState("all");
   const [filterRNeighborhood, setFilterRNeighborhood] = useState("all");
   const [filterRPrice, setFilterRPrice] = useState("all");
-  const [filterRBadge, setFilterRBadge] = useState<"all" | "hotNew" | "michelin" | "fixture">("all");
+  const [filterRBadge, setFilterRBadge] = useState<"all" | "hotNew" | "michelin" | "fixture" | "foodTruck">("all");
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
@@ -1796,6 +1817,7 @@ export default function AmsueBouche() {
       if (filterRBadge === "hotNew" && !r.hotNew) return false;
       if (filterRBadge === "michelin" && !r.michelinStar) return false;
       if (filterRBadge === "fixture" && !(r as any).fixture) return false;
+      if (filterRBadge === "foodTruck" && !(r as any).foodTruck) return false;
       return true;
     })
     .sort((a, b) => a.name.trim().localeCompare(b.name.trim()));
@@ -2259,6 +2281,7 @@ export default function AmsueBouche() {
                       <SelectItem value="hotNew">🔥 Hot &amp; New</SelectItem>
                       <SelectItem value="michelin">⭐ Michelin</SelectItem>
                       <SelectItem value="fixture">📌 Fixture</SelectItem>
+                      <SelectItem value="foodTruck">🚚 Food Truck</SelectItem>
                     </SelectContent>
                   </Select>
 
