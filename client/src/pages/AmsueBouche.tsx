@@ -7,7 +7,7 @@ import { siteUrls } from "@/lib/siteConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -23,6 +23,23 @@ const AB_ORANGE = "#FE6B41";
 const AB_PINK   = "#FEABDA";
 const AB_GOLD   = "#FFF8E7";
 const AB_TEAL   = "#41F2EE";
+
+// ── Neighborhood groups ───────────────────────────────────────────────────────
+const INNER_DENVER_NEIGHBORHOODS = new Set([
+  'Baker & South Broadway',
+  'Capitol Hill & Uptown',
+  'Cherry Creek & Glendale',
+  'Downtown & LoDo',
+  'Federal Blvd',
+  'Highlands & LoHi',
+  'RiNo & Five Points',
+  "Sloan's Lake",
+  'Stapleton & Central Park',
+  'Sunnyside & Berkeley',
+  'University Hills',
+  'Wash Park & Platt Park',
+]);
+const SUBURB_NEIGHBORHOODS = ['Aurora', 'Boulder', 'DTC & Tech Center', 'Golden', 'Lakewood', 'Westminster', 'Other'];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1773,7 +1790,8 @@ export default function AmsueBouche() {
   const filteredRestaurants = restaurantList
     .filter(r => {
       if (filterRCuisine !== "all" && !(r.cuisine ?? []).includes(filterRCuisine)) return false;
-      if (filterRNeighborhood !== "all" && r.neighborhood !== filterRNeighborhood) return false;
+      if (filterRNeighborhood === "inner_denver" && !INNER_DENVER_NEIGHBORHOODS.has(r.neighborhood)) return false;
+      if (filterRNeighborhood !== "all" && filterRNeighborhood !== "inner_denver" && r.neighborhood !== filterRNeighborhood) return false;
       if (filterRPrice !== "all" && r.pricePoint !== filterRPrice) return false;
       if (filterRBadge === "hotNew" && !r.hotNew) return false;
       if (filterRBadge === "michelin" && !r.michelinStar) return false;
@@ -2195,12 +2213,24 @@ export default function AmsueBouche() {
                       style={{ width: "190px", backgroundColor: filterRNeighborhood !== "all" ? "white" : AB_GOLD }}>
                       <SelectValue placeholder="All Neighborhoods" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[320px] overflow-y-auto">
+                    <SelectContent className="max-h-[340px] overflow-y-auto">
                       <SelectItem value="all">All Neighborhoods</SelectItem>
                       <SelectSeparator />
-                      {denverNeighborhoods.map(n => (
-                        <SelectItem key={n} value={n}>{n}</SelectItem>
-                      ))}
+                      <SelectItem value="inner_denver">🏙️ Inner Denver</SelectItem>
+                      <SelectSeparator />
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Denver proper</SelectLabel>
+                        {[...INNER_DENVER_NEIGHBORHOODS].sort().map(n => (
+                          <SelectItem key={n} value={n}>{n}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                      <SelectSeparator />
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Suburbs &amp; beyond</SelectLabel>
+                        {SUBURB_NEIGHBORHOODS.map(n => (
+                          <SelectItem key={n} value={n}>{n}</SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
 
