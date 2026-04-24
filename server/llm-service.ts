@@ -979,8 +979,9 @@ Return ONLY valid JSON (no markdown):
     const detectedNeighborhood = this.addressToNeighborhood(verifiedAddress);
 
     const searchQueries = [
-      `"${name}" Denver restaurant review`,
-      `"${name}" Denver menu cuisine`,
+      `${name} Denver menu dishes signature`,
+      `${name} Denver review chef eater infatuation`,
+      `${name} Denver dining room atmosphere experience`,
     ];
 
     const searchResults = await Promise.all(searchQueries.map(q => this.serperSearch(q, 4)));
@@ -1040,9 +1041,11 @@ DESCRIPTION — match the tone and density of these real examples exactly:
 
 WHAT MAKES THESE WORK: short declarative sentences, real dish names with specific sensory detail, a lead that hooks immediately (award/star/chef/angle), and a landing note on vibe or surprise. Pick 3–4 elements naturally — credentials, signature dishes, drink or format, vibe, unexpected angle, accolade — and weave them together. Do not follow a rigid order.
 
-Draw on your own knowledge of this restaurant AND the search results. Do not hedge or apologize for limited info — write confidently about what you know.
+WRITE WITH CONVICTION: You are a food writer who knows this restaurant well. Write in present tense. Every sentence states a fact, not a guess. If you know something about this restaurant from your training — specific dishes, the chef, the dining room, the reputation — use that knowledge directly. Do not wait for search results to confirm what you already know.
 
-BANNED: amazing, incredible, vibrant, beloved, don't miss, must-try, hidden gem, "details remain scarce", "not much is known", "limited information".
+NEVER USE these hedging words or phrases: "likely," "probably," "appears to," "seems to," "expect," "presumably," "one would expect," "should offer," "may feature," "details remain," "scarce," "not much is known," "limited information," "promises," "concept." If you aren't certain of a specific dish name, describe the style and format directly and confidently — "Wagyu tartare and dry-aged ribeye headline the menu" not "the menu likely features premium cuts."
+
+BANNED WORDS: amazing, incredible, vibrant, beloved, don't miss, must-try, hidden gem.
 
 hotNew = true only if the restaurant opened in ${currentYear} or late ${currentYear - 1}
 
