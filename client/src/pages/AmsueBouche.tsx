@@ -1388,22 +1388,40 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
                 </Tooltip>
               </TooltipProvider>
               {restaurant.michelinStar && (
-                <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-white"
-                  style={{ backgroundColor: "#8B1A1A" }}>
-                  ⭐ Michelin Star
-                </span>
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-base leading-none cursor-default select-none">⭐</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
+                      Michelin Star
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
               {restaurant.hotNew && (
-                <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-white"
-                  style={{ backgroundColor: "#FE6B41" }}>
-                  🔥 Hot New
-                </span>
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-base leading-none cursor-default select-none">🔥</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
+                      Hot &amp; New
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
               {(restaurant as any).fixture && (
-                <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full text-white"
-                  style={{ backgroundColor: "#2C4A6E" }}>
-                  📌 Fixture
-                </span>
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-base leading-none cursor-default select-none">📌</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
+                      Fixture
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
             <p className="text-sm text-black/75 mt-0.5 leading-snug">{restaurant.description}</p>
@@ -2198,7 +2216,7 @@ export default function AmsueBouche() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All spots</SelectItem>
+                      <SelectItem value="all">All Spots</SelectItem>
                       <SelectSeparator />
                       <SelectItem value="hotNew">🔥 Hot &amp; New</SelectItem>
                       <SelectItem value="michelin">⭐ Michelin</SelectItem>
