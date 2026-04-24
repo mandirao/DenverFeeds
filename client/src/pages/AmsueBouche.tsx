@@ -1483,7 +1483,7 @@ function RestaurantModal({ mode, initial, onClose }: {
         ...(typeof result.hotNew === "boolean" ? { hotNew: result.hotNew } : {}),
         ...(typeof result.michelinStar === "boolean" ? { michelinStar: result.michelinStar } : {}),
       }));
-      toast({ title: "Filled with AI ✨", description: "Review and adjust any details before saving." });
+      toast({ title: "Filled with AI ✨", description: "Always verify chef names and accolades — AI gets those wrong sometimes." });
     } catch {
       toast({ title: "AI fill failed", description: "Check the restaurant name and try again.", variant: "destructive" });
     } finally {

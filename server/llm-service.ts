@@ -1064,6 +1064,8 @@ ACCURACY FIRST — THEN CONFIDENCE: Only include specific details (dish names, c
 
 CRITICAL — DO NOT GUESS FROM THE NAME: Never infer cuisine type, menu items, or origin story from the restaurant's name. "BearLeek" does not mean the restaurant serves Eastern European food, leek dishes, or anything bear-related — it is simply a name. "Machete" does not mean Mexican food. "Osaka" does not mean Japanese. Look up what you actually know about the specific restaurant; if you don't know it, describe only what can be confirmed — format, vibe, price point — without inventing specific dishes.
 
+CHEF NAMES — HIGH RISK: Only include a chef's name if you are 100% certain it belongs to THIS specific restaurant. Denver has many acclaimed chefs and it is easy to associate the wrong name with a restaurant. "Chef-driven" or "chef-led" is acceptable when you know the restaurant has serious culinary credentials but cannot confirm the exact name. A missing chef name is far better than a wrong one.
+
 NEVER USE these hedging words or phrases: "likely," "probably," "appears to," "seems to," "expect," "presumably," "one would expect," "should offer," "may feature," "details remain," "scarce," "not much is known," "limited information," "promises," "concept." If you aren't certain of a specific dish name, describe the style and format directly — "Serious technique in a buzzy RiNo room" not "the menu likely features premium cuts."
 
 EM DASHES: always write em dashes with no spaces on either side — like this: "word—word" not "word — word".
