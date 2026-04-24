@@ -41,6 +41,9 @@ const INNER_DENVER_NEIGHBORHOODS = new Set([
 ]);
 const SUBURB_NEIGHBORHOODS = ['Aurora', 'Boulder', 'DTC & Tech Center', 'Golden', 'Lakewood', 'Westminster', 'Other'];
 
+const BAR_CUISINES = new Set(['Bar & Pub', 'Dive Bar', 'Cocktails & Wine']);
+const SHOP_CUISINES = new Set(['Grocery & Market']);
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function ensureHttps(url: string): string {
@@ -1753,6 +1756,7 @@ export default function AmsueBouche() {
   const [restaurantAddOpen, setRestaurantAddOpen] = useState(false);
   const [restaurantToEdit, setRestaurantToEdit] = useState<Restaurant | null>(null);
   const [restaurantToDelete, setRestaurantToDelete] = useState<Restaurant | null>(null);
+  const [filterRVenueType, setFilterRVenueType] = useState<"all" | "restaurant" | "bar" | "shop">("all");
   const [filterRCuisine, setFilterRCuisine] = useState("all");
   const [filterRNeighborhood, setFilterRNeighborhood] = useState("all");
   const [filterRPrice, setFilterRPrice] = useState("all");
@@ -1810,7 +1814,11 @@ export default function AmsueBouche() {
 
   const filteredRestaurants = restaurantList
     .filter(r => {
-      if (filterRCuisine !== "all" && !(r.cuisine ?? []).includes(filterRCuisine)) return false;
+      const cuisine = r.cuisine ?? [];
+      if (filterRVenueType === "bar" && !cuisine.some(c => BAR_CUISINES.has(c))) return false;
+      if (filterRVenueType === "shop" && !cuisine.some(c => SHOP_CUISINES.has(c))) return false;
+      if (filterRVenueType === "restaurant" && !cuisine.some(c => !BAR_CUISINES.has(c) && !SHOP_CUISINES.has(c))) return false;
+      if (filterRCuisine !== "all" && !cuisine.includes(filterRCuisine)) return false;
       if (filterRNeighborhood === "inner_denver" && !INNER_DENVER_NEIGHBORHOODS.has(r.neighborhood)) return false;
       if (filterRNeighborhood !== "all" && filterRNeighborhood !== "inner_denver" && r.neighborhood !== filterRNeighborhood) return false;
       if (filterRPrice !== "all" && r.pricePoint !== filterRPrice) return false;
@@ -1822,10 +1830,10 @@ export default function AmsueBouche() {
     })
     .sort((a, b) => a.name.trim().localeCompare(b.name.trim()));
 
-  const hasActiveRestaurantFilters = filterRCuisine !== "all" || filterRNeighborhood !== "all" || filterRPrice !== "all" || filterRBadge !== "all";
+  const hasActiveRestaurantFilters = filterRVenueType !== "all" || filterRCuisine !== "all" || filterRNeighborhood !== "all" || filterRPrice !== "all" || filterRBadge !== "all";
   const resetRestaurantFilters = () => {
-    setFilterRCuisine("all"); setFilterRNeighborhood("all"); setFilterRPrice("all");
-    setFilterRBadge("all");
+    setFilterRVenueType("all"); setFilterRCuisine("all"); setFilterRNeighborhood("all");
+    setFilterRPrice("all"); setFilterRBadge("all");
   };
 
   const expandedEvents = expandRecurringFoodEvents(events);
@@ -2216,6 +2224,20 @@ export default function AmsueBouche() {
             <div className="mb-5">
               <div className="overflow-x-auto scrollbar-hide">
                 <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
+                  <Select value={filterRVenueType} onValueChange={v => setFilterRVenueType(v as any)}>
+                    <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0`}
+                      style={{ width: "140px", backgroundColor: filterRVenueType !== "all" ? "white" : AB_GOLD }}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectSeparator />
+                      <SelectItem value="restaurant">🍽️ Restaurants</SelectItem>
+                      <SelectItem value="bar">🍸 Bars &amp; Drinks</SelectItem>
+                      <SelectItem value="shop">🛒 Shops</SelectItem>
+                    </SelectContent>
+                  </Select>
+
                   <Select value={filterRCuisine} onValueChange={setFilterRCuisine}>
                     <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0`}
                       style={{ width: "160px", backgroundColor: filterRCuisine !== "all" ? "white" : AB_GOLD }}>
