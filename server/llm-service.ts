@@ -1020,7 +1020,8 @@ Return ONLY valid JSON (no markdown):
 - "Stapleton & Central Park" = Stapleton, Central Park, Northfield, East 29th Ave Town Center
 - "DTC & Tech Center" = Denver Tech Center, Greenwood Village, Englewood, Centennial
 - "Lakewood" = Lakewood, Belmar, Alameda Corridor west of Sheridan
-- "Boulder" = Boulder, Pearl Street Mall, University Hill, The Hill`;
+- "Boulder" = Boulder, Pearl Street Mall, University Hill, The Hill
+- "Aurora" = Aurora, Stapleton adjacent east, Fitzsimons, Buckingham Square area`;
 
     const neighborhoodInstruction = detectedNeighborhood
       ? `NEIGHBORHOOD (CONFIRMED via Google Maps address "${verifiedAddress}"): "${detectedNeighborhood}" — use this exact value, do not change it.`

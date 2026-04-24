@@ -542,6 +542,7 @@ export type ArtEvent = typeof artEvents.$inferSelect;
 // ── Restaurants (Best of Denver) ─────────────────────────────────────────────
 
 export const denverNeighborhoods = [
+  'Aurora',
   'Baker & South Broadway',
   'Boulder',
   'Capitol Hill & Uptown',
