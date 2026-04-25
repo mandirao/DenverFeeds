@@ -260,7 +260,13 @@ export class LLMService {
 
     console.log(`[Concert Search] Tier 1: Found ${allResults.length} structured results`);
 
+    const artistLower = artistName.toLowerCase();
+
     for (const result of allResults) {
+      if (!result.title.toLowerCase().includes(artistLower)) {
+        console.log(`[Concert Search] Tier 1 SKIP: artist not in title — "${result.title}"`);
+        continue;
+      }
       const combined = `${result.title} ${result.snippet}`;
 
       if (this.isColoradoMention(combined)) {
@@ -286,6 +292,7 @@ export class LLMService {
     }
 
     for (const result of allResults) {
+      if (!result.title.toLowerCase().includes(artistLower)) continue;
       const combined = `${result.title} ${result.snippet}`;
       if (this.isColoradoMention(combined)) {
         const venue = this.matchVenue(combined);
@@ -320,7 +327,13 @@ export class LLMService {
 
     console.log(`[Concert Search] Tier 2: Found ${allResults.length} general results`);
 
+    const artistLower2 = artistName.toLowerCase();
+
     for (const result of allResults) {
+      if (!result.title.toLowerCase().includes(artistLower2)) {
+        console.log(`[Concert Search] Tier 2 SKIP: artist not in title — "${result.title}"`);
+        continue;
+      }
       const combined = `${result.title} ${result.snippet}`;
 
       if (this.isColoradoMention(combined)) {
