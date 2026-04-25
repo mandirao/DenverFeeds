@@ -248,13 +248,11 @@ export class LLMService {
 
     console.log(`[Concert Search] Tier 1: Searching structured sources for "${artistName}"...`);
 
-    const currentYear = new Date().getFullYear();
     const queries = [
-      `site:bandsintown.com "${artistName}" Denver Colorado ${currentYear}`,
-      `site:songkick.com "${artistName}" Denver Colorado ${currentYear}`,
-      `"${artistName}" site:axs.com "Red Rocks" OR Denver ${currentYear}`,
-      `"${artistName}" site:dice.fm Denver Colorado ${currentYear}`,
-      `"${artistName}" "Red Rocks" OR "Red Rocks Amphitheatre" ${currentYear} tickets`,
+      `site:bandsintown.com "${artistName}" Denver Colorado`,
+      `site:songkick.com "${artistName}" Denver Colorado`,
+      `"${artistName}" site:axs.com Denver OR Boulder OR "Red Rocks" OR Morrison`,
+      `"${artistName}" site:dice.fm Denver Colorado`,
     ];
 
     const results = await Promise.all(queries.map(q => this.serperSearch(q, 3)));
@@ -262,46 +260,45 @@ export class LLMService {
 
     console.log(`[Concert Search] Tier 1: Found ${allResults.length} structured results`);
 
-    // Collect ALL complete (venue+date) matches so we can apply venue priority
-    const completeMatches: Array<{ venue: string; date: string; source: string; snippet: string }> = [];
-    let firstPartial: { venue: string; date: string; source: string } | null = null;
-
     for (const result of allResults) {
       const combined = `${result.title} ${result.snippet}`;
 
       if (this.isColoradoMention(combined)) {
         const venue = this.matchVenue(combined);
         const date = this.extractDate(combined);
-        const source = result.link.includes('bandsintown') ? 'Bandsintown' :
-          result.link.includes('songkick') ? 'Songkick' :
-          result.link.includes('axs.com') ? 'AXS' :
-          result.link.includes('dice.fm') ? 'Dice' : 'Structured search';
 
         if (venue && date) {
-          completeMatches.push({ venue, date, source, snippet: combined.substring(0, 150) });
-        } else if ((venue || date) && !firstPartial) {
-          if (venue && !date) console.log(`[Concert Search] Tier 1: Found venue "${venue}" but no date — snippet: "${combined.substring(0, 100)}"`);
-          if (date && !venue) console.log(`[Concert Search] Tier 1: Found date "${date}" but no venue match — snippet: "${combined.substring(0, 100)}"`);
-          firstPartial = { venue: venue || '', date: date || '', source };
+          const source = result.link.includes('bandsintown') ? 'Bandsintown' :
+            result.link.includes('songkick') ? 'Songkick' :
+            result.link.includes('axs.com') ? 'AXS' :
+            result.link.includes('dice.fm') ? 'Dice' : 'Structured search';
+          console.log(`[Concert Search] Tier 1 HIT: ${venue} on ${date} via ${source}`);
+          return { venue, date, source };
+        }
+
+        if (venue && !date) {
+          console.log(`[Concert Search] Tier 1: Found venue "${venue}" but no date`);
+        }
+        if (date && !venue) {
+          console.log(`[Concert Search] Tier 1: Found date "${date}" but no venue match`);
         }
       }
     }
 
-    if (completeMatches.length > 0) {
-      // Prefer Red Rocks above all other venues — it's the most prominent Colorado venue
-      const redRocksMatch = completeMatches.find(m => m.venue === 'Red Rocks Amphitheatre');
-      const chosen = redRocksMatch || completeMatches[0];
-      console.log(`[Concert Search] Tier 1 HIT: ${chosen.venue} on ${chosen.date} via ${chosen.source}${redRocksMatch ? ' (Red Rocks priority)' : ''}`);
-      console.log(`[Concert Search] Tier 1 snippet: "${chosen.snippet}"`);
-      if (completeMatches.length > 1) {
-        console.log(`[Concert Search] Tier 1: ${completeMatches.length} total matches found — picked ${chosen.venue}. Others: ${completeMatches.filter(m => m !== chosen).map(m => m.venue).join(', ')}`);
+    for (const result of allResults) {
+      const combined = `${result.title} ${result.snippet}`;
+      if (this.isColoradoMention(combined)) {
+        const venue = this.matchVenue(combined);
+        const date = this.extractDate(combined);
+        if (venue || date) {
+          const source = result.link.includes('bandsintown') ? 'Bandsintown' :
+            result.link.includes('songkick') ? 'Songkick' :
+            result.link.includes('axs.com') ? 'AXS' :
+            result.link.includes('dice.fm') ? 'Dice' : 'Structured search';
+          console.log(`[Concert Search] Tier 1 PARTIAL: venue=${venue || 'unknown'}, date=${date || 'unknown'} via ${source}`);
+          return { venue: venue || '', date: date || '', source };
+        }
       }
-      return { venue: chosen.venue, date: chosen.date, source: chosen.source };
-    }
-
-    if (firstPartial) {
-      console.log(`[Concert Search] Tier 1 PARTIAL: venue=${firstPartial.venue || 'unknown'}, date=${firstPartial.date || 'unknown'} via ${firstPartial.source}`);
-      return firstPartial;
     }
 
     console.log(`[Concert Search] Tier 1: No structured results found`);
@@ -332,7 +329,6 @@ export class LLMService {
 
         if (venue || date) {
           console.log(`[Concert Search] Tier 2 MATCH: venue=${venue || 'unknown'}, date=${date || 'unknown'} via web search`);
-          console.log(`[Concert Search] Tier 2 snippet: "${combined.substring(0, 150)}"`);
           return { venue: venue || '', date: date || '', source: 'Web search' };
         }
       }
