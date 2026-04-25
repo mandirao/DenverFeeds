@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -1629,9 +1629,17 @@ export default function ArtistryNerdery() {
   const [calDetailEditOpen, setCalDetailEditOpen] = useState(false);
   const [calDetailDeleteConfirm, setCalDetailDeleteConfirm] = useState(false);
   const [sortBy, setSortBy] = useState<"date" | "added">("date");
-  const [filterCategory, setFilterCategory] = useState("all");
-  const [filterDay, setFilterDay] = useState("all");
-  const [filterDuration, setFilterDuration] = useState("all");
+  const [filterCategory, setFilterCategory] = useState(() => new URLSearchParams(window.location.search).get("category") || "all");
+  const [filterDay, setFilterDay] = useState(() => new URLSearchParams(window.location.search).get("day") || "all");
+  const [filterDuration, setFilterDuration] = useState(() => new URLSearchParams(window.location.search).get("duration") || "all");
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    filterCategory !== "all" ? url.searchParams.set("category", filterCategory) : url.searchParams.delete("category");
+    filterDay !== "all" ? url.searchParams.set("day", filterDay) : url.searchParams.delete("day");
+    filterDuration !== "all" ? url.searchParams.set("duration", filterDuration) : url.searchParams.delete("duration");
+    window.history.replaceState({}, "", url.toString());
+  }, [filterCategory, filterDay, filterDuration]);
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }

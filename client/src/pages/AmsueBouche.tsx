@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -1790,11 +1790,31 @@ export default function AmsueBouche() {
   const [restaurantAddOpen, setRestaurantAddOpen] = useState(false);
   const [restaurantToEdit, setRestaurantToEdit] = useState<Restaurant | null>(null);
   const [restaurantToDelete, setRestaurantToDelete] = useState<Restaurant | null>(null);
-  const [filterRVenueType, setFilterRVenueType] = useState<"all" | "restaurant" | "bar" | "shop">("all");
-  const [filterRCuisine, setFilterRCuisine] = useState("all");
-  const [filterRNeighborhood, setFilterRNeighborhood] = useState("all");
-  const [filterRPrice, setFilterRPrice] = useState("all");
-  const [filterRBadge, setFilterRBadge] = useState<"all" | "hotNew" | "michelin" | "fixture" | "foodTruck" | "happyHour" | "patio">("all");
+  const [filterRVenueType, setFilterRVenueType] = useState<"all" | "restaurant" | "bar" | "shop">(() => {
+    const p = new URLSearchParams(window.location.search);
+    return (p.get("type") as any) || "all";
+  });
+  const [filterRCuisine, setFilterRCuisine] = useState(() => new URLSearchParams(window.location.search).get("cuisine") || "all");
+  const [filterRNeighborhood, setFilterRNeighborhood] = useState(() => new URLSearchParams(window.location.search).get("neighborhood") || "all");
+  const [filterRPrice, setFilterRPrice] = useState(() => new URLSearchParams(window.location.search).get("price") || "all");
+  const [filterRBadge, setFilterRBadge] = useState<"all" | "hotNew" | "michelin" | "fixture" | "foodTruck" | "happyHour" | "patio">(() => {
+    const p = new URLSearchParams(window.location.search);
+    return (p.get("spot") as any) || "all";
+  });
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (pageTab === "bestOf") {
+      filterRVenueType !== "all" ? url.searchParams.set("type", filterRVenueType) : url.searchParams.delete("type");
+      filterRCuisine !== "all" ? url.searchParams.set("cuisine", filterRCuisine) : url.searchParams.delete("cuisine");
+      filterRNeighborhood !== "all" ? url.searchParams.set("neighborhood", filterRNeighborhood) : url.searchParams.delete("neighborhood");
+      filterRPrice !== "all" ? url.searchParams.set("price", filterRPrice) : url.searchParams.delete("price");
+      filterRBadge !== "all" ? url.searchParams.set("spot", filterRBadge) : url.searchParams.delete("spot");
+    } else {
+      ["type", "cuisine", "neighborhood", "price", "spot"].forEach(k => url.searchParams.delete(k));
+    }
+    window.history.replaceState({}, "", url.toString());
+  }, [pageTab, filterRVenueType, filterRCuisine, filterRNeighborhood, filterRPrice, filterRBadge]);
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
