@@ -1769,9 +1769,9 @@ export default function AmsueBouche() {
   const [calDetailMenuOpen, setCalDetailMenuOpen] = useState(false);
   const [calDetailEditOpen, setCalDetailEditOpen] = useState(false);
   const [calDetailDeleteConfirm, setCalDetailDeleteConfirm] = useState(false);
-  const [sortBy, setSortBy] = useState<"date" | "added">("date");
-  const [filterCuisine, setFilterCuisine] = useState("all");
-  const [filterDay, setFilterDay] = useState("all");
+  const [sortBy, setSortBy] = useState<"date" | "added">(() => new URLSearchParams(window.location.search).get("sort") === "added" ? "added" : "date");
+  const [filterCuisine, setFilterCuisine] = useState(() => new URLSearchParams(window.location.search).get("evCuisine") || "all");
+  const [filterDay, setFilterDay] = useState(() => new URLSearchParams(window.location.search).get("evDay") || "all");
   const [pageTab, setPageTab] = useState<"events" | "bestOf">(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("tab") === "best-of" ? "bestOf" : "events";
@@ -1810,11 +1810,15 @@ export default function AmsueBouche() {
       filterRNeighborhood !== "all" ? url.searchParams.set("neighborhood", filterRNeighborhood) : url.searchParams.delete("neighborhood");
       filterRPrice !== "all" ? url.searchParams.set("price", filterRPrice) : url.searchParams.delete("price");
       filterRBadge !== "all" ? url.searchParams.set("spot", filterRBadge) : url.searchParams.delete("spot");
+      ["evCuisine", "evDay", "sort"].forEach(k => url.searchParams.delete(k));
     } else {
+      filterCuisine !== "all" ? url.searchParams.set("evCuisine", filterCuisine) : url.searchParams.delete("evCuisine");
+      filterDay !== "all" ? url.searchParams.set("evDay", filterDay) : url.searchParams.delete("evDay");
+      sortBy !== "date" ? url.searchParams.set("sort", sortBy) : url.searchParams.delete("sort");
       ["type", "cuisine", "neighborhood", "price", "spot"].forEach(k => url.searchParams.delete(k));
     }
     window.history.replaceState({}, "", url.toString());
-  }, [pageTab, filterRVenueType, filterRCuisine, filterRNeighborhood, filterRPrice, filterRBadge]);
+  }, [pageTab, filterRVenueType, filterRCuisine, filterRNeighborhood, filterRPrice, filterRBadge, filterCuisine, filterDay, sortBy]);
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }

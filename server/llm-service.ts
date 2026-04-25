@@ -582,6 +582,7 @@ If the search results say "Oh My Gouda" — write "Oh My Gouda." Never substitut
 • STRUCTURE: 1-2 tight sentences. Lead with what it actually feels like. No rhetorical hooks.
 • WORD CHOICE: Lush but efficient. Concrete sensory nouns, compound adjectives, juxtapositions.
 • LENGTH: Hard cap at 200 characters.
+• EM DASHES: always write em dashes with no spaces on either side — like this: "word—word" not "word — word".
 
 EXAMPLE SUMMARIES:
 - "House and disco, free dumplings at midnight, four DJs — Bao Brewhouse at full tilt on a Saturday night."
@@ -746,6 +747,7 @@ Named artists, scientists, authors, performers, or organizations from search res
 • STRUCTURE: 1-2 tight sentences. Lead with what makes this event worth noting.
 • WORD CHOICE: Precise and vivid. Concrete nouns, specific details over adjectives.
 • LENGTH: Hard cap at 200 characters.
+• EM DASHES: always write em dashes with no spaces on either side — like this: "word—word" not "word — word".
 
 EXAMPLE SUMMARIES:
 - "James Turrell's light installation at DAM: walk-in, stand still, lose track of time."
