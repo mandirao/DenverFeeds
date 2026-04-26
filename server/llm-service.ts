@@ -1055,7 +1055,7 @@ Return ONLY valid JSON (no markdown):
       'Jewish Deli','Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
       'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
     ];
-    const venueAttrOptions = ['Bar','Dive','Cocktails','Beer','Wine','Grocery & Market','Happy Hour','Patio'];
+    const venueAttrOptions = ['Bar','Dive','Cocktails','Beer','Wine','Coffee','Tea','Grocery & Market','Happy Hour','Patio'];
 
     const neighborhoodOptions = [
       'Aurora','Baker & South Broadway','Boulder','Capitol Hill & Uptown','Cherry Creek & Glendale','Downtown & LoDo',
@@ -1110,6 +1110,8 @@ VENUE ATTRIBUTES — pick any that apply (these are separate from cuisine tags, 
 - "Cocktails" = serious cocktail program — use for craft cocktail bars or alongside "Bar" if relevant.
 - "Beer" = notable craft beer focus — brewery taprooms, bottle shops with taps, dedicated beer bars.
 - "Wine" = wine-focused — wine bars, natural wine spots, wine shops with pour programs.
+- "Coffee" = coffee-focused — specialty cafes, roasters with a cafe, espresso bars.
+- "Tea" = tea-focused — tea houses, boba shops, matcha bars, tea rooms.
 - "Grocery & Market" = specialty grocer, artisan market, food shop, cheese shop, butcher, wine shop. NOT a restaurant.
 - "Happy Hour" = the place is known for a good happy hour deal.
 - "Patio" = the place has a notable outdoor seating area — rooftop bar, patio, beer garden, parklet, or sidewalk seating worth mentioning. Apply this proactively; many Denver restaurants and bars have patios.
@@ -1215,7 +1217,7 @@ Return ONLY valid JSON:
       'Jewish Deli','Korean','Mediterranean','Mexican & Latin','Pan Asian','Pan Latin','Pizza','Seafood','Small Plates',
       'Steakhouse','Sushi','Taiwanese','Tasting Menu','Thai & Southeast Asian','Vegan','Vietnamese','Other'
     ]);
-    const validVenueAttrs = new Set(['Bar','Dive','Cocktails','Beer','Wine','Grocery & Market','Happy Hour','Patio']);
+    const validVenueAttrs = new Set(['Bar','Dive','Cocktails','Beer','Wine','Coffee','Tea','Grocery & Market','Happy Hour','Patio']);
     const allValid = new Set([...validFoodCuisines, ...validVenueAttrs]);
 
     const normalize = (tags: string[], maxFood: number): string[] => {
