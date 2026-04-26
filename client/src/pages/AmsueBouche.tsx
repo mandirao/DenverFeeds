@@ -44,8 +44,8 @@ const SUBURB_NEIGHBORHOODS = ['Aurora', 'Boulder', 'DTC & Tech Center', 'Golden'
 const BAR_CUISINES = new Set(['Bar', 'Dive', 'Cocktails', 'Beer', 'Wine']);
 const SHOP_CUISINES = new Set(['Grocery & Market']);
 // Tags that describe venue type/attributes, not cuisine — shown separately in modal, no count limit
-const VENUE_ATTR_TAGS = new Set(['Bar', 'Dive', 'Cocktails', 'Beer', 'Wine', 'Coffee', 'Tea', 'Grocery & Market', 'Happy Hour', 'Patio']);
-const VENUE_ATTR_LIST = ['Bar', 'Dive', 'Cocktails', 'Beer', 'Wine', 'Coffee', 'Tea', 'Grocery & Market', 'Happy Hour', 'Patio'];
+const VENUE_ATTR_TAGS = new Set(['Bar', 'Cafe', 'Dive', 'Cocktails', 'Beer', 'Wine', 'Coffee', 'Tea', 'Grocery & Market', 'Happy Hour', 'Patio']);
+const VENUE_ATTR_LIST = ['Bar', 'Cafe', 'Dive', 'Cocktails', 'Beer', 'Wine', 'Coffee', 'Tea', 'Grocery & Market', 'Happy Hour', 'Patio'];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -1790,7 +1790,7 @@ export default function AmsueBouche() {
   const [restaurantAddOpen, setRestaurantAddOpen] = useState(false);
   const [restaurantToEdit, setRestaurantToEdit] = useState<Restaurant | null>(null);
   const [restaurantToDelete, setRestaurantToDelete] = useState<Restaurant | null>(null);
-  const [filterRVenueType, setFilterRVenueType] = useState<"all" | "restaurant" | "bar" | "shop">(() => {
+  const [filterRVenueType, setFilterRVenueType] = useState<"all" | "restaurant" | "bar" | "cafe" | "shop">(() => {
     const p = new URLSearchParams(window.location.search);
     return (p.get("type") as any) || "all";
   });
@@ -1874,6 +1874,7 @@ export default function AmsueBouche() {
     .filter(r => {
       const cuisine = r.cuisine ?? [];
       if (filterRVenueType === "bar" && !cuisine.includes('Bar')) return false;
+      if (filterRVenueType === "cafe" && !cuisine.includes('Cafe')) return false;
       if (filterRVenueType === "shop" && !cuisine.some(c => SHOP_CUISINES.has(c))) return false;
       if (filterRVenueType === "restaurant" && !cuisine.some(c => !BAR_CUISINES.has(c) && !SHOP_CUISINES.has(c))) return false;
       if (filterRCuisine !== "all" && !cuisine.includes(filterRCuisine)) return false;
@@ -2293,7 +2294,8 @@ export default function AmsueBouche() {
                       <SelectItem value="all">All Types</SelectItem>
                       <SelectSeparator />
                       <SelectItem value="restaurant">Restaurants</SelectItem>
-                      <SelectItem value="bar">Bars & Drinks</SelectItem>
+                      <SelectItem value="bar">Bars</SelectItem>
+                      <SelectItem value="cafe">Cafes</SelectItem>
                       <SelectItem value="shop">Shops</SelectItem>
                     </SelectContent>
                   </Select>

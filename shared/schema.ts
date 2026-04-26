@@ -11,6 +11,7 @@ export const restaurantCuisineTypes = [
   'Beer',
   'British & Irish',
   'Brunch & Breakfast',
+  'Cafe',
   'Chinese',
   'Cocktails',
   'Coffee',
