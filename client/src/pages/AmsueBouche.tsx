@@ -1461,6 +1461,18 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
                   </Tooltip>
                 </TooltipProvider>
               )}
+              {(restaurant as any).jamesBeard && (
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-base leading-none cursor-default select-none">🏆</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
+                      James Beard
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
             {restaurant.neighborhood && (
               <p className="text-[11px] text-black/40 font-medium mt-0.5 leading-none">{restaurant.neighborhood}</p>
@@ -1515,6 +1527,7 @@ function RestaurantModal({ mode, initial, onClose }: {
     neighborhood: initial?.neighborhood ?? denverNeighborhoods[0],
     hotNew: initial?.hotNew ?? false,
     michelinStar: initial?.michelinStar ?? false,
+    jamesBeard: (initial as any)?.jamesBeard ?? false,
     fixture: (initial as any)?.fixture ?? false,
     foodTruck: (initial as any)?.foodTruck ?? false,
   });
@@ -1725,6 +1738,14 @@ function RestaurantModal({ mode, initial, onClose }: {
                   🚚 Food Truck
                 </label>
               </div>
+              <div className="flex items-center gap-2.5">
+                <input type="checkbox" id="jamesBeard" checked={(form as any).jamesBeard ?? false}
+                  onChange={e => setForm(f => ({ ...f, jamesBeard: e.target.checked } as any))}
+                  className="w-4 h-4 rounded border-black accent-black cursor-pointer" />
+                <label htmlFor="jamesBeard" className="text-xs font-bold uppercase cursor-pointer select-none">
+                  🏆 James Beard <span className="font-normal normal-case opacity-50">(winner or nominee)</span>
+                </label>
+              </div>
             </div>
 
             {/* Cuisine chips — mobile only */}
@@ -1797,7 +1818,7 @@ export default function AmsueBouche() {
   const [filterRCuisine, setFilterRCuisine] = useState(() => new URLSearchParams(window.location.search).get("cuisine") || "all");
   const [filterRNeighborhood, setFilterRNeighborhood] = useState(() => new URLSearchParams(window.location.search).get("neighborhood") || "all");
   const [filterRPrice, setFilterRPrice] = useState(() => new URLSearchParams(window.location.search).get("price") || "all");
-  const [filterRBadge, setFilterRBadge] = useState<"all" | "hotNew" | "michelin" | "fixture" | "foodTruck" | "happyHour" | "patio">(() => {
+  const [filterRBadge, setFilterRBadge] = useState<"all" | "hotNew" | "michelin" | "jamesBeard" | "fixture" | "foodTruck" | "happyHour" | "patio">(() => {
     const p = new URLSearchParams(window.location.search);
     return (p.get("spot") as any) || "all";
   });
@@ -1883,6 +1904,7 @@ export default function AmsueBouche() {
       if (filterRPrice !== "all" && r.pricePoint !== filterRPrice) return false;
       if (filterRBadge === "hotNew" && !r.hotNew) return false;
       if (filterRBadge === "michelin" && !r.michelinStar) return false;
+      if (filterRBadge === "jamesBeard" && !(r as any).jamesBeard) return false;
       if (filterRBadge === "fixture" && !(r as any).fixture) return false;
       if (filterRBadge === "foodTruck" && !(r as any).foodTruck) return false;
       if (filterRBadge === "happyHour" && !cuisine.includes('Happy Hour')) return false;
@@ -2364,6 +2386,7 @@ export default function AmsueBouche() {
                       <SelectSeparator />
                       <SelectItem value="hotNew">🔥 Hot &amp; New</SelectItem>
                       <SelectItem value="michelin">⭐ Michelin</SelectItem>
+                      <SelectItem value="jamesBeard">🏆 James Beard</SelectItem>
                       <SelectItem value="fixture">📌 Fixture</SelectItem>
                       <SelectItem value="foodTruck">🚚 Food Truck</SelectItem>
                       <SelectItem value="happyHour">⏰ Happy Hour</SelectItem>

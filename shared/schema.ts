@@ -629,6 +629,7 @@ export const restaurants = pgTable("restaurants", {
   neighborhood: text("neighborhood").notNull(),
   hotNew: boolean("hot_new").notNull().default(false),
   michelinStar: boolean("michelin_star").notNull().default(false),
+  jamesBeard: boolean("james_beard").notNull().default(false),
   fixture: boolean("fixture").notNull().default(false),
   foodTruck: boolean("food_truck").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -644,6 +645,7 @@ export const insertRestaurantSchema = createInsertSchema(restaurants).omit({
   pricePoint: z.string().min(1, "Price point is required"),
   neighborhood: z.string().min(1, "Neighborhood is required"),
   hotNew: z.boolean().optional().default(false),
+  jamesBeard: z.boolean().optional().default(false),
   fixture: z.boolean().optional().default(false),
 });
 
