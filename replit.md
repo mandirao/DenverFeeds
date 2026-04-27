@@ -63,6 +63,10 @@ This is a concert feed/newsletter application (Setlist Social Feed) with a siste
 - **Venues Database**: Complete venue tracking system with scraping configuration storage, event counts, and API endpoints for venue management
 - **Auto-Detection Workflow**: Events created through any method (manual entry, CSV import, discovery approval) automatically expand the scraping database for future automated discovery
 
+## Analytics
+
+- **PostHog**: Integrated via `posthog-js` for page view tracking across all three apps. Initialized in `client/src/lib/posthog.ts` and wired into `App.tsx` via a `PageViewTracker` component that fires on every route change. Each event carries a `site` property (`setlist-social`, `amuse-bouche`, or `artistry-nerdistry`) for easy filtering within the same PostHog project. API key stored as `VITE_POSTHOG_KEY` env var.
+
 ## External Dependencies
 
 ### Database & Infrastructure

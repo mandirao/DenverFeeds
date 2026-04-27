@@ -43,3 +43,8 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_anthropic:1.0.0"]
+
+[userenv]
+
+[userenv.shared]
+VITE_POSTHOG_KEY = "phc_pBpPqV4G4wczNydDWQC8Ldbpa297kxEACKGz56EfJfWm"
