@@ -1821,6 +1821,27 @@ export default function ArtistryNerdery() {
           Exhibits, talks, screenings, performances, workshops and similar fun.
         </p>
 
+        {/* Recent events banner */}
+        {!isLoading && events.length > 0 && sortBy !== "added" && (() => {
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+          const recentCount = events.filter(e => e.createdAt && new Date(e.createdAt) > oneWeekAgo).length;
+          if (recentCount === 0) return null;
+          return (
+            <div className="mb-6 text-left">
+              <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '24px' }}>
+                {recentCount} {recentCount === 1 ? "event" : "events"} added in the last week.{' '}
+                <button
+                  onClick={() => setSortBy("added")}
+                  className="text-[#FE6B41] hover:text-[#41F2EE] underline font-light focus:outline-none"
+                >
+                  Review + vote
+                </button>
+              </p>
+            </div>
+          );
+        })()}
+
         {/* Filters */}
         {!isLoading && events.length > 0 && (
           <div className="mb-5">
