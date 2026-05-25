@@ -1835,7 +1835,7 @@ export default function ArtistryNerdery() {
                   onClick={() => setSortBy("added")}
                   className="text-[#FE6B41] hover:text-[#41F2EE] underline font-light focus:outline-none"
                 >
-                  Review + vote
+                  Review
                 </button>
               </p>
             </div>
