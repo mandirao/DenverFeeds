@@ -378,6 +378,7 @@ export default function Home() {
     if (filters.venue !== "all") count++;
     if (filters.dayOfWeek !== "all") count++;
     if (filters.status !== "all") count++;
+    if (filters.sortBy !== "date") count++;
     return count;
   };
   
@@ -529,14 +530,6 @@ export default function Home() {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                {filters.sortBy === "just-added" && (
-                  <button
-                    onClick={() => setFilters({ ...filters, sortBy: "date" })}
-                    className="flex items-center gap-1 px-3 py-1 rounded-full border border-black bg-white text-black text-sm font-medium whitespace-nowrap flex-shrink-0 hover:bg-black hover:text-white transition-colors focus:outline-none"
-                  >
-                    × clear
-                  </button>
-                )}
                 </>)}
 
                 {/* Separator between sort and filter pills */}

@@ -1952,7 +1952,7 @@ export default function AmsueBouche() {
     return true;
   });
 
-  const hasActiveFilters = filterCuisine !== "all" || filterDay !== "all";
+  const hasActiveFilters = filterCuisine !== "all" || filterDay !== "all" || sortBy !== "date";
   const resetFilters = () => { setFilterCuisine("all"); setFilterDay("all"); setSortBy("date"); };
 
   type MonthBucket = { events: FoodEvent[]; weekGroups: Record<string, { events: FoodEvent[] }> };
@@ -2132,15 +2132,6 @@ export default function AmsueBouche() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-                {viewMode !== "calendar" && sortBy === "added" && (
-                  <button
-                    onClick={() => setSortBy("date")}
-                    className="flex items-center gap-1 px-3 py-1 rounded-full border border-black bg-black text-white text-sm font-medium whitespace-nowrap flex-shrink-0 hover:bg-white hover:text-black transition-colors focus:outline-none"
-                  >
-                    × clear
-                  </button>
-                )}
-
                 {/* Separator */}
                 <div className="h-6 w-px bg-black opacity-40 mx-1 flex-shrink-0" />
 
