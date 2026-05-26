@@ -2070,13 +2070,13 @@ export default function AmsueBouche() {
           return (
             <div className="mb-6 text-left">
               <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '24px' }}>
-                {recentCount} {recentCount === 1 ? "popup" : "popups"} added in the last week.{' '}
                 <button
                   onClick={() => setSortBy("added")}
                   className="text-[#FE6B41] hover:text-[#41F2EE] underline font-light focus:outline-none"
                 >
-                  Review
+                  {recentCount} {recentCount === 1 ? "popup" : "popups"}
                 </button>
+                {' '}added in the last week.
               </p>
             </div>
           );
@@ -2131,6 +2131,14 @@ export default function AmsueBouche() {
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
+                )}
+                {viewMode !== "calendar" && sortBy === "added" && (
+                  <button
+                    onClick={() => setSortBy("date")}
+                    className="flex items-center gap-1 px-3 py-1 rounded-full border border-black bg-black text-white text-sm font-medium whitespace-nowrap flex-shrink-0 hover:bg-white hover:text-black transition-colors focus:outline-none"
+                  >
+                    × clear
+                  </button>
                 )}
 
                 {/* Separator */}

@@ -468,13 +468,13 @@ export default function Home() {
                 });
                 return (
                   <>
-                    {recentEvents.length} shows added in the last week. {' '}
-                    <button 
+                    <button
                       onClick={() => setFilters({ ...filters, sortBy: "just-added" })}
                       className="text-white hover:text-[#41F2EE] underline font-light focus:outline-none"
                     >
-                      Review + vote
+                      {recentEvents.length} shows
                     </button>
+                    {' '}added in the last week.
                   </>
                 );
               })()}
@@ -529,6 +529,14 @@ export default function Home() {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                {filters.sortBy === "just-added" && (
+                  <button
+                    onClick={() => setFilters({ ...filters, sortBy: "date" })}
+                    className="flex items-center gap-1 px-3 py-1 rounded-full border border-black bg-white text-black text-sm font-medium whitespace-nowrap flex-shrink-0 hover:bg-black hover:text-white transition-colors focus:outline-none"
+                  >
+                    × clear
+                  </button>
+                )}
                 </>)}
 
                 {/* Separator between sort and filter pills */}
