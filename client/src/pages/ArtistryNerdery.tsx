@@ -1735,7 +1735,7 @@ export default function ArtistryNerdery() {
     .filter((ev, idx, arr) => arr.findIndex(e => e.id === ev.id) === idx)
     .sort((a, b) => (a.dateEnd ?? "").localeCompare(b.dateEnd ?? ""));
 
-  const STILL_VISIBLE = 4;
+  const STILL_VISIBLE = 2;
   const stillTimeTruncated = stillTimeEvents.length > STILL_VISIBLE && !stillTimeExpanded;
   const visibleStillTimeEvents = stillTimeTruncated ? stillTimeEvents.slice(0, STILL_VISIBLE) : stillTimeEvents;
   const stillTimeHiddenCount = stillTimeEvents.length - STILL_VISIBLE;
