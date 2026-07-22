@@ -26,7 +26,10 @@ export async function createApp(): Promise<{ app: express.Express; server: Serve
     store: new PgSession({
       pool: pool,                // Connect to the same pool as our app
       tableName: 'session',     // Use a dedicated table for sessions
-      createTableIfMissing: true // Auto-create the session table if it doesn't exist
+      createTableIfMissing: false, // Table exists; skip the per-instance ensure query
+      // Serverless instances must not run background timers — each one would hold
+      // pooler connections while frozen. Expired rows just sit in the table.
+      pruneSessionInterval: false
     }),
     secret: process.env.SESSION_SECRET || 'setlist-social-dev-secret',
     resave: false,

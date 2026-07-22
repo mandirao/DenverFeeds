@@ -10,9 +10,13 @@ if (!process.env.DATABASE_URL) {
 
 // Supabase's connection pooler terminates TLS with a certificate that isn't in
 // Node's default CA bundle, so opt out of CA verification rather than SSL itself.
+// Keep the per-instance pool small and release idle clients quickly: Supabase's
+// pooler caps concurrent clients, and on serverless many instances share that cap.
 export const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
+  max: 3,
+  idleTimeoutMillis: 10_000,
 });
 
 // Idle pooled connections can be terminated by the server; log instead of crashing.
