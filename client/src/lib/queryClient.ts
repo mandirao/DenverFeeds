@@ -81,7 +81,9 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      // Retry transient fetch failures so one blip doesn't blank a feed
+      // until the user hard-reloads.
+      retry: 2,
     },
     mutations: {
       retry: false,

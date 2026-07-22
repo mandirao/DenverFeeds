@@ -33,33 +33,23 @@ export async function createApp(): Promise<{ app: express.Express; server: Serve
     }),
     secret: process.env.SESSION_SECRET || 'setlist-social-dev-secret',
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     }
   }));
 
-  // Add user ID to session if not present
-  app.use((req: Request & { session: any }, res, next) => {
-    // Initialize the session with a UUID if it doesn't have one
-    if (!req.session.userId) {
-      const newUserId = randomUUID();
-      console.log(`Creating new session with userId: ${newUserId}`);
-      req.session.userId = newUserId;
-      // Save the session immediately to ensure it's persisted
-      req.session.save((err: Error | null) => {
-        if (err) {
-          console.error('Error saving session:', err);
-        } else {
-          console.log(`Successfully saved session for userId: ${newUserId}`);
-        }
-        next();
-      });
-    } else {
-      console.log(`Using existing session userId: ${req.session.userId}`);
-      next();
+  // Establish a user identity only when the client performs an action
+  // (POST/PUT/PATCH/DELETE). Anonymous reads must not create or write
+  // sessions — on serverless, a session write per request floods the
+  // database pooler. Dirty sessions are persisted by express-session at
+  // response end.
+  app.use((req: Request & { session: any }, _res, next) => {
+    if (req.method !== "GET" && !req.session.userId) {
+      req.session.userId = randomUUID();
     }
+    next();
   });
 
   app.use((req, res, next) => {

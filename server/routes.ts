@@ -295,20 +295,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user ID from session
       // @ts-ignore - Session properties are added by express-session
       const sessionId = req.session?.userId;
-      
-      // Log the session ID for debugging
-      console.log(`Has upvoted check - Session ID: ${sessionId}`);
-      
-      // Create a database user entry if this is the first user action
-      let user = await storage.getUserBySessionId(sessionId);
+
+      // Visitors without a session can't have upvoted anything; don't create
+      // session/user rows just to answer a read-only check.
+      if (!sessionId) {
+        return res.json({ hasUpvoted: false });
+      }
+
+      const user = await storage.getUserBySessionId(sessionId);
       if (!user) {
-        console.log(`Creating new user for session ID: ${sessionId}`);
-        user = await storage.createUser({
-          username: `user-${Date.now()}`,
-          sessionId: sessionId
-        });
-      } else {
-        console.log(`Found existing user ID: ${user.id} for session ID: ${sessionId}`);
+        return res.json({ hasUpvoted: false });
       }
 
       const hasUpvoted = await storage.hasUserUpvoted(eventId, user.id);

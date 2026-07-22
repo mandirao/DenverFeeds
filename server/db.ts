@@ -15,8 +15,9 @@ if (!process.env.DATABASE_URL) {
 export const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
-  max: 3,
+  max: 2,
   idleTimeoutMillis: 10_000,
+  connectionTimeoutMillis: 8_000,
 });
 
 // Idle pooled connections can be terminated by the server; log instead of crashing.
