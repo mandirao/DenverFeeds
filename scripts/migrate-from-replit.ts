@@ -52,9 +52,19 @@ async function main() {
     }
 
     for (const table of TABLES) {
+      // Copy only columns that exist on both sides — the source may carry
+      // legacy columns dropped from shared/schema.ts (e.g. playlists.artist).
+      const colQuery = `SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=$1`;
+      const sourceCols = (await source.query(colQuery, [table])).rows.map((r) => r.column_name);
+      const targetCols = new Set((await target.query(colQuery, [table])).rows.map((r) => r.column_name));
+      const skipped = sourceCols.filter((c) => !targetCols.has(c));
+      if (skipped.length) {
+        console.warn(`${table}: skipping source-only columns: ${skipped.join(", ")}`);
+      }
+
       const { rows } = await source.query(`SELECT * FROM "${table}" ORDER BY 1`);
       if (rows.length > 0) {
-        const columns = Object.keys(rows[0]);
+        const columns = sourceCols.filter((c) => targetCols.has(c));
         const colList = columns.map((c) => `"${c}"`).join(", ");
         for (let i = 0; i < rows.length; i += BATCH_SIZE) {
           const batch = rows.slice(i, i + BATCH_SIZE);
