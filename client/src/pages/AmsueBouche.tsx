@@ -22,6 +22,11 @@ import {
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
   expandRecurringEvents, RISK_LABELS,
 } from "@/lib/eventUtils";
+import { ListingEventRow } from "@/components/listings/ListingEventRow";
+import { ListingCalendarMonthView } from "@/components/listings/ListingCalendarMonthView";
+import { EditListingEventModal } from "@/components/listings/EditListingEventModal";
+import { AddListingEventModal } from "@/components/listings/AddListingEventModal";
+import type { ListingRowConfig, ListingCalendarConfig, ListingFormConfig } from "@/lib/listingFeedConfig";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 const AB_ORANGE = "#FE6B41";
@@ -54,1168 +59,130 @@ const VENUE_ATTR_LIST = ['Bar', 'Cafe', 'Dive', 'Cocktails', 'Beer', 'Wine', 'Co
 
 // ── Event Row (inline sentence style, matching Setlist Social) ────────────────
 
-function FoodEventRow({ event }: { event: FoodEvent }) {
-  const qc = useQueryClient();
-  const { toast } = useToast();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [showRequesterTooltip, setShowRequesterTooltip] = useState(false);
+// Config for the shared <ListingEventRow>. Anything here is the "on/off
+// switch" for this feed — Food currently shows a standalone recurring badge
+// before the summary (renderRecurringNote) and a "live Xd/w" + risk-pip
+// cluster (renderLiveBadge) instead of Arts' recurring-label version.
+const foodRowConfig: ListingRowConfig<FoodEvent> = {
+  apiPath: "/api/food-events",
+  queryKey: "/api/food-events",
+  dialogBg: AB_GOLD,
+  deleteTitle: "Delete this popup?",
+  soldOutRestoreLabel: "Back on the menu",
+  ticketLabel: "Reserve",
+  ticketTextColorClass: "text-[#FEABDA]",
+  getCategory: (event) => event.cuisine,
+  renderLiveBadge: (event) => {
+    const live = daysLive(event.announcedAt);
+    const risk = riskPips(event.selloutRisk);
+    if (!live && !risk) return null;
+    return (
+      <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : event.selloutRisk === 4 ? "#FFB700" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
+        {live && `· live ${live}`}
+        {risk && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`} style={{ fontSize: '8px', letterSpacing: '0.2em' }}>{live ? " " : "· "}{risk}</span>}
+      </span>
+    );
+  },
+  renderRecurringNote: (event) => event.isRecurring ? (
+    <span className="inline-flex items-center align-middle mr-1.5 text-[11px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-black/10 text-black/70">
+      ↻ {event.recurrenceLabel || "Recurring"}
+    </span>
+  ) : null,
+  renderInstanceNote: (note) => (
+    <span className="block text-xs text-black/60 mt-0.5 ml-1">
+      ↳ {note}
+    </span>
+  ),
+  EditModal: EditFoodEventModal,
+};
 
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue + " Denver CO")}`;
-  const calendarUrl = createCalendarUrl(event);
-  const location = event.neighborhood ? `${event.venue}, ${event.neighborhood}` : event.venue;
-
-  const deleteMutation = useMutation({
-    mutationFn: () => apiRequest({ endpoint: `/api/food-events/${event.id}`, method: "DELETE" }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/food-events"] });
-      toast({ title: "Deleted", description: `${event.name} removed from the feed.` });
-    },
-    onError: () => toast({ title: "Error", description: "Couldn't delete this event.", variant: "destructive" }),
-  });
-
-  const duplicateMutation = useMutation({
-    mutationFn: () => apiRequest({ endpoint: `/api/food-events/${event.id}/duplicate`, method: "POST" }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/food-events"] });
-      toast({ title: "Duplicated", description: `${event.name} copied to the feed.` });
-    },
-    onError: () => toast({ title: "Error", description: "Couldn't duplicate this event.", variant: "destructive" }),
-  });
-
-  const soldOutMutation = useMutation({
-    mutationFn: () => apiRequest({ endpoint: `/api/food-events/${event.id}`, method: "PATCH", data: { soldOut: !event.soldOut } }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/food-events"] });
-      toast({ title: event.soldOut ? "Back on the menu" : "Marked as sold out", description: event.name });
-    },
-    onError: () => toast({ title: "Error", description: "Couldn't update this event.", variant: "destructive" }),
-  });
-
-  return (
-    <>
-      <li className="pb-1.5 relative flex items-start group">
-        <span className="text-2xl mr-3 select-none">{event.emoji}</span>
-
-        {event.soldOut ? (
-          <div className="flex-1 text-base opacity-60">
-            <span className="font-bold">{event.name}</span>
-            {" "}
-            <span className="inline-flex items-center align-middle text-xs font-black uppercase leading-none px-2 py-[3px] bg-black text-white">
-              SOLD OUT
-            </span>
-            {event.sourceUrl && (
-              <a
-                href={ensureHttps(event.sourceUrl!)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center align-middle ml-2 bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors"
-              >
-                View Post
-              </a>
-            )}
-            {(daysLive(event.announcedAt) || riskPips(event.selloutRisk)) && (
-              <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : event.selloutRisk === 4 ? "#FFB700" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
-                {daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`}
-                {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`} style={{ fontSize: '8px', letterSpacing: '0.2em' }}>{daysLive(event.announcedAt) ? " " : "· "}{riskPips(event.selloutRisk)}</span>}
-              </span>
-            )}
-          </div>
-        ) : (
-          <div className="flex-1 text-base">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <a
-                    href={createSearchUrl(event)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-                  >
-                    {event.name}
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent><p>Search on Google</p></TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            {" @ "}
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
-                  >
-                    {location}
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent><p>Find on Google Maps</p></TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            {" ("}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <a
-                    href={calendarUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
-                  >
-                    {formatDateRange(event.dateStart, event.dateEnd)}
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent><p>Add to Google Calendar</p></TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {event.startTime && /^\d{1,2}:\d{2}$/.test(event.startTime) && (
-              <span className="text-black/60">{", "}{formatTime(event.startTime)}</span>
-            )}
-            {"). "}
-
-            {event.isRecurring && (
-              <span className="inline-flex items-center align-middle mr-1.5 text-[11px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-black/10 text-black/70">
-                ↻ {event.recurrenceLabel || "Recurring"}
-              </span>
-            )}
-
-            {event.summary}
-
-            {event.isRecurring && (event.instanceNotes as Record<string, string> | null | undefined)?.[event.dateStart] && (
-              <span className="block text-xs text-black/60 mt-0.5 ml-1">
-                ↳ {(event.instanceNotes as Record<string, string>)[event.dateStart]}
-              </span>
-            )}
-
-            {event.cuisine && (
-              <span className="italic"> {event.cuisine}.</span>
-            )}
-
-            {event.price && (
-              <span
-                className="inline-flex items-center align-middle ml-2 text-xs font-black uppercase leading-none px-2 py-[3px]"
-                style={{ backgroundColor: "white", border: "1.5px solid black" }}
-              >
-                {event.price}
-              </span>
-            )}
-
-            {event.ticketUrl && (
-              <a
-                href={ensureHttps(event.ticketUrl!)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center align-middle ml-2 bg-black text-[#FEABDA] hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors"
-              >
-                Reserve
-              </a>
-            )}
-
-            {event.sourceUrl && (
-              <a
-                href={ensureHttps(event.sourceUrl!)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center align-middle ml-2 bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors"
-              >
-                View Post
-              </a>
-            )}
-            {(daysLive(event.announcedAt) || riskPips(event.selloutRisk)) && (
-              <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : event.selloutRisk === 4 ? "#FFB700" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
-                {daysLive(event.announcedAt) && `· live ${daysLive(event.announcedAt)}`}
-                {riskPips(event.selloutRisk) && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`} style={{ fontSize: '8px', letterSpacing: '0.2em' }}>{daysLive(event.announcedAt) ? " " : "· "}{riskPips(event.selloutRisk)}</span>}
-              </span>
-            )}
-
-            {event.requester && event.requester !== 'Mandi' && (
-              <span className="inline-block align-middle ml-2">
-                <TooltipProvider>
-                  <Tooltip open={showRequesterTooltip}>
-                    <TooltipTrigger asChild>
-                      <span
-                        className="text-base inline-flex items-center cursor-pointer"
-                        style={{ position: 'relative', top: '-1px' }}
-                        onClick={() => { setShowRequesterTooltip(true); setTimeout(() => setShowRequesterTooltip(false), 2000); }}
-                        onMouseEnter={() => setShowRequesterTooltip(true)}
-                        onMouseLeave={() => setShowRequesterTooltip(false)}
-                      >
-                        🛎️
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Added by {event.requester}</p></TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Three-dot menu */}
-        <div className="ml-2 flex-shrink-0" style={{ position: "relative", top: "2px" }}>
-          <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs h-5 w-5 p-0 flex items-center justify-center rounded-full bg-transparent opacity-30 group-hover:opacity-70 transition-opacity"
-              >
-                <MoreVertical className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36 border-none bg-gray-100 shadow-md rounded-sm font-sans">
-              <DropdownMenuItem
-                onClick={() => { setIsMenuOpen(false); setIsEditOpen(true); }}
-                className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
-              >
-                Edit details
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => { setIsMenuOpen(false); soldOutMutation.mutate(); }}
-                disabled={soldOutMutation.isPending}
-                className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
-              >
-                {event.soldOut ? "Mark available" : "Mark sold out"}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => { setIsMenuOpen(false); duplicateMutation.mutate(); }}
-                disabled={duplicateMutation.isPending}
-                className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
-              >
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  setTimeout(() => setShowDeleteConfirm(true), 100);
-                }}
-              >
-                Delete event
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </li>
-
-      {/* Edit modal */}
-      {isEditOpen && (
-        <EditFoodEventModal event={event} onClose={() => setIsEditOpen(false)} />
-      )}
-
-      {/* Delete confirm */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AB_GOLD }}>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl uppercase">Delete this popup?</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm">
-              <strong>{event.name}</strong> will be permanently removed from the feed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-2 border-black rounded-none font-black text-xs uppercase hover:bg-black hover:text-white transition-colors">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteMutation.mutate()}
-              className="bg-black text-white border-2 border-black rounded-none font-black text-xs uppercase hover:text-red-400 transition-colors"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
-  );
-}
+const foodCalendarConfig: ListingCalendarConfig<FoodEvent> = {
+  cellBg: AB_GOLD,
+  guardRecurringMultiDaySpillover: false,
+};
 
 // ── Edit Food Event Modal ──────────────────────────────────────────────────────
 
-function getMissingField(form: Partial<InsertFoodEvent>): { field: string; label: string } | null {
-  if (!form.requester?.trim()) return { field: "requester", label: "Your name" };
-  if (!form.name?.trim())      return { field: "name",      label: "Event name" };
-  if (!form.venue?.trim())     return { field: "venue",     label: "Venue / restaurant" };
-  if (!form.dateStart?.trim()) return { field: "dateStart", label: "Start date" };
-  if (!form.emoji?.trim())     return { field: "emoji",     label: "Emoji" };
-  if (!form.cuisine?.trim())   return { field: "cuisine",   label: "Cuisine type" };
-  return null;
-}
+// Config for the shared Add/Edit form. Food doesn't use the specific-dates
+// batch-add feature (features.specificDatesBatchAdd: false) — recurring
+// itself is available on both feeds.
+const foodFormConfig: ListingFormConfig<InsertFoodEvent> = {
+  idPrefix: "ab",
+  apiPath: "/api/food-events",
+  queryKey: "/api/food-events",
+  dialogBg: AB_GOLD,
 
-function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () => void }) {
-  const qc = useQueryClient();
-  const { toast } = useToast();
-  const [errorField, setErrorField] = useState<string | null>(null);
-  const [showConfirmClose, setShowConfirmClose] = useState(false);
-  const [redoLoading, setRedoLoading] = useState(false);
-  const occurrenceDate = event.dateStart;
-  const [instanceNote, setInstanceNote] = useState(
-    (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? ""
-  );
-  const [form, setForm] = useState<Partial<InsertFoodEvent>>({
-    emoji: event.emoji || "",
-    name: event.name || "",
-    venue: event.venue || "",
-    neighborhood: event.neighborhood || "",
-    dateStart: event.dateStart || "",
-    dateEnd: event.dateEnd || "",
-    startTime: event.startTime || "",
-    summary: event.summary || "",
-    cuisine: event.cuisine || "",
-    price: event.price || "",
-    ticketUrl: event.ticketUrl || "",
-    sourceUrl: event.sourceUrl || "",
-    requester: event.requester || "",
-    announcedAt: event.announcedAt || "",
-    selloutRisk: event.selloutRisk ?? undefined,
-    isRecurring: event.isRecurring ?? false,
-    recurrenceLabel: event.recurrenceLabel || "",
-  });
+  categoryFieldKey: "cuisine",
+  categoryLabel: "Cuisine",
+  categoryOptions: cuisineTypes,
 
-  const set = (field: keyof InsertFoodEvent, value: string) => {
-    setErrorField(null);
-    setForm(f => ({ ...f, [field]: value }));
-  };
+  venueLabel: "Venue / Restaurant",
+  namePlaceholder: "Hot Pot Pop-Up Nights",
+  venuePlaceholder: "Hop Alley",
+  neighborhoodPlaceholder: "RiNo, LoHi…",
+  emojiPlaceholder: "🫕",
+  pricePlaceholder: "$55/person",
+  recurrenceLabelPlaceholder: "e.g. Every Thursday, 1st Sunday monthly…",
+  instanceNotePlaceholder: "e.g. Special prix-fixe menu this week",
+  descriptionPlaceholderAdd: "Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something.",
+  descriptionPlaceholderEdit: "Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something.",
+  sourceUrlPlaceholder: "https://instagram.com/p/… or eventbrite link",
 
-  const hasChanges = () => {
-    const keys = ['emoji', 'name', 'venue', 'neighborhood', 'dateStart', 'dateEnd', 'startTime', 'summary', 'cuisine', 'price', 'ticketUrl', 'sourceUrl', 'requester', 'announcedAt', 'recurrenceLabel'] as const;
-    const originalNote = (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? "";
-    return keys.some(k => (form[k] || "") !== ((event[k as keyof FoodEvent] as string) || ""))
-      || (form.selloutRisk ?? null) !== (event.selloutRisk ?? null)
-      || (form.isRecurring ?? false) !== (event.isRecurring ?? false)
-      || instanceNote !== originalNote;
-  };
+  addModalTitle: "Add a Popup",
+  editModalTitle: "Edit Popup",
+  addSubmitLabel: "Add Popup",
+  createToastTitle: "Popup added!",
+  discardDescriptionEdit: "You have unsaved edits. They'll be lost if you close now.",
 
-  const tryClose = () => {
-    if (hasChanges()) setShowConfirmClose(true);
-    else onClose();
-  };
+  screenshotIntro: "Upload a screenshot from Instagram, Eventbrite, or anywhere — AI will read the text directly from the image.",
+  blurbIntro: "Paste a caption or description from social media — AI will extract the event details.",
+  blurbPlaceholder: `e.g.\n\nhopalleydenver\n\nWe are happy to announce our Hop Alley Hot Pot Pop-Up Nights! On March 26-28…`,
 
-  const handleRedoAI = async () => {
-    if (!form.name) {
-      toast({ title: "Event name required", variant: "destructive" });
-      return;
+  parseEndpoint: "/api/ai/parse-blurb",
+  redoEndpoint: "/api/ai/redo-food-event-content",
+  buildRedoPayload: (form) => ({
+    name: form.name,
+    venue: form.venue,
+    cuisine: form.cuisine,
+    dateStart: form.dateStart,
+    currentSummary: form.summary,
+  }),
+  applyRedoResponse: (res, { setForm }) => {
+    if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
+    if (res.status === "no-info") {
+      return { title: "Description polished ✓", description: res.message || "No new details found online." };
     }
-    setRedoLoading(true);
-    try {
-      const res = await apiRequest({
-        endpoint: "/api/ai/redo-food-event-content",
-        method: "POST",
-        data: {
-          name: form.name,
-          venue: form.venue,
-          cuisine: form.cuisine,
-          dateStart: form.dateStart,
-          currentSummary: form.summary,
-        },
-      });
-      if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
-      if (res.status === "no-info") {
-        toast({ title: "Description polished ✓", description: res.message || "No new details found online." });
-      } else {
-        toast({ title: "Content refreshed ✨", description: "Description updated with latest details." });
-      }
-    } catch (e: any) {
-      toast({ title: "AI refresh failed", description: e?.message || "Something went wrong.", variant: "destructive" });
-    } finally {
-      setRedoLoading(false);
-    }
-  };
+    return { title: "Content refreshed ✨", description: "Description updated with latest details." };
+  },
+  applyParseResponse: (data, { blurb, form, setForm }) => {
+    setForm({ ...data, rawBlurb: blurb, sourceUrl: form.sourceUrl || "", requester: form.requester || "" });
+    return { title: "Blurb parsed!", description: "Review the details below." };
+  },
 
-  const updateMutation = useMutation({
-    mutationFn: (data: Partial<InsertFoodEvent> & { instanceNotes?: Record<string, string> }) =>
-      apiRequest({ endpoint: `/api/food-events/${event.id}`, method: "PATCH", data }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["/api/food-events"] });
-      toast({ title: "Saved!", description: `${form.name} updated.` });
-      onClose();
-    },
-    onError: (e: any) => {
-      toast({ title: "Error", description: e?.message || "Couldn't save changes.", variant: "destructive" });
-    },
-  });
+  getMissingField: (form) => {
+    if (!form.requester?.trim()) return { field: "requester", label: "Your name" };
+    if (!form.name?.trim())      return { field: "name",      label: "Event name" };
+    if (!form.venue?.trim())     return { field: "venue",     label: "Venue / restaurant" };
+    if (!form.dateStart?.trim()) return { field: "dateStart", label: "Start date" };
+    if (!form.emoji?.trim())     return { field: "emoji",     label: "Emoji" };
+    if (!form.cuisine?.trim())   return { field: "cuisine",   label: "Cuisine type" };
+    return null;
+  },
+  BLANK: {
+    emoji: "", name: "", venue: "", neighborhood: "",
+    dateStart: "", dateEnd: "", startTime: "", summary: "",
+    cuisine: "", price: "", ticketUrl: "", sourceUrl: "", rawBlurb: "", requester: "",
+    announcedAt: "", selloutRisk: undefined,
+    isRecurring: false, recurrenceLabel: "",
+  },
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const missing = getMissingField(form);
-    if (missing) {
-      setErrorField(missing.field);
-      toast({ title: `${missing.label} is required`, variant: "destructive" });
-      setTimeout(() => document.getElementById(`edit-ab-${missing.field}`)?.focus(), 50);
-      return;
-    }
-    const existingNotes = (event.instanceNotes as Record<string, string> | null | undefined) ?? {};
-    const updatedNotes = instanceNote.trim()
-      ? { ...existingNotes, [occurrenceDate]: instanceNote.trim() }
-      : Object.fromEntries(Object.entries(existingNotes).filter(([k]) => k !== occurrenceDate));
-    updateMutation.mutate({ ...form, instanceNotes: updatedNotes });
-  };
-
-  const inputClass = "border-2 border-black rounded-none bg-white text-sm";
-  const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
-  const fieldErr = (f: string) => errorField === f ? " !border-red-500 ring-2 ring-red-200" : "";
-
-  return (
-    <>
-    <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
-      <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AB_GOLD }}>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="font-black uppercase">Discard changes?</AlertDialogTitle>
-          <AlertDialogDescription>You have unsaved edits. They'll be lost if you close now.</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel className="border-2 border-black rounded-none font-black uppercase text-sm">Keep editing</AlertDialogCancel>
-          <AlertDialogAction onClick={onClose} className="bg-black text-white border-2 border-black rounded-none font-black uppercase text-sm hover:text-[#41F2EE]">Discard</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-    <Dialog open onOpenChange={open => { if (!open) tryClose(); }}>
-      <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: AB_GOLD }}>
-        <DialogHeader>
-          <DialogTitle className="text-3xl text-black uppercase tracking-tight">
-            Edit Popup
-          </DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-3 md:gap-y-0">
-
-            {/* ── Left column ── */}
-            <div className="space-y-3">
-              <div>
-                <label className={labelClass}>Event Name *</label>
-                <Input value={form.name || ""} onChange={e => set("name", e.target.value)}
-                  className={inputClass} placeholder="Hot Pot Pop-Up Nights" />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelClass}>Venue / Restaurant *</label>
-                  <Input value={form.venue || ""} onChange={e => set("venue", e.target.value)}
-                    className={inputClass} placeholder="Hop Alley" />
-                </div>
-                <div>
-                  <label className={labelClass}>Neighborhood</label>
-                  <Input value={form.neighborhood || ""} onChange={e => set("neighborhood", e.target.value)}
-                    className={inputClass} placeholder="RiNo, LoHi…" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelClass}>Start Date *</label>
-                  <Input type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
-                    className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>End Date</label>
-                  <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
-                    className={inputClass} />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Start Time <span className="font-normal normal-case opacity-60">(approximate)</span></label>
-                <Input type="time" value={form.startTime || ""} onChange={e => set("startTime", e.target.value)}
-                  className={inputClass} placeholder="19:00" />
-              </div>
-              <div>
-                <label className={labelClass}>Recurring?</label>
-                <div className="flex items-center gap-2">
-                  <button type="button"
-                    onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
-                    className="px-3 py-1 border-2 text-xs font-black uppercase transition-colors"
-                    style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
-                  >↻ {form.isRecurring ? "Yes" : "No"}</button>
-                  {form.isRecurring && (
-                    <Input value={form.recurrenceLabel || ""} onChange={e => set("recurrenceLabel", e.target.value)}
-                      className={inputClass + " flex-1"} placeholder="e.g. Every Thursday, 1st Sunday monthly…" />
-                  )}
-                </div>
-                {form.isRecurring && (
-                  <div className="mt-2">
-                    <label className={labelClass}>Note for this occurrence <span className="font-normal normal-case opacity-60">(optional)</span></label>
-                    <Input value={instanceNote} onChange={e => setInstanceNote(e.target.value)}
-                      className={inputClass} placeholder="e.g. Special prix-fixe menu this week" />
-                  </div>
-                )}
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-0.5">
-                  <label className={labelClass + " mb-0"}>Description *</label>
-                  <button type="button" onClick={handleRedoAI} disabled={redoLoading}
-                    className="flex items-center gap-1 px-2.5 py-1 border-2 border-black bg-white text-xs font-black uppercase tracking-wide hover:bg-black hover:text-[#FFD700] transition-colors disabled:opacity-40"
-                    title="Polish description with latest web info">
-                    {redoLoading ? "Searching…" : "✨ Refresh AI"}
-                  </button>
-                </div>
-                <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-                  className={`${inputClass} resize-none`} rows={4} maxLength={200}
-                  placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
-                <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
-              </div>
-            </div>
-
-            {/* ── Right column ── */}
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelClass}>Emoji *</label>
-                  <Input value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
-                    className={inputClass} placeholder="🫕" />
-                </div>
-                <div>
-                  <label className={labelClass}>Cuisine *</label>
-                  <Select value={form.cuisine || ""} onValueChange={v => set("cuisine", v)}>
-                    <SelectTrigger className={inputClass}>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cuisineTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelClass}>Price</label>
-                  <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
-                    className={inputClass} placeholder="$55/person" />
-                </div>
-                <div>
-                  <label className={labelClass}>RSVP/Ticket URL</label>
-                  <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
-                    className={inputClass} placeholder="https://tock.com/…" />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Original post link</label>
-                <Input value={form.sourceUrl || ""} onChange={e => set("sourceUrl", e.target.value)}
-                  className={inputClass} placeholder="https://instagram.com/p/…" />
-              </div>
-              <div>
-                <label className={labelClass}>Your Name *</label>
-                <Input value={form.requester || ""} onChange={e => set("requester", e.target.value)}
-                  className={inputClass} placeholder="Mandi" />
-              </div>
-              <div>
-                <label className={labelClass}>Announced <span className="font-normal normal-case opacity-60">(optional)</span></label>
-                <Input type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt", e.target.value)}
-                  className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Sellout Risk <span className="font-normal normal-case opacity-60">(optional)</span></label>
-                <div className="flex gap-1.5 mt-1">
-                  {[1,2,3,4,5].map(n => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setForm(f => ({ ...f, selloutRisk: f.selloutRisk === n ? undefined : n }))}
-                      className="flex-1 py-1 border-2 text-xs font-black transition-colors"
-                      style={{
-                        borderColor: "black",
-                        backgroundColor: form.selloutRisk === n ? "black" : "white",
-                        color: form.selloutRisk === n ? "white" : "black",
-                      }}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                {form.selloutRisk && (
-                  <p className="text-xs text-gray-500 mt-0.5">{RISK_LABELS[form.selloutRisk]} — {riskPips(form.selloutRisk)}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-1">
-            <button type="submit" disabled={updateMutation.isPending}
-              className="w-full px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
-              {updateMutation.isPending ? "Saving…" : "Save Changes"}
-            </button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-    </>
-  );
-}
-
-// ── Add Event Modal ────────────────────────────────────────────────────────────
-
-const BLANK: Partial<InsertFoodEvent> = {
-  emoji: "", name: "", venue: "", neighborhood: "",
-  dateStart: "", dateEnd: "", startTime: "", summary: "",
-  cuisine: "", price: "", ticketUrl: "", sourceUrl: "", rawBlurb: "", requester: "",
-  announcedAt: "", selloutRisk: undefined,
-  isRecurring: false, recurrenceLabel: "",
+  features: {
+    specificDatesBatchAdd: false,
+  },
 };
 
-function AddEventModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [blurb, setBlurb] = useState("");
-  const [form, setForm] = useState<Partial<InsertFoodEvent>>(BLANK);
-  const [showForm, setShowForm] = useState(false);
-  const [inputMode, setInputMode] = useState<"screenshot" | "blurb">("screenshot");
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [imageMediaType, setImageMediaType] = useState<string | null>(null);
-  const [imageFileName, setImageFileName] = useState<string | null>(null);
-  const [showConfirmClose, setShowConfirmClose] = useState(false);
-  const [errorField, setErrorField] = useState<string | null>(null);
-  const [redoLoading, setRedoLoading] = useState(false);
-  const [instanceNote, setInstanceNote] = useState("");
-  const { toast } = useToast();
-
-  const switchMode = (mode: "screenshot" | "blurb") => {
-    setInputMode(mode);
-    if (mode === "screenshot") {
-      setBlurb("");
-    } else {
-      setImagePreview(null);
-      setImageBase64(null);
-      setImageMediaType(null);
-    }
-  };
-
-  const set = (field: keyof InsertFoodEvent, value: string) => {
-    setErrorField(null);
-    setForm(f => ({ ...f, [field]: value }));
-  };
-
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const mediaType = file.type as string;
-    setImageFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      // Extract pure base64 (strip data:image/...;base64, prefix)
-      const base64 = dataUrl.split(",")[1];
-      setImagePreview(dataUrl);
-      setImageBase64(base64);
-      setImageMediaType(mediaType);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const parseMutation = useMutation({
-    mutationFn: () => apiRequest({
-      endpoint: "/api/ai/parse-blurb",
-      method: "POST",
-      data: {
-        blurb,
-        ...(imageBase64 ? { imageBase64, imageMediaType, fileName: imageFileName } : {}),
-      },
-    }),
-    onSuccess: (data) => {
-      setForm({ ...data, rawBlurb: blurb, sourceUrl: form.sourceUrl || "", requester: form.requester || "" });
-      setShowForm(true);
-      toast({ title: "Blurb parsed!", description: "Review the details below." });
-    },
-    onError: () => {
-      toast({ title: "Parse failed", description: "Fill in the form manually.", variant: "destructive" });
-      setShowForm(true);
-    },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data: InsertFoodEvent) =>
-      apiRequest({ endpoint: "/api/food-events", method: "POST", data }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/food-events"] });
-      toast({ title: "Popup added!", description: "It's now on the feed." });
-      forceClose();
-    },
-    onError: (e: any) => {
-      toast({ title: "Error", description: e?.message || "Couldn't add event.", variant: "destructive" });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const missing = getMissingField(form);
-    if (missing) {
-      setErrorField(missing.field);
-      toast({ title: `${missing.label} is required`, variant: "destructive" });
-      setTimeout(() => document.getElementById(`add-ab-${missing.field}`)?.focus(), 50);
-      return;
-    }
-    const payload: InsertFoodEvent = { ...(form as InsertFoodEvent) };
-    if (form.isRecurring && instanceNote.trim() && form.dateStart) {
-      (payload as any).instanceNotes = { [form.dateStart]: instanceNote.trim() };
-    }
-    createMutation.mutate(payload);
-  };
-
-  const hasContent = () => {
-    const formHasContent = Object.values(form).some(v => v && v.toString().trim() !== "");
-    return formHasContent || blurb.trim() !== "" || !!imageBase64;
-  };
-
-  const handleRedoAI = async () => {
-    if (!form.name) {
-      toast({ title: "Event name required", variant: "destructive" });
-      return;
-    }
-    setRedoLoading(true);
-    try {
-      const res = await apiRequest({
-        endpoint: "/api/ai/redo-food-event-content",
-        method: "POST",
-        data: {
-          name: form.name,
-          venue: form.venue,
-          cuisine: form.cuisine,
-          dateStart: form.dateStart,
-          currentSummary: form.summary,
-        },
-      });
-      if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
-      if (res.status === "no-info") {
-        toast({ title: "Description polished ✓", description: res.message || "No new details found online." });
-      } else {
-        toast({ title: "Content refreshed ✨", description: "Description updated with latest details." });
-      }
-    } catch (e: any) {
-      toast({ title: "AI refresh failed", description: e?.message || "Something went wrong.", variant: "destructive" });
-    } finally {
-      setRedoLoading(false);
-    }
-  };
-
-  const forceClose = () => {
-    onClose();
-    setBlurb("");
-    setForm(BLANK);
-    setShowForm(false);
-    setInputMode("screenshot");
-    setImagePreview(null);
-    setImageBase64(null);
-    setImageMediaType(null);
-    setImageFileName(null);
-    setShowConfirmClose(false);
-    setErrorField(null);
-  };
-
-  const handleClose = () => {
-    if (hasContent()) setShowConfirmClose(true);
-    else forceClose();
-  };
-
-  const inputClass = "border-2 border-black rounded-none bg-white text-sm";
-  const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
-  const fieldErr = (f: string) => errorField === f ? " !border-red-500 ring-2 ring-red-200" : "";
-
-  return (
-    <>
-    <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
-      <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: AB_GOLD }}>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="font-black uppercase">Discard changes?</AlertDialogTitle>
-          <AlertDialogDescription>You have unsaved content. It'll be lost if you close now.</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel className="border-2 border-black rounded-none font-black uppercase text-sm">Keep editing</AlertDialogCancel>
-          <AlertDialogAction onClick={forceClose} className="bg-black text-white border-2 border-black rounded-none font-black uppercase text-sm hover:text-[#41F2EE]">Discard</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
-        style={{ backgroundColor: AB_GOLD }}>
-        <DialogHeader>
-          <DialogTitle className="text-3xl text-black uppercase tracking-tight">
-            Add a Popup
-          </DialogTitle>
-        </DialogHeader>
-
-        {!showForm ? (
-          <div className="space-y-4">
-
-            {/* ── Mode toggle ── */}
-            <div className="grid grid-cols-2 border-2 border-black">
-              <button
-                type="button"
-                onClick={() => switchMode("screenshot")}
-                className={`flex items-center justify-center gap-2 py-2.5 font-black uppercase tracking-wide text-sm transition-colors ${
-                  inputMode === "screenshot"
-                    ? "bg-black text-white"
-                    : "bg-white text-black hover:bg-gray-100"
-                }`}
-              >
-                <ImageIcon className="w-4 h-4" />Screenshot
-              </button>
-              <button
-                type="button"
-                onClick={() => switchMode("blurb")}
-                className={`flex items-center justify-center gap-2 py-2.5 font-black uppercase tracking-wide text-sm transition-colors border-l-2 border-black ${
-                  inputMode === "blurb"
-                    ? "bg-black text-white"
-                    : "bg-white text-black hover:bg-gray-100"
-                }`}
-              >
-                <FileText className="w-4 h-4" />Blurb
-              </button>
-            </div>
-
-            {/* ── Screenshot mode ── */}
-            {inputMode === "screenshot" && (
-              <div className="space-y-3">
-                <p className="text-xs text-gray-500">Upload a screenshot from Instagram, Eventbrite, or anywhere — AI will read the text directly from the image.</p>
-                <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-black bg-white cursor-pointer hover:bg-gray-50 transition-colors py-6 px-3">
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    className="hidden"
-                    onChange={handleImageSelect}
-                  />
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img src={imagePreview} alt="Preview" className="max-h-48 max-w-full object-contain border-2 border-black" />
-                      <button
-                        type="button"
-                        onClick={e => { e.preventDefault(); setImagePreview(null); setImageBase64(null); setImageMediaType(null); }}
-                        className="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none"
-                      >×</button>
-                    </div>
-                  ) : (
-                    <>
-                      <ImageIcon className="w-8 h-8 opacity-30" />
-                      <span className="text-sm font-semibold">Click to upload screenshot</span>
-                      <span className="text-xs text-gray-400">JPG, PNG, WEBP, GIF</span>
-                    </>
-                  )}
-                </label>
-              </div>
-            )}
-
-            {/* ── Blurb mode ── */}
-            {inputMode === "blurb" && (
-              <div className="space-y-3">
-                <p className="text-xs text-gray-500">Paste a caption or description from social media — AI will extract the event details.</p>
-                <Textarea rows={5}
-                  placeholder={`e.g.\n\nhopalleydenver\n\nWe are happy to announce our Hop Alley Hot Pot Pop-Up Nights! On March 26-28…`}
-                  value={blurb} onChange={e => setBlurb(e.target.value)}
-                  className={`${inputClass} resize-none`} />
-              </div>
-            )}
-
-            <div>
-              <label className={labelClass}>Original post link <span className="font-normal normal-case opacity-60">(optional)</span></label>
-              <Input
-                value={form.sourceUrl || ""}
-                onChange={e => set("sourceUrl", e.target.value)}
-                className={inputClass}
-                placeholder="https://instagram.com/p/… or eventbrite link" />
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => parseMutation.mutate()}
-                disabled={(!blurb.trim() && !imageBase64) || parseMutation.isPending}
-                className="flex-1 bg-black text-white font-black uppercase tracking-wide text-sm px-4 py-2.5 border-2 border-black hover:text-[#41F2EE] transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
-                <Sparkles className="w-4 h-4" />
-                {parseMutation.isPending ? "Parsing…" : "Parse with AI"}
-              </button>
-              <button onClick={() => setShowForm(true)}
-                className="px-4 py-2.5 border-2 border-black bg-white font-black uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
-                Skip
-              </button>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-
-            {/* Use AI instead — visible button */}
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide border border-black px-3 py-1.5 bg-white hover:bg-black hover:text-white transition-colors"
-            >
-              <Sparkles className="w-3 h-3" />
-              ← Use AI instead
-            </button>
-
-            {/* Your Name — always first */}
-            <div>
-              <label className={labelClass}>Your Name *</label>
-              <Input id="add-ab-requester" value={form.requester || ""} onChange={e => set("requester", e.target.value)}
-                className={inputClass + fieldErr("requester")} placeholder="Mandi" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-4 md:gap-y-0">
-
-              {/* Left column — core identity */}
-              <div className="space-y-3">
-                <div>
-                  <label className={labelClass}>Event Name *</label>
-                  <Input id="add-ab-name" value={form.name || ""} onChange={e => set("name", e.target.value)}
-                    className={inputClass + fieldErr("name")} placeholder="Hot Pot Pop-Up Nights" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Venue / Restaurant *</label>
-                    <Input id="add-ab-venue" value={form.venue || ""} onChange={e => set("venue", e.target.value)}
-                      className={inputClass + fieldErr("venue")} placeholder="Hop Alley" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Neighborhood</label>
-                    <Input value={form.neighborhood || ""} onChange={e => set("neighborhood", e.target.value)}
-                      className={inputClass} placeholder="RiNo, LoHi…" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Start Date *</label>
-                    <Input id="add-ab-dateStart" type="date" value={form.dateStart || ""} onChange={e => set("dateStart", e.target.value)}
-                      className={inputClass + fieldErr("dateStart")} />
-                  </div>
-                  <div>
-                    <label className={labelClass}>End Date</label>
-                    <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd", e.target.value)}
-                      className={inputClass} />
-                  </div>
-                </div>
-                <div>
-                  <label className={labelClass}>Start Time <span className="font-normal normal-case opacity-60">(approximate)</span></label>
-                  <Input type="time" value={form.startTime || ""} onChange={e => set("startTime", e.target.value)}
-                    className={inputClass} placeholder="19:00" />
-                </div>
-                <div>
-                  <label className={labelClass}>Recurring?</label>
-                  <div className="flex items-center gap-2">
-                    <button type="button"
-                      onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
-                      className="px-3 py-1 border-2 text-xs font-black uppercase transition-colors"
-                      style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
-                    >↻ {form.isRecurring ? "Yes" : "No"}</button>
-                    {form.isRecurring && (
-                      <Input value={form.recurrenceLabel || ""} onChange={e => set("recurrenceLabel", e.target.value)}
-                        className={inputClass + " flex-1"} placeholder="e.g. Every Thursday, 1st Sunday monthly…" />
-                    )}
-                  </div>
-                  {form.isRecurring && (
-                    <div className="mt-2">
-                      <label className={labelClass}>Note for first occurrence <span className="font-normal normal-case opacity-60">(optional)</span></label>
-                      <Input value={instanceNote} onChange={e => setInstanceNote(e.target.value)}
-                        className={inputClass} placeholder="e.g. Opening night menu" />
-                    </div>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Price</label>
-                    <Input value={form.price || ""} onChange={e => set("price", e.target.value)}
-                      className={inputClass} placeholder="$55/person" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>RSVP/Ticket URL</label>
-                    <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl", e.target.value)}
-                      className={inputClass} placeholder="https://tock.com/…" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Right column — metadata */}
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelClass}>Emoji *</label>
-                    <Input id="add-ab-emoji" value={form.emoji || ""} onChange={e => set("emoji", e.target.value)}
-                      className={inputClass + fieldErr("emoji")} placeholder="🫕" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Cuisine *</label>
-                    <Select value={form.cuisine || ""} onValueChange={v => { setErrorField(null); set("cuisine", v); }}>
-                      <SelectTrigger id="add-ab-cuisine" className={inputClass + fieldErr("cuisine")}>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cuisineTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <label className={labelClass}>Original post link</label>
-                  <Input value={form.sourceUrl || ""} onChange={e => set("sourceUrl", e.target.value)}
-                    className={inputClass} placeholder="https://instagram.com/p/… or eventbrite link" />
-                </div>
-                <div>
-                  <label className={labelClass}>Announced <span className="font-normal normal-case opacity-60">(optional)</span></label>
-                  <Input type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt", e.target.value)}
-                    className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Sellout Risk <span className="font-normal normal-case opacity-60">(optional)</span></label>
-                  <div className="flex gap-1.5 mt-1">
-                    {[1,2,3,4,5].map(n => (
-                      <button key={n} type="button"
-                        onClick={() => setForm(f => ({ ...f, selloutRisk: f.selloutRisk === n ? undefined : n }))}
-                        className="flex-1 py-1 border-2 text-xs font-black transition-colors"
-                        style={{ borderColor: "black", backgroundColor: form.selloutRisk === n ? "black" : "white", color: form.selloutRisk === n ? "white" : "black" }}
-                      >{n}</button>
-                    ))}
-                  </div>
-                  {form.selloutRisk && (
-                    <p className="text-xs text-gray-500 mt-0.5">{RISK_LABELS[form.selloutRisk]} — {riskPips(form.selloutRisk)}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Description — full width at bottom, easy to review after AI parse */}
-            <div>
-              <div className="flex items-center justify-between mb-0.5">
-                <label className={labelClass + " mb-0"}>Description <span className="font-normal normal-case opacity-60">(recommended)</span></label>
-                <button type="button" onClick={handleRedoAI} disabled={redoLoading}
-                  className="flex items-center gap-1 px-2.5 py-1 border-2 border-black bg-white text-xs font-black uppercase tracking-wide hover:bg-black hover:text-[#FFD700] transition-colors disabled:opacity-40"
-                  title="Polish description with latest web info">
-                  {redoLoading ? "Searching…" : "✨ Refresh AI"}
-                </button>
-              </div>
-              <Textarea value={form.summary || ""} onChange={e => set("summary", e.target.value)}
-                className={`${inputClass} resize-none`} rows={3} maxLength={200}
-                placeholder="Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something." />
-              <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
-            </div>
-
-            <div className="flex gap-2 pt-1">
-              <button type="submit" disabled={createMutation.isPending}
-                className="w-full px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
-                {createMutation.isPending ? "Adding…" : "Add Popup"}
-              </button>
-            </div>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
-    </>
-  );
-}
-
-// ── Calendar helpers ──────────────────────────────────────────────────────────
-
-const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const DAY_HEADERS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
-function FoodCalendarMonthView({
-  events,
-  viewYear,
-  viewMonth,
-  onPrevMonth,
-  onNextMonth,
-  onEventClick,
-  onDayOverflowClick,
-}: {
-  events: FoodEvent[];
-  viewYear: number;
-  viewMonth: number;
-  onPrevMonth: () => void;
-  onNextMonth: () => void;
-  onEventClick: (ev: FoodEvent) => void;
-  onDayOverflowClick: (date: string, events: FoodEvent[]) => void;
-}) {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
-  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const monthPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
-
-  const eventsByDay = new Map<string, FoodEvent[]>();
-  for (const ev of events) {
-    if (ev.dateStart.startsWith(monthPrefix)) {
-      const existing = eventsByDay.get(ev.dateStart) ?? [];
-      eventsByDay.set(ev.dateStart, [...existing, ev]);
-    } else if (ev.dateEnd && ev.dateEnd !== ev.dateStart) {
-      const monthStart = new Date(viewYear, viewMonth, 1);
-      const end = new Date(ev.dateEnd + 'T12:00:00');
-      const start = new Date(ev.dateStart + 'T12:00:00');
-      if (start < monthStart && end >= monthStart) {
-        const key = `${monthPrefix}-01`;
-        const existing = eventsByDay.get(key) ?? [];
-        eventsByDay.set(key, [...existing, ev]);
-      }
-    }
-  }
-
-  const cells: (number | null)[] = [
-    ...Array(firstDayOfWeek).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ];
-  while (cells.length % 7 !== 0) cells.push(null);
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={onPrevMonth} className="p-1.5 text-black hover:text-[#FE6B41] transition-colors rounded-full hover:bg-black/10">
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <h2 className="text-base font-black uppercase text-black tracking-wide">
-          {MONTH_NAMES[viewMonth]} {viewYear}
-        </h2>
-        <button onClick={onNextMonth} className="p-1.5 text-black hover:text-[#FE6B41] transition-colors rounded-full hover:bg-black/10">
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
-
-      <div className="grid grid-cols-7 mb-1">
-        {DAY_HEADERS.map(d => (
-          <div key={d} className="text-center text-[10px] font-black text-black/50 uppercase py-1 tracking-wider">
-            {d}
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-7 border-l border-t border-black/15">
-        {cells.map((day, idx) => {
-          if (day === null) {
-            return (
-              <div key={`empty-${idx}`} className="border-r border-b border-black/15 min-h-[72px] sm:min-h-[90px]" style={{ backgroundColor: AB_GOLD }} />
-            );
-          }
-          const dayStr = `${monthPrefix}-${String(day).padStart(2, '0')}`;
-          const isToday = dayStr === todayStr;
-          const dayEvents = eventsByDay.get(dayStr) ?? [];
-          const MAX_SHOWN = 3;
-          const shown = dayEvents.slice(0, MAX_SHOWN);
-          const overflow = dayEvents.length - MAX_SHOWN;
-          return (
-            <div key={dayStr} className="border-r border-b border-black/15 p-1 min-h-[72px] sm:min-h-[90px]" style={{ backgroundColor: AB_GOLD }}>
-              <div className={`text-xs font-bold mb-1 w-5 h-5 flex items-center justify-center leading-none ${
-                isToday ? 'bg-black text-white rounded-full' : 'text-black'
-              }`}>
-                {day}
-              </div>
-              <div className="space-y-0.5">
-                {shown.map((ev, i) => (
-                  <button
-                    key={`${ev.id}-${ev.dateStart}-${i}`}
-                    onClick={() => onEventClick(ev)}
-                    className="w-full text-left text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 bg-black/10 hover:bg-black/20 active:bg-black/30 rounded text-black truncate transition-colors cursor-pointer"
-                    title={ev.name}
-                  >
-                    <span>{ev.emoji} </span>
-                    <span className="font-medium">{ev.name}</span>
-                  </button>
-                ))}
-                {overflow > 0 && (
-                  <button
-                    onClick={() => onDayOverflowClick(dayStr, dayEvents)}
-                    className="text-[9px] text-black/60 hover:text-black pl-1 font-semibold transition-colors cursor-pointer underline underline-offset-1"
-                  >
-                    +{overflow} more
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+function EditFoodEventModal({ event, onClose }: { event: FoodEvent; onClose: () => void }) {
+  return <EditListingEventModal event={event} onClose={onClose} config={foodFormConfig} />;
 }
 
 // ── Restaurant Row ────────────────────────────────────────────────────────────
@@ -2056,7 +1023,7 @@ export default function AmsueBouche() {
         )}
 
         {!isLoading && viewMode === "calendar" && (
-          <FoodCalendarMonthView
+          <ListingCalendarMonthView
             events={filteredEvents}
             viewYear={calViewYear}
             viewMonth={calViewMonth}
@@ -2064,6 +1031,7 @@ export default function AmsueBouche() {
             onNextMonth={nextCalMonth}
             onEventClick={setCalEventDetail}
             onDayOverflowClick={(date, evs) => setCalDaySheet({ date, events: evs })}
+            config={foodCalendarConfig}
           />
         )}
 
@@ -2105,7 +1073,7 @@ export default function AmsueBouche() {
               </div>
               <ul className="space-y-0">
                 {bucket.events.map(ev => (
-                  <FoodEventRow key={ev.id} event={ev} />
+                  <ListingEventRow key={ev.id} event={ev} config={foodRowConfig} />
                 ))}
               </ul>
             </div>
@@ -2133,7 +1101,7 @@ export default function AmsueBouche() {
                   <div key={weekKey}>
                     <ul className="space-y-0">
                       {weekEvents.map(ev => (
-                        <FoodEventRow key={ev.id} event={ev} />
+                        <ListingEventRow key={ev.id} event={ev} config={foodRowConfig} />
                       ))}
                     </ul>
                     {!isLastWeek && (
@@ -2334,7 +1302,7 @@ export default function AmsueBouche() {
         </div>
       </footer>
 
-      <AddEventModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <AddListingEventModal open={addOpen} onClose={() => setAddOpen(false)} config={foodFormConfig} />
 
       {restaurantAddOpen && (
         <RestaurantModal mode="add" onClose={() => setRestaurantAddOpen(false)} />
