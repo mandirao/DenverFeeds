@@ -1,14 +1,102 @@
 import express, { type Express, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertEventSchema, events, upvotes, insertPlaylistSchema } from "@shared/schema";
+import { insertEventSchema, events, upvotes, insertPlaylistSchema, insertFoodEventSchema, insertArtEventSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
-import { ZodError } from "zod";
+import { ZodError, type ZodType } from "zod";
 import { parse } from "date-fns";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
 import { spotifyService } from "./spotify";
 import { llmService } from "./llm-service";
+
+// Shared CRUD route registration for the Food and Art event verticals — they
+// have identical route shapes (list/create/update/delete/duplicate/upvote).
+// Music's events routes are NOT part of this: different validation/date
+// handling and extra schedule/upvote-tracking concepts, so they stay as their
+// own hand-written routes below.
+function registerListingCrudRoutes<TSelect extends { id: number; createdAt?: unknown; upvotes?: unknown }, TInsert>(
+  router: express.Router,
+  config: {
+    path: string;                // "food-events" | "art-events"
+    insertSchema: ZodType<TInsert>;
+    resourceLabel: string;       // "food event" | "art event" — used in error messages
+    getAll: () => Promise<TSelect[]>;
+    getById: (id: number) => Promise<TSelect | undefined>;
+    create: (data: TInsert) => Promise<TSelect>;
+    update: (id: number, data: Partial<TSelect>) => Promise<TSelect | undefined>;
+    delete: (id: number) => Promise<boolean>;
+    upvote: (id: number) => Promise<boolean>;
+  }
+) {
+  const { path, insertSchema, resourceLabel, getAll, getById, create, update, delete: del, upvote } = config;
+
+  router.get(`/${path}`, async (_req, res) => {
+    try {
+      res.json(await getAll());
+    } catch (error) {
+      res.status(500).json({ message: `Failed to fetch ${resourceLabel}s` });
+    }
+  });
+
+  router.post(`/${path}`, async (req, res) => {
+    try {
+      const parsed = insertSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.issues[0]?.message || "Validation failed" });
+      }
+      const created = await create(parsed.data);
+      res.status(201).json(created);
+    } catch (error) {
+      console.error(`Failed to create ${resourceLabel}:`, error);
+      res.status(500).json({ message: `Failed to create ${resourceLabel}` });
+    }
+  });
+
+  router.patch(`/${path}/:id`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updated = await update(id, req.body);
+      if (!updated) return res.status(404).json({ message: `${resourceLabel} not found` });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: `Failed to update ${resourceLabel}` });
+    }
+  });
+
+  router.delete(`/${path}/:id`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await del(id);
+      res.json({ success: deleted });
+    } catch (error) {
+      res.status(500).json({ message: `Failed to delete ${resourceLabel}` });
+    }
+  });
+
+  router.post(`/${path}/:id/duplicate`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const original = await getById(id);
+      if (!original) return res.status(404).json({ message: `${resourceLabel} not found` });
+      const { id: _id, createdAt: _ca, upvotes: _up, ...rest } = original as any;
+      const copy = await create(rest);
+      res.status(201).json(copy);
+    } catch (error) {
+      res.status(500).json({ message: `Failed to duplicate ${resourceLabel}` });
+    }
+  });
+
+  router.post(`/${path}/:id/upvote`, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await upvote(id);
+      res.json({ success });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to upvote" });
+    }
+  });
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -1399,76 +1487,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ── Amuse Bouche – Food Events ───────────────────────────────────────────
-  app.get("/api/food-events", async (req, res) => {
-    try {
-      const events = await storage.getAllFoodEvents();
-      res.json(events);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch food events" });
-    }
-  });
-
-  app.post("/api/food-events", async (req, res) => {
-    try {
-      const { insertFoodEventSchema } = await import("@shared/schema");
-      const parsed = insertFoodEventSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: parsed.error.issues[0]?.message || "Validation failed" });
-      }
-      const event = await storage.createFoodEvent(parsed.data);
-      res.status(201).json(event);
-    } catch (error) {
-      console.error("Failed to create food event:", error);
-      res.status(500).json({ message: "Failed to create food event" });
-    }
-  });
-
-  app.patch("/api/food-events/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const updated = await storage.updateFoodEvent(id, req.body);
-      if (!updated) return res.status(404).json({ message: "Food event not found" });
-      res.json(updated);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update food event" });
-    }
-  });
-
-  app.delete("/api/food-events/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const deleted = await storage.deleteFoodEvent(id);
-      res.json({ success: deleted });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to delete food event" });
-    }
-  });
-
-  app.post("/api/food-events/:id/duplicate", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const original = await storage.getFoodEventById(id);
-      if (!original) return res.status(404).json({ message: "Food event not found" });
-      const { id: _id, createdAt: _ca, upvotes: _up, ...rest } = original as any;
-      const copy = await storage.createFoodEvent(rest);
-      res.status(201).json(copy);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to duplicate food event" });
-    }
-  });
-
-  app.post("/api/food-events/:id/upvote", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const success = await storage.upvoteFoodEvent(id);
-      res.json({ success });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to upvote" });
-    }
+  registerListingCrudRoutes(apiRouter, {
+    path: "food-events",
+    insertSchema: insertFoodEventSchema,
+    resourceLabel: "food event",
+    getAll: () => storage.getAllFoodEvents(),
+    getById: (id) => storage.getFoodEventById(id),
+    create: (data) => storage.createFoodEvent(data),
+    update: (id, data) => storage.updateFoodEvent(id, data),
+    delete: (id) => storage.deleteFoodEvent(id),
+    upvote: (id) => storage.upvoteFoodEvent(id),
   });
 
   // AI blurb parser for Amuse Bouche
-  app.post("/api/ai/parse-blurb", async (req, res) => {
+  apiRouter.post("/ai/parse-blurb", async (req, res) => {
     try {
       const { blurb, imageBase64, imageMediaType, fileName } = req.body;
       if (!blurb && !imageBase64) {
@@ -1484,73 +1516,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ── Artistry & Nerdery Live routes ────────────────────────────────────────
 
-  app.get("/api/art-events", async (req, res) => {
-    try {
-      const events = await storage.getAllArtEvents();
-      res.json(events);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch art events" });
-    }
-  });
-
-  app.post("/api/art-events", async (req, res) => {
-    try {
-      const { insertArtEventSchema } = await import("@shared/schema");
-      const parsed = insertArtEventSchema.safeParse(req.body);
-      if (!parsed.success) return res.status(400).json({ message: "Invalid event data", errors: parsed.error.errors });
-      const event = await storage.createArtEvent(parsed.data);
-      res.json(event);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to create art event" });
-    }
-  });
-
-  app.patch("/api/art-events/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const updated = await storage.updateArtEvent(id, req.body);
-      if (!updated) return res.status(404).json({ message: "Event not found" });
-      res.json(updated);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update art event" });
-    }
-  });
-
-  app.delete("/api/art-events/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const deleted = await storage.deleteArtEvent(id);
-      res.json({ success: deleted });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to delete art event" });
-    }
-  });
-
-  app.post("/api/art-events/:id/duplicate", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const original = await storage.getArtEventById(id);
-      if (!original) return res.status(404).json({ message: "Event not found" });
-      const { id: _id, createdAt: _ca, upvotes: _uv, ...rest } = original;
-      const copy = await storage.createArtEvent(rest as any);
-      res.json(copy);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to duplicate art event" });
-    }
-  });
-
-  app.post("/api/art-events/:id/upvote", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const success = await storage.upvoteArtEvent(id);
-      res.json({ success });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to upvote" });
-    }
+  registerListingCrudRoutes(apiRouter, {
+    path: "art-events",
+    insertSchema: insertArtEventSchema,
+    resourceLabel: "art event",
+    getAll: () => storage.getAllArtEvents(),
+    getById: (id) => storage.getArtEventById(id),
+    create: (data) => storage.createArtEvent(data),
+    update: (id, data) => storage.updateArtEvent(id, data),
+    delete: (id) => storage.deleteArtEvent(id),
+    upvote: (id) => storage.upvoteArtEvent(id),
   });
 
   // AI blurb parser for Artistry & Nerdery
-  app.post("/api/ai/parse-art-blurb", async (req, res) => {
+  apiRouter.post("/ai/parse-art-blurb", async (req, res) => {
     try {
       const { blurb, imageBase64, imageMediaType, fileName } = req.body;
       if (!blurb && !imageBase64) {
@@ -1565,7 +1544,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI content refresh for art events
-  app.post("/api/ai/redo-art-event-content", async (req, res) => {
+  apiRouter.post("/ai/redo-art-event-content", async (req, res) => {
     try {
       const { name, venue, category, isRecurring, recurrenceLabel, dateStart, currentSummary, currentInstanceNote } = req.body;
       if (!name) return res.status(400).json({ message: "Event name is required" });
@@ -1586,7 +1565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/ai/redo-food-event-content", async (req, res) => {
+  apiRouter.post("/ai/redo-food-event-content", async (req, res) => {
     try {
       const { name, venue, cuisine, dateStart, currentSummary } = req.body;
       if (!name) return res.status(400).json({ message: "Event name is required" });

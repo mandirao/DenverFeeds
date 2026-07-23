@@ -93,6 +93,63 @@ export interface IStorage {
   deleteRestaurant(id: number): Promise<boolean>;
 }
 
+// Shared CRUD implementation for the Food and Art event tables — they have
+// identical shapes (id, dateStart, dateEnd, upvotes + feed-specific fields)
+// and identical query patterns. Music's `events` table is NOT part of this:
+// it uses a real timestamp column instead of text dates and has upvote/
+// schedule/discovery-pipeline concepts the other two don't, so folding it in
+// here would force together things that genuinely differ.
+function makeListingCrud<
+  TSelect extends { id: number; dateStart: string; dateEnd?: string | null },
+  TInsert
+>(table: any) {
+  return {
+    async getAll(): Promise<TSelect[]> {
+      const todayMT = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date());
+      const all: TSelect[] = await db.select().from(table).orderBy(table.dateStart);
+      return all
+        .map(e => ({ ...e, dateEnd: e.dateEnd || "" }))
+        .filter(ev => {
+          const effectiveDate = (ev.dateEnd && ev.dateEnd.trim()) ? ev.dateEnd.trim() : ev.dateStart;
+          return effectiveDate >= todayMT;
+        });
+    },
+    async getById(id: number): Promise<TSelect | undefined> {
+      const [event] = await db.select().from(table).where(eq(table.id, id));
+      return event || undefined;
+    },
+    async create(event: TInsert): Promise<TSelect> {
+      const [newEvent] = (await db.insert(table).values(event as any).returning()) as TSelect[];
+      return newEvent;
+    },
+    async update(id: number, data: Partial<TSelect>): Promise<TSelect | undefined> {
+      const [updated] = await db.update(table).set(data as any).where(eq(table.id, id)).returning();
+      return updated || undefined;
+    },
+    async delete(id: number): Promise<boolean> {
+      try {
+        await db.delete(table).where(eq(table.id, id));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    async upvote(id: number): Promise<boolean> {
+      try {
+        await db.update(table)
+          .set({ upvotes: sql`${table.upvotes} + 1` })
+          .where(eq(table.id, id));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  };
+}
+
+const foodEventCrud = makeListingCrud<FoodEvent, InsertFoodEvent>(foodEvents);
+const artEventCrud = makeListingCrud<ArtEvent, InsertArtEvent>(artEvents);
+
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
@@ -537,94 +594,52 @@ export class DatabaseStorage implements IStorage {
 
   // Food Events methods (Amuse Bouche)
   async getAllFoodEvents(): Promise<FoodEvent[]> {
-    const todayMT = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date());
-    const all = await db.select().from(foodEvents).orderBy(foodEvents.dateStart);
-    return all.filter(ev => {
-      const effectiveDate = (ev.dateEnd && ev.dateEnd.trim()) ? ev.dateEnd.trim() : ev.dateStart;
-      return effectiveDate >= todayMT;
-    });
+    return foodEventCrud.getAll();
   }
 
   async getFoodEventById(id: number): Promise<FoodEvent | undefined> {
-    const [event] = await db.select().from(foodEvents).where(eq(foodEvents.id, id));
-    return event || undefined;
+    return foodEventCrud.getById(id);
   }
 
   async createFoodEvent(event: InsertFoodEvent): Promise<FoodEvent> {
-    const [newEvent] = await db.insert(foodEvents).values(event).returning();
-    return newEvent;
+    return foodEventCrud.create(event);
   }
 
   async updateFoodEvent(id: number, data: Partial<FoodEvent>): Promise<FoodEvent | undefined> {
-    const [updated] = await db.update(foodEvents).set(data).where(eq(foodEvents.id, id)).returning();
-    return updated || undefined;
+    return foodEventCrud.update(id, data);
   }
 
   async deleteFoodEvent(id: number): Promise<boolean> {
-    try {
-      await db.delete(foodEvents).where(eq(foodEvents.id, id));
-      return true;
-    } catch {
-      return false;
-    }
+    return foodEventCrud.delete(id);
   }
 
   async upvoteFoodEvent(id: number): Promise<boolean> {
-    try {
-      await db.update(foodEvents)
-        .set({ upvotes: sql`${foodEvents.upvotes} + 1` })
-        .where(eq(foodEvents.id, id));
-      return true;
-    } catch {
-      return false;
-    }
+    return foodEventCrud.upvote(id);
   }
 
   // Art event methods for Artistry & Nerdery Live
   async getAllArtEvents(): Promise<ArtEvent[]> {
-    const todayMT = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date());
-    const all = await db.select().from(artEvents).orderBy(artEvents.dateStart);
-    return all
-      .map(e => ({ ...e, dateEnd: e.dateEnd || "" }))
-      .filter(ev => {
-        const effectiveDate = (ev.dateEnd && ev.dateEnd.trim()) ? ev.dateEnd.trim() : ev.dateStart;
-        return effectiveDate >= todayMT;
-      });
+    return artEventCrud.getAll();
   }
 
   async getArtEventById(id: number): Promise<ArtEvent | undefined> {
-    const [event] = await db.select().from(artEvents).where(eq(artEvents.id, id));
-    return event;
+    return artEventCrud.getById(id);
   }
 
   async createArtEvent(event: InsertArtEvent): Promise<ArtEvent> {
-    const [newEvent] = await db.insert(artEvents).values(event).returning();
-    return newEvent;
+    return artEventCrud.create(event);
   }
 
   async updateArtEvent(id: number, data: Partial<ArtEvent>): Promise<ArtEvent | undefined> {
-    const [updated] = await db.update(artEvents).set(data).where(eq(artEvents.id, id)).returning();
-    return updated;
+    return artEventCrud.update(id, data);
   }
 
   async deleteArtEvent(id: number): Promise<boolean> {
-    try {
-      await db.delete(artEvents).where(eq(artEvents.id, id));
-      return true;
-    } catch {
-      return false;
-    }
+    return artEventCrud.delete(id);
   }
 
   async upvoteArtEvent(id: number): Promise<boolean> {
-    try {
-      await db.update(artEvents)
-        .set({ upvotes: sql`${artEvents.upvotes} + 1` })
-        .where(eq(artEvents.id, id));
-      return true;
-    } catch {
-      return false;
-    }
+    return artEventCrud.upvote(id);
   }
 
   // Venues methods

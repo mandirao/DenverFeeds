@@ -463,6 +463,66 @@ Respond with ONLY valid JSON, no markdown formatting:
     return validGenres.includes(genre) ? genre : 'Rock & Alternative';
   }
 
+  // Shared two-pass pipeline behind parseBlurb/parseArtBlurb: pass 1 extracts
+  // structured facts from the blurb/image, then a web search enriches pass 2's
+  // final-summary write-up. The prompts themselves (voice, taxonomy, examples)
+  // are genuinely different creative content per feed, so they stay as
+  // per-feed config — only the API-call/JSON-cleanup plumbing is shared.
+  private async runListingParse<TResult>(
+    blurb: string, imageBase64: string | undefined, imageMediaType: string | undefined, fileName: string | undefined,
+    config: {
+      buildPass1Prompt: (today: string) => string;
+      buildSearchQueries: (pass1: any) => string[];
+      buildPass2Prompt: (pass1: any, searchContext: string) => string;
+      mapResult: (pass1: any, pass2: any) => TResult;
+    }
+  ): Promise<TResult> {
+    const client = new Anthropic({ apiKey: this.apiKey });
+    const today = new Date().toISOString().split('T')[0];
+
+    const pass1Prompt = config.buildPass1Prompt(today);
+    const pass1Content: any[] = [];
+    if (imageBase64 && imageMediaType) {
+      pass1Content.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: imageMediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+          data: imageBase64,
+        },
+      });
+    }
+    pass1Content.push({ type: 'text', text: pass1Prompt });
+
+    const pass1Message = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 800,
+      messages: [{ role: 'user', content: pass1Content }],
+    });
+    const pass1Raw = pass1Message.content[0].type === 'text' ? pass1Message.content[0].text : '{}';
+    const pass1Cleaned = pass1Raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const pass1 = JSON.parse(pass1Cleaned);
+
+    const searchQueries = config.buildSearchQueries(pass1);
+    const searchResults = await Promise.all(searchQueries.map(q => this.serperSearch(q, 3)));
+    const searchContext = searchQueries.map((q, i) => {
+      const snippets = searchResults[i].map(r => `• ${r.title}: ${r.snippet}`).join('\n');
+      return `Search: "${q}"\n${snippets || '(no results)'}`;
+    }).join('\n\n');
+
+    const pass2Prompt = config.buildPass2Prompt(pass1, searchContext);
+    const pass2Message = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: 400,
+      messages: [{ role: 'user', content: pass2Prompt }],
+    });
+    const pass2Raw = pass2Message.content[0].type === 'text' ? pass2Message.content[0].text : '{}';
+    const pass2Cleaned = pass2Raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const pass2 = JSON.parse(pass2Cleaned);
+
+    return config.mapResult(pass1, pass2);
+  }
+
   async parseBlurb(blurb: string, imageBase64?: string, imageMediaType?: string, fileName?: string): Promise<{
     name: string;
     venue: string;
@@ -478,11 +538,8 @@ Respond with ONLY valid JSON, no markdown formatting:
     announcedAt: string;
     selloutRisk: number | null;
   }> {
-    const client = new Anthropic({ apiKey: this.apiKey });
-    const today = new Date().toISOString().split('T')[0];
-
-    // ── PASS 1: extract structured facts from blurb/image ──────────────────
-    const pass1Prompt = `You are parsing a food popup event in Denver, CO from social media content. Extract details and return ONLY valid JSON.
+    return this.runListingParse(blurb, imageBase64, imageMediaType, fileName, {
+      buildPass1Prompt: (today) => `You are parsing a food popup event in Denver, CO from social media content. Extract details and return ONLY valid JSON.
 
 Today's date: ${today}
 ${fileName ? `Screenshot file name: "${fileName}" — look for date/time patterns like YYYY-MM-DD or YYYYMMDD in this name to determine when the screenshot was taken.` : ''}
@@ -516,60 +573,27 @@ Rules:
 - Use current year (${new Date().getFullYear()}) unless another year is clearly stated
 - If a date range is mentioned (e.g. March 26-28), dateStart=first date, dateEnd=last date
 - Pick the most specific cuisine type that fits
-- For announcedAt: '3d' ago means subtract 3 days from today's date; '1w' means subtract 7 days; '2h' means today`;
+- For announcedAt: '3d' ago means subtract 3 days from today's date; '1w' means subtract 7 days; '2h' means today`,
 
-    const pass1Content: any[] = [];
-    if (imageBase64 && imageMediaType) {
-      pass1Content.push({
-        type: 'image',
-        source: {
-          type: 'base64',
-          media_type: imageMediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-          data: imageBase64,
-        },
-      });
-    }
-    pass1Content.push({ type: 'text', text: pass1Prompt });
+      buildSearchQueries: (pass1) => {
+        const searchQueries: string[] = [];
+        if (pass1.venue) {
+          searchQueries.push(`${pass1.venue} Denver`);
+        }
+        // Search the event itself by name — often surfaces collaborator names not in the original blurb
+        if (pass1.name && pass1.venue) {
+          searchQueries.push(`"${pass1.name}" "${pass1.venue}" Denver`);
+        } else if (pass1.name) {
+          searchQueries.push(`"${pass1.name}" Denver popup event`);
+        }
+        const notableNames: string[] = Array.isArray(pass1.notableNames) ? pass1.notableNames : [];
+        for (const name of notableNames.slice(0, 2)) {
+          searchQueries.push(`"${name}" Denver`);
+        }
+        return searchQueries;
+      },
 
-    const pass1Message = await client.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 800,
-      messages: [{ role: 'user', content: pass1Content }],
-    });
-
-    const pass1Raw = pass1Message.content[0].type === 'text' ? pass1Message.content[0].text : '{}';
-    const pass1Cleaned = pass1Raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
-    const pass1 = JSON.parse(pass1Cleaned);
-
-    // ── WEB SEARCH: look up venue + event + notable collaborators ──────────
-    const searchQueries: string[] = [];
-    if (pass1.venue) {
-      searchQueries.push(`${pass1.venue} Denver`);
-    }
-    // Search the event itself by name — often surfaces collaborator names not in the original blurb
-    if (pass1.name && pass1.venue) {
-      searchQueries.push(`"${pass1.name}" "${pass1.venue}" Denver`);
-    } else if (pass1.name) {
-      searchQueries.push(`"${pass1.name}" Denver popup event`);
-    }
-    const notableNames: string[] = Array.isArray(pass1.notableNames) ? pass1.notableNames : [];
-    for (const name of notableNames.slice(0, 2)) {
-      searchQueries.push(`"${name}" Denver`);
-    }
-
-    const searchResults = await Promise.all(
-      searchQueries.map(q => this.serperSearch(q, 3))
-    );
-
-    const searchContext = searchQueries.map((q, i) => {
-      const snippets = searchResults[i]
-        .map(r => `• ${r.title}: ${r.snippet}`)
-        .join('\n');
-      return `Search: "${q}"\n${snippets || '(no results)'}`;
-    }).join('\n\n');
-
-    // ── PASS 2: write final summary enriched with web context ──────────────
-    const pass2Prompt = `You are writing the final event listing entry for Amuse-Bouche, a Denver food popup newsletter.
+      buildPass2Prompt: (pass1, searchContext) => `You are writing the final event listing entry for Amuse-Bouche, a Denver food popup newsletter.
 
 Here is what we know from the original post:
 - Event: ${pass1.name || 'unknown'}
@@ -606,34 +630,25 @@ Return ONLY valid JSON (no markdown):
 {
   "neighborhood": "corrected Denver neighborhood based on venue address from search, or original if no better info",
   "summary": "final 200-char-max Amuse-Bouche summary — MUST use real names of any collaborators found in search"
-}`;
+}`,
 
-    const pass2Message = await client.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 400,
-      messages: [{ role: 'user', content: pass2Prompt }],
+      mapResult: (pass1, pass2) => ({
+        name: pass1.name || '',
+        venue: pass1.venue || '',
+        neighborhood: pass2.neighborhood || pass1.neighborhood || '',
+        dateStart: pass1.dateStart || '',
+        dateEnd: pass1.dateEnd || '',
+        startTime: pass1.startTime || '',
+        emoji: pass1.emoji || '🍴',
+        summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
+        cuisine: pass1.cuisine || 'Other',
+        price: pass1.price || '',
+        ticketUrl: pass1.ticketUrl || '',
+        announcedAt: pass1.announcedAt || '',
+        selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
+          ? Math.round(pass1.selloutRisk) : null,
+      }),
     });
-
-    const pass2Raw = pass2Message.content[0].type === 'text' ? pass2Message.content[0].text : '{}';
-    const pass2Cleaned = pass2Raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
-    const pass2 = JSON.parse(pass2Cleaned);
-
-    return {
-      name: pass1.name || '',
-      venue: pass1.venue || '',
-      neighborhood: pass2.neighborhood || pass1.neighborhood || '',
-      dateStart: pass1.dateStart || '',
-      dateEnd: pass1.dateEnd || '',
-      startTime: pass1.startTime || '',
-      emoji: pass1.emoji || '🍴',
-      summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
-      cuisine: pass1.cuisine || 'Other',
-      price: pass1.price || '',
-      ticketUrl: pass1.ticketUrl || '',
-      announcedAt: pass1.announcedAt || '',
-      selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
-        ? Math.round(pass1.selloutRisk) : null,
-    };
   }
 
   async parseArtBlurb(blurb: string, imageBase64?: string, imageMediaType?: string, fileName?: string): Promise<{
@@ -655,10 +670,8 @@ Return ONLY valid JSON (no markdown):
     instanceNote: string;
     specificDates: string[];
   }> {
-    const client = new Anthropic({ apiKey: this.apiKey });
-    const today = new Date().toISOString().split('T')[0];
-
-    const pass1Prompt = `You are parsing an art, science, or cultural event in Denver/Boulder, CO from social media or promotional content. Extract details and return ONLY valid JSON.
+    return this.runListingParse(blurb, imageBase64, imageMediaType, fileName, {
+      buildPass1Prompt: (today) => `You are parsing an art, science, or cultural event in Denver/Boulder, CO from social media or promotional content. Extract details and return ONLY valid JSON.
 
 Today's date: ${today}
 ${fileName ? `Screenshot file name: "${fileName}" — look for date/time patterns like YYYY-MM-DD or YYYYMMDD in this name to determine when the screenshot was taken.` : ''}
@@ -695,52 +708,24 @@ Return this exact JSON structure (no markdown, no code blocks):
 Rules:
 - Use current year (${new Date().getFullYear()}) unless another year is clearly stated
 - If a date range is mentioned (e.g. March 26–28), dateStart=first date, dateEnd=last date
-- For announcedAt: '3d' ago means subtract 3 days from today; '1w' means subtract 7 days; '2h' means today`;
+- For announcedAt: '3d' ago means subtract 3 days from today; '1w' means subtract 7 days; '2h' means today`,
 
-    const pass1Content: any[] = [];
-    if (imageBase64 && imageMediaType) {
-      pass1Content.push({
-        type: 'image',
-        source: {
-          type: 'base64',
-          media_type: imageMediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-          data: imageBase64,
-        },
-      });
-    }
-    pass1Content.push({ type: 'text', text: pass1Prompt });
+      buildSearchQueries: (pass1) => {
+        const searchQueries: string[] = [];
+        if (pass1.venue) searchQueries.push(`${pass1.venue} Denver`);
+        if (pass1.name && pass1.venue) {
+          searchQueries.push(`"${pass1.name}" "${pass1.venue}" Denver`);
+        } else if (pass1.name) {
+          searchQueries.push(`"${pass1.name}" Denver event`);
+        }
+        const notableNames: string[] = Array.isArray(pass1.notableNames) ? pass1.notableNames : [];
+        for (const name of notableNames.slice(0, 2)) {
+          searchQueries.push(`"${name}" Denver`);
+        }
+        return searchQueries;
+      },
 
-    const pass1Message = await client.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 800,
-      messages: [{ role: 'user', content: pass1Content }],
-    });
-
-    const pass1Raw = pass1Message.content[0].type === 'text' ? pass1Message.content[0].text : '{}';
-    const pass1Cleaned = pass1Raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
-    const pass1 = JSON.parse(pass1Cleaned);
-
-    // Web search for venue + notable names
-    const searchQueries: string[] = [];
-    if (pass1.venue) searchQueries.push(`${pass1.venue} Denver`);
-    if (pass1.name && pass1.venue) {
-      searchQueries.push(`"${pass1.name}" "${pass1.venue}" Denver`);
-    } else if (pass1.name) {
-      searchQueries.push(`"${pass1.name}" Denver event`);
-    }
-    const notableNames: string[] = Array.isArray(pass1.notableNames) ? pass1.notableNames : [];
-    for (const name of notableNames.slice(0, 2)) {
-      searchQueries.push(`"${name}" Denver`);
-    }
-
-    const searchResults = await Promise.all(searchQueries.map(q => this.serperSearch(q, 3)));
-    const searchContext = searchQueries.map((q, i) => {
-      const snippets = searchResults[i].map(r => `• ${r.title}: ${r.snippet}`).join('\n');
-      return `Search: "${q}"\n${snippets || '(no results)'}`;
-    }).join('\n\n');
-
-    // Pass 2: write final summary
-    const pass2Prompt = `You are writing the final event listing for Artistry & Nerdery Live, a Denver/Boulder cultural event newsletter covering art, science, literature, and curiosity-driven events.
+      buildPass2Prompt: (pass1, searchContext) => `You are writing the final event listing for Artistry & Nerdery Live, a Denver/Boulder cultural event newsletter covering art, science, literature, and curiosity-driven events.
 
 Here is what we know from the original post:
 - Event: ${pass1.name || 'unknown'}
@@ -771,40 +756,68 @@ Return ONLY valid JSON (no markdown):
 {
   "neighborhood": "corrected Denver/Boulder neighborhood based on venue from search, or original if no better info",
   "summary": "final 200-char-max summary — must use real names of any collaborators/artists found in search"
-}`;
+}`,
 
-    const pass2Message = await client.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 400,
-      messages: [{ role: 'user', content: pass2Prompt }],
+      mapResult: (pass1, pass2) => ({
+        name: pass1.name || '',
+        venue: pass1.venue || '',
+        neighborhood: pass2.neighborhood || pass1.neighborhood || '',
+        dateStart: pass1.dateStart || '',
+        dateEnd: pass1.dateEnd || '',
+        startTime: pass1.startTime || '',
+        emoji: pass1.emoji || '🎨',
+        summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
+        category: pass1.category || 'Other',
+        price: pass1.price || '',
+        ticketUrl: pass1.ticketUrl || '',
+        announcedAt: pass1.announcedAt || '',
+        selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
+          ? Math.round(pass1.selloutRisk) : null,
+        isRecurring: pass1.isRecurring === true,
+        recurrenceLabel: pass1.recurrenceLabel || '',
+        instanceNote: (pass1.isRecurring && typeof pass1.occurrenceNote === 'string') ? pass1.occurrenceNote : '',
+        specificDates: Array.isArray(pass1.specificDates)
+          ? pass1.specificDates.filter((d: any) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
+          : [],
+      }),
     });
+  }
 
-    const pass2Raw = pass2Message.content[0].type === 'text' ? pass2Message.content[0].text : '{}';
-    const pass2Cleaned = pass2Raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
-    const pass2 = JSON.parse(pass2Cleaned);
+  // Shared pipeline behind redoArtEventAI/redoFoodEventAI: run search queries,
+  // build search context, call the model once, clean+parse its JSON. The
+  // prompt content and no-info decision logic differ genuinely per feed (Art
+  // has a whole occurrence-specific-note task Food doesn't have at all), so
+  // those stay as per-feed config rather than being forced into one shape.
+  private async runListingRedo<TParams, TResult>(
+    params: TParams,
+    config: {
+      buildSearchQueries: (params: TParams) => string[];
+      buildPrompt: (params: TParams, searchContext: string, hasResults: boolean) => string;
+      maxTokens: number;
+      interpretResult: (result: any, params: TParams, hasResults: boolean) => TResult;
+    }
+  ): Promise<TResult> {
+    const client = new Anthropic({ apiKey: this.apiKey });
 
-    return {
-      name: pass1.name || '',
-      venue: pass1.venue || '',
-      neighborhood: pass2.neighborhood || pass1.neighborhood || '',
-      dateStart: pass1.dateStart || '',
-      dateEnd: pass1.dateEnd || '',
-      startTime: pass1.startTime || '',
-      emoji: pass1.emoji || '🎨',
-      summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
-      category: pass1.category || 'Other',
-      price: pass1.price || '',
-      ticketUrl: pass1.ticketUrl || '',
-      announcedAt: pass1.announcedAt || '',
-      selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
-        ? Math.round(pass1.selloutRisk) : null,
-      isRecurring: pass1.isRecurring === true,
-      recurrenceLabel: pass1.recurrenceLabel || '',
-      instanceNote: (pass1.isRecurring && typeof pass1.occurrenceNote === 'string') ? pass1.occurrenceNote : '',
-      specificDates: Array.isArray(pass1.specificDates)
-        ? pass1.specificDates.filter((d: any) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
-        : [],
-    };
+    const searchQueries = config.buildSearchQueries(params);
+    const searchResults = await Promise.all(searchQueries.map(q => this.serperSearch(q, 4)));
+    const searchContext = searchQueries.map((q, i) => {
+      const snippets = searchResults[i].map(r => `• ${r.title}: ${r.snippet}`).join('\n');
+      return `Search: "${q}"\n${snippets || '(no results)'}`;
+    }).join('\n\n');
+    const hasResults = searchResults.some(r => r.length > 0);
+
+    const prompt = config.buildPrompt(params, searchContext, hasResults);
+    const message = await client.messages.create({
+      model: 'claude-opus-4-5',
+      max_tokens: config.maxTokens,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    const raw = message.content[0].type === 'text' ? message.content[0].text : '{}';
+    const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const result = JSON.parse(cleaned);
+
+    return config.interpretResult(result, params, hasResults);
   }
 
   async redoArtEventAI(params: {
@@ -822,33 +835,28 @@ Return ONLY valid JSON (no markdown):
     instanceNote?: string;
     message?: string;
   }> {
-    const client = new Anthropic({ apiKey: this.apiKey });
-    const { name, venue, category, isRecurring, recurrenceLabel, dateStart, currentSummary, currentInstanceNote } = params;
+    return this.runListingRedo(params, {
+      buildSearchQueries: ({ name, venue, isRecurring, dateStart }) => {
+        const monthYear = dateStart
+          ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+          : '';
+        const searchQueries: string[] = [];
+        if (name && venue) searchQueries.push(`"${name}" "${venue}" Denver`);
+        else if (name) searchQueries.push(`"${name}" Denver event`);
+        if (isRecurring && monthYear) {
+          searchQueries.push(`"${name}" ${monthYear} Denver`);
+          if (venue) searchQueries.push(`"${venue}" ${monthYear}`);
+        } else if (monthYear && name) {
+          searchQueries.push(`"${name}" ${monthYear}`);
+        }
+        return searchQueries;
+      },
 
-    const dateLabel = dateStart
-      ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-      : '';
-    const monthYear = dateStart
-      ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-      : '';
-
-    const searchQueries: string[] = [];
-    if (name && venue) searchQueries.push(`"${name}" "${venue}" Denver`);
-    else if (name) searchQueries.push(`"${name}" Denver event`);
-    if (isRecurring && monthYear) {
-      searchQueries.push(`"${name}" ${monthYear} Denver`);
-      if (venue) searchQueries.push(`"${venue}" ${monthYear}`);
-    } else if (monthYear && name) {
-      searchQueries.push(`"${name}" ${monthYear}`);
-    }
-
-    const searchResults = await Promise.all(searchQueries.map(q => this.serperSearch(q, 4)));
-    const searchContext = searchQueries.map((q, i) => {
-      const snippets = searchResults[i].map(r => `• ${r.title}: ${r.snippet}`).join('\n');
-      return `Search: "${q}"\n${snippets || '(no results)'}`;
-    }).join('\n\n');
-
-    const prompt = `You are improving an event listing for Artistry & Nerdery Live, a Denver/Boulder cultural event newsletter.
+      buildPrompt: ({ name, venue, category, isRecurring, recurrenceLabel, dateStart, currentSummary, currentInstanceNote }, searchContext) => {
+        const dateLabel = dateStart
+          ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+          : '';
+        return `You are improving an event listing for Artistry & Nerdery Live, a Denver/Boulder cultural event newsletter.
 
 EVENT DETAILS:
 - Name: ${name}
@@ -887,30 +895,25 @@ Return ONLY valid JSON (no markdown):
   "noNewInfoReason": "brief reason if noNewInfo is true, else empty string"` : `
   "noNewInfo": false`}
 }`;
+      },
 
-    const message = await client.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 500,
-      messages: [{ role: 'user', content: prompt }],
+      maxTokens: 500,
+
+      interpretResult: (result, { isRecurring, currentSummary }) => {
+        if (isRecurring && result.noNewInfo) {
+          return {
+            status: 'no-info',
+            summary: (result.summary || currentSummary || '').substring(0, 200),
+            message: result.noNewInfoReason || 'No specific details for this occurrence found yet — check back closer to the date.',
+          };
+        }
+        return {
+          status: 'updated',
+          summary: (result.summary || currentSummary || '').substring(0, 200),
+          instanceNote: isRecurring ? (result.occurrenceNote || undefined) : undefined,
+        };
+      },
     });
-
-    const raw = message.content[0].type === 'text' ? message.content[0].text : '{}';
-    const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
-    const result = JSON.parse(cleaned);
-
-    if (isRecurring && result.noNewInfo) {
-      return {
-        status: 'no-info',
-        summary: (result.summary || currentSummary || '').substring(0, 200),
-        message: result.noNewInfoReason || 'No specific details for this occurrence found yet — check back closer to the date.',
-      };
-    }
-
-    return {
-      status: 'updated',
-      summary: (result.summary || currentSummary || '').substring(0, 200),
-      instanceNote: isRecurring ? (result.occurrenceNote || undefined) : undefined,
-    };
   }
 
   async redoFoodEventAI(params: {
@@ -920,27 +923,20 @@ Return ONLY valid JSON (no markdown):
     dateStart: string;
     currentSummary: string;
   }): Promise<{ status: 'updated' | 'no-info'; summary?: string; message?: string }> {
-    const client = new Anthropic({ apiKey: this.apiKey });
-    const { name, venue, cuisine, dateStart, currentSummary } = params;
+    return this.runListingRedo(params, {
+      buildSearchQueries: ({ name, venue, cuisine }) => {
+        const searchQueries: string[] = [];
+        if (name && venue) searchQueries.push(`"${name}" "${venue}" Denver food popup`);
+        else if (name) searchQueries.push(`"${name}" Denver food popup`);
+        if (name) searchQueries.push(`"${name}" Denver ${cuisine}`);
+        return searchQueries;
+      },
 
-    const dateLabel = dateStart
-      ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-      : '';
-
-    const searchQueries: string[] = [];
-    if (name && venue) searchQueries.push(`"${name}" "${venue}" Denver food popup`);
-    else if (name) searchQueries.push(`"${name}" Denver food popup`);
-    if (name) searchQueries.push(`"${name}" Denver ${cuisine}`);
-
-    const searchResults = await Promise.all(searchQueries.map(q => this.serperSearch(q, 4)));
-    const searchContext = searchQueries.map((q, i) => {
-      const snippets = searchResults[i].map(r => `• ${r.title}: ${r.snippet}`).join('\n');
-      return `Search: "${q}"\n${snippets || '(no results)'}`;
-    }).join('\n\n');
-
-    const hasResults = searchResults.some(r => r.length > 0);
-
-    const prompt = `You are improving a food popup listing for Amuse Bouche Insider, a Denver foodie newsletter.
+      buildPrompt: ({ name, venue, cuisine, dateStart, currentSummary }, searchContext, hasResults) => {
+        const dateLabel = dateStart
+          ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+          : '';
+        return `You are improving a food popup listing for Amuse Bouche Insider, a Denver foodie newsletter.
 
 EVENT DETAILS:
 - Name: ${name}
@@ -963,29 +959,24 @@ Return ONLY valid JSON (no markdown):
   "summary": "improved description max 200 chars",
   "noNewInfo": ${hasResults ? 'false' : 'true'}
 }`;
+      },
 
-    const message = await client.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 300,
-      messages: [{ role: 'user', content: prompt }],
+      maxTokens: 300,
+
+      interpretResult: (result, { currentSummary }, hasResults) => {
+        if (!hasResults && result.noNewInfo) {
+          return {
+            status: 'no-info',
+            summary: (result.summary || currentSummary || '').substring(0, 200),
+            message: 'No additional details found online yet — description polished.',
+          };
+        }
+        return {
+          status: 'updated',
+          summary: (result.summary || currentSummary || '').substring(0, 200),
+        };
+      },
     });
-
-    const raw = message.content[0].type === 'text' ? message.content[0].text : '{}';
-    const cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
-    const result = JSON.parse(cleaned);
-
-    if (!hasResults && result.noNewInfo) {
-      return {
-        status: 'no-info',
-        summary: (result.summary || currentSummary || '').substring(0, 200),
-        message: 'No additional details found online yet — description polished.',
-      };
-    }
-
-    return {
-      status: 'updated',
-      summary: (result.summary || currentSummary || '').substring(0, 200),
-    };
   }
 
   private async fetchUrlText(url: string): Promise<string> {
