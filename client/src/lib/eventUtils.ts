@@ -2,6 +2,8 @@
 // These were byte-for-byte identical copies living in both page files —
 // consolidated here so a fix/change only has to happen once.
 
+import { computeOccurrences, type RecurrenceRule } from "@shared/recurrence";
+
 export const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export const RISK_LABELS = ["", "Low", "Mild", "Moderate", "High", "Instant sellout"];
@@ -139,6 +141,7 @@ export interface RecurringEventLike {
   startTime?: string | null;
   isRecurring?: boolean | null;
   recurrenceLabel?: string | null;
+  recurrenceRule?: RecurrenceRule | null;
 }
 
 export function expandRecurringEvents<T extends RecurringEventLike>(events: T[]): T[] {
@@ -150,7 +153,6 @@ export function expandRecurringEvents<T extends RecurringEventLike>(events: T[])
   for (const ev of events) {
     if (!ev.isRecurring) { result.push(ev); continue; }
 
-    const type = classifyRecurrence(ev.recurrenceLabel);
     const spanDays = ev.dateEnd && ev.dateEnd !== '' && ev.dateEnd !== ev.dateStart
       ? Math.round((new Date(ev.dateEnd + 'T12:00:00').getTime() - new Date(ev.dateStart + 'T12:00:00').getTime()) / 86400000)
       : 0;
@@ -158,6 +160,20 @@ export function expandRecurringEvents<T extends RecurringEventLike>(events: T[])
       ...ev, dateStart,
       dateEnd: spanDays > 0 ? addCalDays(dateStart, spanDays) : (ev.dateEnd ?? ''),
     } as T);
+
+    // Structured rule present — use the real per-freq date math instead of
+    // the legacy keyword-matched fallback below. Annual gets only 1 edition
+    // ahead (not 2) so a yearly event can't ever surface something up to two
+    // years out; weekly/monthly keep the wider 2-edition window since their
+    // absolute time span stays small regardless.
+    if (ev.recurrenceRule) {
+      const count = ev.recurrenceRule.freq === 'annual' ? 1 : 2;
+      const dates = computeOccurrences(ev.recurrenceRule, ev.dateStart, todayStr, count);
+      for (const d of dates) result.push(makeOccurrence(d));
+      continue;
+    }
+
+    const type = classifyRecurrence(ev.recurrenceLabel);
 
     if (type === 'annual') {
       const monthDay = ev.dateStart.slice(5);

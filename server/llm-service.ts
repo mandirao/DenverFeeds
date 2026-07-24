@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { describeRecurrenceRule, type RecurrenceRule } from '@shared/recurrence';
 
 interface ArtistAnalysis {
   emoji: string;
@@ -537,6 +538,11 @@ Respond with ONLY valid JSON, no markdown formatting:
     ticketUrl: string;
     announcedAt: string;
     selloutRisk: number | null;
+    isRecurring: boolean;
+    recurrenceLabel: string;
+    recurrenceRule: RecurrenceRule | null;
+    instanceNote: string;
+    titleModifier: string;
   }> {
     return this.runListingParse(blurb, imageBase64, imageMediaType, fileName, {
       buildPass1Prompt: (today) => `You are parsing a food popup event in Denver, CO from social media content. Extract details and return ONLY valid JSON.
@@ -553,13 +559,14 @@ Return this exact JSON structure (no markdown, no code blocks):
   "dateStart": "YYYY-MM-DD or empty string if unknown",
   "dateEnd": "YYYY-MM-DD for last day if multi-day, else empty string",
   "emoji": "single food-related emoji that fits the event",
-  "draftSummary": "raw factual notes about the event — food, vibe, key details. Not the final summary, just the raw material.",
+  "draftSummary": "raw factual notes about the event — food, vibe, key details that are DURABLY true of this event/series every time it happens. Not the final summary, just the raw material. Do NOT include anything specific to only one occurrence (a particular date's menu item or theme) — that goes only in occurrenceNote/titleModifier below.",
   "notableNames": ["array of any named chefs, DJs, collaborators, pop-up brands worth researching — empty array if none"],
   "cuisine": "one of: Hot Pot & Shabu, Japanese, Korean, Chinese, Thai & Southeast Asian, Indian & South Asian, Mexican & Latin, Italian, French, Mediterranean, Seafood, BBQ & Southern, Brunch & Breakfast, Dessert & Pastry, Cocktails & Wine, Tasting Menu, Farm-to-Table, Fusion, American, Other",
   "startTime": "HH:MM in 24hr format. Extract if explicitly stated. If not stated: guess based on context — dinner/supper popup → '18:30', brunch event → '10:00', lunch popup → '12:00', cocktails/drinks/happy hour → '17:00', late night → '21:00'. If multi-day (dateEnd differs from dateStart), use empty string. If genuinely no context, default to '18:00'.",
   "price": "price string like '$55/person' or empty string if unknown",
   "ticketUrl": "reservation/ticket URL if mentioned or clearly implied platform URL, else empty string",
   "announcedAt": "YYYY-MM-DD date when this was first announced/posted — check in order: (1) relative timestamp visible in image like '3d' or '2 days ago' subtracted from today, (2) date pattern in file name, (3) empty string if unknown",
+${this.recurrenceParseFieldsBlock()}
   "selloutRisk": integer 1-5 estimating how fast this will sell out based on contextual clues:
     5 = Instant sellout — famous/prestige restaurant (Tavernetta, Beckon, Frasca, Mizuna, Nobu), ticketed tasting menu, explicitly limited seats, single night only, high price
     4 = Sells out within hours — well-known chef or brand collab, Tock/Resy/Eventbrite ticket link present, $60+/person, strong demand signals ("limited spots", "first come first served")
@@ -612,6 +619,9 @@ Named collaborators from search results MUST appear in the summary by name.
 WRONG: "boards from a local cheese shop" / "curated by an expert cheesemonger" / "a Denver fromage specialist"
 RIGHT: "boards from Oh My Gouda" / "cheese by Oh My Gouda's founder"
 If the search results say "Oh My Gouda" — write "Oh My Gouda." Never substitute a generic description for a real name.
+${pass1.isRecurring ? `
+--- OCCURRENCE-SPECIFIC EXCLUSION RULE ---
+This is a recurring event. The summary must describe what's durably true of the series every time it happens — do NOT mention what's specific to only this one date (a particular date's menu item or theme). That belongs only in the separate occurrence note/title, never in this summary.` : ''}
 
 --- AMUSE-BOUCHE VOICE GUIDE ---
 • VOICE: Informed and worldly but conversational. Confidently descriptive — no hedging, no hype.
@@ -632,23 +642,93 @@ Return ONLY valid JSON (no markdown):
   "summary": "final 200-char-max Amuse-Bouche summary — MUST use real names of any collaborators found in search"
 }`,
 
-      mapResult: (pass1, pass2) => ({
-        name: pass1.name || '',
-        venue: pass1.venue || '',
-        neighborhood: pass2.neighborhood || pass1.neighborhood || '',
-        dateStart: pass1.dateStart || '',
-        dateEnd: pass1.dateEnd || '',
-        startTime: pass1.startTime || '',
-        emoji: pass1.emoji || '🍴',
-        summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
-        cuisine: pass1.cuisine || 'Other',
-        price: pass1.price || '',
-        ticketUrl: pass1.ticketUrl || '',
-        announcedAt: pass1.announcedAt || '',
-        selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
-          ? Math.round(pass1.selloutRisk) : null,
-      }),
+      mapResult: (pass1, pass2) => {
+        const recurrenceRule = this.buildRecurrenceRuleFromParse(pass1);
+        return {
+          name: pass1.name || '',
+          venue: pass1.venue || '',
+          neighborhood: pass2.neighborhood || pass1.neighborhood || '',
+          dateStart: pass1.dateStart || '',
+          dateEnd: pass1.dateEnd || '',
+          startTime: pass1.startTime || '',
+          emoji: pass1.emoji || '🍴',
+          summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
+          cuisine: pass1.cuisine || 'Other',
+          price: pass1.price || '',
+          ticketUrl: pass1.ticketUrl || '',
+          announcedAt: pass1.announcedAt || '',
+          selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
+            ? Math.round(pass1.selloutRisk) : null,
+          isRecurring: pass1.isRecurring === true,
+          recurrenceLabel: recurrenceRule ? describeRecurrenceRule(recurrenceRule) : '',
+          recurrenceRule,
+          instanceNote: (pass1.isRecurring && typeof pass1.occurrenceNote === 'string') ? pass1.occurrenceNote : '',
+          titleModifier: (pass1.isRecurring && typeof pass1.titleModifier === 'string') ? pass1.titleModifier.trim().substring(0, 60) : '',
+        };
+      },
     });
+  }
+
+  // Builds a structured RecurrenceRule from parseArtBlurb's pass-1 output.
+  // Only trusts fields that form a complete, valid combination — anything
+  // partial/ambiguous falls back to null (isRecurring can still be true with
+  // no rule; the event just keeps the legacy keyword-fallback expansion
+  // until someone sets a schedule through the picker).
+  private buildRecurrenceRuleFromParse(pass1: any): RecurrenceRule | null {
+    if (pass1.isRecurring !== true) return null;
+    const freq = pass1.recurrenceFreq;
+    if (freq === 'weekly') {
+      const days = Array.isArray(pass1.recurrenceByWeekdays)
+        ? pass1.recurrenceByWeekdays.filter((n: any) => typeof n === 'number' && n >= 0 && n <= 6)
+        : (typeof pass1.recurrenceByWeekday === 'number' && pass1.recurrenceByWeekday >= 0 && pass1.recurrenceByWeekday <= 6 ? [pass1.recurrenceByWeekday] : []);
+      if (days.length === 0) return null;
+      return { freq: 'weekly', byWeekdays: days, interval: pass1.recurrenceInterval === 2 ? 2 : 1 };
+    }
+    if (freq === 'monthly') {
+      if (pass1.recurrenceMonthlyMode === 'nth-weekday') {
+        const ordinal = pass1.recurrenceWeekdayOrdinal;
+        if (typeof pass1.recurrenceByWeekday !== 'number' || pass1.recurrenceByWeekday < 0 || pass1.recurrenceByWeekday > 6) return null;
+        if (![1, 2, 3, 4, -1].includes(ordinal)) return null;
+        return { freq: 'monthly', monthlyMode: 'nth-weekday', byWeekday: pass1.recurrenceByWeekday, weekdayOrdinal: ordinal };
+      }
+      return { freq: 'monthly', monthlyMode: 'day-of-month' };
+    }
+    if (freq === 'annual') return { freq: 'annual' };
+    return null;
+  }
+
+  // Shared JSON-field block spliced into both parseArtBlurb's and parseBlurb's
+  // pass-1 prompts — field semantics are identical regardless of feed voice.
+  // Includes the explicit occurrence-vs-durable separation rule (issue: the
+  // model was folding occurrence-specific detail into the durable summary).
+  private recurrenceParseFieldsBlock(): string {
+    return `  "isRecurring": true if this is a recurring/regular event (monthly, weekly, every first Friday, ongoing series, annual, etc.) — false if it's a one-time event,
+  "recurrenceFreq": ONLY if isRecurring is true, one of "weekly" | "monthly" | "annual" — "weekly" = happens on specific day(s) every week or every N weeks (e.g. "Mondays", "every other Sunday", "weekends"); "monthly" = once a month, either the same calendar date (e.g. "the 15th of every month") or a weekday pattern (e.g. "every 3rd Thursday", "last Friday of the month"); "annual" = once a year/seasonal. null if isRecurring is false OR if no clean weekly/monthly/annual pattern fits (e.g. "recurring series" with no stated cadence) — don't force a guess.
+  "recurrenceInterval": integer, weekly only — 2 if the source explicitly says "every other week"/"bi-weekly", else 1. null otherwise.
+  "recurrenceByWeekdays": array of integers 0-6 (0=Sunday...6=Saturday) — required when recurrenceFreq is "weekly". Usually one day (e.g. [4] for "Thursdays"), but include multiple for patterns spanning several days (e.g. [0,6] for "weekends", [2,4] for "Tuesdays and Thursdays"). null otherwise.
+  "recurrenceByWeekday": integer 0-6 (0=Sunday...6=Saturday) — required when recurrenceFreq is "monthly" and recurrenceMonthlyMode is "nth-weekday". null otherwise.
+  "recurrenceMonthlyMode": "day-of-month" | "nth-weekday" — required only when recurrenceFreq is "monthly". "nth-weekday" for "every Nth <weekday>" / "last <weekday>" patterns; "day-of-month" for same-calendar-date-every-month or a bare "monthly" with no weekday mentioned. null otherwise.
+  "recurrenceWeekdayOrdinal": 1, 2, 3, 4, or -1 (-1 means "last") — required only when recurrenceMonthlyMode is "nth-weekday". null otherwise.
+  "occurrenceNote": ONLY for recurring events — a short factual detail explicitly stated as SPECIFIC TO THIS occurrence only (e.g. "this month we're reading X", "featuring guest Y", "theme: Z this week"), ≤120 chars. Empty string if nothing occurrence-specific is mentioned or if isRecurring is false. CRITICAL: never repeat this detail inside draftSummary — draftSummary must describe only what's durably true of the series every time it happens, not what's true of this one date.
+  "titleModifier": ONLY for recurring events — a SHORT label (a few words, not a sentence) to append after the event name for this occurrence only, e.g. a book title, guest name, or theme, so it would read naturally as "Book Club: Piranesi by Susanna Clarke". Only extract if explicitly named in the source; empty string otherwise. Never invent one.`;
+  }
+
+  // Shared Task-B block spliced into both redoArtEventAI's and
+  // redoFoodEventAI's prompts when the event is recurring. Mechanical
+  // instructions only — Task A's voice/content stays per-feed.
+  private occurrenceDetailTaskPrompt(dateLabel: string, currentInstanceNote: string, currentInstanceTitle: string): string {
+    return `TASK B — FIND OCCURRENCE-SPECIFIC DETAILS:
+This is a recurring event. Look in the search results for specifics about THIS occurrence on ${dateLabel}: who's speaking/performing/guesting this time, what book/topic/theme is featured, any special guest or one-time element.
+- Current occurrence note: "${currentInstanceNote || '(none yet)'}"
+- Current title addition: "${currentInstanceTitle || '(none yet)'}"
+
+If you found concrete details about THIS specific occurrence:
+- occurrenceNote: a short factual detail (max 120 chars), e.g. "March: reading 'Tomorrow and Tomorrow' by Gabrielle Zevin"
+- titleModifier: a SHORT label (a few words, not a sentence) to append after the event name, e.g. just "Tomorrow and Tomorrow" — not a full sentence
+If results only contain generic series info with nothing specific to this date → set both to null and noNewInfo to true.
+If no search results at all → set both to null and noNewInfo to true.
+
+CRITICAL: Task A's description must NOT repeat what you put in occurrenceNote/titleModifier — the description is shown for every date in the series and must only describe what's durably true every time; the note/title are what change per date.`;
   }
 
   async parseArtBlurb(blurb: string, imageBase64?: string, imageMediaType?: string, fileName?: string): Promise<{
@@ -667,7 +747,9 @@ Return ONLY valid JSON (no markdown):
     selloutRisk: number | null;
     isRecurring: boolean;
     recurrenceLabel: string;
+    recurrenceRule: RecurrenceRule | null;
     instanceNote: string;
+    titleModifier: string;
     specificDates: string[];
   }> {
     return this.runListingParse(blurb, imageBase64, imageMediaType, fileName, {
@@ -685,16 +767,14 @@ Return this exact JSON structure (no markdown, no code blocks):
   "dateStart": "YYYY-MM-DD or empty string if unknown",
   "dateEnd": "YYYY-MM-DD for last day if multi-day, else empty string",
   "emoji": "single emoji that captures what's SPECIFIC and interesting about THIS event — not its broad category. Think: what is the event actually ABOUT? A story slam → 🦋 (if by the Moth) or 🎤. Ballet → 🩰. A talk about the universe → 🌌. Dinosaur exhibit → 🦕. Pasta dinner with film → 🍝. 2D art exhibit → 🖼️. Sculpture → 🗿. Textile/fiber arts → 🧶. Writing workshop → ✍️. Photography → 📸. Mushrooms/foraging → 🍄. Bees/insects → 🐝. Ocean/marine life → 🐙. Ancient history → 🏺. Renaissance art → 🏛️. Jazz → 🎷. Poetry → 📜. Chess → ♟️. Origami → 🦢. Astronomy → 🔭. Geology → 🪨. Fermentation → 🍶. Plants/botany → 🌱. Choose the emoji that best conveys the specific vibe and subject — make someone curious just from the emoji alone. Avoid generic fallbacks like 🎨 or 📚 unless nothing more specific fits.",
-  "draftSummary": "raw factual notes — theme, format, speakers, vibe, key details. Not the final summary.",
+  "draftSummary": "raw factual notes — theme, format, speakers, vibe, key details that are DURABLY true of this event/series every time it happens. Not the final summary. Do NOT include anything specific to only one occurrence (a particular date's guest, book, or theme) — that goes only in occurrenceNote/titleModifier below.",
   "notableNames": ["array of any named artists, scientists, authors, performers, organizations worth researching — empty array if none"],
   "category": "one of: Theater & Musicals, Comedy & Storytelling, Film & Cinema, Dance & Movement, Music & Performance, Galleries & Exhibitions, Workshops & Classes, Science & Nature, Books & Talks, Markets & Pop-Ups, Wellness & Community, Parties & Social — choose the closest fit: Theater & Musicals = plays/musicals/opera/broadway touring shows; Comedy & Storytelling = stand-up/improv/story slams/storytelling shows/comedy nights; Film & Cinema = film festivals/screenings/documentary events; Dance & Movement = ballet/modern dance/concert dance/dance nights; Music & Performance = live concerts/jazz/classical/open mic/DJ sets; Galleries & Exhibitions = gallery openings/art exhibits/museum shows/studio tours (viewing, not making); Workshops & Classes = hands-on art classes/figure drawing/pottery/craft nights/making workshops (participatory); Science & Nature = astronomy/science talks/nature/natural history; Books & Talks = book clubs/author events/lectures/seminars/literary panels/salons; Markets & Pop-Ups = artisan markets/craft fairs/swap meets/pop-up shops; Wellness & Community = meditation/yoga/community social events/seasonal gatherings; Parties & Social = dance parties/themed parties/club nights/warehouse raves/costume parties/seasonal bashes/social mixers",
   "startTime": "HH:MM in 24hr format. Extract if explicitly stated. If not stated: guess based on category and context — evening events/receptions/openings → '18:00', comedy/theater/film screening/show → '19:30', dance party/rave/club night → '21:00', morning talk/workshop/class → '10:00', afternoon event → '14:00', market/fair → '10:00', book club/salon → '18:30'. If multi-day exhibition (dateEnd differs from dateStart and it's a gallery/museum show), use empty string.",
   "price": "price string like '$15/person' or 'Free' or empty string if unknown",
   "ticketUrl": "ticket/registration URL if mentioned, else empty string",
   "announcedAt": "YYYY-MM-DD date when first announced/posted — check: (1) relative timestamp in image like '3d' or '2 days ago' subtracted from today, (2) date pattern in file name, (3) empty string if unknown",
-  "isRecurring": true if this is a recurring/regular event (monthly, weekly, every first Friday, ongoing series, annual, etc.) — false if it's a one-time event,
-  "recurrenceLabel": "short human-readable recurrence pattern if isRecurring is true, e.g. 'Monthly', 'Weekly', 'Every 1st Friday', 'Annual', 'Bi-weekly Thursdays' — empty string if not recurring",
-  "occurrenceNote": "ONLY for recurring events: if the source explicitly mentions what is SPECIFIC to THIS occurrence (e.g. 'this month we're reading X', 'featuring artist Y', 'theme: Z this week') — extract that detail in ≤120 chars. Empty string if nothing occurrence-specific is mentioned or if isRecurring is false.",
+${this.recurrenceParseFieldsBlock()}
   "specificDates": ["YYYY-MM-DD", ...] // ONLY populate if 2 or more specific non-contiguous dates are explicitly listed (e.g. "Jul 8, Aug 22, Sep 13" or "March 5 & April 2 & May 7"). Return them sorted ascending. Use empty array [] for single dates, continuous ranges, weekly/monthly patterns, or ongoing exhibitions. Never guess dates — only include dates explicitly named in the source.
   "selloutRisk": integer 1-5 estimating how fast this will sell out:
     5 = Instant sellout — famous venue (Denver Art Museum special, Meow Wolf ticketed, Red Rocks comedy), single night, explicitly limited capacity, famous speaker/performer
@@ -738,6 +818,9 @@ ${searchContext || '(no additional context found)'}
 
 --- NAMING RULE ---
 Named artists, scientists, authors, performers, or organizations from search results MUST appear in the summary by name. Never substitute generic descriptions for real names.
+${pass1.isRecurring ? `
+--- OCCURRENCE-SPECIFIC EXCLUSION RULE ---
+This is a recurring event. The summary must describe what's durably true of the series every time it happens — do NOT mention what's specific to only this one date (the particular guest, book, or theme). That belongs only in the separate occurrence note/title, never in this summary.` : ''}
 
 --- VOICE GUIDE ---
 • VOICE: Smart and curious but not academic. The tone of a friend who knows things — informative without being a lecture.
@@ -758,7 +841,9 @@ Return ONLY valid JSON (no markdown):
   "summary": "final 200-char-max summary — must use real names of any collaborators/artists found in search"
 }`,
 
-      mapResult: (pass1, pass2) => ({
+      mapResult: (pass1, pass2) => {
+        const recurrenceRule = this.buildRecurrenceRuleFromParse(pass1);
+        return {
         name: pass1.name || '',
         venue: pass1.venue || '',
         neighborhood: pass2.neighborhood || pass1.neighborhood || '',
@@ -774,12 +859,15 @@ Return ONLY valid JSON (no markdown):
         selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
           ? Math.round(pass1.selloutRisk) : null,
         isRecurring: pass1.isRecurring === true,
-        recurrenceLabel: pass1.recurrenceLabel || '',
+        recurrenceLabel: recurrenceRule ? describeRecurrenceRule(recurrenceRule) : '',
+        recurrenceRule,
         instanceNote: (pass1.isRecurring && typeof pass1.occurrenceNote === 'string') ? pass1.occurrenceNote : '',
+        titleModifier: (pass1.isRecurring && typeof pass1.titleModifier === 'string') ? pass1.titleModifier.trim().substring(0, 60) : '',
         specificDates: Array.isArray(pass1.specificDates)
           ? pass1.specificDates.filter((d: any) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
           : [],
-      }),
+        };
+      },
     });
   }
 
@@ -829,10 +917,12 @@ Return ONLY valid JSON (no markdown):
     dateStart: string;
     currentSummary: string;
     currentInstanceNote: string;
+    currentInstanceTitle: string;
   }): Promise<{
     status: 'updated' | 'no-info';
     summary?: string;
     instanceNote?: string;
+    instanceTitle?: string;
     message?: string;
   }> {
     return this.runListingRedo(params, {
@@ -852,7 +942,7 @@ Return ONLY valid JSON (no markdown):
         return searchQueries;
       },
 
-      buildPrompt: ({ name, venue, category, isRecurring, recurrenceLabel, dateStart, currentSummary, currentInstanceNote }, searchContext) => {
+      buildPrompt: ({ name, venue, category, isRecurring, recurrenceLabel, dateStart, currentSummary, currentInstanceNote, currentInstanceTitle }, searchContext) => {
         const dateLabel = dateStart
           ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
           : '';
@@ -865,7 +955,6 @@ EVENT DETAILS:
 - Date: ${dateLabel || 'unknown'}
 - Recurring: ${isRecurring ? `Yes — ${recurrenceLabel || 'recurring series'}` : 'No (one-time event)'}
 - Current description: "${currentSummary || '(none yet)'}"
-${isRecurring ? `- Current occurrence note: "${currentInstanceNote || '(none yet)'}"` : ''}
 
 WEB SEARCH RESULTS:
 ${searchContext || '(no results found)'}
@@ -876,21 +965,15 @@ Voice: smart and curious, not academic. Like a knowledgeable friend, not a press
 No hype ("amazing," "incredible," "don't miss"). Lead with what makes this worth attending.
 Use real names of performers/speakers/artists if found in search results.
 If the current description is already excellent and nothing new was found, you may keep it as-is.
+${isRecurring ? "Do NOT mention what's specific to only this date (the particular guest, book, or theme) — that belongs only in Task B below, never in the description." : ''}
 
-${isRecurring ? `TASK B — FIND OCCURRENCE-SPECIFIC DETAILS:
-This is a recurring event. Look in the search results for specifics about THIS occurrence on ${dateLabel}:
-- Who is speaking/performing/guesting this month
-- What book/topic/theme is featured this time
-- Any special guest or one-time element
-
-If you found concrete details about THIS specific occurrence → put them in occurrenceNote (max 120 chars, e.g. "March: reading 'Tomorrow and Tomorrow' by Gabrielle Zevin").
-If results only contain generic series info with nothing specific to this date → set occurrenceNote to null and noNewInfo to true.
-If no search results at all → set occurrenceNote to null and noNewInfo to true.` : ''}
+${isRecurring ? this.occurrenceDetailTaskPrompt(dateLabel, currentInstanceNote, currentInstanceTitle) : ''}
 
 Return ONLY valid JSON (no markdown):
 {
   "summary": "improved description max 200 chars",${isRecurring ? `
   "occurrenceNote": "specific detail for this date only max 120 chars, or null",
+  "titleModifier": "short label to append after the event name for this date only, or null",
   "noNewInfo": true or false,
   "noNewInfoReason": "brief reason if noNewInfo is true, else empty string"` : `
   "noNewInfo": false`}
@@ -911,6 +994,7 @@ Return ONLY valid JSON (no markdown):
           status: 'updated',
           summary: (result.summary || currentSummary || '').substring(0, 200),
           instanceNote: isRecurring ? (result.occurrenceNote || undefined) : undefined,
+          instanceTitle: isRecurring ? (result.titleModifier || undefined) : undefined,
         };
       },
     });
@@ -920,19 +1004,33 @@ Return ONLY valid JSON (no markdown):
     name: string;
     venue: string;
     cuisine: string;
+    isRecurring: boolean;
+    recurrenceLabel: string;
     dateStart: string;
     currentSummary: string;
-  }): Promise<{ status: 'updated' | 'no-info'; summary?: string; message?: string }> {
+    currentInstanceNote: string;
+    currentInstanceTitle: string;
+  }): Promise<{
+    status: 'updated' | 'no-info';
+    summary?: string;
+    instanceNote?: string;
+    instanceTitle?: string;
+    message?: string;
+  }> {
     return this.runListingRedo(params, {
-      buildSearchQueries: ({ name, venue, cuisine }) => {
+      buildSearchQueries: ({ name, venue, cuisine, isRecurring, dateStart }) => {
+        const monthYear = dateStart
+          ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+          : '';
         const searchQueries: string[] = [];
         if (name && venue) searchQueries.push(`"${name}" "${venue}" Denver food popup`);
         else if (name) searchQueries.push(`"${name}" Denver food popup`);
         if (name) searchQueries.push(`"${name}" Denver ${cuisine}`);
+        if (isRecurring && monthYear && name) searchQueries.push(`"${name}" ${monthYear}`);
         return searchQueries;
       },
 
-      buildPrompt: ({ name, venue, cuisine, dateStart, currentSummary }, searchContext, hasResults) => {
+      buildPrompt: ({ name, venue, cuisine, isRecurring, recurrenceLabel, dateStart, currentSummary, currentInstanceNote, currentInstanceTitle }, searchContext, hasResults) => {
         const dateLabel = dateStart
           ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
           : '';
@@ -943,28 +1041,44 @@ EVENT DETAILS:
 - Venue: ${venue}
 - Cuisine: ${cuisine}
 - Date: ${dateLabel || 'unknown'}
+- Recurring: ${isRecurring ? `Yes — ${recurrenceLabel || 'recurring series'}` : 'No (one-time event)'}
 - Current description: "${currentSummary || '(none yet)'}"
 
 WEB SEARCH RESULTS:
 ${searchContext || '(no results found)'}
 
-TASK: Rewrite the description to be sensory, specific, and compelling. Max 200 chars.
+TASK A — IMPROVE THE DESCRIPTION:
+Rewrite the description to be sensory, specific, and compelling. Max 200 chars.
 Voice: like a knowledgeable food-obsessed friend — evocative but not breathless.
 No hype ("amazing," "incredible," "don't miss"). Lead with what makes this worth eating.
 Name the chef or collaborators if found in search results.
 If the current description is already excellent and nothing new was found, improve the prose but keep the core content.
+${isRecurring ? "Do NOT mention what's specific to only this date (a particular date's menu item or theme) — that belongs only in Task B below, never in the description." : ''}
+
+${isRecurring ? this.occurrenceDetailTaskPrompt(dateLabel, currentInstanceNote, currentInstanceTitle) : ''}
 
 Return ONLY valid JSON (no markdown):
 {
-  "summary": "improved description max 200 chars",
-  "noNewInfo": ${hasResults ? 'false' : 'true'}
+  "summary": "improved description max 200 chars",${isRecurring ? `
+  "occurrenceNote": "specific detail for this date only max 120 chars, or null",
+  "titleModifier": "short label to append after the event name for this date only, or null",
+  "noNewInfo": true or false,
+  "noNewInfoReason": "brief reason if noNewInfo is true, else empty string"` : `
+  "noNewInfo": ${hasResults ? 'false' : 'true'}`}
 }`;
       },
 
-      maxTokens: 300,
+      maxTokens: 500,
 
-      interpretResult: (result, { currentSummary }, hasResults) => {
-        if (!hasResults && result.noNewInfo) {
+      interpretResult: (result, { currentSummary, isRecurring }, hasResults) => {
+        if (isRecurring && result.noNewInfo) {
+          return {
+            status: 'no-info',
+            summary: (result.summary || currentSummary || '').substring(0, 200),
+            message: result.noNewInfoReason || 'No specific details for this occurrence found yet — check back closer to the date.',
+          };
+        }
+        if (!isRecurring && !hasResults && result.noNewInfo) {
           return {
             status: 'no-info',
             summary: (result.summary || currentSummary || '').substring(0, 200),
@@ -974,6 +1088,8 @@ Return ONLY valid JSON (no markdown):
         return {
           status: 'updated',
           summary: (result.summary || currentSummary || '').substring(0, 200),
+          instanceNote: isRecurring ? (result.occurrenceNote || undefined) : undefined,
+          instanceTitle: isRecurring ? (result.titleModifier || undefined) : undefined,
         };
       },
     });

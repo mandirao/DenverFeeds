@@ -76,9 +76,7 @@ const artCalendarConfig: ListingCalendarConfig<ArtEvent> = {
 
 // ── Edit Art Event Modal ───────────────────────────────────────────────────────
 
-// Config for the shared Add/Edit form. Arts is the one feed with the
-// specific-dates batch-add feature (features.specificDatesBatchAdd: true) —
-// recurring itself is shared with Food, not Arts-only.
+// Config for the shared Add/Edit form.
 const artFormConfig: ListingFormConfig<InsertArtEvent> = {
   idPrefix: "an",
   apiPath: "/api/art-events",
@@ -90,15 +88,15 @@ const artFormConfig: ListingFormConfig<InsertArtEvent> = {
   categoryOptions: artCategories,
 
   venueLabel: "Venue",
-  namePlaceholder: "Saturn at Opposition",
-  venuePlaceholder: "Denver Art Museum",
-  neighborhoodPlaceholder: "RiNo, LoHi…",
+  namePlaceholder: "e.g. FBC Book Club",
+  venuePlaceholder: "e.g. Fiction Beer Company",
+  neighborhoodPlaceholder: "e.g. Park Hill",
   emojiPlaceholder: "🎨",
   pricePlaceholder: "$20/person",
-  recurrenceLabelPlaceholder: "Monthly, Weekly, Every 1st Friday…",
-  instanceNotePlaceholder: "Theme, featured guest, topic for this date only…",
-  descriptionPlaceholderAdd: "Smart, specific snapshot — what it is, who's behind it, why it's worth noting.",
-  descriptionPlaceholderEdit: "Smart, specific snapshot of the event.",
+  instanceNotePlaceholder: "e.g. This month tackles V.E. Schwab's 'Vicious'—college friends turned superpowered enemies.",
+  instanceTitlePlaceholder: "e.g. Vicious by V.E. Schwab",
+  descriptionPlaceholderAdd: "e.g. Monthly book club at a literary-themed brewery. Grab a pint, settle in, and talk books—no pressure to finish before you show up.",
+  descriptionPlaceholderEdit: "e.g. Monthly book club at a literary-themed brewery. Grab a pint, settle in, and talk books—no pressure to finish before you show up.",
   sourceUrlPlaceholder: "https://instagram.com/p/… or ticketing link",
 
   addModalTitle: "Add an Event",
@@ -107,13 +105,13 @@ const artFormConfig: ListingFormConfig<InsertArtEvent> = {
   createToastTitle: "Event added!",
   discardDescriptionEdit: "You have unsaved changes.",
 
-  screenshotIntro: "Upload a screenshot from Instagram, Eventbrite, a museum site, or anywhere — AI will read the text directly from the image.",
-  blurbIntro: "Paste a caption or description from social media, a newsletter, or a museum listing — AI will extract the event details.",
-  blurbPlaceholder: `e.g.\n\nDenver Art Museum\n\nJoin us for an exclusive evening with artist Kaws on April 12th…`,
+  screenshotIntro: "AI reads screenshots from Instagram, Eventbrite, a museum site, or anywhere.",
+  blurbIntro: "Paste text from anywhere for AI to read.",
+  blurbPlaceholder: "e.g. FBC Book Club at Fiction Beer Company in Park Hill. This month: Vicious by V.E. Schwab. Mon Aug 17, 7 PM.",
 
   parseEndpoint: "/api/ai/parse-art-blurb",
   redoEndpoint: "/api/ai/redo-art-event-content",
-  buildRedoPayload: (form, instanceNote) => ({
+  buildRedoPayload: (form, instanceNote, instanceTitle) => ({
     name: form.name,
     venue: form.venue,
     category: form.category,
@@ -122,21 +120,24 @@ const artFormConfig: ListingFormConfig<InsertArtEvent> = {
     dateStart: form.dateStart,
     currentSummary: form.summary,
     currentInstanceNote: instanceNote,
+    currentInstanceTitle: instanceTitle,
   }),
-  applyRedoResponse: (res, { setForm, setInstanceNote }) => {
+  applyRedoResponse: (res, { setForm, setInstanceNote, setInstanceTitle }) => {
     if (res.status === "no-info") {
       if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
       return { title: "Description polished ✓", description: `No new occurrence details found yet — ${res.message}` };
     }
     if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
     if (res.instanceNote) setInstanceNote(res.instanceNote);
+    if (res.instanceTitle) setInstanceTitle(res.instanceTitle);
     return { title: "Content refreshed ✨", description: "Description updated with latest details." };
   },
-  applyParseResponse: (data, { blurb, form, setForm, setInstanceNote, setSpecificDates, setUseSpecificDates }) => {
-    const { specificDates: aiDates, instanceNote: aiNote, ...rest } = data;
+  applyParseResponse: (data, { blurb, form, setForm, setInstanceNote, setInstanceTitle, setSpecificDates, setUseSpecificDates }) => {
+    const { specificDates: aiDates, instanceNote: aiNote, titleModifier: aiTitle, ...rest } = data;
     if (aiNote) setInstanceNote(aiNote);
+    if (aiTitle) setInstanceTitle(aiTitle);
     if (Array.isArray(aiDates) && aiDates.length >= 2) {
-      setSpecificDates(aiDates);
+      setSpecificDates(aiDates.map((date: string) => ({ date, title: "" })));
       setUseSpecificDates(true);
       setForm({ ...rest, dateStart: "", dateEnd: "", rawBlurb: blurb, sourceUrl: form.sourceUrl || "", requester: form.requester || "" });
       return { title: "Parsed!", description: `${aiDates.length} dates detected — review the series below.` };

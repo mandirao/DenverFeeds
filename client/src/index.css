@@ -27,7 +27,36 @@
   --destructive-foreground: 60 9.1% 97.8%;
   --ring: 20 14.3% 4.1%;
   --radius: 0rem;
+  /* Field = white fill, near-black text, black border — used by form inputs.
+     Global (not scoped) since the name doesn't collide with anything existing. */
+  --field: 0 0% 100%;
+  --field-foreground: 20 14.3% 4.1%;
+  --field-border: 20 14.3% 4.1%;
 }
+
+/* Event form theme — scoped override of card/primary/accent/muted/border/ring
+   for the Add/Edit Event modal only (brand pink surface, near-black primary
+   action, orange accent). Ported from the event-form-redesign mock's
+   app/globals.css (oklch), converted to this project's hsl(var(--x)) triples.
+   Deliberately NOT applied to :root — those tokens are used app-wide
+   (Discovery.tsx, every shadcn ui/* primitive) and repointing them globally
+   would re-theme the whole site, not just this form. */
+.event-form-theme {
+  --card: 332 81% 81%;
+  --card-foreground: 333 23% 9%;
+  --primary: 324 11% 9%;
+  --primary-foreground: 338 80% 98%;
+  --muted: 333 51% 85%;
+  --muted-foreground: 332 14% 27%;
+  --accent: 20 86% 51%;
+  --accent-foreground: 30 100% 98%;
+  --border: 324 11% 9%;
+  --ring: 20 86% 51%;
+  --field: 0 0% 100%;
+  --field-foreground: 333 23% 9%;
+  --field-border: 324 11% 9%;
+}
+
 .dark {
   --background: 240 10% 3.9%;
   --foreground: 0 0% 98%;

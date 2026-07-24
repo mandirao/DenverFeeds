@@ -1,6 +1,8 @@
 import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import type { RecurrenceRule } from "./recurrence";
+import { recurrenceRuleSchema } from "./recurrence";
 
 // Cuisine/category types for Best of Denver restaurant & spot listings
 export const restaurantCuisineTypes = [
@@ -521,7 +523,9 @@ export const foodEvents = pgTable("food_events", {
   selloutRisk: integer("sellout_risk"),
   isRecurring: boolean("is_recurring").notNull().default(false),
   recurrenceLabel: text("recurrence_label"),
+  recurrenceRule: jsonb("recurrence_rule").$type<RecurrenceRule>(),
   instanceNotes: jsonb("instance_notes").$type<Record<string, string>>(),
+  instanceTitles: jsonb("instance_titles").$type<Record<string, string>>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -535,6 +539,7 @@ export const insertFoodEventSchema = createInsertSchema(foodEvents).omit({
   dateStart: z.string().min(1, "Start date is required"),
   cuisine: z.string().min(1, "Cuisine type is required"),
   requester: z.string().min(1, "Your name is required"),
+  recurrenceRule: recurrenceRuleSchema.nullable().optional(),
 });
 
 export type InsertFoodEvent = z.infer<typeof insertFoodEventSchema>;
@@ -572,7 +577,9 @@ export const artEvents = pgTable("art_events", {
   selloutRisk: integer("sellout_risk"),
   isRecurring: boolean("is_recurring").notNull().default(false),
   recurrenceLabel: text("recurrence_label"),
+  recurrenceRule: jsonb("recurrence_rule").$type<RecurrenceRule>(),
   instanceNotes: jsonb("instance_notes").$type<Record<string, string>>(),
+  instanceTitles: jsonb("instance_titles").$type<Record<string, string>>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -586,6 +593,7 @@ export const insertArtEventSchema = createInsertSchema(artEvents).omit({
   dateStart: z.string().min(1, "Start date is required"),
   category: z.string().min(1, "Category is required"),
   requester: z.string().min(1, "Your name is required"),
+  recurrenceRule: recurrenceRuleSchema.nullable().optional(),
 });
 
 export type InsertArtEvent = z.infer<typeof insertArtEventSchema>;

@@ -4,8 +4,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ListingEventFormFields } from "./ListingEventFormFields";
+import { ListingEventFormFields, type SpecificDateEntry } from "./ListingEventFormFields";
 import type { ListingEventBase, ListingFormConfig, ListingInsertBase } from "@/lib/listingFeedConfig";
+import { computeOccurrences, type RecurrenceRule } from "@shared/recurrence";
 
 export function EditListingEventModal<T extends ListingEventBase, TInsert extends ListingInsertBase>({
   event,
@@ -22,11 +23,13 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
   const [errorField, setErrorField] = useState<string | null>(null);
   const [redoLoading, setRedoLoading] = useState(false);
   const [useSpecificDates, setUseSpecificDates] = useState(false);
-  const [specificDates, setSpecificDates] = useState<string[]>([]);
-  const [newDateInput, setNewDateInput] = useState("");
+  const [specificDates, setSpecificDates] = useState<SpecificDateEntry[]>([]);
   const occurrenceDate = event.dateStart;
   const [instanceNote, setInstanceNote] = useState<string>(
     (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? ""
+  );
+  const [instanceTitle, setInstanceTitle] = useState<string>(
+    (event.instanceTitles as Record<string, string> | null | undefined)?.[occurrenceDate] ?? ""
   );
   const [form, setForm] = useState<Partial<TInsert>>({
     emoji: event.emoji || "",
@@ -46,7 +49,12 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
     selloutRisk: event.selloutRisk ?? undefined,
     isRecurring: event.isRecurring ?? false,
     recurrenceLabel: event.recurrenceLabel || "",
+    recurrenceRule: event.recurrenceRule ?? null,
   } as Partial<TInsert>);
+  const [orphanConfirm, setOrphanConfirm] = useState<{
+    payload: Partial<TInsert> & { instanceNotes?: Record<string, string>; instanceTitles?: Record<string, string> };
+    orphaned: { date: string; kind: "note" | "title"; text: string }[];
+  } | null>(null);
 
   const set = (field: keyof TInsert, value: string) => {
     setErrorField(null);
@@ -57,10 +65,13 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
     const keys = ["emoji", "name", "venue", "neighborhood", "dateStart", "dateEnd", "startTime", "summary",
       config.categoryFieldKey, "price", "ticketUrl", "sourceUrl", "requester", "announcedAt", "recurrenceLabel"] as (keyof TInsert)[];
     const originalNote = (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? "";
+    const originalTitle = (event.instanceTitles as Record<string, string> | null | undefined)?.[occurrenceDate] ?? "";
     return keys.some(k => ((form[k] as string) || "") !== (((event as any)[k] as string) || ""))
       || (form.selloutRisk ?? undefined) !== (event.selloutRisk ?? undefined)
       || (form.isRecurring ?? false) !== (event.isRecurring ?? false)
-      || instanceNote !== originalNote;
+      || JSON.stringify(form.recurrenceRule ?? null) !== JSON.stringify(event.recurrenceRule ?? null)
+      || instanceNote !== originalNote
+      || instanceTitle !== originalTitle;
   };
 
   const updateMutation = useMutation({
@@ -77,18 +88,22 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
   });
 
   const batchExpandMutation = useMutation({
-    mutationFn: async (dates: string[]) => {
-      const basePayload = { ...(form as TInsert), instanceNotes: undefined };
-      await apiRequest({ endpoint: `${config.apiPath}/${event.id}`, method: "PATCH", data: { ...basePayload, dateStart: dates[0], dateEnd: "" } });
-      if (dates.length > 1) {
-        await Promise.all(dates.slice(1).map(date =>
-          apiRequest({ endpoint: config.apiPath, method: "POST", data: { ...basePayload, dateStart: date, dateEnd: "" } })
+    // The first entry's title stands in for "Event Name" (hidden while in
+    // specific-dates mode) — falls back to form.name if left blank. Later
+    // entries suffix onto that resolved primary name, same as before.
+    mutationFn: async (entries: SpecificDateEntry[]) => {
+      const basePayload = { ...(form as TInsert), instanceNotes: undefined, instanceTitles: undefined };
+      const primaryName = (entries[0]?.title.trim() || (form.name as string) || "").trim();
+      await apiRequest({ endpoint: `${config.apiPath}/${event.id}`, method: "PATCH", data: { ...basePayload, name: entries[0].title.trim() || primaryName, dateStart: entries[0].date, dateEnd: "" } });
+      if (entries.length > 1) {
+        await Promise.all(entries.slice(1).map(({ date, title }) =>
+          apiRequest({ endpoint: config.apiPath, method: "POST", data: { ...basePayload, name: title.trim() ? `${primaryName}: ${title.trim()}` : primaryName, dateStart: date, dateEnd: "" } })
         ));
       }
     },
-    onSuccess: (_, dates) => {
+    onSuccess: (_, entries) => {
       qc.invalidateQueries({ queryKey: [config.queryKey] });
-      toast({ title: dates.length > 1 ? `Event split into ${dates.length} dates!` : "Updated!", description: "Changes saved." });
+      toast({ title: entries.length > 1 ? `Event split into ${entries.length} dates!` : "Updated!", description: "Changes saved." });
       onClose();
     },
     onError: (e: any) => {
@@ -99,11 +114,18 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (config.features.specificDatesBatchAdd && useSpecificDates) {
-      if (specificDates.length < 1) {
+      const validEntries = specificDates.filter(entry => entry.date);
+      if (validEntries.length < 1) {
         toast({ title: "Add at least one date", variant: "destructive" });
         return;
       }
-      const baseChecks = ["requester", "name", "venue", "emoji", config.categoryFieldKey] as (keyof TInsert)[];
+      const primaryName = validEntries[0]?.title.trim() || (form.name as string)?.trim() || "";
+      if (!primaryName) {
+        setErrorField("name");
+        toast({ title: "Event name is required", variant: "destructive" });
+        return;
+      }
+      const baseChecks = ["requester", "venue", "emoji", config.categoryFieldKey] as (keyof TInsert)[];
       for (const field of baseChecks) {
         if (!(form as any)[field]?.trim()) {
           setErrorField(field as string);
@@ -111,7 +133,7 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
           return;
         }
       }
-      batchExpandMutation.mutate(specificDates);
+      batchExpandMutation.mutate(validEntries);
       return;
     }
     const missing = config.getMissingField(form);
@@ -128,7 +150,32 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
     } else {
       delete updatedNotes[occurrenceDate];
     }
-    updateMutation.mutate({ ...form, instanceNotes: updatedNotes });
+    const existingTitles = (event.instanceTitles as Record<string, string> | null | undefined) ?? {};
+    const updatedTitles = { ...existingTitles };
+    if (instanceTitle.trim()) {
+      updatedTitles[occurrenceDate] = instanceTitle.trim();
+    } else {
+      delete updatedTitles[occurrenceDate];
+    }
+    const payload = { ...form, instanceNotes: updatedNotes, instanceTitles: updatedTitles };
+
+    // If this save changes the schedule, check whether any existing
+    // per-occurrence notes/titles are keyed to a date the new schedule won't
+    // produce — those would silently stop showing up.
+    const newRule = (form.recurrenceRule as RecurrenceRule | null | undefined) ?? null;
+    const seriesStart = (form.dateStart as string) || event.dateStart;
+    if (form.isRecurring && newRule && (Object.keys(updatedNotes).length > 0 || Object.keys(updatedTitles).length > 0)) {
+      const validDates = new Set(computeOccurrences(newRule, seriesStart, seriesStart, 24));
+      const orphaned = [
+        ...Object.entries(updatedNotes).filter(([date]) => !validDates.has(date)).map(([date, text]) => ({ date, kind: "note" as const, text })),
+        ...Object.entries(updatedTitles).filter(([date]) => !validDates.has(date)).map(([date, text]) => ({ date, kind: "title" as const, text })),
+      ];
+      if (orphaned.length > 0) {
+        setOrphanConfirm({ payload, orphaned });
+        return;
+      }
+    }
+    updateMutation.mutate(payload);
   };
 
   const handleClose = () => {
@@ -146,9 +193,9 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
       const res = await apiRequest({
         endpoint: config.redoEndpoint,
         method: "POST",
-        data: config.buildRedoPayload(form, instanceNote),
+        data: config.buildRedoPayload(form, instanceNote, instanceTitle),
       });
-      const { title, description } = config.applyRedoResponse(res, { setForm, setInstanceNote });
+      const { title, description } = config.applyRedoResponse(res, { setForm, setInstanceNote, setInstanceTitle });
       toast({ title, description });
     } catch (e: any) {
       toast({ title: "AI refresh failed", description: e?.message || "Something went wrong.", variant: "destructive" });
@@ -172,16 +219,43 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={!!orphanConfirm} onOpenChange={(open) => { if (!open) setOrphanConfirm(null); }}>
+        <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: config.dialogBg }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-black uppercase">Schedule change affects saved notes</AlertDialogTitle>
+            <AlertDialogDescription>
+              This schedule won't produce the date{orphanConfirm && orphanConfirm.orphaned.length > 1 ? "s" : ""} these are attached to — they'll stop showing up:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <ul className="text-sm space-y-1 -mt-2">
+            {orphanConfirm?.orphaned.map(({ date, kind, text }) => (
+              <li key={`${kind}-${date}`}>
+                <strong>{new Date(date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</strong>
+                {" "}({kind === "title" ? "title addition" : "note"}): {text}
+              </li>
+            ))}
+          </ul>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-2 border-black rounded-none font-black uppercase text-sm" onClick={() => setOrphanConfirm(null)}>Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (orphanConfirm) updateMutation.mutate(orphanConfirm.payload); setOrphanConfirm(null); }}
+              className="bg-black text-white border-2 border-black rounded-none font-black uppercase text-sm hover:text-[#41F2EE]">
+              Save anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open onOpenChange={handleClose}>
-        <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
+        <DialogContent className="event-form-theme w-full max-w-xl border-2 border-primary rounded-none text-card-foreground max-h-[90vh] overflow-y-auto"
           style={{ backgroundColor: config.dialogBg }}>
           <DialogHeader>
-            <DialogTitle className="text-3xl text-black uppercase tracking-tight">
+            <DialogTitle className="font-display text-2xl text-card-foreground uppercase tracking-tight">
               {config.editModalTitle}
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <ListingEventFormFields
               form={form}
               set={set}
@@ -190,6 +264,8 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
               setErrorField={setErrorField}
               instanceNote={instanceNote}
               setInstanceNote={setInstanceNote}
+              instanceTitle={instanceTitle}
+              setInstanceTitle={setInstanceTitle}
               occurrenceDate={occurrenceDate}
               redoLoading={redoLoading}
               onRedoAI={handleRedoAI}
@@ -198,27 +274,26 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
               specificDatesState={config.features.specificDatesBatchAdd ? {
                 useSpecificDates, setUseSpecificDates,
                 specificDates, setSpecificDates,
-                newDateInput, setNewDateInput,
                 onEnterSpecificDates: () => {
                   setUseSpecificDates(true);
-                  setSpecificDates(event.dateStart ? [event.dateStart] : []);
+                  setSpecificDates([{ date: event.dateStart || "", title: (form.name as string) || "" }]);
                 },
-                enterSpecificDatesLabel: "+ Split into specific dates (series / irregular schedule)",
               } : undefined}
             />
 
-            <DialogFooter className="pt-1 flex gap-2">
+            <DialogFooter className="pt-1 flex gap-3">
               <button type="button" onClick={handleClose}
-                className="px-4 py-2.5 border-2 border-black bg-white font-black uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
+                className="inline-flex h-11 items-center justify-center rounded-none border-2 border-field-border bg-field px-5 text-sm font-semibold text-field-foreground transition-colors hover:bg-muted/60">
                 Cancel
               </button>
               <button type="submit" disabled={updateMutation.isPending || batchExpandMutation.isPending}
-                className="flex-1 px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
-                {(updateMutation.isPending || batchExpandMutation.isPending)
-                  ? "Saving…"
-                  : useSpecificDates && specificDates.length > 1
-                    ? `Save as ${specificDates.length} Events`
-                    : "Save Changes"}
+                className="h-11 flex-1 rounded-none bg-primary px-5 text-sm font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50">
+                {(() => {
+                  const validCount = specificDates.filter(e => e.date).length;
+                  if (updateMutation.isPending || batchExpandMutation.isPending) return "Saving…";
+                  if (useSpecificDates && validCount > 1) return `Save as ${validCount} events`;
+                  return "Save changes";
+                })()}
               </button>
             </DialogFooter>
           </form>

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { RecurrenceRule } from "@shared/recurrence";
 
 // Structural shape shared by FoodEvent and ArtEvent — the fields the shared
 // listing components (row, calendar, add/edit modals) actually touch.
@@ -23,7 +24,9 @@ export interface ListingEventBase {
   selloutRisk?: number | null;
   isRecurring?: boolean | null;
   recurrenceLabel?: string | null;
+  recurrenceRule?: RecurrenceRule | null;
   instanceNotes?: Record<string, string> | null;
+  instanceTitles?: Record<string, string> | null;
 }
 
 // Per-feed configuration for <ListingEventRow>. Anything that's a genuine
@@ -82,7 +85,9 @@ export interface ListingInsertBase {
   selloutRisk?: number | null;
   isRecurring?: boolean | null;
   recurrenceLabel?: string | null;
+  recurrenceRule?: RecurrenceRule | null;
   instanceNotes?: Record<string, string> | null;
+  instanceTitles?: Record<string, string> | null;
 }
 
 export interface RedoAIResult {
@@ -90,22 +95,30 @@ export interface RedoAIResult {
   description: string;
 }
 
+/** One row in the specific-dates list. `title`, when set, becomes "Event
+ * Name: title" on the row created for that date — each date produces its
+ * own independent event, so the modifier is baked into that row's own name
+ * rather than routed through the recurring-occurrence instanceTitles map. */
+export interface SpecificDateEntry {
+  date: string;
+  title: string;
+}
+
 export interface ParseAIContext<TInsert> {
   form: Partial<TInsert>;
   blurb: string;
   setForm: (updater: Partial<TInsert>) => void;
   setInstanceNote: (note: string) => void;
-  setSpecificDates: (dates: string[]) => void;
+  setInstanceTitle: (title: string) => void;
+  setSpecificDates: (dates: SpecificDateEntry[]) => void;
   setUseSpecificDates: (v: boolean) => void;
 }
 
 // Per-feed configuration shared by <AddListingEventModal> and <EditListingEventModal>.
-// This is the "feature on/off switch" surface for the two capabilities that
-// currently differ per feed:
-//   - features.specificDatesBatchAdd: Arts-only today (split one event into
-//     several discrete dates in one submit).
-//   - recurring itself is NOT feature-flagged — both feeds have it, it's a
-//     baseline capability of every listing feed.
+// features.specificDatesBatchAdd (split one event into several discrete
+// dates in one submit) and recurring are both baseline capabilities of
+// every listing feed — the flag exists in case a future feed wants it off,
+// not because it's currently feed-specific.
 export interface ListingFormConfig<TInsert extends ListingInsertBase> {
   idPrefix: string;   // "ab" | "an" — used to build stable element ids for focus-on-error
   apiPath: string;    // e.g. "/api/food-events"
@@ -122,8 +135,8 @@ export interface ListingFormConfig<TInsert extends ListingInsertBase> {
   neighborhoodPlaceholder: string;
   emojiPlaceholder: string;
   pricePlaceholder: string;
-  recurrenceLabelPlaceholder: string;
   instanceNotePlaceholder: string;
+  instanceTitlePlaceholder: string;
   descriptionPlaceholderAdd: string;
   descriptionPlaceholderEdit: string;
   sourceUrlPlaceholder: string;
@@ -140,8 +153,8 @@ export interface ListingFormConfig<TInsert extends ListingInsertBase> {
 
   parseEndpoint: string;
   redoEndpoint: string;
-  buildRedoPayload: (form: Partial<TInsert>, instanceNote: string) => Record<string, unknown>;
-  applyRedoResponse: (res: any, ctx: { setForm: (updater: (f: Partial<TInsert>) => Partial<TInsert>) => void; setInstanceNote: (note: string) => void }) => RedoAIResult;
+  buildRedoPayload: (form: Partial<TInsert>, instanceNote: string, instanceTitle: string) => Record<string, unknown>;
+  applyRedoResponse: (res: any, ctx: { setForm: (updater: (f: Partial<TInsert>) => Partial<TInsert>) => void; setInstanceNote: (note: string) => void; setInstanceTitle: (title: string) => void }) => RedoAIResult;
   applyParseResponse: (data: any, ctx: ParseAIContext<TInsert>) => RedoAIResult;
 
   getMissingField: (form: Partial<TInsert>) => { field: string; label: string } | null;

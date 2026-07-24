@@ -100,7 +100,7 @@ export interface IStorage {
 // schedule/discovery-pipeline concepts the other two don't, so folding it in
 // here would force together things that genuinely differ.
 function makeListingCrud<
-  TSelect extends { id: number; dateStart: string; dateEnd?: string | null },
+  TSelect extends { id: number; dateStart: string; dateEnd?: string | null; isRecurring?: boolean | null },
   TInsert
 >(table: any) {
   return {
@@ -110,6 +110,11 @@ function makeListingCrud<
       return all
         .map(e => ({ ...e, dateEnd: e.dateEnd || "" }))
         .filter(ev => {
+          // Recurring events' stored dateStart is just the original anchor —
+          // it's expected to drift into the past as the series continues.
+          // Their real visibility (which occurrences are upcoming) is
+          // determined client-side by expandRecurringEvents, not this cutoff.
+          if (ev.isRecurring) return true;
           const effectiveDate = (ev.dateEnd && ev.dateEnd.trim()) ? ev.dateEnd.trim() : ev.dateStart;
           return effectiveDate >= todayMT;
         });

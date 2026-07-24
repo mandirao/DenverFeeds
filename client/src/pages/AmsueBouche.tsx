@@ -103,9 +103,7 @@ const foodCalendarConfig: ListingCalendarConfig<FoodEvent> = {
 
 // ── Edit Food Event Modal ──────────────────────────────────────────────────────
 
-// Config for the shared Add/Edit form. Food doesn't use the specific-dates
-// batch-add feature (features.specificDatesBatchAdd: false) — recurring
-// itself is available on both feeds.
+// Config for the shared Add/Edit form.
 const foodFormConfig: ListingFormConfig<InsertFoodEvent> = {
   idPrefix: "ab",
   apiPath: "/api/food-events",
@@ -117,15 +115,15 @@ const foodFormConfig: ListingFormConfig<InsertFoodEvent> = {
   categoryOptions: cuisineTypes,
 
   venueLabel: "Venue / Restaurant",
-  namePlaceholder: "Hot Pot Pop-Up Nights",
-  venuePlaceholder: "Hop Alley",
-  neighborhoodPlaceholder: "RiNo, LoHi…",
+  namePlaceholder: "e.g. Hot Pot Pop-Up Nights",
+  venuePlaceholder: "e.g. Hop Alley",
+  neighborhoodPlaceholder: "e.g. RiNo",
   emojiPlaceholder: "🫕",
   pricePlaceholder: "$55/person",
-  recurrenceLabelPlaceholder: "e.g. Every Thursday, 1st Sunday monthly…",
-  instanceNotePlaceholder: "e.g. Special prix-fixe menu this week",
-  descriptionPlaceholderAdd: "Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something.",
-  descriptionPlaceholderEdit: "Sensory snapshot — food, vibe, atmosphere. Name the shop/chef if it adds something.",
+  instanceNotePlaceholder: "e.g. This round runs a Sichuan mala broth—bring friends, no reservations needed.",
+  instanceTitlePlaceholder: "e.g. Sichuan Broth Special",
+  descriptionPlaceholderAdd: "e.g. Monthly hot pot pop-up at a Sichuan spot in RiNo. Build-your-own broth, bring friends, no reservations needed.",
+  descriptionPlaceholderEdit: "e.g. Monthly hot pot pop-up at a Sichuan spot in RiNo. Build-your-own broth, bring friends, no reservations needed.",
   sourceUrlPlaceholder: "https://instagram.com/p/… or eventbrite link",
 
   addModalTitle: "Add a Popup",
@@ -134,28 +132,37 @@ const foodFormConfig: ListingFormConfig<InsertFoodEvent> = {
   createToastTitle: "Popup added!",
   discardDescriptionEdit: "You have unsaved edits. They'll be lost if you close now.",
 
-  screenshotIntro: "Upload a screenshot from Instagram, Eventbrite, or anywhere — AI will read the text directly from the image.",
-  blurbIntro: "Paste a caption or description from social media — AI will extract the event details.",
-  blurbPlaceholder: `e.g.\n\nhopalleydenver\n\nWe are happy to announce our Hop Alley Hot Pot Pop-Up Nights! On March 26-28…`,
+  screenshotIntro: "AI reads screenshots from Instagram, Eventbrite, or anywhere.",
+  blurbIntro: "Paste text from anywhere for AI to read.",
+  blurbPlaceholder: "e.g. Hot Pot Pop-Up Nights at Hop Alley in RiNo. This round: Sichuan mala broth. Fri Mar 26, 7 PM.",
 
   parseEndpoint: "/api/ai/parse-blurb",
   redoEndpoint: "/api/ai/redo-food-event-content",
-  buildRedoPayload: (form) => ({
+  buildRedoPayload: (form, instanceNote, instanceTitle) => ({
     name: form.name,
     venue: form.venue,
     cuisine: form.cuisine,
+    isRecurring: form.isRecurring,
+    recurrenceLabel: form.recurrenceLabel,
     dateStart: form.dateStart,
     currentSummary: form.summary,
+    currentInstanceNote: instanceNote,
+    currentInstanceTitle: instanceTitle,
   }),
-  applyRedoResponse: (res, { setForm }) => {
+  applyRedoResponse: (res, { setForm, setInstanceNote, setInstanceTitle }) => {
     if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
     if (res.status === "no-info") {
       return { title: "Description polished ✓", description: res.message || "No new details found online." };
     }
+    if (res.instanceNote) setInstanceNote(res.instanceNote);
+    if (res.instanceTitle) setInstanceTitle(res.instanceTitle);
     return { title: "Content refreshed ✨", description: "Description updated with latest details." };
   },
-  applyParseResponse: (data, { blurb, form, setForm }) => {
-    setForm({ ...data, rawBlurb: blurb, sourceUrl: form.sourceUrl || "", requester: form.requester || "" });
+  applyParseResponse: (data, { blurb, form, setForm, setInstanceNote, setInstanceTitle }) => {
+    const { instanceNote: aiNote, titleModifier: aiTitle, ...rest } = data;
+    if (aiNote) setInstanceNote(aiNote);
+    if (aiTitle) setInstanceTitle(aiTitle);
+    setForm({ ...rest, rawBlurb: blurb, sourceUrl: form.sourceUrl || "", requester: form.requester || "" });
     return { title: "Blurb parsed!", description: "Review the details below." };
   },
 
@@ -177,7 +184,7 @@ const foodFormConfig: ListingFormConfig<InsertFoodEvent> = {
   },
 
   features: {
-    specificDatesBatchAdd: false,
+    specificDatesBatchAdd: true,
   },
 };
 

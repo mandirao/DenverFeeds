@@ -1,22 +1,48 @@
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
+import { Plus, ChevronDown, Bell } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { riskPips, RISK_LABELS } from "@/lib/eventUtils";
-import type { ListingFormConfig, ListingInsertBase } from "@/lib/listingFeedConfig";
+import { cn } from "@/lib/utils";
+import type { ListingFormConfig, ListingInsertBase, SpecificDateEntry } from "@/lib/listingFeedConfig";
+import { RecurrenceFreqSelect, RecurrencePicker } from "./RecurrencePicker";
+import { SegmentedControl } from "./segmented-control";
+import { Field, TextField, TextArea, controlBase } from "./form-primitives";
+import { describeRecurrenceRule, type RecurrenceRule } from "@shared/recurrence";
 
-export const inputClass = "border-2 border-black rounded-none bg-white text-sm";
-export const labelClass = "font-black text-xs uppercase tracking-wide text-black mb-0.5 block";
+// "Self" — matches the convention already used in ListingEventRow.tsx for
+// deciding whether to show a "tip credit" attribution on the feed.
+const SELF_NAME = "Mandi";
+
+export type { SpecificDateEntry };
 
 export interface SpecificDatesState {
   useSpecificDates: boolean;
   setUseSpecificDates: (v: boolean) => void;
-  specificDates: string[];
-  setSpecificDates: (updater: string[] | ((prev: string[]) => string[])) => void;
-  newDateInput: string;
-  setNewDateInput: (v: string) => void;
+  specificDates: SpecificDateEntry[];
+  setSpecificDates: (updater: SpecificDateEntry[] | ((prev: SpecificDateEntry[]) => SpecificDateEntry[])) => void;
   /** Seeds specificDates/clears date-range fields — differs slightly between Add (seeds from form) and Edit (seeds from the fixed event prop). */
   onEnterSpecificDates: () => void;
-  enterSpecificDatesLabel: string;
+}
+
+/** Drives which schedule fields render — a pure UI concept layered over the
+ * existing isRecurring/dateEnd/useSpecificDates flags, not a new data field. */
+type WhenMode = "once" | "range" | "recurring" | "irregular";
+
+function deriveInitialWhenMode<T extends ListingInsertBase>(form: Partial<T>, useSpecificDates: boolean): WhenMode {
+  if (useSpecificDates) return "irregular";
+  if (form.isRecurring) return "recurring";
+  if (form.dateEnd && form.dateEnd !== form.dateStart) return "range";
+  return "once";
+}
+
+/** Small circular icon badge used on collapsible section headers — "+" when
+ * collapsed, chevron when expanded, matching the mock's treatment. */
+function CollapseIcon({ open }: { open: boolean }) {
+  return (
+    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+      {open ? <ChevronDown className="size-3.5" /> : <Plus className="size-3.5" />}
+    </span>
+  );
 }
 
 export function ListingEventFormFields<TInsert extends ListingInsertBase>({
@@ -27,6 +53,8 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
   setErrorField,
   instanceNote,
   setInstanceNote,
+  instanceTitle,
+  setInstanceTitle,
   occurrenceDate,
   redoLoading,
   onRedoAI,
@@ -41,6 +69,8 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
   setErrorField: (f: string | null) => void;
   instanceNote: string;
   setInstanceNote: (s: string) => void;
+  instanceTitle: string;
+  setInstanceTitle: (s: string) => void;
   occurrenceDate?: string | null;
   redoLoading: boolean;
   onRedoAI: () => void;
@@ -53,215 +83,298 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
   const category = (form[config.categoryFieldKey] as string | undefined) || "";
   const canUseSpecificDates = config.features.specificDatesBatchAdd && specificDatesState;
 
+  const [whenMode, setWhenMode] = useState<WhenMode>(() =>
+    deriveInitialWhenMode(form, !!(canUseSpecificDates && specificDatesState!.useSpecificDates))
+  );
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const [showInstanceCustomize, setShowInstanceCustomize] = useState(false);
+
+  const selectWhenMode = (next: WhenMode) => {
+    if (next === whenMode) return;
+    if (whenMode === "irregular" && canUseSpecificDates) {
+      const first = specificDatesState!.specificDates[0];
+      const restoredName = first?.title.trim() || (form.name as string) || "";
+      if (restoredName) set("name" as keyof TInsert, restoredName);
+      specificDatesState!.setUseSpecificDates(false);
+      specificDatesState!.setSpecificDates([]);
+    }
+    if (next === "irregular" && canUseSpecificDates) {
+      specificDatesState!.onEnterSpecificDates();
+    } else {
+      setForm(f => ({
+        ...f,
+        isRecurring: next === "recurring",
+        dateEnd: next === "range" ? (f.dateEnd || "") : "",
+      } as Partial<TInsert>));
+    }
+    setWhenMode(next);
+  };
+
+  const rule = (form.recurrenceRule as RecurrenceRule | null | undefined) ?? null;
+  const setUntil = (until: string) => {
+    setForm(f => {
+      const current = (f.recurrenceRule as RecurrenceRule | null | undefined) ?? null;
+      const nextRule: RecurrenceRule = current ? { ...current, until: until || undefined } : { freq: "weekly", until: until || undefined };
+      return { ...f, recurrenceRule: nextRule, recurrenceLabel: describeRecurrenceRule(nextRule) } as Partial<TInsert>;
+    });
+  };
+
+  const whenOptions = [
+    { value: "once" as const, label: "Once" },
+    { value: "range" as const, label: "Range" },
+    { value: "recurring" as const, label: "Recurring" },
+    ...(canUseSpecificDates ? [{ value: "irregular" as const, label: "Irregular" }] : []),
+  ];
+
+  const requesterName = (form.requester as string) || "";
+  const isTipster = requesterName.trim() !== "" && requesterName.trim().toLowerCase() !== SELF_NAME.toLowerCase();
+  const selloutRisk = form.selloutRisk ?? 0;
+  const showAnnouncedOnSurface = selloutRisk >= 4;
+
   return (
-    <>
-      {/* Your Name — always first */}
-      <div>
-        <label className={labelClass}>Your Name *</label>
-        <Input id={idFor("requester")} value={form.requester || ""} onChange={e => set("requester" as keyof TInsert, e.target.value)}
-          className={inputClass + fieldErr("requester")} placeholder="Mandi" />
+    <div className="flex flex-col gap-5">
+      {/* WHEN — drives every other schedule-related field below */}
+      <Field label="When" required>
+        <SegmentedControl ariaLabel="Event cadence" value={whenMode} onChange={selectWhenMode} options={whenOptions} />
+      </Field>
+
+      {whenMode === "irregular" ? (
+        <Field label="Event name & date" required hint="each date is its own event">
+          <div className="flex flex-col rounded-none border-2 border-field-border/40 bg-field/40">
+            {specificDatesState!.specificDates.map((entry, i) => (
+              <div key={i} className="flex items-center gap-2 p-2.5">
+                <TextField aria-label="Title for this date" value={entry.title}
+                  onChange={e => specificDatesState!.setSpecificDates(prev => prev.map((p, pi) => pi === i ? { ...p, title: e.target.value } : p))}
+                  placeholder={i === 0 ? config.namePlaceholder : "Same as first—edit to override"} />
+                <TextField type="date" aria-label="Date" className="max-w-[10.5rem]" value={entry.date}
+                  onChange={e => specificDatesState!.setSpecificDates(prev => prev.map((p, pi) => pi === i ? { ...p, date: e.target.value } : p))} />
+                <button type="button" aria-label="Remove date"
+                  disabled={specificDatesState!.specificDates.length <= 1}
+                  onClick={() => specificDatesState!.setSpecificDates(prev => prev.filter((_, pi) => pi !== i))}
+                  className="flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-card-foreground disabled:opacity-30">
+                  ×
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={() => specificDatesState!.setSpecificDates(prev => [...prev, { date: "", title: "" }])}
+              className="flex items-center gap-1.5 border-t border-field-border/30 px-2.5 py-2.5 text-sm font-semibold text-accent transition-colors hover:bg-muted/40">
+              <Plus className="size-4" />
+              Add date
+            </button>
+          </div>
+        </Field>
+      ) : (
+        <Field label="Event name" required htmlFor={idFor("name")}>
+          <TextField id={idFor("name")} value={form.name || ""} onChange={e => set("name" as keyof TInsert, e.target.value)}
+            className={fieldErr("name")} placeholder={config.namePlaceholder} />
+        </Field>
+      )}
+
+      {/* Category + Emoji */}
+      <div className="flex gap-3">
+        <Field label={config.categoryLabel} required htmlFor={idFor(config.categoryFieldKey)} className="flex-1">
+          <Select value={category} onValueChange={v => { setErrorField(null); set(config.categoryFieldKey as keyof TInsert, v); }}>
+            <SelectTrigger id={idFor(config.categoryFieldKey)} className={cn(controlBase, "w-full", fieldErr(config.categoryFieldKey))}>
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[280px] overflow-y-auto">
+              {config.categoryOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="Emoji" required htmlFor={idFor("emoji")} className="w-16 shrink-0">
+          <TextField id={idFor("emoji")} value={form.emoji || ""} onChange={e => set("emoji" as keyof TInsert, e.target.value)}
+            className={cn("px-0 text-center text-lg", fieldErr("emoji"))} placeholder={config.emojiPlaceholder} />
+        </Field>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-5 gap-y-3 md:gap-y-0">
-
-        {/* Left column — core identity + scheduling */}
-        <div className="space-y-3">
-          <div>
-            <label className={labelClass}>Event Name *</label>
-            <Input id={idFor("name")} value={form.name || ""} onChange={e => set("name" as keyof TInsert, e.target.value)}
-              className={inputClass + fieldErr("name")} placeholder={config.namePlaceholder} />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={labelClass}>{config.venueLabel} *</label>
-              <Input id={idFor("venue")} value={form.venue || ""} onChange={e => set("venue" as keyof TInsert, e.target.value)}
-                className={inputClass + fieldErr("venue")} placeholder={config.venuePlaceholder} />
-            </div>
-            <div>
-              <label className={labelClass}>Neighborhood</label>
-              <Input value={form.neighborhood || ""} onChange={e => set("neighborhood" as keyof TInsert, e.target.value)}
-                className={inputClass} placeholder={config.neighborhoodPlaceholder} />
-            </div>
-          </div>
-
-          {canUseSpecificDates && specificDatesState!.useSpecificDates ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className={labelClass}>Specific Dates *</label>
-                <button type="button" onClick={() => {
-                  specificDatesState!.setUseSpecificDates(false);
-                  if (specificDatesState!.specificDates.length > 0) set("dateStart" as keyof TInsert, specificDatesState!.specificDates[0]);
-                  specificDatesState!.setSpecificDates([]);
-                }} className="text-xs text-gray-500 underline hover:text-black normal-case font-normal">
-                  Switch to date range
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-1.5 min-h-[28px]">
-                {specificDatesState!.specificDates.map(d => (
-                  <span key={d} className="flex items-center gap-1 bg-black text-white text-xs font-bold px-2 py-1">
-                    {new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    <button type="button" onClick={() => specificDatesState!.setSpecificDates(prev => prev.filter(x => x !== d))} className="hover:text-[#41F2EE] leading-none ml-0.5">×</button>
-                  </span>
-                ))}
-                {specificDatesState!.specificDates.length === 0 && <span className="text-xs text-gray-400 italic">No dates added yet</span>}
-              </div>
-              <div className="flex gap-2">
-                <Input type="date" value={specificDatesState!.newDateInput} onChange={e => specificDatesState!.setNewDateInput(e.target.value)} className={inputClass + " flex-1"} />
-                <button type="button" onClick={() => {
-                  const { newDateInput, specificDates, setSpecificDates, setNewDateInput } = specificDatesState!;
-                  if (newDateInput && !specificDates.includes(newDateInput)) {
-                    setSpecificDates(prev => [...prev, newDateInput].sort());
-                    setNewDateInput("");
-                  }
-                }} className="px-3 py-1.5 bg-black text-white text-xs font-black uppercase border-2 border-black hover:text-[#41F2EE] transition-colors whitespace-nowrap">
-                  + Add
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className={labelClass}>Start Date *</label>
-                  <Input id={idFor("dateStart")} type="date" value={form.dateStart || ""} onChange={e => set("dateStart" as keyof TInsert, e.target.value)}
-                    className={inputClass + fieldErr("dateStart")} />
-                </div>
-                <div>
-                  <label className={labelClass}>End Date</label>
-                  <Input type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd" as keyof TInsert, e.target.value)}
-                    className={inputClass} />
-                </div>
-              </div>
-              {canUseSpecificDates && (
-                <button type="button" onClick={specificDatesState!.onEnterSpecificDates}
-                  className="text-xs text-gray-500 underline hover:text-black normal-case font-normal">
-                  {specificDatesState!.enterSpecificDatesLabel}
-                </button>
-              )}
-            </div>
-          )}
-
-          {!(canUseSpecificDates && specificDatesState!.useSpecificDates) && !(form.dateEnd && form.dateEnd !== form.dateStart) && (
-            <div>
-              <label className={labelClass}>Start Time <span className="font-normal normal-case opacity-60">(approximate)</span></label>
-              <Input type="time" value={form.startTime || ""} onChange={e => set("startTime" as keyof TInsert, e.target.value)}
-                className={inputClass} placeholder="19:00" />
-            </div>
-          )}
-
-          {/* Recurring — below dates */}
-          <div>
-            <label className={labelClass}>Recurring <span className="font-normal normal-case opacity-60">(optional)</span></label>
-            <div className="flex items-center gap-2 mt-1">
-              <button type="button"
-                onClick={() => setForm(f => ({ ...f, isRecurring: !f.isRecurring }))}
-                className="flex items-center gap-1.5 px-3 py-1.5 border-2 text-xs font-black transition-colors"
-                style={{ borderColor: "black", backgroundColor: form.isRecurring ? "black" : "white", color: form.isRecurring ? "white" : "black" }}
-              >↻ {form.isRecurring ? "Yes" : "No"}</button>
-              {form.isRecurring && (
-                <Input value={form.recurrenceLabel || ""} onChange={e => set("recurrenceLabel" as keyof TInsert, e.target.value)}
-                  className={inputClass + " flex-1"} placeholder={config.recurrenceLabelPlaceholder} />
-              )}
-            </div>
-            {form.isRecurring && (
-              <div className="border-2 border-dashed border-black/40 p-2 mt-2" style={{ backgroundColor: "rgba(0,0,0,0.04)" }}>
-                <label className="font-black text-xs uppercase tracking-wide text-black mb-1 block">
-                  ↻ This occurrence only
-                  {occurrenceDate && (
-                    <span className="font-normal normal-case ml-1 opacity-50">
-                      — {new Date(occurrenceDate + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                    </span>
-                  )}
-                </label>
-                <textarea
-                  value={instanceNote}
-                  onChange={e => setInstanceNote(e.target.value)}
-                  rows={2}
-                  className="w-full border-2 border-black/30 bg-white text-sm p-2 resize-none focus:outline-none focus:border-black"
-                  placeholder={config.instanceNotePlaceholder}
-                />
-                <p className="text-[10px] text-black/40 mt-0.5">Won't affect other dates in the series.</p>
-              </div>
-            )}
+      {/* Description */}
+      <Field htmlFor={idFor("summary")}>
+        <div className="mb-1 flex items-center justify-between">
+          <span className="flex items-baseline gap-1.5 text-[0.7rem] font-bold uppercase tracking-wide text-card-foreground">
+            Description
+            <span className="font-medium normal-case tracking-normal text-muted-foreground">recommended</span>
+          </span>
+          <div className="flex items-center gap-2.5">
+            <button type="button" onClick={onRedoAI} disabled={redoLoading}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-accent transition-opacity hover:opacity-80 disabled:opacity-40"
+              title={form.isRecurring ? "Search for this occurrence's latest details + polish description" : "Polish description with latest web info"}>
+              ✨ {redoLoading ? "Searching…" : "AI Refresh"}
+            </button>
+            <span className="text-xs tabular-nums text-muted-foreground">{(form.summary || "").length}/200</span>
           </div>
         </div>
-
-        {/* Right column — metadata */}
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={labelClass}>Emoji *</label>
-              <Input id={idFor("emoji")} value={form.emoji || ""} onChange={e => set("emoji" as keyof TInsert, e.target.value)}
-                className={inputClass + fieldErr("emoji")} placeholder={config.emojiPlaceholder} />
-            </div>
-            <div>
-              <label className={labelClass}>{config.categoryLabel} *</label>
-              <Select value={category} onValueChange={v => { setErrorField(null); set(config.categoryFieldKey as keyof TInsert, v); }}>
-                <SelectTrigger id={idFor(config.categoryFieldKey)} className={inputClass + fieldErr(config.categoryFieldKey)}>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[280px] overflow-y-auto">
-                  {config.categoryOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className={labelClass}>Price</label>
-              <Input value={form.price || ""} onChange={e => set("price" as keyof TInsert, e.target.value)}
-                className={inputClass} placeholder={config.pricePlaceholder} />
-            </div>
-            <div>
-              <label className={labelClass}>Ticket URL</label>
-              <Input value={form.ticketUrl || ""} onChange={e => set("ticketUrl" as keyof TInsert, e.target.value)}
-                className={inputClass} placeholder="https://…" />
-            </div>
-          </div>
-          <div>
-            <label className={labelClass}>Original post link</label>
-            <Input value={form.sourceUrl || ""} onChange={e => set("sourceUrl" as keyof TInsert, e.target.value)}
-              className={inputClass} placeholder={config.sourceUrlPlaceholder} />
-          </div>
-          <div>
-            <label className={labelClass}>Announced <span className="font-normal normal-case opacity-60">(optional)</span></label>
-            <Input type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt" as keyof TInsert, e.target.value)}
-              className={inputClass} />
-          </div>
-          <div>
-            <label className={labelClass}>Sellout Risk <span className="font-normal normal-case opacity-60">(optional)</span></label>
-            <div className="flex gap-1.5 mt-1">
-              {[1,2,3,4,5].map(n => (
-                <button key={n} type="button"
-                  onClick={() => setForm(f => ({ ...f, selloutRisk: f.selloutRisk === n ? undefined : n }))}
-                  className="flex-1 py-1 border-2 text-xs font-black transition-colors"
-                  style={{ borderColor: "black", backgroundColor: form.selloutRisk === n ? "black" : "white", color: form.selloutRisk === n ? "white" : "black" }}
-                >{n}</button>
-              ))}
-            </div>
-            {form.selloutRisk && (
-              <p className="text-xs text-gray-500 mt-0.5">{RISK_LABELS[form.selloutRisk]} — {riskPips(form.selloutRisk)}</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Description — full width at bottom */}
-      <div>
-        <div className="flex items-center justify-between mb-0.5">
-          <label className={labelClass + " mb-0"}>Description <span className="font-normal normal-case opacity-60">(recommended)</span></label>
-          <button type="button" onClick={onRedoAI} disabled={redoLoading}
-            className="flex items-center gap-1 px-2.5 py-1 border-2 border-black bg-white text-xs font-black uppercase tracking-wide hover:bg-black hover:text-[#41F2EE] transition-colors disabled:opacity-40"
-            title={form.isRecurring ? "Search for this occurrence's latest details + polish description" : "Polish description with latest web info"}>
-            {redoLoading ? "Searching…" : "✨ Refresh AI"}
-          </button>
-        </div>
-        <Textarea value={form.summary || ""} onChange={e => set("summary" as keyof TInsert, e.target.value)}
-          className={`${inputClass} resize-none`} rows={3} maxLength={200}
+        <TextArea id={idFor("summary")} value={form.summary || ""} onChange={e => set("summary" as keyof TInsert, e.target.value)}
+          rows={3} maxLength={200}
           placeholder={mode === "add" ? config.descriptionPlaceholderAdd : config.descriptionPlaceholderEdit} />
-        <p className="text-xs text-gray-400 mt-0.5 text-right">{(form.summary || "").length}/200</p>
+      </Field>
+
+      {/* Date/schedule block — shape depends entirely on whenMode */}
+      {whenMode === "once" && (
+        <Field label="Date" required htmlFor={idFor("dateStart")} className="max-w-[16rem]">
+          <TextField id={idFor("dateStart")} type="date" value={form.dateStart || ""} onChange={e => set("dateStart" as keyof TInsert, e.target.value)}
+            className={fieldErr("dateStart")} />
+        </Field>
+      )}
+
+      {whenMode === "range" && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Start date" required htmlFor={idFor("dateStart")}>
+            <TextField id={idFor("dateStart")} type="date" value={form.dateStart || ""} onChange={e => set("dateStart" as keyof TInsert, e.target.value)}
+              className={fieldErr("dateStart")} />
+          </Field>
+          <Field label="End date" required htmlFor="dateEnd">
+            <TextField id="dateEnd" type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd" as keyof TInsert, e.target.value)} />
+          </Field>
+        </div>
+      )}
+
+      {whenMode === "recurring" && (
+        <div className="flex flex-col gap-4">
+          <div className={cn("rounded-none border-2 transition-colors", showInstanceCustomize ? "border-field-border/40" : "border-field-border/50 bg-muted/40")}>
+            <button type="button" aria-expanded={showInstanceCustomize} onClick={() => setShowInstanceCustomize(v => !v)}
+              className="flex w-full items-center gap-2 px-3 py-3 text-left text-sm font-semibold text-card-foreground">
+              <CollapseIcon open={showInstanceCustomize} />
+              <span className="flex flex-1 flex-col">
+                <span>Customize the first date</span>
+                {!showInstanceCustomize && (
+                  <span className="text-xs font-medium text-muted-foreground">
+                    a subtitle or note just for this occurrence
+                    {occurrenceDate && ` — ${new Date(occurrenceDate + "T12:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`}
+                  </span>
+                )}
+              </span>
+              {!showInstanceCustomize && <span className="shrink-0 text-xs font-semibold text-accent">Add</span>}
+            </button>
+            {showInstanceCustomize && (
+              <div className="flex flex-col gap-4 border-t border-field-border/30 p-3">
+                <Field label="Subtitle for this date">
+                  <TextField value={instanceTitle} onChange={e => setInstanceTitle(e.target.value)} placeholder={config.instanceTitlePlaceholder} />
+                </Field>
+                <Field label="Note shown in feed">
+                  <TextArea rows={2} value={instanceNote} onChange={e => setInstanceNote(e.target.value)} placeholder={config.instanceNotePlaceholder} />
+                </Field>
+                <p className="text-xs leading-relaxed text-muted-foreground">Won't affect other dates in the series.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Starts" required htmlFor={idFor("dateStart")}>
+              <TextField id={idFor("dateStart")} type="date" value={form.dateStart || ""} onChange={e => set("dateStart" as keyof TInsert, e.target.value)}
+                className={fieldErr("dateStart")} />
+            </Field>
+            <Field label="Ends" hint="optional" htmlFor="recurrence-until">
+              <TextField id="recurrence-until" type="date" value={rule?.until || ""} onChange={e => setUntil(e.target.value)} />
+            </Field>
+          </div>
+
+          <div className="flex flex-wrap items-end gap-3">
+            <RecurrenceFreqSelect rule={rule} onChange={(r, label) => setForm(f => ({ ...f, recurrenceRule: r, recurrenceLabel: label } as Partial<TInsert>))} />
+            {rule && (
+              <RecurrencePicker rule={rule} dateStart={form.dateStart || ""} onRuleChange={(r, label) => setForm(f => ({ ...f, recurrenceRule: r, recurrenceLabel: label } as Partial<TInsert>))} />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Venue / Neighborhood */}
+      <div className="grid grid-cols-2 gap-3">
+        <Field label={config.venueLabel} required htmlFor={idFor("venue")}>
+          <TextField id={idFor("venue")} value={form.venue || ""} onChange={e => set("venue" as keyof TInsert, e.target.value)}
+            className={fieldErr("venue")} placeholder={config.venuePlaceholder} />
+        </Field>
+        <Field label="Neighborhood" htmlFor={idFor("neighborhood")}>
+          <TextField id={idFor("neighborhood")} value={form.neighborhood || ""} onChange={e => set("neighborhood" as keyof TInsert, e.target.value)}
+            placeholder={config.neighborhoodPlaceholder} />
+        </Field>
       </div>
-    </>
+
+      {/* Announced auto-surfaces for high-demand events */}
+      {showAnnouncedOnSurface && (
+        <Field label="Date announced" hint="high demand—worth logging" htmlFor="announced-surface" className="max-w-[16rem]">
+          <TextField id="announced-surface" type="date" value={(form.announcedAt as string) || ""}
+            onChange={e => set("announcedAt" as keyof TInsert, e.target.value)} />
+        </Field>
+      )}
+
+      {/* More details — collapsed by default */}
+      <div className={cn("rounded-none border-2 transition-colors", showMoreDetails ? "border-field-border/40" : "border-field-border/50 bg-muted/40")}>
+        <button type="button" aria-expanded={showMoreDetails} onClick={() => setShowMoreDetails(v => !v)}
+          className="flex w-full items-center gap-2 px-3 py-3 text-left text-sm font-semibold text-card-foreground">
+          <CollapseIcon open={showMoreDetails} />
+          <span className="flex flex-1 flex-col">
+            <span>{showMoreDetails ? "More details" : "Add more details"}</span>
+            {!showMoreDetails && (
+              <span className="text-xs font-medium text-muted-foreground">
+                time, price, tickets, links{showAnnouncedOnSurface ? "" : ", announce date"}, demand
+              </span>
+            )}
+          </span>
+          {!showMoreDetails && <span className="shrink-0 text-xs font-semibold text-accent">Show</span>}
+        </button>
+        {showMoreDetails && (
+          <div className="flex flex-col gap-4 border-t border-field-border/30 p-3">
+            {whenMode !== "range" && (
+              <Field label="Start time" hint="recommended" htmlFor={idFor("startTime")} className="max-w-[16rem]">
+                <TextField id={idFor("startTime")} type="time" value={form.startTime || ""} onChange={e => set("startTime" as keyof TInsert, e.target.value)} />
+                {whenMode === "irregular" && (
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">Applies to all dates—edit individually after adding if needed.</p>
+                )}
+              </Field>
+            )}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label="Price" htmlFor={idFor("price")}>
+                <TextField id={idFor("price")} value={form.price || ""} onChange={e => set("price" as keyof TInsert, e.target.value)} placeholder={config.pricePlaceholder} />
+              </Field>
+              <Field label="Ticket URL" htmlFor={idFor("ticketUrl")}>
+                <TextField id={idFor("ticketUrl")} type="url" value={form.ticketUrl || ""} onChange={e => set("ticketUrl" as keyof TInsert, e.target.value)} placeholder="https://…" />
+              </Field>
+            </div>
+            <Field label="Original post link" htmlFor={idFor("sourceUrl")}>
+              <TextField id={idFor("sourceUrl")} type="url" value={form.sourceUrl || ""} onChange={e => set("sourceUrl" as keyof TInsert, e.target.value)} placeholder={config.sourceUrlPlaceholder} />
+            </Field>
+            <Field label="Sellout risk" hint="how likely to fill up">
+              <div className="flex flex-col gap-1.5">
+                <div role="radiogroup" aria-label="Sellout risk" className="grid grid-cols-5 gap-1 rounded-full border-2 border-field-border bg-field p-1">
+                  {[1, 2, 3, 4, 5].map(n => {
+                    const isCurrent = form.selloutRisk === n;
+                    const filled = !!form.selloutRisk && n <= form.selloutRisk;
+                    return (
+                      <button key={n} type="button" role="radio" aria-checked={isCurrent} aria-label={`Level ${n}`}
+                        onClick={() => setForm(f => ({ ...f, selloutRisk: f.selloutRisk === n ? undefined : n }))}
+                        className={cn("h-9 rounded-full text-sm font-semibold transition-colors", filled ? "bg-primary text-primary-foreground" : "text-field-foreground hover:bg-muted/60")}>
+                        {n}
+                      </button>
+                    );
+                  })}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {form.selloutRisk ? `${RISK_LABELS[form.selloutRisk]} — ${riskPips(form.selloutRisk)}` : "Not set"}
+                </span>
+              </div>
+            </Field>
+            {!showAnnouncedOnSurface && (
+              <Field label="Date announced" hint="when it was made public" htmlFor={idFor("announcedAt")} className="max-w-[16rem]">
+                <TextField id={idFor("announcedAt")} type="date" value={(form.announcedAt as string) || ""} onChange={e => set("announcedAt" as keyof TInsert, e.target.value)} />
+              </Field>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Your Name — last, before submit */}
+      <Field label="Your name" required htmlFor={idFor("requester")} className="max-w-[16rem]">
+        <TextField id={idFor("requester")} value={form.requester || ""} onChange={e => set("requester" as keyof TInsert, e.target.value)}
+          className={fieldErr("requester")} placeholder="Who's adding this?" />
+        {isTipster && (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs leading-relaxed text-muted-foreground">
+            <Bell className="size-3.5 shrink-0 text-accent" />
+            Posts to the feed with a tip credit for <span className="font-medium text-card-foreground">{requesterName.trim()}</span>
+          </p>
+        )}
+      </Field>
+    </div>
   );
 }
 

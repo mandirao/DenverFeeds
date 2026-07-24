@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Sparkles, ImageIcon, FileText } from "lucide-react";
-import { ListingEventFormFields, inputClass, labelClass } from "./ListingEventFormFields";
+import { Sparkles, ImageIcon, FileText, Upload } from "lucide-react";
+import { ListingEventFormFields, type SpecificDateEntry } from "./ListingEventFormFields";
+import { Field, TextField, TextArea } from "./form-primitives";
+import { cn } from "@/lib/utils";
 import type { ListingFormConfig, ListingInsertBase } from "@/lib/listingFeedConfig";
 
 export function AddListingEventModal<TInsert extends ListingInsertBase>({
@@ -24,6 +24,7 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
   const [blurb, setBlurb] = useState("");
   const [form, setForm] = useState<Partial<TInsert>>(config.BLANK);
   const [instanceNote, setInstanceNote] = useState("");
+  const [instanceTitle, setInstanceTitle] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [inputMode, setInputMode] = useState<"screenshot" | "blurb">("screenshot");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -34,8 +35,7 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
   const [errorField, setErrorField] = useState<string | null>(null);
   const [redoLoading, setRedoLoading] = useState(false);
   const [useSpecificDates, setUseSpecificDates] = useState(false);
-  const [specificDates, setSpecificDates] = useState<string[]>([]);
-  const [newDateInput, setNewDateInput] = useState("");
+  const [specificDates, setSpecificDates] = useState<SpecificDateEntry[]>([]);
 
   const switchMode = (mode: "screenshot" | "blurb") => {
     setInputMode(mode);
@@ -47,6 +47,29 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
       setImageMediaType(null);
     }
   };
+
+  // Lets a copied screenshot be dropped in with ⌘V instead of only
+  // click-to-browse/drag-and-drop — only active on the pre-parse screen.
+  useEffect(() => {
+    if (open === false || showForm || inputMode !== "screenshot") return;
+    const handlePaste = (e: ClipboardEvent) => {
+      const item = Array.from(e.clipboardData?.items || []).find(i => i.type.startsWith("image/"));
+      const file = item?.getAsFile();
+      if (!file) return;
+      e.preventDefault();
+      setImageFileName(file.name || "pasted-image");
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string;
+        setImagePreview(dataUrl);
+        setImageBase64(dataUrl.split(",")[1]);
+        setImageMediaType(file.type);
+      };
+      reader.readAsDataURL(file);
+    };
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, [open, showForm, inputMode]);
 
   const set = (field: keyof TInsert, value: string) => {
     setErrorField(null);
@@ -80,7 +103,7 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
     }),
     onSuccess: (data: any) => {
       const { title, description } = config.applyParseResponse(data, {
-        form, blurb, setForm, setInstanceNote, setSpecificDates, setUseSpecificDates,
+        form, blurb, setForm, setInstanceNote, setInstanceTitle, setSpecificDates, setUseSpecificDates,
       });
       setShowForm(true);
       toast({ title, description });
@@ -105,13 +128,21 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
   });
 
   const batchCreateMutation = useMutation({
-    mutationFn: (dates: string[]) =>
-      Promise.all(dates.map(date =>
-        apiRequest({ endpoint: config.apiPath, method: "POST", data: { ...(form as TInsert), dateStart: date, dateEnd: "" } })
-      )),
-    onSuccess: (_, dates) => {
+    // The first entry's title stands in for "Event Name" (hidden while in
+    // specific-dates mode) — falls back to form.name if left blank. Later
+    // entries suffix onto that resolved primary name, same as before.
+    mutationFn: (entries: SpecificDateEntry[]) => {
+      const primaryName = (entries[0]?.title.trim() || (form.name as string) || "").trim();
+      return Promise.all(entries.map(({ date, title }, i) => {
+        const name = i === 0
+          ? (title.trim() || primaryName)
+          : (title.trim() ? `${primaryName}: ${title.trim()}` : primaryName);
+        return apiRequest({ endpoint: config.apiPath, method: "POST", data: { ...(form as TInsert), name, dateStart: date, dateEnd: "" } });
+      }));
+    },
+    onSuccess: (_, entries) => {
       qc.invalidateQueries({ queryKey: [config.queryKey] });
-      toast({ title: `${dates.length} events added!`, description: "All dates are live on the feed." });
+      toast({ title: `${entries.length} events added!`, description: "All dates are live on the feed." });
       forceClose();
     },
     onError: (e: any) => {
@@ -122,11 +153,18 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (config.features.specificDatesBatchAdd && useSpecificDates) {
-      if (specificDates.length < 1) {
+      const validEntries = specificDates.filter(entry => entry.date);
+      if (validEntries.length < 1) {
         toast({ title: "Add at least one date", variant: "destructive" });
         return;
       }
-      const baseChecks = ["requester", "name", "venue", "emoji", config.categoryFieldKey] as (keyof TInsert)[];
+      const primaryName = validEntries[0]?.title.trim() || (form.name as string)?.trim() || "";
+      if (!primaryName) {
+        setErrorField("name");
+        toast({ title: "Event name is required", variant: "destructive" });
+        return;
+      }
+      const baseChecks = ["requester", "venue", "emoji", config.categoryFieldKey] as (keyof TInsert)[];
       for (const field of baseChecks) {
         if (!(form as any)[field]?.trim()) {
           setErrorField(field as string);
@@ -134,7 +172,7 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
           return;
         }
       }
-      batchCreateMutation.mutate(specificDates);
+      batchCreateMutation.mutate(validEntries);
       return;
     }
     const missing = config.getMissingField(form);
@@ -145,8 +183,9 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
       return;
     }
     const payload: TInsert = { ...(form as TInsert) };
-    if (form.isRecurring && instanceNote.trim() && form.dateStart) {
-      (payload as any).instanceNotes = { [form.dateStart]: instanceNote.trim() };
+    if (form.isRecurring && form.dateStart) {
+      if (instanceNote.trim()) (payload as any).instanceNotes = { [form.dateStart]: instanceNote.trim() };
+      if (instanceTitle.trim()) (payload as any).instanceTitles = { [form.dateStart]: instanceTitle.trim() };
     }
     createMutation.mutate(payload);
   };
@@ -166,9 +205,9 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
       const res = await apiRequest({
         endpoint: config.redoEndpoint,
         method: "POST",
-        data: config.buildRedoPayload(form, instanceNote),
+        data: config.buildRedoPayload(form, instanceNote, instanceTitle),
       });
-      const { title, description } = config.applyRedoResponse(res, { setForm, setInstanceNote });
+      const { title, description } = config.applyRedoResponse(res, { setForm, setInstanceNote, setInstanceTitle });
       toast({ title, description });
     } catch (e: any) {
       toast({ title: "AI refresh failed", description: e?.message || "Something went wrong.", variant: "destructive" });
@@ -182,6 +221,7 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
     setBlurb("");
     setForm(config.BLANK);
     setInstanceNote("");
+    setInstanceTitle("");
     setShowForm(false);
     setInputMode("screenshot");
     setImagePreview(null);
@@ -192,7 +232,6 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
     setErrorField(null);
     setUseSpecificDates(false);
     setSpecificDates([]);
-    setNewDateInput("");
   };
 
   const handleClose = () => {
@@ -215,48 +254,54 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
       </AlertDialogContent>
     </AlertDialog>
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-full max-w-lg md:max-w-3xl border-2 border-black rounded-none max-h-[90vh] overflow-y-auto"
+      <DialogContent className="event-form-theme w-full max-w-xl border-2 border-primary rounded-none text-card-foreground max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: config.dialogBg }}>
         <DialogHeader>
-          <DialogTitle className="text-3xl text-black uppercase tracking-tight">
-            {config.addModalTitle}
-          </DialogTitle>
+          <div className="flex items-center gap-3">
+            <DialogTitle className="font-display text-2xl text-card-foreground uppercase tracking-tight">
+              {config.addModalTitle}
+            </DialogTitle>
+            {showForm && (
+              <button type="button" onClick={() => setShowForm(false)}
+                className="inline-flex h-8 items-center gap-1.5 rounded-none border-2 border-accent px-2.5 text-xs font-semibold text-accent transition-colors hover:bg-accent hover:text-accent-foreground shrink-0">
+                <Sparkles className="w-3.5 h-3.5" />
+                Fill with AI
+              </button>
+            )}
+          </div>
         </DialogHeader>
 
         {!showForm ? (
           <div className="space-y-4">
 
             {/* Mode toggle */}
-            <div className="grid grid-cols-2 border-2 border-black">
+            <div role="tablist" aria-label="Input type" className="grid grid-cols-2 gap-1 rounded-none border-2 border-field-border bg-field p-1">
               <button
-                type="button"
+                type="button" role="tab" aria-selected={inputMode === "screenshot"}
                 onClick={() => switchMode("screenshot")}
-                className={`flex items-center justify-center gap-2 py-2.5 font-black uppercase tracking-wide text-sm transition-colors ${
-                  inputMode === "screenshot"
-                    ? "bg-black text-white"
-                    : "bg-white text-black hover:bg-gray-100"
-                }`}
+                className={cn(
+                  "inline-flex h-9 items-center justify-center gap-2 rounded-none text-sm font-semibold transition-colors",
+                  inputMode === "screenshot" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-card-foreground",
+                )}
               >
                 <ImageIcon className="w-4 h-4" />Screenshot
               </button>
               <button
-                type="button"
+                type="button" role="tab" aria-selected={inputMode === "blurb"}
                 onClick={() => switchMode("blurb")}
-                className={`flex items-center justify-center gap-2 py-2.5 font-black uppercase tracking-wide text-sm transition-colors border-l-2 border-black ${
-                  inputMode === "blurb"
-                    ? "bg-black text-white"
-                    : "bg-white text-black hover:bg-gray-100"
-                }`}
+                className={cn(
+                  "inline-flex h-9 items-center justify-center gap-2 rounded-none text-sm font-semibold transition-colors",
+                  inputMode === "blurb" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-card-foreground",
+                )}
               >
-                <FileText className="w-4 h-4" />Blurb
+                <FileText className="w-4 h-4" />Text
               </button>
             </div>
 
             {/* Screenshot mode */}
             {inputMode === "screenshot" && (
-              <div className="space-y-3">
-                <p className="text-xs text-gray-500">{config.screenshotIntro}</p>
-                <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-black bg-white cursor-pointer hover:bg-gray-50 transition-colors py-6 px-3">
+              <div className="flex flex-col gap-2">
+                <label className="flex flex-col items-center justify-center gap-3 rounded-none border-2 border-dashed border-field-border bg-field cursor-pointer hover:bg-muted/40 transition-colors py-6 px-3">
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp,image/gif"
@@ -265,68 +310,72 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
                   />
                   {imagePreview ? (
                     <div className="relative">
-                      <img src={imagePreview} alt="Preview" className="max-h-48 max-w-full object-contain border-2 border-black" />
+                      <img src={imagePreview} alt="Preview" className="max-h-48 max-w-full object-contain border-2 border-field-border" />
                       <button
                         type="button"
                         onClick={e => { e.preventDefault(); setImagePreview(null); setImageBase64(null); setImageMediaType(null); }}
-                        className="absolute -top-2 -right-2 bg-black text-white rounded-full w-5 h-5 flex items-center justify-center text-xs leading-none"
+                        className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs leading-none"
                       >×</button>
                     </div>
                   ) : (
                     <>
-                      <ImageIcon className="w-8 h-8 opacity-30" />
-                      <span className="text-sm font-semibold">Click to upload screenshot</span>
-                      <span className="text-xs text-gray-400">JPG, PNG, WEBP, GIF</span>
+                      <span className="flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <ImageIcon className="size-6" />
+                      </span>
+                      <span className="flex flex-col items-center gap-1">
+                        <span className="text-sm font-semibold text-card-foreground">
+                          Press <kbd className="rounded border border-field-border bg-field px-1.5 py-0.5 text-xs">⌘V</kbd> to paste
+                        </span>
+                        <span className="inline-flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                          <Upload className="size-3.5" />
+                          or drag &amp; drop / click to browse
+                        </span>
+                        <span className="text-xs text-muted-foreground">JPG, PNG, WEBP, GIF</span>
+                      </span>
                     </>
                   )}
                 </label>
+                <p className="text-xs leading-relaxed text-muted-foreground">{config.screenshotIntro}</p>
               </div>
             )}
 
             {/* Blurb mode */}
             {inputMode === "blurb" && (
-              <div className="space-y-3">
-                <p className="text-xs text-gray-500">{config.blurbIntro}</p>
-                <Textarea rows={5}
+              <div className="flex flex-col gap-2">
+                <TextArea rows={5}
                   placeholder={config.blurbPlaceholder}
                   value={blurb} onChange={e => setBlurb(e.target.value)}
-                  className={`${inputClass} resize-none`} />
+                  className="resize-none" />
+                <p className="text-xs leading-relaxed text-muted-foreground">{config.blurbIntro}</p>
               </div>
             )}
 
-            <div>
-              <label className={labelClass}>Original post link <span className="font-normal normal-case opacity-60">(optional)</span></label>
-              <Input
+            <Field label="Original post link" hint="helps people watch for updates">
+              <TextField
                 value={form.sourceUrl || ""}
                 onChange={e => set("sourceUrl" as keyof TInsert, e.target.value)}
-                className={inputClass}
                 placeholder={config.sourceUrlPlaceholder} />
-            </div>
-            <div className="flex gap-2">
+            </Field>
+            <div className="flex gap-3">
+              <button onClick={() => setShowForm(true)}
+                className="inline-flex h-11 items-center justify-center rounded-none border-2 border-field-border bg-field px-5 text-sm font-semibold text-field-foreground transition-colors hover:bg-muted/60">
+                Enter manually
+              </button>
               <button onClick={() => parseMutation.mutate()}
                 disabled={(!blurb.trim() && !imageBase64) || parseMutation.isPending}
-                className="flex-1 bg-black text-white font-black uppercase tracking-wide text-sm px-4 py-2.5 border-2 border-black hover:text-[#41F2EE] transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
-                <Sparkles className="w-4 h-4" />
-                {parseMutation.isPending ? "Parsing…" : "Parse with AI"}
-              </button>
-              <button onClick={() => setShowForm(true)}
-                className="px-4 py-2.5 border-2 border-black bg-white font-black uppercase tracking-wide text-sm hover:bg-black hover:text-white transition-colors">
-                Skip
+                className={cn(
+                  "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-none px-5 text-sm font-bold uppercase tracking-wide transition-colors",
+                  (blurb.trim() || imageBase64)
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "cursor-not-allowed border-2 border-dashed border-primary/40 bg-transparent text-muted-foreground",
+                )}>
+                {(blurb.trim() || imageBase64) && <Sparkles className="w-4 h-4" />}
+                {parseMutation.isPending ? "Parsing…" : (blurb.trim() || imageBase64) ? "Autofill event details" : `Add ${inputMode === "screenshot" ? "a screenshot" : "text"} to continue`}
               </button>
             </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-
-            {/* Use AI instead — visible button */}
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide border border-black px-3 py-1.5 bg-white hover:bg-black hover:text-white transition-colors"
-            >
-              <Sparkles className="w-3 h-3" />
-              ← Use AI instead
-            </button>
 
             <ListingEventFormFields
               form={form}
@@ -336,6 +385,8 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
               setErrorField={setErrorField}
               instanceNote={instanceNote}
               setInstanceNote={setInstanceNote}
+              instanceTitle={instanceTitle}
+              setInstanceTitle={setInstanceTitle}
               occurrenceDate={form.dateStart}
               redoLoading={redoLoading}
               onRedoAI={handleRedoAI}
@@ -344,25 +395,24 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
               specificDatesState={config.features.specificDatesBatchAdd ? {
                 useSpecificDates, setUseSpecificDates,
                 specificDates, setSpecificDates,
-                newDateInput, setNewDateInput,
                 onEnterSpecificDates: () => {
                   setUseSpecificDates(true);
-                  if (form.dateStart) { setSpecificDates([form.dateStart]); set("dateStart" as keyof TInsert, ""); set("dateEnd" as keyof TInsert, ""); }
+                  setSpecificDates([{ date: (form.dateStart as string) || "", title: (form.name as string) || "" }]);
+                  set("dateStart" as keyof TInsert, ""); set("dateEnd" as keyof TInsert, "");
                 },
-                enterSpecificDatesLabel: "+ Add specific dates instead (series / irregular schedule)",
               } : undefined}
             />
 
-            <div className="flex gap-2 pt-1">
+            <div className="flex gap-3 pt-1">
               <button type="submit" disabled={createMutation.isPending || batchCreateMutation.isPending}
-                className="w-full px-4 py-2.5 border-2 border-black bg-black text-white font-black uppercase tracking-wide text-sm hover:text-[#41F2EE] transition-colors disabled:opacity-50">
-                {batchCreateMutation.isPending
-                  ? `Adding ${specificDates.length} events…`
-                  : createMutation.isPending
-                  ? "Adding…"
-                  : useSpecificDates && specificDates.length > 1
-                  ? `Add ${specificDates.length} Events`
-                  : config.addSubmitLabel}
+                className="h-11 w-full rounded-none bg-primary px-5 text-sm font-bold uppercase tracking-wide text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50">
+                {(() => {
+                  const validCount = specificDates.filter(e => e.date).length;
+                  if (batchCreateMutation.isPending) return `Adding ${validCount} events…`;
+                  if (createMutation.isPending) return "Adding…";
+                  if (useSpecificDates && validCount > 1) return `Add ${validCount} Events`;
+                  return config.addSubmitLabel;
+                })()}
               </button>
             </div>
           </form>

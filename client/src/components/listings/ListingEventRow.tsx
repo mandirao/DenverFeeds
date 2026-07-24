@@ -23,6 +23,8 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
   const location = event.neighborhood ? `${event.venue}, ${event.neighborhood}` : event.venue;
   const category = config.getCategory(event);
   const EditModal = config.EditModal;
+  const titleModifier = event.isRecurring ? event.instanceTitles?.[event.dateStart] : undefined;
+  const displayName = titleModifier ? `${event.name}: ${titleModifier}` : event.name;
 
   const deleteMutation = useMutation({
     mutationFn: () => apiRequest({ endpoint: `${config.apiPath}/${event.id}`, method: "DELETE" }),
@@ -58,7 +60,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
 
         {event.soldOut ? (
           <div className="flex-1 text-base opacity-60">
-            <span className="font-bold">{event.name}</span>
+            <span className="font-bold">{displayName}</span>
             {" "}
             <span className="inline-flex items-center align-middle text-xs font-black uppercase leading-none px-2 py-[3px] bg-black text-white">
               SOLD OUT
@@ -86,7 +88,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
                     rel="noopener noreferrer"
                     className="font-bold border-b border-dotted border-black hover:border-solid hover:text-black cursor-pointer"
                   >
-                    {event.name}
+                    {displayName}
                   </a>
                 </TooltipTrigger>
                 <TooltipContent><p>Search on Google</p></TooltipContent>
