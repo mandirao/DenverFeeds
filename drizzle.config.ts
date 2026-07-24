@@ -12,4 +12,10 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.DATABASE_URL,
   },
+  // `session` is managed separately by connect-pg-simple, not declared in
+  // shared/schema.ts — without this, drizzle-kit push sees it as an "extra"
+  // table and offers to drop it (it did, with 135 live rows, during the
+  // structured-recurrence work). Exclude it from introspection entirely so
+  // it can never show up in a push diff again.
+  tablesFilter: ["!session"],
 });
