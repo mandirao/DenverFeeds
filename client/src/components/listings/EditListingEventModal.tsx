@@ -24,12 +24,17 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
   const [redoLoading, setRedoLoading] = useState(false);
   const [useSpecificDates, setUseSpecificDates] = useState(false);
   const [specificDates, setSpecificDates] = useState<SpecificDateEntry[]>([]);
-  const occurrenceDate = event.dateStart;
+  // Only used to seed the initial note/title state below — the date actually
+  // being edited (for display and for save-time keying) is currentOccurrenceDate,
+  // which tracks form.dateStart so an AI Refresh date correction (or a manual
+  // edit) keeps the note/title attached to the right occurrence instead of
+  // silently orphaning them under the date the modal happened to open on.
+  const originalOccurrenceDate = event.dateStart;
   const [instanceNote, setInstanceNote] = useState<string>(
-    (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? ""
+    (event.instanceNotes as Record<string, string> | null | undefined)?.[originalOccurrenceDate] ?? ""
   );
   const [instanceTitle, setInstanceTitle] = useState<string>(
-    (event.instanceTitles as Record<string, string> | null | undefined)?.[occurrenceDate] ?? ""
+    (event.instanceTitles as Record<string, string> | null | undefined)?.[originalOccurrenceDate] ?? ""
   );
   const [form, setForm] = useState<Partial<TInsert>>({
     emoji: event.emoji || "",
@@ -50,7 +55,9 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
     isRecurring: event.isRecurring ?? false,
     recurrenceLabel: event.recurrenceLabel || "",
     recurrenceRule: event.recurrenceRule ?? null,
+    excludedDates: event.excludedDates ?? [],
   } as Partial<TInsert>);
+  const currentOccurrenceDate = (form.dateStart as string) || event.dateStart;
   const [orphanConfirm, setOrphanConfirm] = useState<{
     payload: Partial<TInsert> & { instanceNotes?: Record<string, string>; instanceTitles?: Record<string, string> };
     orphaned: { date: string; kind: "note" | "title"; text: string }[];
@@ -64,12 +71,13 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
   const isDirty = () => {
     const keys = ["emoji", "name", "venue", "neighborhood", "dateStart", "dateEnd", "startTime", "summary",
       config.categoryFieldKey, "price", "ticketUrl", "sourceUrl", "requester", "announcedAt", "recurrenceLabel"] as (keyof TInsert)[];
-    const originalNote = (event.instanceNotes as Record<string, string> | null | undefined)?.[occurrenceDate] ?? "";
-    const originalTitle = (event.instanceTitles as Record<string, string> | null | undefined)?.[occurrenceDate] ?? "";
+    const originalNote = (event.instanceNotes as Record<string, string> | null | undefined)?.[originalOccurrenceDate] ?? "";
+    const originalTitle = (event.instanceTitles as Record<string, string> | null | undefined)?.[originalOccurrenceDate] ?? "";
     return keys.some(k => ((form[k] as string) || "") !== (((event as any)[k] as string) || ""))
       || (form.selloutRisk ?? undefined) !== (event.selloutRisk ?? undefined)
       || (form.isRecurring ?? false) !== (event.isRecurring ?? false)
       || JSON.stringify(form.recurrenceRule ?? null) !== JSON.stringify(event.recurrenceRule ?? null)
+      || JSON.stringify(form.excludedDates ?? []) !== JSON.stringify(event.excludedDates ?? [])
       || instanceNote !== originalNote
       || instanceTitle !== originalTitle;
   };
@@ -143,19 +151,24 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
       setTimeout(() => document.getElementById(`edit-${config.idPrefix}-${missing.field}`)?.focus(), 50);
       return;
     }
+    // Note/title are keyed to currentOccurrenceDate (not the date the modal
+    // opened on) so a date correction moves them to the right slot instead of
+    // leaving a stale duplicate behind under the old date.
     const existingNotes = (event.instanceNotes as Record<string, string> | null | undefined) ?? {};
     const updatedNotes = { ...existingNotes };
+    if (currentOccurrenceDate !== originalOccurrenceDate) delete updatedNotes[originalOccurrenceDate];
     if (instanceNote.trim()) {
-      updatedNotes[occurrenceDate] = instanceNote.trim();
+      updatedNotes[currentOccurrenceDate] = instanceNote.trim();
     } else {
-      delete updatedNotes[occurrenceDate];
+      delete updatedNotes[currentOccurrenceDate];
     }
     const existingTitles = (event.instanceTitles as Record<string, string> | null | undefined) ?? {};
     const updatedTitles = { ...existingTitles };
+    if (currentOccurrenceDate !== originalOccurrenceDate) delete updatedTitles[originalOccurrenceDate];
     if (instanceTitle.trim()) {
-      updatedTitles[occurrenceDate] = instanceTitle.trim();
+      updatedTitles[currentOccurrenceDate] = instanceTitle.trim();
     } else {
-      delete updatedTitles[occurrenceDate];
+      delete updatedTitles[currentOccurrenceDate];
     }
     const payload = { ...form, instanceNotes: updatedNotes, instanceTitles: updatedTitles };
 
@@ -266,7 +279,7 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
               setInstanceNote={setInstanceNote}
               instanceTitle={instanceTitle}
               setInstanceTitle={setInstanceTitle}
-              occurrenceDate={occurrenceDate}
+              occurrenceDate={currentOccurrenceDate}
               redoLoading={redoLoading}
               onRedoAI={handleRedoAI}
               config={config}

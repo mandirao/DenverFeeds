@@ -27,6 +27,7 @@ export interface ListingEventBase {
   recurrenceRule?: RecurrenceRule | null;
   instanceNotes?: Record<string, string> | null;
   instanceTitles?: Record<string, string> | null;
+  excludedDates?: string[] | null;
 }
 
 // Per-feed configuration for <ListingEventRow>. Anything that's a genuine
@@ -88,6 +89,7 @@ export interface ListingInsertBase {
   recurrenceRule?: RecurrenceRule | null;
   instanceNotes?: Record<string, string> | null;
   instanceTitles?: Record<string, string> | null;
+  excludedDates?: string[] | null;
 }
 
 export interface RedoAIResult {

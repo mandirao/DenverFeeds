@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ToastAction } from "@/components/ui/toast";
 import { MoreVertical } from "lucide-react";
 import { ensureHttps, formatDateRange, formatTime, createSearchUrl, createCalendarUrl } from "@/lib/eventUtils";
 import type { ListingEventBase, ListingRowConfig } from "@/lib/listingFeedConfig";
@@ -52,6 +53,34 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
     },
     onError: () => toast({ title: "Error", description: "Couldn't update this event.", variant: "destructive" }),
   });
+
+  // Skips just this occurrence — the series' other dates are untouched. Used
+  // for one-off cancellations (a holiday closure) rather than deleting the
+  // whole recurring event, which "Delete entire series" below already does.
+  const excludedDatesMutation = useMutation({
+    mutationFn: (nextExcludedDates: string[]) =>
+      apiRequest({ endpoint: `${config.apiPath}/${event.id}`, method: "PATCH", data: { excludedDates: nextExcludedDates } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [config.queryKey] }),
+    onError: () => toast({ title: "Error", description: "Couldn't update this event.", variant: "destructive" }),
+  });
+
+  const handleSkipThisDate = () => {
+    const priorExcludedDates = event.excludedDates ?? [];
+    const skippedDate = event.dateStart;
+    excludedDatesMutation.mutate([...priorExcludedDates, skippedDate], {
+      onSuccess: () => {
+        toast({
+          title: "Skipped",
+          description: `${formatDateRange(skippedDate)} won't show up in the feed.`,
+          action: (
+            <ToastAction altText="Undo skip" onClick={() => excludedDatesMutation.mutate(priorExcludedDates)}>
+              Undo
+            </ToastAction>
+          ),
+        });
+      },
+    });
+  };
 
   return (
     <>
@@ -123,7 +152,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
                     rel="noopener noreferrer"
                     className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
                   >
-                    {formatDateRange(event.dateStart, event.dateEnd)}
+                    {formatDateRange(event.dateStart, event.isRecurring ? null : event.dateEnd)}
                   </a>
                 </TooltipTrigger>
                 <TooltipContent><p>Add to Google Calendar</p></TooltipContent>
@@ -235,6 +264,15 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
               >
                 Duplicate
               </DropdownMenuItem>
+              {event.isRecurring && (
+                <DropdownMenuItem
+                  onClick={() => { setIsMenuOpen(false); handleSkipThisDate(); }}
+                  disabled={excludedDatesMutation.isPending}
+                  className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                >
+                  Skip this date
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                 onClick={() => {
@@ -242,7 +280,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
                   setTimeout(() => setShowDeleteConfirm(true), 100);
                 }}
               >
-                Delete event
+                {event.isRecurring ? "Delete entire series" : "Delete event"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

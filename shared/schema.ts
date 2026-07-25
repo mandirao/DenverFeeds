@@ -526,6 +526,7 @@ export const foodEvents = pgTable("food_events", {
   recurrenceRule: jsonb("recurrence_rule").$type<RecurrenceRule>(),
   instanceNotes: jsonb("instance_notes").$type<Record<string, string>>(),
   instanceTitles: jsonb("instance_titles").$type<Record<string, string>>(),
+  excludedDates: jsonb("excluded_dates").$type<string[]>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -540,6 +541,7 @@ export const insertFoodEventSchema = createInsertSchema(foodEvents).omit({
   cuisine: z.string().min(1, "Cuisine type is required"),
   requester: z.string().min(1, "Your name is required"),
   recurrenceRule: recurrenceRuleSchema.nullable().optional(),
+  excludedDates: z.array(z.string()).nullable().optional(),
 });
 
 export type InsertFoodEvent = z.infer<typeof insertFoodEventSchema>;
@@ -580,6 +582,7 @@ export const artEvents = pgTable("art_events", {
   recurrenceRule: jsonb("recurrence_rule").$type<RecurrenceRule>(),
   instanceNotes: jsonb("instance_notes").$type<Record<string, string>>(),
   instanceTitles: jsonb("instance_titles").$type<Record<string, string>>(),
+  excludedDates: jsonb("excluded_dates").$type<string[]>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -594,6 +597,7 @@ export const insertArtEventSchema = createInsertSchema(artEvents).omit({
   category: z.string().min(1, "Category is required"),
   requester: z.string().min(1, "Your name is required"),
   recurrenceRule: recurrenceRuleSchema.nullable().optional(),
+  excludedDates: z.array(z.string()).nullable().optional(),
 });
 
 export type InsertArtEvent = z.infer<typeof insertArtEventSchema>;

@@ -1546,7 +1546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI content refresh for art events
   apiRouter.post("/ai/redo-art-event-content", async (req, res) => {
     try {
-      const { name, venue, category, isRecurring, recurrenceLabel, dateStart, currentSummary, currentInstanceNote, currentInstanceTitle } = req.body;
+      const { name, venue, category, isRecurring, recurrenceLabel, recurrenceRule, dateStart, startTime, price, ticketUrl, neighborhood, currentSummary, currentInstanceNote, currentInstanceTitle } = req.body;
       if (!name) return res.status(400).json({ message: "Event name is required" });
       const result = await llmService.redoArtEventAI({
         name: name || "",
@@ -1554,7 +1554,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         category: category || "",
         isRecurring: !!isRecurring,
         recurrenceLabel: recurrenceLabel || "",
+        recurrenceRule: recurrenceRule || null,
         dateStart: dateStart || "",
+        startTime: startTime || "",
+        price: price || "",
+        ticketUrl: ticketUrl || "",
+        neighborhood: neighborhood || "",
         currentSummary: currentSummary || "",
         currentInstanceNote: currentInstanceNote || "",
         currentInstanceTitle: currentInstanceTitle || "",
@@ -1568,7 +1573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   apiRouter.post("/ai/redo-food-event-content", async (req, res) => {
     try {
-      const { name, venue, cuisine, isRecurring, recurrenceLabel, dateStart, currentSummary, currentInstanceNote, currentInstanceTitle } = req.body;
+      const { name, venue, cuisine, isRecurring, recurrenceLabel, recurrenceRule, dateStart, startTime, price, ticketUrl, neighborhood, currentSummary, currentInstanceNote, currentInstanceTitle } = req.body;
       if (!name) return res.status(400).json({ message: "Event name is required" });
       const result = await llmService.redoFoodEventAI({
         name: name || "",
@@ -1576,7 +1581,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cuisine: cuisine || "",
         isRecurring: !!isRecurring,
         recurrenceLabel: recurrenceLabel || "",
+        recurrenceRule: recurrenceRule || null,
         dateStart: dateStart || "",
+        startTime: startTime || "",
+        price: price || "",
+        ticketUrl: ticketUrl || "",
+        neighborhood: neighborhood || "",
         currentSummary: currentSummary || "",
         currentInstanceNote: currentInstanceNote || "",
         currentInstanceTitle: currentInstanceTitle || "",

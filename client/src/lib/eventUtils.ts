@@ -142,6 +142,7 @@ export interface RecurringEventLike {
   isRecurring?: boolean | null;
   recurrenceLabel?: string | null;
   recurrenceRule?: RecurrenceRule | null;
+  excludedDates?: string[] | null;
 }
 
 export function expandRecurringEvents<T extends RecurringEventLike>(events: T[]): T[] {
@@ -162,31 +163,36 @@ export function expandRecurringEvents<T extends RecurringEventLike>(events: T[])
     } as T);
 
     // Structured rule present — use the real per-freq date math instead of
-    // the legacy keyword-matched fallback below. Annual gets only 1 edition
-    // ahead (not 2) so a yearly event can't ever surface something up to two
-    // years out; weekly/monthly keep the wider 2-edition window since their
-    // absolute time span stays small regardless.
+    // the legacy keyword-matched fallback below. Annual/quarterly get only 1
+    // edition ahead (not 2) so those can't ever surface something up to two
+    // years (or two quarters) out; weekly/monthly keep the wider 2-edition
+    // window since their absolute time span stays small regardless.
     if (ev.recurrenceRule) {
-      const count = ev.recurrenceRule.freq === 'annual' ? 1 : 2;
-      const dates = computeOccurrences(ev.recurrenceRule, ev.dateStart, todayStr, count);
+      const count = (ev.recurrenceRule.freq === 'annual' || ev.recurrenceRule.freq === 'quarterly') ? 1 : 2;
+      const dates = computeOccurrences(ev.recurrenceRule, ev.dateStart, todayStr, count, ev.excludedDates ?? undefined);
       for (const d of dates) result.push(makeOccurrence(d));
       continue;
     }
 
+    // Legacy keyword-matched fallback (no structured rule) — skipped dates
+    // are just filtered out here rather than backfilled like the structured
+    // path above; this path is already a lower-fidelity fallback, not worth
+    // the extra complexity for what's a shrinking, older case.
+    const excludedSet = new Set(ev.excludedDates ?? []);
     const type = classifyRecurrence(ev.recurrenceLabel);
 
     if (type === 'annual') {
       const monthDay = ev.dateStart.slice(5);
       const yr = today.getFullYear();
       const thisYearOcc = `${yr}-${monthDay}`;
-      if (thisYearOcc >= todayStr) result.push(makeOccurrence(thisYearOcc));
-      else if (today.getMonth() === 0) result.push(makeOccurrence(`${yr + 1}-${monthDay}`));
+      if (thisYearOcc >= todayStr) { if (!excludedSet.has(thisYearOcc)) result.push(makeOccurrence(thisYearOcc)); }
+      else if (today.getMonth() === 0) { const occ = `${yr + 1}-${monthDay}`; if (!excludedSet.has(occ)) result.push(makeOccurrence(occ)); }
       continue;
     }
     if (type === 'irregular') {
       let d = ev.dateStart;
       while (d < todayStr) d = addCalMonths(d, 1);
-      result.push(makeOccurrence(d));
+      if (!excludedSet.has(d)) result.push(makeOccurrence(d));
       continue;
     }
     const periodDays = type === 'weekly' ? 7 : type === 'biweekly' ? 14 : null;
@@ -194,7 +200,7 @@ export function expandRecurringEvents<T extends RecurringEventLike>(events: T[])
     if (periodDays) { while (d < todayStr) d = addCalDays(d, periodDays); }
     else { while (d < todayStr) d = addCalMonths(d, 1); }
     for (let i = 0; i < 2; i++) {
-      result.push(makeOccurrence(d));
+      if (!excludedSet.has(d)) result.push(makeOccurrence(d));
       if (i < 1) d = periodDays ? addCalDays(d, periodDays) : addCalMonths(d, 1);
     }
   }

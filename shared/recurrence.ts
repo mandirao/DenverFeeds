@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 
-export type RecurrenceFreq = 'weekly' | 'monthly' | 'annual';
+export type RecurrenceFreq = 'weekly' | 'monthly' | 'quarterly' | 'annual';
 
 export interface RecurrenceRule {
   freq: RecurrenceFreq;
@@ -19,8 +19,16 @@ export interface RecurrenceRule {
   /** Monthly nth-weekday only (single weekday — "3rd Thursday", not a set). Also read as a
    * single-day fallback for weekly rows written before multi-weekday support existed. */
   byWeekday?: number;
-  /** Monthly only. */
-  monthlyMode?: 'day-of-month' | 'nth-weekday';
+  /** Despite the name, this now governs monthly, quarterly, AND annual — kept
+   * as one field (rather than a new one per freq) so existing persisted rows
+   * don't need a migration. 'day-of-month' is the shared "pin to the same
+   * calendar day" mode monthly/quarterly/annual all use; 'nth-weekday' is
+   * monthly-only ("3rd Thursday" has no quarterly/annual equivalent); 'tbd'
+   * means the exact date isn't known/fixed — quarterly and annual read it as
+   * "don't spell out a specific day", monthly as "no fixed day either". Date
+   * math for 'tbd' still falls back to day-of-month (same as leaving this
+   * unset) since occurrences still need a real, sortable date. */
+  monthlyMode?: 'day-of-month' | 'nth-weekday' | 'tbd';
   /** Monthly nth-weekday only. -1 = "last". */
   weekdayOrdinal?: 1 | 2 | 3 | 4 | -1;
   /** Optional hard end of the series (ISO date, inclusive) — e.g. a pop-up
@@ -45,11 +53,11 @@ function weeklyDays(rule: RecurrenceRule, dateStart: string): number[] {
 // instanceNotes) — this explicit schema is spliced into insertFoodEventSchema
 // / insertArtEventSchema via .extend() in shared/schema.ts.
 export const recurrenceRuleSchema: z.ZodType<RecurrenceRule> = z.object({
-  freq: z.enum(['weekly', 'monthly', 'annual']),
+  freq: z.enum(['weekly', 'monthly', 'quarterly', 'annual']),
   interval: z.number().optional(),
   byWeekdays: z.array(z.number().min(0).max(6)).optional(),
   byWeekday: z.number().min(0).max(6).optional(),
-  monthlyMode: z.enum(['day-of-month', 'nth-weekday']).optional(),
+  monthlyMode: z.enum(['day-of-month', 'nth-weekday', 'tbd']).optional(),
   weekdayOrdinal: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(-1)]).optional(),
   until: z.string().optional(),
 });
@@ -134,9 +142,11 @@ export function describeRecurrenceRule(rule: RecurrenceRule): string {
       }
       return 'Monthly';
     }
+    case 'quarterly':
+      return 'Quarterly';
     case 'annual':
     default:
-      return 'Annual';
+      return 'Annually';
   }
 }
 
@@ -151,8 +161,20 @@ function applyUntil(dates: string[], until: string | undefined): string[] {
 
 /** Computes the next `count` upcoming occurrence dates (>= todayStr) for a
  * structured rule, anchored on the event's original `dateStart`, truncated
- * at `rule.until` when set. */
-export function computeOccurrences(rule: RecurrenceRule, dateStart: string, todayStr: string, count: number): string[] {
+ * at `rule.until` when set, and skipping any date in `excludedDates` (a
+ * single one-off cancellation, e.g. a holiday closure) — the count is still
+ * backfilled from later occurrences rather than just shrinking by one. */
+export function computeOccurrences(rule: RecurrenceRule, dateStart: string, todayStr: string, count: number, excludedDates?: string[]): string[] {
+  if (!excludedDates?.length) return computeOccurrencesRaw(rule, dateStart, todayStr, count);
+  const excluded = new Set(excludedDates);
+  // Overfetch by the number of excluded dates — worst case every one of them
+  // was about to be in the next `count` occurrences, so this guarantees
+  // enough real (non-excluded) dates to still fill the requested count.
+  const raw = computeOccurrencesRaw(rule, dateStart, todayStr, count + excluded.size);
+  return raw.filter(d => !excluded.has(d)).slice(0, count);
+}
+
+function computeOccurrencesRaw(rule: RecurrenceRule, dateStart: string, todayStr: string, count: number): string[] {
   const result: string[] = [];
 
   if (rule.freq === 'annual') {
@@ -163,6 +185,20 @@ export function computeOccurrences(rule: RecurrenceRule, dateStart: string, toda
     for (let i = 0; i < count; i++) {
       result.push(occ);
       occ = `${parseInt(occ.slice(0, 4), 10) + 1}-${monthDay}`;
+    }
+    return applyUntil(result, rule.until);
+  }
+
+  // Quarterly always pins to the anchor's calendar day, stepped 3 months at a
+  // time — there's no nth-weekday variant (wrong mental model for quarterly,
+  // per the picker UI), so 'tbd' also falls through to this same day-of-month
+  // math; only the display copy differs.
+  if (rule.freq === 'quarterly') {
+    let d = dateStart;
+    while (d < todayStr) d = addMonths(d, 3);
+    for (let i = 0; i < count; i++) {
+      result.push(d);
+      d = addMonths(d, 3);
     }
     return applyUntil(result, rule.until);
   }

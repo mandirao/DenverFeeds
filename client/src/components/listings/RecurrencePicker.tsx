@@ -10,8 +10,9 @@ import { cn } from "@/lib/utils";
 type FreqButtonValue = RecurrenceFreq | "biweekly";
 const FREQ_OPTIONS: { value: FreqButtonValue; label: string }[] = [
   { value: "weekly", label: "Weekly" },
-  { value: "biweekly", label: "Biweekly" },
+  { value: "biweekly", label: "Every 2 weeks" },
   { value: "monthly", label: "Monthly" },
+  { value: "quarterly", label: "Quarterly" },
   { value: "annual", label: "Annually" },
 ];
 
@@ -40,6 +41,14 @@ function buildRuleForFreq(freq: FreqButtonValue, current: RecurrenceRule | null)
   }
   if (freq === "monthly") {
     return { freq, monthlyMode: current?.monthlyMode ?? "day-of-month", byWeekday: current?.byWeekday, weekdayOrdinal: current?.weekdayOrdinal };
+  }
+  if (freq === "quarterly") {
+    // No nth-weekday equivalent for quarterly — always day-of-month math,
+    // "tbd" only changes how the "On the" field describes it.
+    return { freq, monthlyMode: current?.monthlyMode === "tbd" ? "tbd" : "day-of-month" };
+  }
+  if (freq === "annual") {
+    return { freq, monthlyMode: current?.monthlyMode === "tbd" ? "tbd" : undefined };
   }
   return { freq };
 }
@@ -85,11 +94,14 @@ function ordinalSuffix(n: number): string {
 }
 
 /**
- * Derives the natural monthly recurrence patterns from a start date.
+ * Derives the natural monthly/quarterly/annual recurrence patterns from a
+ * start date.
  * - `numberedOrdinal`: the "Nth weekday" option (null when the date is a 5th occurrence).
  * - `showLast`: whether a distinct "last weekday" option applies. When a date is BOTH the
  *   4th and the final occurrence of its weekday, we surface both so the user can pin the
  *   pattern to the numbered week or to whichever week is last (they diverge in 5-week months).
+ * - `monthName`: full month name of the start date, for quarterly ("23rd of August") and
+ *   annual ("August 23 each year") labels — monthly doesn't need it (no month in its label).
  */
 function deriveMonthly(dateStart: string) {
   const date = parseDateLocal(dateStart);
@@ -100,7 +112,14 @@ function deriveMonthly(dateStart: string) {
   const weekIndex = Math.ceil(day / 7); // 1..5
   const isLast = day + 7 > daysInMonth;
   const numberedOrdinal: 1 | 2 | 3 | 4 | null = weekIndex <= 4 ? (weekIndex as 1 | 2 | 3 | 4) : null;
-  return { day, weekday, numberedOrdinal, showLast: isLast };
+  const monthName = date.toLocaleDateString("en-US", { month: "long" });
+  // Quarterly's "On the" option describes the pattern going forward (the
+  // next quarter's edition), not the anchor date itself — "Starts" already
+  // shows the anchor, so restating its own month there would be redundant.
+  // E.g. an event created/starting Aug 23 reads "23rd of November".
+  const quarterlyMonthName = new Date(date.getFullYear(), date.getMonth() + 3, 1)
+    .toLocaleDateString("en-US", { month: "long" });
+  return { day, weekday, numberedOrdinal, showLast: isLast, monthName, quarterlyMonthName };
 }
 
 /** Weekday chips (weekly/biweekly), or a contextual "On the" dropdown
@@ -156,10 +175,13 @@ export function RecurrencePicker({
   }
 
   if (rule.freq === "monthly") {
-    const monthlyValue = rule.monthlyMode === "nth-weekday" ? `weekday:${rule.weekdayOrdinal ?? 1}` : "date";
+    const monthlyValue = rule.monthlyMode === "nth-weekday" ? `weekday:${rule.weekdayOrdinal ?? 1}`
+      : rule.monthlyMode === "tbd" ? "tbd" : "date";
     const onMonthlyChange = (v: string) => {
       if (v === "date") {
         applyRule({ ...rule, monthlyMode: "day-of-month" });
+      } else if (v === "tbd") {
+        applyRule({ ...rule, monthlyMode: "tbd" });
       } else {
         const ord = Number(v.slice("weekday:".length)) as 1 | 2 | 3 | 4 | -1;
         applyRule({ ...rule, monthlyMode: "nth-weekday", weekdayOrdinal: ord, byWeekday: derived?.weekday ?? rule.byWeekday ?? 0 });
@@ -178,6 +200,7 @@ export function RecurrencePicker({
             {derived.showLast && (
               <option value="weekday:-1">Last {WEEKDAY_NAMES[derived.weekday]}</option>
             )}
+            <option value="tbd">Exact date TBD</option>
           </SelectField>
         ) : (
           <div className={cn(controlBase, "flex items-center text-muted-foreground")}>Set a start date first</div>
@@ -186,7 +209,43 @@ export function RecurrencePicker({
     );
   }
 
-  return null; // annual — nothing further to configure
+  if (rule.freq === "quarterly") {
+    // Only the anchor day-of-month, or "TBD" — no weekday-of-month option
+    // (wrong mental model for a once-a-quarter cadence).
+    const quarterlyValue = rule.monthlyMode === "tbd" ? "tbd" : "date";
+    const onQuarterlyChange = (v: string) => applyRule({ ...rule, monthlyMode: v === "tbd" ? "tbd" : "day-of-month" });
+    return (
+      <Field label="On the" required htmlFor="quarterly-pattern" className="flex-1 min-w-[12rem]">
+        {derived ? (
+          <SelectField id="quarterly-pattern" value={quarterlyValue} onChange={e => onQuarterlyChange(e.target.value)}>
+            <option value="date">{ordinalSuffix(derived.day)} of {derived.quarterlyMonthName}</option>
+            <option value="tbd">Exact date TBD</option>
+          </SelectField>
+        ) : (
+          <div className={cn(controlBase, "flex items-center text-muted-foreground")}>Set a start date first</div>
+        )}
+      </Field>
+    );
+  }
+
+  if (rule.freq === "annual") {
+    const annualValue = rule.monthlyMode === "tbd" ? "tbd" : "date";
+    const onAnnualChange = (v: string) => applyRule({ ...rule, monthlyMode: v === "tbd" ? "tbd" : "day-of-month" });
+    return (
+      <Field label="On" required htmlFor="annual-pattern" className="flex-1 min-w-[12rem]">
+        {derived ? (
+          <SelectField id="annual-pattern" value={annualValue} onChange={e => onAnnualChange(e.target.value)}>
+            <option value="date">{derived.monthName} {derived.day} each year</option>
+            <option value="tbd">Exact date TBD</option>
+          </SelectField>
+        ) : (
+          <div className={cn(controlBase, "flex items-center text-muted-foreground")}>Set a start date first</div>
+        )}
+      </Field>
+    );
+  }
+
+  return null;
 }
 
 export default RecurrencePicker;

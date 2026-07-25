@@ -144,19 +144,37 @@ const foodFormConfig: ListingFormConfig<InsertFoodEvent> = {
     cuisine: form.cuisine,
     isRecurring: form.isRecurring,
     recurrenceLabel: form.recurrenceLabel,
+    recurrenceRule: form.recurrenceRule,
     dateStart: form.dateStart,
+    startTime: form.startTime,
+    price: form.price,
+    ticketUrl: form.ticketUrl,
+    neighborhood: form.neighborhood,
     currentSummary: form.summary,
     currentInstanceNote: instanceNote,
     currentInstanceTitle: instanceTitle,
   }),
   applyRedoResponse: (res, { setForm, setInstanceNote, setInstanceTitle }) => {
-    if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
-    if (res.status === "no-info") {
-      return { title: "Description polished ✓", description: res.message || "No new details found online." };
+    if (res.status === "not-found") {
+      return { title: "Couldn't verify online ⚠️", description: res.message };
     }
+    if (res.status === "confirmed") {
+      if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
+      return { title: "Confirmed correct ✓", description: res.message };
+    }
+    setForm(f => ({
+      ...f,
+      ...(res.summary ? { summary: res.summary } : {}),
+      ...(res.dateStart ? { dateStart: res.dateStart } : {}),
+      ...(res.startTime ? { startTime: res.startTime } : {}),
+      ...(res.venue ? { venue: res.venue } : {}),
+      ...(res.neighborhood ? { neighborhood: res.neighborhood } : {}),
+      ...(res.price ? { price: res.price } : {}),
+      ...(res.ticketUrl ? { ticketUrl: res.ticketUrl } : {}),
+    }));
     if (res.instanceNote) setInstanceNote(res.instanceNote);
     if (res.instanceTitle) setInstanceTitle(res.instanceTitle);
-    return { title: "Content refreshed ✨", description: "Description updated with latest details." };
+    return { title: "Updated ✨", description: res.message };
   },
   applyParseResponse: (data, { blurb, form, setForm, setInstanceNote, setInstanceTitle }) => {
     const { instanceNote: aiNote, titleModifier: aiTitle, ...rest } = data;
@@ -593,6 +611,7 @@ export default function AmsueBouche() {
   const [addOpen, setAddOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [stillTimeExpanded, setStillTimeExpanded] = useState(false);
   const [calViewYear, setCalViewYear] = useState(() => new Date().getFullYear());
   const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
   const [calEventDetail, setCalEventDetail] = useState<FoodEvent | null>(null);
@@ -766,8 +785,35 @@ export default function AmsueBouche() {
   const hasActiveFilters = filterCuisine !== "all" || filterDay !== "all" || sortBy !== "date";
   const resetFilters = () => { setFilterCuisine("all"); setFilterDay("all"); setSortBy("date"); };
 
+  // "Still Time" — already-started, not-yet-over one-time range events; dedupe
+  // by id, sort by soonest closing. Recurring events never belong here, even
+  // when a given occurrence carries a multi-day span — each occurrence is its
+  // own dated feed entry instead (see upcomingFilteredEvents below).
+  const stillTimeEvents = filteredEvents
+    .filter(ev => {
+      if (ev.isRecurring) return false;
+      if (!ev.dateEnd || ev.dateEnd === "" || ev.dateEnd === ev.dateStart) return false;
+      return ev.dateStart < todayStr && ev.dateEnd >= todayStr;
+    })
+    .filter((ev, idx, arr) => arr.findIndex(e => e.id === ev.id) === idx)
+    .sort((a, b) => (a.dateEnd ?? "").localeCompare(b.dateEnd ?? ""));
+
+  const STILL_VISIBLE = 1;
+  const stillTimeTruncated = stillTimeEvents.length > STILL_VISIBLE && !stillTimeExpanded;
+  const visibleStillTimeEvents = stillTimeTruncated ? stillTimeEvents.slice(0, STILL_VISIBLE) : stillTimeEvents;
+  const stillTimeHiddenCount = stillTimeEvents.length - STILL_VISIBLE;
+
+  // Events that aren't in the Still Time bucket — feed into the normal month
+  // groups. Mirrors the stillTimeEvents condition exactly (recurring events
+  // are always included here, never diverted to Still Time).
+  const upcomingFilteredEvents = filteredEvents.filter(ev => {
+    if (ev.isRecurring) return true;
+    if (!ev.dateEnd || ev.dateEnd === "" || ev.dateEnd === ev.dateStart) return true;
+    return !(ev.dateStart < todayStr && ev.dateEnd >= todayStr);
+  });
+
   type MonthBucket = { events: FoodEvent[]; weekGroups: Record<string, { events: FoodEvent[] }> };
-  const grouped = filteredEvents.reduce<Record<string, MonthBucket>>((acc, ev) => {
+  const grouped = upcomingFilteredEvents.reduce<Record<string, MonthBucket>>((acc, ev) => {
     const monthKey = getMonthLabel(ev.dateStart);
     const eventDate = new Date(ev.dateStart + "T12:00:00");
     const nowDate = new Date();
@@ -1087,6 +1133,52 @@ export default function AmsueBouche() {
           ));
         })()}
 
+        {viewMode === "list" && sortBy === "date" && stillTimeEvents.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-0.5 flex-1 bg-black" />
+              <h2 className="text-lg font-black uppercase text-black flex items-center gap-2">
+                STILL TIME
+              </h2>
+              <div className="h-0.5 flex-1 bg-black" />
+            </div>
+
+            <div className="relative">
+              <ul className="space-y-0">
+                {visibleStillTimeEvents.map(ev => (
+                  <ListingEventRow key={`still-${ev.id}`} event={ev} config={foodRowConfig} />
+                ))}
+              </ul>
+              {stillTimeTruncated && (
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: `linear-gradient(to bottom, transparent 50%, ${AB_GOLD} 100%)` }}
+                />
+              )}
+            </div>
+            {stillTimeTruncated && (
+              <div className="text-center mt-3">
+                <button
+                  onClick={() => setStillTimeExpanded(true)}
+                  className="text-black text-xs underline hover:opacity-60 transition-opacity focus:outline-none opacity-50"
+                >
+                  ↓ show {stillTimeHiddenCount} more closing soon
+                </button>
+              </div>
+            )}
+            {!stillTimeTruncated && stillTimeEvents.length > STILL_VISIBLE && (
+              <div className="text-center mt-2">
+                <button
+                  onClick={() => setStillTimeExpanded(false)}
+                  className="text-black text-xs underline hover:opacity-60 transition-opacity focus:outline-none opacity-50"
+                >
+                  ↑ show less
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => {
           const weekKeys = Object.keys(monthData.weekGroups).sort();
           return (
@@ -1352,7 +1444,7 @@ export default function AmsueBouche() {
             const startDate = new Date(ev.dateStart + 'T12:00:00');
             const endDate = ev.dateEnd ? new Date(ev.dateEnd + 'T12:00:00') : null;
             const fmtOpts: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
-            const dateStr = endDate && ev.dateEnd !== ev.dateStart
+            const dateStr = endDate && ev.dateEnd !== ev.dateStart && !ev.isRecurring
               ? `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} – ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
               : startDate.toLocaleDateString('en-US', fmtOpts);
             const evSearchUrl = createSearchUrl(ev);

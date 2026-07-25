@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { describeRecurrenceRule, type RecurrenceRule } from '@shared/recurrence';
+import { describeRecurrenceRule, computeOccurrences, type RecurrenceRule } from '@shared/recurrence';
 
 interface ArtistAnalysis {
   emoji: string;
@@ -21,6 +21,41 @@ interface ConcertMatch {
   venue: string;
   date: string;
   source: string;
+}
+
+// Shared shape behind the AI Refresh "search-and-verify" pipeline for Food +
+// Art recurring/one-time events. Only the fields that actually changed (per
+// interpretListingVerifyResult's diff against what was passed in) are present
+// on 'updated' — 'not-found' carries no field data at all so the client knows
+// to leave every existing value untouched.
+interface RedoListingResult {
+  status: 'updated' | 'confirmed' | 'not-found';
+  dateStart?: string;
+  startTime?: string;
+  venue?: string;
+  neighborhood?: string;
+  price?: string;
+  ticketUrl?: string;
+  summary?: string;
+  instanceNote?: string;
+  instanceTitle?: string;
+  message: string;
+}
+
+interface ListingVerifyParams {
+  name: string;
+  venue: string;
+  isRecurring: boolean;
+  recurrenceLabel: string;
+  recurrenceRule: RecurrenceRule | null;
+  dateStart: string;
+  startTime: string;
+  price: string;
+  ticketUrl: string;
+  neighborhood: string;
+  currentSummary: string;
+  currentInstanceNote: string;
+  currentInstanceTitle: string;
 }
 
 const COLORADO_VENUES = [
@@ -717,7 +752,7 @@ Return ONLY valid JSON (no markdown):
   // redoFoodEventAI's prompts when the event is recurring. Mechanical
   // instructions only — Task A's voice/content stays per-feed.
   private occurrenceDetailTaskPrompt(dateLabel: string, currentInstanceNote: string, currentInstanceTitle: string): string {
-    return `TASK B — FIND OCCURRENCE-SPECIFIC DETAILS:
+    return `TASK D — FIND OCCURRENCE-SPECIFIC DETAILS:
 This is a recurring event. Look in the search results for specifics about THIS occurrence on ${dateLabel}: who's speaking/performing/guesting this time, what book/topic/theme is featured, any special guest or one-time element.
 - Current occurrence note: "${currentInstanceNote || '(none yet)'}"
 - Current title addition: "${currentInstanceTitle || '(none yet)'}"
@@ -725,10 +760,10 @@ This is a recurring event. Look in the search results for specifics about THIS o
 If you found concrete details about THIS specific occurrence:
 - occurrenceNote: a short factual detail (max 120 chars), e.g. "March: reading 'Tomorrow and Tomorrow' by Gabrielle Zevin"
 - titleModifier: a SHORT label (a few words, not a sentence) to append after the event name, e.g. just "Tomorrow and Tomorrow" — not a full sentence
-If results only contain generic series info with nothing specific to this date → set both to null and noNewInfo to true.
-If no search results at all → set both to null and noNewInfo to true.
+If results only contain generic series info with nothing specific to this date → set both to null.
+If no search results at all → set both to null.
 
-CRITICAL: Task A's description must NOT repeat what you put in occurrenceNote/titleModifier — the description is shown for every date in the series and must only describe what's durably true every time; the note/title are what change per date.`;
+CRITICAL: Task C's description must NOT repeat what you put in occurrenceNote/titleModifier — the description is shown for every date in the series and must only describe what's durably true every time; the note/title are what change per date.`;
   }
 
   async parseArtBlurb(blurb: string, imageBase64?: string, imageMediaType?: string, fileName?: string): Promise<{
@@ -914,26 +949,25 @@ Return ONLY valid JSON (no markdown):
     category: string;
     isRecurring: boolean;
     recurrenceLabel: string;
+    recurrenceRule: RecurrenceRule | null;
     dateStart: string;
+    startTime: string;
+    price: string;
+    ticketUrl: string;
+    neighborhood: string;
     currentSummary: string;
     currentInstanceNote: string;
     currentInstanceTitle: string;
-  }): Promise<{
-    status: 'updated' | 'no-info';
-    summary?: string;
-    instanceNote?: string;
-    instanceTitle?: string;
-    message?: string;
-  }> {
+  }): Promise<RedoListingResult> {
     return this.runListingRedo(params, {
       buildSearchQueries: ({ name, venue, isRecurring, dateStart }) => {
         const monthYear = dateStart
           ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
           : '';
         const searchQueries: string[] = [];
+        if (name) searchQueries.push(`"${name}" Denver`);
         if (name && venue) searchQueries.push(`"${name}" "${venue}" Denver`);
-        else if (name) searchQueries.push(`"${name}" Denver event`);
-        if (isRecurring && monthYear) {
+        if (isRecurring && monthYear && name) {
           searchQueries.push(`"${name}" ${monthYear} Denver`);
           if (venue) searchQueries.push(`"${venue}" ${monthYear}`);
         } else if (monthYear && name) {
@@ -942,61 +976,22 @@ Return ONLY valid JSON (no markdown):
         return searchQueries;
       },
 
-      buildPrompt: ({ name, venue, category, isRecurring, recurrenceLabel, dateStart, currentSummary, currentInstanceNote, currentInstanceTitle }, searchContext) => {
-        const dateLabel = dateStart
-          ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-          : '';
-        return `You are improving an event listing for Artistry & Nerdery Live, a Denver/Boulder cultural event newsletter.
-
-EVENT DETAILS:
-- Name: ${name}
-- Venue: ${venue}
-- Category: ${category}
-- Date: ${dateLabel || 'unknown'}
-- Recurring: ${isRecurring ? `Yes — ${recurrenceLabel || 'recurring series'}` : 'No (one-time event)'}
-- Current description: "${currentSummary || '(none yet)'}"
-
-WEB SEARCH RESULTS:
-${searchContext || '(no results found)'}
-
-TASK A — IMPROVE THE DESCRIPTION:
-Rewrite the description to be specific, sensory, and compelling. Max 200 chars.
+      buildPrompt: ({ category, ...p }, searchContext) => this.buildListingVerifyPrompt({
+        ...p,
+        feedName: 'Artistry & Nerdery Live',
+        feedVoiceIntro: 'a Denver/Boulder cultural event newsletter',
+        categoryLabel: 'Category',
+        categoryValue: category,
+        descriptionTaskGuide: `Rewrite the description to be specific, sensory, and compelling. Max 200 chars.
 Voice: smart and curious, not academic. Like a knowledgeable friend, not a press release.
 No hype ("amazing," "incredible," "don't miss"). Lead with what makes this worth attending.
-Use real names of performers/speakers/artists if found in search results.
-If the current description is already excellent and nothing new was found, you may keep it as-is.
-${isRecurring ? "Do NOT mention what's specific to only this date (the particular guest, book, or theme) — that belongs only in Task B below, never in the description." : ''}
+Use real names of performers/speakers/artists if found in search results.`,
+        searchContext,
+      }),
 
-${isRecurring ? this.occurrenceDetailTaskPrompt(dateLabel, currentInstanceNote, currentInstanceTitle) : ''}
+      maxTokens: 600,
 
-Return ONLY valid JSON (no markdown):
-{
-  "summary": "improved description max 200 chars",${isRecurring ? `
-  "occurrenceNote": "specific detail for this date only max 120 chars, or null",
-  "titleModifier": "short label to append after the event name for this date only, or null",
-  "noNewInfo": true or false,
-  "noNewInfoReason": "brief reason if noNewInfo is true, else empty string"` : `
-  "noNewInfo": false`}
-}`;
-      },
-
-      maxTokens: 500,
-
-      interpretResult: (result, { isRecurring, currentSummary }) => {
-        if (isRecurring && result.noNewInfo) {
-          return {
-            status: 'no-info',
-            summary: (result.summary || currentSummary || '').substring(0, 200),
-            message: result.noNewInfoReason || 'No specific details for this occurrence found yet — check back closer to the date.',
-          };
-        }
-        return {
-          status: 'updated',
-          summary: (result.summary || currentSummary || '').substring(0, 200),
-          instanceNote: isRecurring ? (result.occurrenceNote || undefined) : undefined,
-          instanceTitle: isRecurring ? (result.titleModifier || undefined) : undefined,
-        };
-      },
+      interpretResult: (result, params) => this.interpretListingVerifyResult(result, params),
     });
   }
 
@@ -1006,93 +1001,171 @@ Return ONLY valid JSON (no markdown):
     cuisine: string;
     isRecurring: boolean;
     recurrenceLabel: string;
+    recurrenceRule: RecurrenceRule | null;
     dateStart: string;
+    startTime: string;
+    price: string;
+    ticketUrl: string;
+    neighborhood: string;
     currentSummary: string;
     currentInstanceNote: string;
     currentInstanceTitle: string;
-  }): Promise<{
-    status: 'updated' | 'no-info';
-    summary?: string;
-    instanceNote?: string;
-    instanceTitle?: string;
-    message?: string;
-  }> {
+  }): Promise<RedoListingResult> {
     return this.runListingRedo(params, {
       buildSearchQueries: ({ name, venue, cuisine, isRecurring, dateStart }) => {
         const monthYear = dateStart
           ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
           : '';
         const searchQueries: string[] = [];
-        if (name && venue) searchQueries.push(`"${name}" "${venue}" Denver food popup`);
-        else if (name) searchQueries.push(`"${name}" Denver food popup`);
         if (name) searchQueries.push(`"${name}" Denver ${cuisine}`);
+        if (name && venue) searchQueries.push(`"${name}" "${venue}" Denver food popup`);
         if (isRecurring && monthYear && name) searchQueries.push(`"${name}" ${monthYear}`);
         return searchQueries;
       },
 
-      buildPrompt: ({ name, venue, cuisine, isRecurring, recurrenceLabel, dateStart, currentSummary, currentInstanceNote, currentInstanceTitle }, searchContext, hasResults) => {
-        const dateLabel = dateStart
-          ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-          : '';
-        return `You are improving a food popup listing for Amuse Bouche Insider, a Denver foodie newsletter.
+      buildPrompt: ({ cuisine, ...p }, searchContext) => this.buildListingVerifyPrompt({
+        ...p,
+        feedName: 'Amuse Bouche Insider',
+        feedVoiceIntro: 'a Denver foodie newsletter',
+        categoryLabel: 'Cuisine',
+        categoryValue: cuisine,
+        descriptionTaskGuide: `Rewrite the description to be sensory, specific, and compelling. Max 200 chars.
+Voice: like a knowledgeable food-obsessed friend — evocative but not breathless.
+No hype ("amazing," "incredible," "don't miss"). Lead with what makes this worth eating.
+Name the chef or collaborators if found in search results.`,
+        searchContext,
+      }),
 
-EVENT DETAILS:
+      maxTokens: 600,
+
+      interpretResult: (result, params) => this.interpretListingVerifyResult(result, params),
+    });
+  }
+
+  // Shared prompt builder + result interpreter behind redoArtEventAI and
+  // redoFoodEventAI — the search-and-verify structure (confirm findable →
+  // verify fields → improve description [→ occurrence details]) and the JSON
+  // schema are identical between feeds; only voice/category/search queries
+  // genuinely differ, which stay as per-feed config passed in.
+  private buildListingVerifyPrompt(p: ListingVerifyParams & {
+    feedName: string;
+    feedVoiceIntro: string;
+    categoryLabel: string;
+    categoryValue: string;
+    descriptionTaskGuide: string;
+    searchContext: string;
+  }): string {
+    const {
+      name, venue, isRecurring, recurrenceLabel, recurrenceRule, dateStart, startTime, price, ticketUrl,
+      neighborhood, currentSummary, currentInstanceNote, currentInstanceTitle,
+      feedName, feedVoiceIntro, categoryLabel, categoryValue, descriptionTaskGuide, searchContext,
+    } = p;
+
+    const dateLabel = dateStart
+      ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : '';
+    const todayStr = new Date().toISOString().split('T')[0];
+    const expectedNext = (isRecurring && recurrenceRule && dateStart)
+      ? computeOccurrences(recurrenceRule, dateStart, todayStr, 1)[0]
+      : null;
+    const expectedNextLabel = expectedNext
+      ? new Date(expectedNext + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : null;
+
+    return `You are verifying and improving an event listing for ${feedName}, ${feedVoiceIntro}.
+
+EVENT DETAILS ON FILE:
 - Name: ${name}
 - Venue: ${venue}
-- Cuisine: ${cuisine}
-- Date: ${dateLabel || 'unknown'}
+- Neighborhood: ${neighborhood || 'unknown'}
+- ${categoryLabel}: ${categoryValue || 'unknown'}
+- Date on file: ${dateLabel || 'unknown'}${expectedNextLabel && expectedNextLabel !== dateLabel ? ` (our own recurrence math expects the next edition around ${expectedNextLabel} — a reference point, not a confirmed fact)` : ''}
+- Time: ${startTime || 'unknown'}
+- Price: ${price || 'unknown'}
+- Ticket URL: ${ticketUrl || 'none'}
 - Recurring: ${isRecurring ? `Yes — ${recurrenceLabel || 'recurring series'}` : 'No (one-time event)'}
 - Current description: "${currentSummary || '(none yet)'}"
 
 WEB SEARCH RESULTS:
 ${searchContext || '(no results found)'}
 
-TASK A — IMPROVE THE DESCRIPTION:
-Rewrite the description to be sensory, specific, and compelling. Max 200 chars.
-Voice: like a knowledgeable food-obsessed friend — evocative but not breathless.
-No hype ("amazing," "incredible," "don't miss"). Lead with what makes this worth eating.
-Name the chef or collaborators if found in search results.
-If the current description is already excellent and nothing new was found, improve the prose but keep the core content.
-${isRecurring ? "Do NOT mention what's specific to only this date (a particular date's menu item or theme) — that belongs only in Task B below, never in the description." : ''}
+TASK A — CONFIRM THIS EVENT IS REAL AND FINDABLE:
+Decide whether the search results genuinely confirm this specific event/series still exists — not a coincidence, a different event with a similar name, or an unrelated show/popup at the same venue. If nothing clearly corroborates it (wrong name entirely, no real signal, or the connection is too weak to trust), set eventFound to false.
+
+If eventFound is false: stop there. Return eventFound: false, every other field null, and a one-sentence message explaining nothing could be confirmed online. Do not guess at or invent anything.
+
+If eventFound is true, continue with Tasks B and C below.
+
+TASK B — VERIFY THE DETAILS:
+${isRecurring
+  ? "This is a recurring series. Try to confirm the actual upcoming occurrence's date, along with time/venue/price/ticket link, from the search results."
+  : "This is a one-time event. Confirm whether it's been rescheduled, moved, or had other details change since it was posted."}
+For dateStart, startTime, venue, neighborhood, price, ticketUrl: only report a new value if a search result genuinely confirms something different from what's on file, with a real corroborating source. If a field isn't mentioned, or results simply don't contradict what's on file, leave it null — a missing correction is far better than a wrong one.
+VENUE — HIGH RISK: only report a venue change if the SAME event/series is explicitly confirmed at a new venue (an actual "we've moved" signal) — never just because a same-named result mentions a different place, which more likely means a different, unrelated event.
+DATE${isRecurring ? " — only report a date that reads as the upcoming/next occurrence, never a past one." : "."}
+
+TASK C — IMPROVE THE DESCRIPTION:
+${descriptionTaskGuide}
+If the current description is already excellent and nothing new was found, you may keep it as-is.
+${isRecurring ? "Do NOT mention what's specific to only this date (the particular guest, book, menu item, or theme) — that belongs only in Task D below, never in the description." : ''}
 
 ${isRecurring ? this.occurrenceDetailTaskPrompt(dateLabel, currentInstanceNote, currentInstanceTitle) : ''}
 
 Return ONLY valid JSON (no markdown):
 {
-  "summary": "improved description max 200 chars",${isRecurring ? `
+  "eventFound": true or false,
+  "dateStart": "YYYY-MM-DD confirmed correction, or null",
+  "startTime": "HH:MM confirmed correction, or null",
+  "venue": "confirmed correction, or null",
+  "neighborhood": "confirmed correction, or null",
+  "price": "confirmed correction, or null",
+  "ticketUrl": "confirmed correction, or null",
+  "summary": "improved description max 200 chars, or the current one if unchanged",${isRecurring ? `
   "occurrenceNote": "specific detail for this date only max 120 chars, or null",
-  "titleModifier": "short label to append after the event name for this date only, or null",
-  "noNewInfo": true or false,
-  "noNewInfoReason": "brief reason if noNewInfo is true, else empty string"` : `
-  "noNewInfo": ${hasResults ? 'false' : 'true'}`}
+  "titleModifier": "short label to append after the event name for this date only, or null",` : ''}
+  "message": "one plain-language sentence: what you found/changed, why nothing could be confirmed, or that everything checked out"
 }`;
-      },
+  }
 
-      maxTokens: 500,
+  private interpretListingVerifyResult(result: any, params: ListingVerifyParams): RedoListingResult {
+    const { isRecurring, currentSummary, dateStart, startTime, venue, price, ticketUrl, neighborhood } = params;
 
-      interpretResult: (result, { currentSummary, isRecurring }, hasResults) => {
-        if (isRecurring && result.noNewInfo) {
-          return {
-            status: 'no-info',
-            summary: (result.summary || currentSummary || '').substring(0, 200),
-            message: result.noNewInfoReason || 'No specific details for this occurrence found yet — check back closer to the date.',
-          };
-        }
-        if (!isRecurring && !hasResults && result.noNewInfo) {
-          return {
-            status: 'no-info',
-            summary: (result.summary || currentSummary || '').substring(0, 200),
-            message: 'No additional details found online yet — description polished.',
-          };
-        }
-        return {
-          status: 'updated',
-          summary: (result.summary || currentSummary || '').substring(0, 200),
-          instanceNote: isRecurring ? (result.occurrenceNote || undefined) : undefined,
-          instanceTitle: isRecurring ? (result.titleModifier || undefined) : undefined,
-        };
-      },
-    });
+    if (!result.eventFound) {
+      return {
+        status: 'not-found',
+        message: result.message || "Couldn't confirm this event online — details left as-is.",
+      };
+    }
+
+    const changed: Partial<RedoListingResult> = {};
+    if (result.dateStart && result.dateStart !== dateStart) changed.dateStart = result.dateStart;
+    if (result.startTime && result.startTime !== startTime) changed.startTime = result.startTime;
+    if (result.venue && result.venue !== venue) changed.venue = result.venue;
+    if (result.neighborhood && result.neighborhood !== neighborhood) changed.neighborhood = result.neighborhood;
+    if (result.price && result.price !== price) changed.price = result.price;
+    if (result.ticketUrl && result.ticketUrl !== ticketUrl) changed.ticketUrl = result.ticketUrl;
+
+    const newSummary = (result.summary || currentSummary || '').substring(0, 200);
+    const summaryChanged = newSummary.trim() !== (currentSummary || '').trim();
+    const instanceNote = isRecurring ? (result.occurrenceNote || undefined) : undefined;
+    const instanceTitle = isRecurring ? (result.titleModifier || undefined) : undefined;
+
+    if (Object.keys(changed).length === 0 && !summaryChanged && !instanceNote && !instanceTitle) {
+      return {
+        status: 'confirmed',
+        summary: newSummary,
+        message: result.message || 'Checked online — everything on file is correct.',
+      };
+    }
+
+    return {
+      status: 'updated',
+      ...changed,
+      summary: newSummary,
+      instanceNote,
+      instanceTitle,
+      message: result.message || 'Found updated details online.',
+    };
   }
 
   private async fetchUrlText(url: string): Promise<string> {

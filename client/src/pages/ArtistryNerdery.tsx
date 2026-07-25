@@ -117,20 +117,37 @@ const artFormConfig: ListingFormConfig<InsertArtEvent> = {
     category: form.category,
     isRecurring: form.isRecurring,
     recurrenceLabel: form.recurrenceLabel,
+    recurrenceRule: form.recurrenceRule,
     dateStart: form.dateStart,
+    startTime: form.startTime,
+    price: form.price,
+    ticketUrl: form.ticketUrl,
+    neighborhood: form.neighborhood,
     currentSummary: form.summary,
     currentInstanceNote: instanceNote,
     currentInstanceTitle: instanceTitle,
   }),
   applyRedoResponse: (res, { setForm, setInstanceNote, setInstanceTitle }) => {
-    if (res.status === "no-info") {
-      if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
-      return { title: "Description polished ✓", description: `No new occurrence details found yet — ${res.message}` };
+    if (res.status === "not-found") {
+      return { title: "Couldn't verify online ⚠️", description: res.message };
     }
-    if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
+    if (res.status === "confirmed") {
+      if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
+      return { title: "Confirmed correct ✓", description: res.message };
+    }
+    setForm(f => ({
+      ...f,
+      ...(res.summary ? { summary: res.summary } : {}),
+      ...(res.dateStart ? { dateStart: res.dateStart } : {}),
+      ...(res.startTime ? { startTime: res.startTime } : {}),
+      ...(res.venue ? { venue: res.venue } : {}),
+      ...(res.neighborhood ? { neighborhood: res.neighborhood } : {}),
+      ...(res.price ? { price: res.price } : {}),
+      ...(res.ticketUrl ? { ticketUrl: res.ticketUrl } : {}),
+    }));
     if (res.instanceNote) setInstanceNote(res.instanceNote);
     if (res.instanceTitle) setInstanceTitle(res.instanceTitle);
-    return { title: "Content refreshed ✨", description: "Description updated with latest details." };
+    return { title: "Updated ✨", description: res.message };
   },
   applyParseResponse: (data, { blurb, form, setForm, setInstanceNote, setInstanceTitle, setSpecificDates, setUseSpecificDates }) => {
     const { specificDates: aiDates, instanceNote: aiNote, titleModifier: aiTitle, ...rest } = data;
@@ -284,22 +301,29 @@ export default function ArtistryNerdery() {
     return true;
   });
 
-  // "Still Time" — already started, not yet over; dedupe by id, sort by soonest closing
+  // "Still Time" — already-started, not-yet-over one-time range events; dedupe
+  // by id, sort by soonest closing. Recurring events never belong here, even
+  // when a given occurrence carries a multi-day span — each occurrence is its
+  // own dated feed entry instead (see upcomingFilteredEvents below).
   const stillTimeEvents = filteredEvents
     .filter(ev => {
+      if (ev.isRecurring) return false;
       if (!ev.dateEnd || ev.dateEnd === "" || ev.dateEnd === ev.dateStart) return false;
       return ev.dateStart < todayStr && ev.dateEnd >= todayStr;
     })
     .filter((ev, idx, arr) => arr.findIndex(e => e.id === ev.id) === idx)
     .sort((a, b) => (a.dateEnd ?? "").localeCompare(b.dateEnd ?? ""));
 
-  const STILL_VISIBLE = 2;
+  const STILL_VISIBLE = 1;
   const stillTimeTruncated = stillTimeEvents.length > STILL_VISIBLE && !stillTimeExpanded;
   const visibleStillTimeEvents = stillTimeTruncated ? stillTimeEvents.slice(0, STILL_VISIBLE) : stillTimeEvents;
   const stillTimeHiddenCount = stillTimeEvents.length - STILL_VISIBLE;
 
-  // Events that haven't started yet — feed into the normal month groups
+  // Events that aren't in the Still Time bucket — feed into the normal month
+  // groups. Mirrors the stillTimeEvents condition exactly (recurring events
+  // are always included here, never diverted to Still Time).
   const upcomingFilteredEvents = filteredEvents.filter(ev => {
+    if (ev.isRecurring) return true;
     if (!ev.dateEnd || ev.dateEnd === "" || ev.dateEnd === ev.dateStart) return true;
     return !(ev.dateStart < todayStr && ev.dateEnd >= todayStr);
   });
@@ -635,7 +659,7 @@ export default function ArtistryNerdery() {
               {stillTimeTruncated && (
                 <div
                   className="absolute inset-0 pointer-events-none"
-                  style={{ background: `linear-gradient(to bottom, transparent 40%, ${AN_BG} 100%)` }}
+                  style={{ background: `linear-gradient(to bottom, transparent 50%, ${AN_BG} 100%)` }}
                 />
               )}
             </div>
@@ -740,7 +764,7 @@ export default function ArtistryNerdery() {
             const startDate = new Date(ev.dateStart + 'T12:00:00');
             const endDate = ev.dateEnd ? new Date(ev.dateEnd + 'T12:00:00') : null;
             const fmtOpts: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
-            const dateStr = endDate && ev.dateEnd !== ev.dateStart
+            const dateStr = endDate && ev.dateEnd !== ev.dateStart && !ev.isRecurring
               ? `${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} – ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
               : startDate.toLocaleDateString('en-US', fmtOpts);
             const evSearchUrl = createSearchUrl(ev);

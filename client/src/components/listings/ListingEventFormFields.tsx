@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, ChevronDown, Bell } from "lucide-react";
+import { Plus, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { riskPips, RISK_LABELS } from "@/lib/eventUtils";
 import { cn } from "@/lib/utils";
@@ -8,10 +8,6 @@ import { RecurrenceFreqSelect, RecurrencePicker } from "./RecurrencePicker";
 import { SegmentedControl } from "./segmented-control";
 import { Field, TextField, TextArea, controlBase } from "./form-primitives";
 import { describeRecurrenceRule, type RecurrenceRule } from "@shared/recurrence";
-
-// "Self" — matches the convention already used in ListingEventRow.tsx for
-// deciding whether to show a "tip credit" attribution on the feed.
-const SELF_NAME = "Mandi";
 
 export type { SpecificDateEntry };
 
@@ -126,8 +122,6 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
     ...(canUseSpecificDates ? [{ value: "irregular" as const, label: "Irregular" }] : []),
   ];
 
-  const requesterName = (form.requester as string) || "";
-  const isTipster = requesterName.trim() !== "" && requesterName.trim().toLowerCase() !== SELF_NAME.toLowerCase();
   const selloutRisk = form.selloutRisk ?? 0;
   const showAnnouncedOnSurface = selloutRisk >= 4;
 
@@ -142,18 +136,20 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
         <Field label="Event name & date" required hint="each date is its own event">
           <div className="flex flex-col rounded-none border-2 border-field-border/40 bg-field/40">
             {specificDatesState!.specificDates.map((entry, i) => (
-              <div key={i} className="flex items-center gap-2 p-2.5">
+              <div key={i} className="flex flex-col gap-2 p-2.5 sm:flex-row sm:items-center">
                 <TextField aria-label="Title for this date" value={entry.title}
                   onChange={e => specificDatesState!.setSpecificDates(prev => prev.map((p, pi) => pi === i ? { ...p, title: e.target.value } : p))}
                   placeholder={i === 0 ? config.namePlaceholder : "Same as first—edit to override"} />
-                <TextField type="date" aria-label="Date" className="max-w-[10.5rem]" value={entry.date}
-                  onChange={e => specificDatesState!.setSpecificDates(prev => prev.map((p, pi) => pi === i ? { ...p, date: e.target.value } : p))} />
-                <button type="button" aria-label="Remove date"
-                  disabled={specificDatesState!.specificDates.length <= 1}
-                  onClick={() => specificDatesState!.setSpecificDates(prev => prev.filter((_, pi) => pi !== i))}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-card-foreground disabled:opacity-30">
-                  ×
-                </button>
+                <div className="flex items-center gap-2">
+                  <TextField type="date" aria-label="Date" className="w-full sm:max-w-[10.5rem]" value={entry.date}
+                    onChange={e => specificDatesState!.setSpecificDates(prev => prev.map((p, pi) => pi === i ? { ...p, date: e.target.value } : p))} />
+                  <button type="button" aria-label="Remove date"
+                    disabled={specificDatesState!.specificDates.length <= 1}
+                    onClick={() => specificDatesState!.setSpecificDates(prev => prev.filter((_, pi) => pi !== i))}
+                    className="flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-card-foreground disabled:opacity-30">
+                    ×
+                  </button>
+                </div>
               </div>
             ))}
             <button type="button" onClick={() => specificDatesState!.setSpecificDates(prev => [...prev, { date: "", title: "" }])}
@@ -177,7 +173,12 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
             <SelectTrigger id={idFor(config.categoryFieldKey)} className={cn(controlBase, "w-full", fieldErr(config.categoryFieldKey))}>
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
-            <SelectContent className="max-h-[280px] overflow-y-auto">
+            {/* SelectContent renders through a Radix Portal to document.body,
+                outside the .event-form-theme class on DialogContent — CSS
+                custom properties don't cascade to portaled content across
+                that DOM boundary. Re-applying the class here redeclares the
+                tokens directly on this node instead of relying on inheritance. */}
+            <SelectContent className="event-form-theme max-h-[280px] overflow-y-auto">
               {config.categoryOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -275,6 +276,25 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
               <RecurrencePicker rule={rule} dateStart={form.dateStart || ""} onRuleChange={(r, label) => setForm(f => ({ ...f, recurrenceRule: r, recurrenceLabel: label } as Partial<TInsert>))} />
             )}
           </div>
+
+          {(form.excludedDates?.length ?? 0) > 0 && (
+            <Field label="Skipped dates" hint="won't appear in the feed">
+              <div className="flex flex-col rounded-none border-2 border-field-border/40 bg-field/40">
+                {(form.excludedDates ?? []).map((date, i) => (
+                  <div key={date} className={cn("flex items-center justify-between gap-2 px-2.5 py-2", i > 0 && "border-t border-field-border/30")}>
+                    <span className="text-sm text-card-foreground">
+                      {new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                    <button type="button" aria-label="Restore this date"
+                      onClick={() => setForm(f => ({ ...f, excludedDates: (f.excludedDates ?? []).filter(d => d !== date) } as Partial<TInsert>))}
+                      className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-card-foreground">
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </Field>
+          )}
         </div>
       )}
 
@@ -367,12 +387,6 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
       <Field label="Your name" required htmlFor={idFor("requester")} className="max-w-[16rem]">
         <TextField id={idFor("requester")} value={form.requester || ""} onChange={e => set("requester" as keyof TInsert, e.target.value)}
           className={fieldErr("requester")} placeholder="Who's adding this?" />
-        {isTipster && (
-          <p className="mt-1.5 flex items-center gap-1.5 text-xs leading-relaxed text-muted-foreground">
-            <Bell className="size-3.5 shrink-0 text-accent" />
-            Posts to the feed with a tip credit for <span className="font-medium text-card-foreground">{requesterName.trim()}</span>
-          </p>
-        )}
       </Field>
     </div>
   );
