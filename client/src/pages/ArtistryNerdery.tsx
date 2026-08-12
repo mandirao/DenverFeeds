@@ -387,6 +387,12 @@ export default function ArtistryNerdery() {
                   <TooltipContent><p>Subscribe to calendar</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              <a href="https://www.meetup.com/artistry-nerdistry-live"
+                target="_blank" rel="noopener noreferrer"
+                className="text-white hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                <span>Meetup</span>
+              </a>
               <button onClick={() => setAddOpen(true)}
                 className="bg-black text-[#FE6B41] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
                 <Plus className="w-4 h-4" />Event
