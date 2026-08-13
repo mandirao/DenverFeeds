@@ -142,22 +142,18 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
               </Tooltip>
             </TooltipProvider>
 
+            {" ("}
             {event.isDateUnverified ? (
-              <>
-                {" "}
-                <button
-                  type="button"
-                  onClick={() => setIsEditOpen(true)}
-                  title="Exact date not announced yet — click to confirm"
-                  className="inline-flex items-center align-middle text-xs font-black uppercase leading-none px-2 py-[3px] bg-amber-400 text-black hover:bg-amber-300 transition-colors cursor-pointer"
-                >
-                  Verify Date
-                </button>
-                {". "}
-              </>
+              <button
+                type="button"
+                onClick={() => setIsEditOpen(true)}
+                title="Exact date not announced yet — click to confirm"
+                className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
+              >
+                Verify date
+              </button>
             ) : (
               <>
-                {" ("}
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -176,9 +172,9 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
                 {event.startTime && /^\d{1,2}:\d{2}$/.test(event.startTime) && (
                   <span className="text-black/60">{", "}{formatTime(event.startTime)}</span>
                 )}
-                {"). "}
               </>
             )}
+            {"). "}
 
             {config.renderRecurringNote?.(event)}
 
