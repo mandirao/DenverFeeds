@@ -267,8 +267,20 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Starts" required htmlFor={idFor("dateStart")}
-              hint={dateNeedsVerification ? "date TBD — confirm today's real date" : undefined}>
-              <TextField id={idFor("dateStart")} type="date" value={form.dateStart || ""} onChange={e => set("dateStart" as keyof TInsert, e.target.value)}
+              hint={dateNeedsVerification ? "date TBD — set the confirmed date to clear this" : undefined}>
+              <TextField id={idFor("dateStart")} type="date" value={form.dateStart || ""} onChange={e => {
+                const value = e.target.value;
+                set("dateStart" as keyof TInsert, value);
+                // Correcting the date from the "Verify date" flow is what
+                // resolves it — flips the rule off "tbd" so this occurrence
+                // (and the series going forward) stops being flagged as an
+                // unconfirmed guess. Mirrors RecurrencePicker's own "date" vs
+                // "tbd" toggle so the resulting rule is one it would produce.
+                if (dateNeedsVerification && rule?.monthlyMode === "tbd") {
+                  const confirmedRule: RecurrenceRule = { ...rule, monthlyMode: rule.freq === "annual" ? undefined : "day-of-month" };
+                  setForm(f => ({ ...f, recurrenceRule: confirmedRule, recurrenceLabel: describeRecurrenceRule(confirmedRule) } as Partial<TInsert>));
+                }
+              }}
                 className={fieldErr("dateStart")} />
             </Field>
             <Field label="Ends" hint="optional" htmlFor="recurrence-until">
