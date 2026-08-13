@@ -170,15 +170,29 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
     } else {
       delete updatedTitles[currentOccurrenceDate];
     }
-    const payload = { ...form, instanceNotes: updatedNotes, instanceTitles: updatedTitles };
+    // `event.dateStart` here is whichever occurrence this row happened to be
+    // expanded to (e.g. this month's vs. next month's meetup), not the row's
+    // real stored anchor — only event.seriesAnchorDate is that. If the date
+    // field wasn't actually touched (no AI Refresh correction, no manual
+    // edit), keep persisting the real anchor instead of snapping it forward
+    // to whichever occurrence was opened, which would make future schedule
+    // computation skip any occurrence still due before it. A genuine date
+    // change (AI Refresh or manual) is still honored as a real anchor move,
+    // same as before.
+    const dateStartToPersist =
+      form.isRecurring && currentOccurrenceDate === originalOccurrenceDate
+        ? ((event.seriesAnchorDate ?? event.dateStart) as string)
+        : (form.dateStart as string);
+    const payload = { ...form, dateStart: dateStartToPersist, instanceNotes: updatedNotes, instanceTitles: updatedTitles };
 
     // If this save changes the schedule, check whether any existing
     // per-occurrence notes/titles are keyed to a date the new schedule won't
     // produce — those would silently stop showing up.
     const newRule = (form.recurrenceRule as RecurrenceRule | null | undefined) ?? null;
-    const seriesStart = (form.dateStart as string) || event.dateStart;
+    const seriesStart = dateStartToPersist || event.dateStart;
     if (form.isRecurring && newRule && (Object.keys(updatedNotes).length > 0 || Object.keys(updatedTitles).length > 0)) {
-      const validDates = new Set(computeOccurrences(newRule, seriesStart, seriesStart, 24));
+      const todayStr = new Date().toISOString().split('T')[0];
+      const validDates = new Set(computeOccurrences(newRule, seriesStart, todayStr, 24));
       const orphaned = [
         ...Object.entries(updatedNotes).filter(([date]) => !validDates.has(date)).map(([date, text]) => ({ date, kind: "note" as const, text })),
         ...Object.entries(updatedTitles).filter(([date]) => !validDates.has(date)).map(([date, text]) => ({ date, kind: "title" as const, text })),

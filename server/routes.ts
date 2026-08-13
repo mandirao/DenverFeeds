@@ -2,6 +2,7 @@ import express, { type Express, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertEventSchema, events, upvotes, insertPlaylistSchema, insertFoodEventSchema, insertArtEventSchema } from "@shared/schema";
+import { expandRecurringEvents } from "@shared/recurrence";
 import { fromZodError } from "zod-validation-error";
 import { ZodError, type ZodType } from "zod";
 import { parse } from "date-fns";
@@ -908,8 +909,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.get("/calendar/food-feed.ics", async (req, res) => {
     try {
       const allEvents = await storage.getAllFoodEvents();
+      // Recurring rows' stored dateStart is just the original anchor and is
+      // expected to sit in the past indefinitely (see storage.ts) — expand to
+      // the actual upcoming occurrence date(s) first, same as the feed pages,
+      // otherwise every recurring event gets dropped by the filter below.
+      const expandedEvents = expandRecurringEvents(allEvents);
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      const upcoming = allEvents.filter(ev => new Date(ev.dateStart + "T12:00:00") >= today);
+      const upcoming = expandedEvents.filter(ev => new Date(ev.dateStart + "T12:00:00") >= today);
 
       const foldLine = (line: string): string => {
         const maxLen = 75;
@@ -957,13 +963,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       upcoming.forEach(ev => {
         const endDateStr = ev.dateEnd && ev.dateEnd !== ev.dateStart ? nextDay(ev.dateEnd) : nextDay(ev.dateStart);
         const hasTime = ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime);
-        let desc = `${ev.name} at ${ev.venue}`;
+        const titleModifier = ev.isRecurring ? ev.instanceTitles?.[ev.dateStart] : undefined;
+        const displayName = titleModifier ? `${ev.name}: ${titleModifier}` : ev.name;
+        const instanceNote = ev.isRecurring ? ev.instanceNotes?.[ev.dateStart] : undefined;
+        let desc = `${displayName} at ${ev.venue}`;
+        if (instanceNote) desc += `\n${instanceNote}`;
         if (ev.summary) desc += `\n${ev.summary}`;
         if (ev.cuisine) desc += `\nCuisine: ${ev.cuisine}`;
         if (ev.ticketUrl) desc += `\nTickets: ${ev.ticketUrl}`;
         if (ev.sourceUrl) desc += `\nMore info: ${ev.sourceUrl}`;
+        // Recurring events expand into multiple occurrences sharing one row
+        // id — the date has to be part of the UID or every occurrence after
+        // the first overwrites the previous one in a subscribed calendar.
+        const uid = ev.isRecurring ? `food-${ev.id}-${ev.dateStart}@setlistsocial.com` : `food-${ev.id}@setlistsocial.com`;
         lines.push('BEGIN:VEVENT');
-        lines.push(`UID:food-${ev.id}@setlistsocial.com`);
+        lines.push(`UID:${uid}`);
         lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
         if (hasTime) {
           lines.push(`DTSTART;TZID=America/Denver:${toLocalDT(ev.dateStart, ev.startTime!)}`);
@@ -972,7 +986,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lines.push(`DTSTART;VALUE=DATE:${toDateStr(ev.dateStart)}`);
           lines.push(`DTEND;VALUE=DATE:${endDateStr}`);
         }
-        lines.push(foldLine(`SUMMARY:${escapeIcal(ev.name + ' @ ' + ev.venue)}`));
+        lines.push(foldLine(`SUMMARY:${escapeIcal(displayName + ' @ ' + ev.venue)}`));
         lines.push(foldLine(`DESCRIPTION:${escapeIcal(desc)}`));
         lines.push(foldLine(`LOCATION:${escapeIcal(ev.venue + ', Denver CO')}`));
         lines.push('STATUS:CONFIRMED', 'TRANSP:TRANSPARENT', 'END:VEVENT');
@@ -992,8 +1006,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.get("/calendar/art-feed.ics", async (req, res) => {
     try {
       const allEvents = await storage.getAllArtEvents();
+      // Recurring rows' stored dateStart is just the original anchor and is
+      // expected to sit in the past indefinitely (see storage.ts) — expand to
+      // the actual upcoming occurrence date(s) first, same as the feed pages,
+      // otherwise every recurring event gets dropped by the filter below.
+      const expandedEvents = expandRecurringEvents(allEvents);
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      const upcoming = allEvents.filter(ev => new Date(ev.dateStart + "T12:00:00") >= today);
+      const upcoming = expandedEvents.filter(ev => new Date(ev.dateStart + "T12:00:00") >= today);
 
       const foldLine = (line: string): string => {
         const maxLen = 75;
@@ -1041,13 +1060,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       upcoming.forEach(ev => {
         const endDateStr = ev.dateEnd && ev.dateEnd !== ev.dateStart ? nextDay(ev.dateEnd) : nextDay(ev.dateStart);
         const hasTime = ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime);
-        let desc = `${ev.name} at ${ev.venue}`;
+        const titleModifier = ev.isRecurring ? ev.instanceTitles?.[ev.dateStart] : undefined;
+        const displayName = titleModifier ? `${ev.name}: ${titleModifier}` : ev.name;
+        const instanceNote = ev.isRecurring ? ev.instanceNotes?.[ev.dateStart] : undefined;
+        let desc = `${displayName} at ${ev.venue}`;
+        if (instanceNote) desc += `\n${instanceNote}`;
         if (ev.summary) desc += `\n${ev.summary}`;
         if (ev.category) desc += `\nCategory: ${ev.category}`;
         if (ev.ticketUrl) desc += `\nTickets: ${ev.ticketUrl}`;
         if (ev.sourceUrl) desc += `\nMore info: ${ev.sourceUrl}`;
+        // Recurring events expand into multiple occurrences sharing one row
+        // id — the date has to be part of the UID or every occurrence after
+        // the first overwrites the previous one in a subscribed calendar.
+        const uid = ev.isRecurring ? `art-${ev.id}-${ev.dateStart}@setlistsocial.com` : `art-${ev.id}@setlistsocial.com`;
         lines.push('BEGIN:VEVENT');
-        lines.push(`UID:art-${ev.id}@setlistsocial.com`);
+        lines.push(`UID:${uid}`);
         lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
         if (hasTime) {
           lines.push(`DTSTART;TZID=America/Denver:${toLocalDT2(ev.dateStart, ev.startTime!)}`);
@@ -1056,7 +1083,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lines.push(`DTSTART;VALUE=DATE:${toDateStr(ev.dateStart)}`);
           lines.push(`DTEND;VALUE=DATE:${endDateStr}`);
         }
-        lines.push(foldLine(`SUMMARY:${escapeIcal(ev.name + ' @ ' + ev.venue)}`));
+        lines.push(foldLine(`SUMMARY:${escapeIcal(displayName + ' @ ' + ev.venue)}`));
         lines.push(foldLine(`DESCRIPTION:${escapeIcal(desc)}`));
         lines.push(foldLine(`LOCATION:${escapeIcal(ev.venue + ', Denver CO')}`));
         lines.push('STATUS:CONFIRMED', 'TRANSP:TRANSPARENT', 'END:VEVENT');

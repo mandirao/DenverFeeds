@@ -316,3 +316,118 @@ export function parseLegacyRecurrenceLabel(label: string | null | undefined, dat
 
   return null;
 }
+
+// ── Occurrence expansion (which upcoming dates to actually show) ───────────
+//
+// Lives here (not client-only) so both the client feed pages AND the server's
+// .ics calendar-feed generation expand recurring events identically — see
+// server/routes.ts's /calendar/{food,art}-feed.ics routes. Pure date/string
+// logic, no browser APIs, so it's safe to import from either side.
+
+export function classifyRecurrence(label: string | null | undefined): 'weekly' | 'biweekly' | 'monthly' | 'annual' | 'irregular' {
+  if (!label) return 'monthly';
+  const l = label.toLowerCase();
+  if (l.includes('annual') || l.includes('yearly') || l.includes('seasonal')) return 'annual';
+  if (l.includes('bi-week') || l.includes('biweek') || l.includes('every other week') ||
+      /\d+(st|nd|rd|th)?.{0,5}&.{0,5}\d+(st|nd|rd|th)?/.test(l)) return 'biweekly';
+  if (l.includes('week')) return 'weekly';
+  if (l.includes('month') || l.includes('every 1st') || l.includes('every first') ||
+      l.includes('every last') || /every \d+(st|nd|rd|th)/.test(l)) return 'monthly';
+  return 'irregular';
+}
+
+export function addCalDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+export function addCalMonths(dateStr: string, months: number): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().split('T')[0];
+}
+
+// Structural shape needed to expand recurring listings into their upcoming occurrences.
+export interface RecurringEventLike {
+  dateStart: string;
+  dateEnd?: string | null;
+  startTime?: string | null;
+  isRecurring?: boolean | null;
+  recurrenceLabel?: string | null;
+  recurrenceRule?: RecurrenceRule | null;
+  excludedDates?: string[] | null;
+}
+
+export function expandRecurringEvents<T extends RecurringEventLike>(events: T[]): T[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split('T')[0];
+  const result: T[] = [];
+
+  for (const ev of events) {
+    if (!ev.isRecurring) { result.push(ev); continue; }
+
+    const spanDays = ev.dateEnd && ev.dateEnd !== '' && ev.dateEnd !== ev.dateStart
+      ? Math.round((new Date(ev.dateEnd + 'T12:00:00').getTime() - new Date(ev.dateStart + 'T12:00:00').getTime()) / 86400000)
+      : 0;
+    // seriesAnchorDate preserves the row's real stored dateStart (before it
+    // gets overwritten below with this specific occurrence's computed date)
+    // so an edit to a later occurrence doesn't clobber the series anchor —
+    // see EditListingEventModal.
+    const makeOccurrence = (dateStart: string): T => ({
+      ...ev, dateStart,
+      dateEnd: spanDays > 0 ? addCalDays(dateStart, spanDays) : (ev.dateEnd ?? ''),
+      seriesAnchorDate: ev.dateStart,
+    } as T);
+
+    // Structured rule present — use the real per-freq date math instead of
+    // the legacy keyword-matched fallback below. Annual/quarterly get only 1
+    // edition ahead (not 2) so those can't ever surface something up to two
+    // years (or two quarters) out; weekly/monthly keep the wider 2-edition
+    // window since their absolute time span stays small regardless.
+    if (ev.recurrenceRule) {
+      const count = (ev.recurrenceRule.freq === 'annual' || ev.recurrenceRule.freq === 'quarterly') ? 1 : 2;
+      const dates = computeOccurrences(ev.recurrenceRule, ev.dateStart, todayStr, count, ev.excludedDates ?? undefined);
+      for (const d of dates) result.push(makeOccurrence(d));
+      continue;
+    }
+
+    // Legacy keyword-matched fallback (no structured rule) — skipped dates
+    // are just filtered out here rather than backfilled like the structured
+    // path above; this path is already a lower-fidelity fallback, not worth
+    // the extra complexity for what's a shrinking, older case.
+    const excludedSet = new Set(ev.excludedDates ?? []);
+    const type = classifyRecurrence(ev.recurrenceLabel);
+
+    if (type === 'annual') {
+      const monthDay = ev.dateStart.slice(5);
+      const yr = today.getFullYear();
+      const thisYearOcc = `${yr}-${monthDay}`;
+      if (thisYearOcc >= todayStr) { if (!excludedSet.has(thisYearOcc)) result.push(makeOccurrence(thisYearOcc)); }
+      else if (today.getMonth() === 0) { const occ = `${yr + 1}-${monthDay}`; if (!excludedSet.has(occ)) result.push(makeOccurrence(occ)); }
+      continue;
+    }
+    if (type === 'irregular') {
+      let d = ev.dateStart;
+      while (d < todayStr) d = addCalMonths(d, 1);
+      if (!excludedSet.has(d)) result.push(makeOccurrence(d));
+      continue;
+    }
+    const periodDays = type === 'weekly' ? 7 : type === 'biweekly' ? 14 : null;
+    let d = ev.dateStart;
+    if (periodDays) { while (d < todayStr) d = addCalDays(d, periodDays); }
+    else { while (d < todayStr) d = addCalMonths(d, 1); }
+    for (let i = 0; i < 2; i++) {
+      if (!excludedSet.has(d)) result.push(makeOccurrence(d));
+      if (i < 1) d = periodDays ? addCalDays(d, periodDays) : addCalMonths(d, 1);
+    }
+  }
+  return result.sort((a, b) => {
+    const dateCompare = a.dateStart.localeCompare(b.dateStart);
+    if (dateCompare !== 0) return dateCompare;
+    const aTime = a.startTime && /^\d{1,2}:\d{2}$/.test(a.startTime) ? a.startTime : '23:59';
+    const bTime = b.startTime && /^\d{1,2}:\d{2}$/.test(b.startTime) ? b.startTime : '23:59';
+    return aTime.localeCompare(bTime);
+  });
+}

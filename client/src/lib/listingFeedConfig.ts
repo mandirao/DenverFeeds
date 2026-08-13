@@ -28,6 +28,10 @@ export interface ListingEventBase {
   instanceNotes?: Record<string, string> | null;
   instanceTitles?: Record<string, string> | null;
   excludedDates?: string[] | null;
+  /** Set only on occurrences produced by expandRecurringEvents — the row's
+   * real persisted dateStart (the recurrence anchor), distinct from this
+   * particular occurrence's computed date living in `dateStart` itself. */
+  seriesAnchorDate?: string | null;
 }
 
 // Per-feed configuration for <ListingEventRow>. Anything that's a genuine
