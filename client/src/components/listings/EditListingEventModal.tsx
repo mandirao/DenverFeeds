@@ -294,6 +294,7 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
               instanceTitle={instanceTitle}
               setInstanceTitle={setInstanceTitle}
               occurrenceDate={currentOccurrenceDate}
+              dateNeedsVerification={!!event.isDateUnverified}
               redoLoading={redoLoading}
               onRedoAI={handleRedoAI}
               config={config}

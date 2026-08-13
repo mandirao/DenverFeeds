@@ -375,10 +375,17 @@ export function expandRecurringEvents<T extends RecurringEventLike>(events: T[])
     // gets overwritten below with this specific occurrence's computed date)
     // so an edit to a later occurrence doesn't clobber the series anchor —
     // see EditListingEventModal.
+    // For a 'tbd' rule, an occurrence date that exactly matches the row's
+    // real stored anchor (ev.dateStart, captured here before this loop
+    // overwrites it) is a confirmed real date — either set at creation or by
+    // a past correction. Anything else required forward date-math
+    // (addMonths/addDays/year-roll) to reach, which is a guess since nobody
+    // has announced that occurrence's real date yet.
     const makeOccurrence = (dateStart: string): T => ({
       ...ev, dateStart,
       dateEnd: spanDays > 0 ? addCalDays(dateStart, spanDays) : (ev.dateEnd ?? ''),
       seriesAnchorDate: ev.dateStart,
+      isDateUnverified: ev.recurrenceRule?.monthlyMode === 'tbd' && dateStart !== ev.dateStart,
     } as T);
 
     // Structured rule present — use the real per-freq date math instead of

@@ -32,6 +32,11 @@ export interface ListingEventBase {
    * real persisted dateStart (the recurrence anchor), distinct from this
    * particular occurrence's computed date living in `dateStart` itself. */
   seriesAnchorDate?: string | null;
+  /** Set only on occurrences produced by expandRecurringEvents for a 'tbd'
+   * recurrence rule — true when this occurrence's date is a forward-computed
+   * guess (nobody's confirmed the real date yet), false/undefined when it's
+   * the row's real, confirmed anchor date. */
+  isDateUnverified?: boolean | null;
 }
 
 // Per-feed configuration for <ListingEventRow>. Anything that's a genuine

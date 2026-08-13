@@ -52,6 +52,7 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
   instanceTitle,
   setInstanceTitle,
   occurrenceDate,
+  dateNeedsVerification,
   redoLoading,
   onRedoAI,
   config,
@@ -68,6 +69,10 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
   instanceTitle: string;
   setInstanceTitle: (s: string) => void;
   occurrenceDate?: string | null;
+  /** True when this occurrence's date is an unconfirmed guess for a 'tbd'
+   * recurrence rule — surfaces a hint on the Starts field pointing the admin
+   * at what to fix. */
+  dateNeedsVerification?: boolean;
   redoLoading: boolean;
   onRedoAI: () => void;
   config: ListingFormConfig<TInsert>;
@@ -261,7 +266,8 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Starts" required htmlFor={idFor("dateStart")}>
+            <Field label="Starts" required htmlFor={idFor("dateStart")}
+              hint={dateNeedsVerification ? "date TBD — confirm today's real date" : undefined}>
               <TextField id={idFor("dateStart")} type="date" value={form.dateStart || ""} onChange={e => set("dateStart" as keyof TInsert, e.target.value)}
                 className={fieldErr("dateStart")} />
             </Field>
