@@ -20,7 +20,7 @@ import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import {
   ensureHttps, riskPips, daysLive, formatDateRange, getMonthLabel, formatTime,
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
-  expandRecurringEvents, RISK_LABELS,
+  expandRecurringEvents, hasStartTimePassed, RISK_LABELS,
 } from "@/lib/eventUtils";
 import { ListingEventRow } from "@/components/listings/ListingEventRow";
 import { ListingCalendarMonthView } from "@/components/listings/ListingCalendarMonthView";
@@ -208,6 +208,15 @@ export default function ArtistryNerdery() {
   const [filterDay, setFilterDay] = useState(() => new URLSearchParams(window.location.search).get("day") || "all");
   const [filterDuration, setFilterDuration] = useState(() => new URLSearchParams(window.location.search).get("duration") || "all");
 
+  // Forces a re-render every minute so today's events drop off the feed
+  // (via hasStartTimePassed below) as their start time passes, without
+  // requiring a manual page refresh.
+  const [, forceMinuteTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => forceMinuteTick(t => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   useEffect(() => {
     const url = new URL(window.location.href);
     filterCategory !== "all" ? url.searchParams.set("category", filterCategory) : url.searchParams.delete("category");
@@ -283,6 +292,7 @@ export default function ArtistryNerdery() {
   })();
 
   const filteredEvents = expandedEvents.filter(ev => {
+    if (hasStartTimePassed(ev, todayStr)) return false;
     if (filterCategory !== "all" && ev.category !== filterCategory) return false;
     if (filterDay !== "all") {
       const d = new Date(ev.dateStart + "T12:00:00");

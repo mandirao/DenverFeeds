@@ -60,6 +60,23 @@ export function formatTime(hhmm: string): string {
   return m === 0 ? `${h12} ${ampm}` : `${h12}:${mStr} ${ampm}`;
 }
 
+/** True once a same-day, single-day event's start time has passed (local
+ * wall-clock time) — used to drop it from the feed once it's already
+ * underway. Multi-day spans are excluded (their true end is dateEnd, handled
+ * by the "Still Time" bucket instead) and events without a valid HH:MM
+ * startTime are never hidden this way, since there's nothing to compare. */
+export function hasStartTimePassed(
+  ev: { dateStart: string; dateEnd?: string | null; startTime?: string | null },
+  todayStr: string,
+): boolean {
+  if (ev.dateStart !== todayStr) return false;
+  if (ev.dateEnd && ev.dateEnd !== "" && ev.dateEnd !== ev.dateStart) return false;
+  if (!ev.startTime || !/^\d{1,2}:\d{2}$/.test(ev.startTime)) return false;
+  const [h, m] = ev.startTime.split(":").map(Number);
+  const now = new Date();
+  return now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m);
+}
+
 // Structural shape shared by FoodEvent and ArtEvent (and anything else with
 // the same "listing" fields) — kept independent of @shared/schema so this
 // file has no feed-specific imports.

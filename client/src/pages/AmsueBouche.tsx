@@ -20,7 +20,7 @@ import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import {
   ensureHttps, riskPips, daysLive, formatDateRange, getMonthLabel, formatTime,
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
-  expandRecurringEvents, RISK_LABELS,
+  expandRecurringEvents, hasStartTimePassed, RISK_LABELS,
 } from "@/lib/eventUtils";
 import { ListingEventRow } from "@/components/listings/ListingEventRow";
 import { ListingCalendarMonthView } from "@/components/listings/ListingCalendarMonthView";
@@ -628,6 +628,15 @@ export default function AmsueBouche() {
     return params.get("tab") === "best-of" ? "bestOf" : "events";
   });
 
+  // Forces a re-render every minute so today's events drop off the feed
+  // (via hasStartTimePassed below) as their start time passes, without
+  // requiring a manual page refresh.
+  const [, forceMinuteTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => forceMinuteTick(t => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const switchTab = (tab: "events" | "bestOf") => {
     setPageTab(tab);
     const url = new URL(window.location.href);
@@ -770,6 +779,7 @@ export default function AmsueBouche() {
   })();
 
   const filteredEvents = expandedEvents.filter(ev => {
+    if (hasStartTimePassed(ev, todayStr)) return false;
     if (filterCuisine !== "all" && ev.cuisine !== filterCuisine) return false;
     if (filterDay !== "all") {
       const [y, mo, dy] = ev.dateStart.split("-").map(Number);
