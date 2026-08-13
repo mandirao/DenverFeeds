@@ -188,15 +188,19 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
 
     // If this save changes the schedule, check whether any existing
     // per-occurrence notes/titles are keyed to a date the new schedule won't
-    // produce — those would silently stop showing up.
+    // produce — those would silently stop showing up. Only checks
+    // today-or-later entries: a note attached to a date that's already in
+    // the past stopped showing up purely because time moved on, not because
+    // of anything this save changed, and re-flagging it on every future edit
+    // (of any other occurrence) would permanently block the series.
     const newRule = (form.recurrenceRule as RecurrenceRule | null | undefined) ?? null;
     const seriesStart = dateStartToPersist || event.dateStart;
     if (form.isRecurring && newRule && (Object.keys(updatedNotes).length > 0 || Object.keys(updatedTitles).length > 0)) {
       const todayStr = localDateStr();
       const validDates = new Set(computeOccurrences(newRule, seriesStart, todayStr, 24));
       const orphaned = [
-        ...Object.entries(updatedNotes).filter(([date]) => !validDates.has(date)).map(([date, text]) => ({ date, kind: "note" as const, text })),
-        ...Object.entries(updatedTitles).filter(([date]) => !validDates.has(date)).map(([date, text]) => ({ date, kind: "title" as const, text })),
+        ...Object.entries(updatedNotes).filter(([date]) => date >= todayStr && !validDates.has(date)).map(([date, text]) => ({ date, kind: "note" as const, text })),
+        ...Object.entries(updatedTitles).filter(([date]) => date >= todayStr && !validDates.has(date)).map(([date, text]) => ({ date, kind: "title" as const, text })),
       ];
       if (orphaned.length > 0) {
         setOrphanConfirm({ payload, orphaned });
