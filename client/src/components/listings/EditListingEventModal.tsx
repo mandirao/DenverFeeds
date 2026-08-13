@@ -57,6 +57,7 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
     recurrenceLabel: event.recurrenceLabel || "",
     recurrenceRule: event.recurrenceRule ?? null,
     excludedDates: event.excludedDates ?? [],
+    verifiedThroughDate: event.verifiedThroughDate ?? null,
   } as Partial<TInsert>);
   const currentOccurrenceDate = (form.dateStart as string) || event.dateStart;
   const [orphanConfirm, setOrphanConfirm] = useState<{
@@ -79,6 +80,7 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
       || (form.isRecurring ?? false) !== (event.isRecurring ?? false)
       || JSON.stringify(form.recurrenceRule ?? null) !== JSON.stringify(event.recurrenceRule ?? null)
       || JSON.stringify(form.excludedDates ?? []) !== JSON.stringify(event.excludedDates ?? [])
+      || (form.verifiedThroughDate ?? null) !== (event.verifiedThroughDate ?? null)
       || instanceNote !== originalNote
       || instanceTitle !== originalTitle;
   };
@@ -299,7 +301,6 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
               instanceTitle={instanceTitle}
               setInstanceTitle={setInstanceTitle}
               occurrenceDate={currentOccurrenceDate}
-              dateNeedsVerification={!!event.isDateUnverified}
               redoLoading={redoLoading}
               onRedoAI={handleRedoAI}
               config={config}

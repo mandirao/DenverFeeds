@@ -527,6 +527,13 @@ export const foodEvents = pgTable("food_events", {
   instanceNotes: jsonb("instance_notes").$type<Record<string, string>>(),
   instanceTitles: jsonb("instance_titles").$type<Record<string, string>>(),
   excludedDates: jsonb("excluded_dates").$type<string[]>(),
+  // The date of the most recent occurrence a human explicitly confirmed as
+  // real — only meaningful when recurrenceRule.monthlyMode is 'tbd'. Lets one
+  // specific occurrence show its real date while later, not-yet-announced
+  // occurrences still show "Verify date". Set via the "Verify this date"
+  // action (or auto-set when correcting an unverified occurrence's date),
+  // not by any date-math inference — see expandRecurringEvents.
+  verifiedThroughDate: text("verified_through_date"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -542,6 +549,7 @@ export const insertFoodEventSchema = createInsertSchema(foodEvents).omit({
   requester: z.string().min(1, "Your name is required"),
   recurrenceRule: recurrenceRuleSchema.nullable().optional(),
   excludedDates: z.array(z.string()).nullable().optional(),
+  verifiedThroughDate: z.string().nullable().optional(),
 });
 
 export type InsertFoodEvent = z.infer<typeof insertFoodEventSchema>;
@@ -583,6 +591,8 @@ export const artEvents = pgTable("art_events", {
   instanceNotes: jsonb("instance_notes").$type<Record<string, string>>(),
   instanceTitles: jsonb("instance_titles").$type<Record<string, string>>(),
   excludedDates: jsonb("excluded_dates").$type<string[]>(),
+  // See foodEvents.verifiedThroughDate — same meaning here.
+  verifiedThroughDate: text("verified_through_date"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -598,6 +608,7 @@ export const insertArtEventSchema = createInsertSchema(artEvents).omit({
   requester: z.string().min(1, "Your name is required"),
   recurrenceRule: recurrenceRuleSchema.nullable().optional(),
   excludedDates: z.array(z.string()).nullable().optional(),
+  verifiedThroughDate: z.string().nullable().optional(),
 });
 
 export type InsertArtEvent = z.infer<typeof insertArtEventSchema>;

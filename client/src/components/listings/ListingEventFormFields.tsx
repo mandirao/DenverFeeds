@@ -52,7 +52,6 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
   instanceTitle,
   setInstanceTitle,
   occurrenceDate,
-  dateNeedsVerification,
   redoLoading,
   onRedoAI,
   config,
@@ -69,10 +68,6 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
   instanceTitle: string;
   setInstanceTitle: (s: string) => void;
   occurrenceDate?: string | null;
-  /** True when this occurrence's date is an unconfirmed guess for a 'tbd'
-   * recurrence rule — surfaces a hint on the Starts field pointing the admin
-   * at what to fix. */
-  dateNeedsVerification?: boolean;
   redoLoading: boolean;
   onRedoAI: () => void;
   config: ListingFormConfig<TInsert>;
@@ -112,6 +107,11 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
   };
 
   const rule = (form.recurrenceRule as RecurrenceRule | null | undefined) ?? null;
+  // Derived live from current form state (not the original event prop) so
+  // this reacts immediately if the admin switches frequency/mode to "Exact
+  // date TBD" mid-edit (e.g. turning a one-off into an annual TBD series) —
+  // not just when they arrived via the feed's "Verify date" link.
+  const isCurrentDateUnverified = !!(rule?.monthlyMode === "tbd" && form.dateStart && (form.verifiedThroughDate ?? null) !== form.dateStart);
   const setUntil = (until: string) => {
     setForm(f => {
       const current = (f.recurrenceRule as RecurrenceRule | null | undefined) ?? null;
@@ -267,21 +267,32 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Starts" required htmlFor={idFor("dateStart")}
-              hint={dateNeedsVerification ? "date TBD — set the confirmed date to clear this" : undefined}>
-              <TextField id={idFor("dateStart")} type="date" value={form.dateStart || ""} onChange={e => {
-                const value = e.target.value;
-                set("dateStart" as keyof TInsert, value);
-                // Correcting the date from the "Verify date" flow is what
-                // resolves it — flips the rule off "tbd" so this occurrence
-                // (and the series going forward) stops being flagged as an
-                // unconfirmed guess. Mirrors RecurrencePicker's own "date" vs
-                // "tbd" toggle so the resulting rule is one it would produce.
-                if (dateNeedsVerification && rule?.monthlyMode === "tbd") {
-                  const confirmedRule: RecurrenceRule = { ...rule, monthlyMode: rule.freq === "annual" ? undefined : "day-of-month" };
-                  setForm(f => ({ ...f, recurrenceRule: confirmedRule, recurrenceLabel: describeRecurrenceRule(confirmedRule) } as Partial<TInsert>));
-                }
-              }}
-                className={fieldErr("dateStart")} />
+              hint={isCurrentDateUnverified ? "date TBD — verify or correct below" : undefined}>
+              <div className="flex items-center gap-2">
+                <TextField id={idFor("dateStart")} type="date" value={form.dateStart || ""} onChange={e => {
+                  const value = e.target.value;
+                  set("dateStart" as keyof TInsert, value);
+                  // Editing the date is itself an act of confirming it — for
+                  // a 'tbd' rule, mark this specific occurrence verified
+                  // without touching the rule's mode, so later cycles still
+                  // require their own confirmation (a corrected "this
+                  // year's" date doesn't make next year's predictable).
+                  if (rule?.monthlyMode === "tbd") {
+                    setForm(f => ({ ...f, verifiedThroughDate: value } as Partial<TInsert>));
+                  }
+                }}
+                  className={fieldErr("dateStart")} />
+                {isCurrentDateUnverified && (
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, verifiedThroughDate: f.dateStart } as Partial<TInsert>))}
+                    title="This date is already correct as shown — mark it confirmed"
+                    className="shrink-0 text-xs font-semibold text-accent hover:opacity-80 whitespace-nowrap"
+                  >
+                    Verify this date
+                  </button>
+                )}
+              </div>
             </Field>
             <Field label="Ends" hint="optional" htmlFor="recurrence-until">
               <TextField id="recurrence-until" type="date" value={rule?.until || ""} onChange={e => setUntil(e.target.value)} />

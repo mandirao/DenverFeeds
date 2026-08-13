@@ -357,6 +357,10 @@ export interface RecurringEventLike {
   recurrenceLabel?: string | null;
   recurrenceRule?: RecurrenceRule | null;
   excludedDates?: string[] | null;
+  /** Date of the most recent occurrence a human explicitly confirmed as
+   * real — only meaningful alongside monthlyMode 'tbd'. See isDateUnverified
+   * below. */
+  verifiedThroughDate?: string | null;
 }
 
 export function expandRecurringEvents<T extends RecurringEventLike>(events: T[]): T[] {
@@ -375,20 +379,23 @@ export function expandRecurringEvents<T extends RecurringEventLike>(events: T[])
     // gets overwritten below with this specific occurrence's computed date)
     // so an edit to a later occurrence doesn't clobber the series anchor —
     // see EditListingEventModal.
-    // A 'tbd' rule means the series' cadence itself isn't confirmed yet, so
-    // every occurrence it produces is a guess — comparing the computed date
-    // against the stored anchor doesn't work as a "confirmed" signal, since
-    // for annual/quarterly rules (and any pending, not-yet-passed monthly
-    // anchor) the anchor itself is usually just the guess that was typed in,
-    // not evidence anyone confirmed it. Editing the date (RecurrencePicker's
-    // "Exact date TBD" → a real date option, see ListingEventFormFields'
-    // auto-clear on the Starts field) is what actually resolves this, not
-    // date math.
+    // A 'tbd' rule means the series' cadence itself isn't reliably
+    // predictable, so each occurrence needs its own explicit confirmation —
+    // comparing the computed date against the stored anchor doesn't work as
+    // a "confirmed" signal (the anchor is usually just whatever guess was
+    // typed in, not evidence anyone confirmed it, and for annual/quarterly
+    // rules a still-pending anchor always looks "confirmed" by coincidence
+    // of the date math). verifiedThroughDate is the explicit, human-set
+    // alternative: only an occurrence a person actually confirmed (via
+    // "Verify this date" or by correcting the date, see
+    // ListingEventFormFields) counts as verified; every other occurrence —
+    // including next cycle's, even right after this one's been confirmed —
+    // still shows "Verify date" until it gets its own confirmation.
     const makeOccurrence = (dateStart: string): T => ({
       ...ev, dateStart,
       dateEnd: spanDays > 0 ? addCalDays(dateStart, spanDays) : (ev.dateEnd ?? ''),
       seriesAnchorDate: ev.dateStart,
-      isDateUnverified: ev.recurrenceRule?.monthlyMode === 'tbd',
+      isDateUnverified: ev.recurrenceRule?.monthlyMode === 'tbd' && dateStart !== ev.verifiedThroughDate,
     } as T);
 
     // Structured rule present — use the real per-freq date math instead of

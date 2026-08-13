@@ -28,14 +28,16 @@ export interface ListingEventBase {
   instanceNotes?: Record<string, string> | null;
   instanceTitles?: Record<string, string> | null;
   excludedDates?: string[] | null;
+  /** Date of the most recent occurrence a human explicitly confirmed as
+   * real — only meaningful alongside recurrenceRule.monthlyMode 'tbd'. */
+  verifiedThroughDate?: string | null;
   /** Set only on occurrences produced by expandRecurringEvents — the row's
    * real persisted dateStart (the recurrence anchor), distinct from this
    * particular occurrence's computed date living in `dateStart` itself. */
   seriesAnchorDate?: string | null;
   /** Set only on occurrences produced by expandRecurringEvents for a 'tbd'
-   * recurrence rule — true when this occurrence's date is a forward-computed
-   * guess (nobody's confirmed the real date yet), false/undefined when it's
-   * the row's real, confirmed anchor date. */
+   * recurrence rule — true when this occurrence's date doesn't match
+   * verifiedThroughDate (nobody's confirmed this specific occurrence yet). */
   isDateUnverified?: boolean | null;
 }
 
@@ -99,6 +101,7 @@ export interface ListingInsertBase {
   instanceNotes?: Record<string, string> | null;
   instanceTitles?: Record<string, string> | null;
   excludedDates?: string[] | null;
+  verifiedThroughDate?: string | null;
 }
 
 export interface RedoAIResult {
