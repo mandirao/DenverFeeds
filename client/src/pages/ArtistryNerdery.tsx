@@ -20,7 +20,7 @@ import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import {
   ensureHttps, riskPips, daysLive, formatDateRange, getMonthLabel, formatTime,
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
-  expandRecurringEvents, hasStartTimePassed, RISK_LABELS,
+  expandRecurringEvents, hasStartTimePassed, localDateStr, RISK_LABELS,
 } from "@/lib/eventUtils";
 import { ListingEventRow } from "@/components/listings/ListingEventRow";
 import { ListingCalendarMonthView } from "@/components/listings/ListingCalendarMonthView";
@@ -197,7 +197,7 @@ export default function ArtistryNerdery() {
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [calViewYear, setCalViewYear] = useState(() => new Date().getFullYear());
   const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
-  const [calEventDetail, setCalEventDetail] = useState<ArtEvent | null>(null);
+  const [calEventDetail, setCalEventDetail] = useState<(ArtEvent & { isDateUnverified?: boolean | null }) | null>(null);
   const [calDaySheet, setCalDaySheet] = useState<{ date: string; events: ArtEvent[] } | null>(null);
   const [calEventDetailFrom, setCalEventDetailFrom] = useState<{ date: string; events: ArtEvent[] } | null>(null);
   const [calDetailMenuOpen, setCalDetailMenuOpen] = useState(false);
@@ -272,21 +272,21 @@ export default function ArtistryNerdery() {
     setFilterDuration("all");
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localDateStr();
   const tomorrowDate = new Date(); tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-  const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
+  const tomorrowStr = localDateStr(tomorrowDate);
   const weekendDateSet = (() => {
     const s = new Set<string>();
     const today = new Date();
     const dow = today.getDay(); // 0=Sun, 6=Sat
     if (dow === 0) {
-      s.add(today.toISOString().split("T")[0]);
+      s.add(localDateStr(today));
     } else {
       const daysUntilSat = dow === 6 ? 0 : 6 - dow;
       const sat = new Date(today); sat.setDate(today.getDate() + daysUntilSat);
       const sun = new Date(sat); sun.setDate(sat.getDate() + 1);
-      s.add(sat.toISOString().split("T")[0]);
-      s.add(sun.toISOString().split("T")[0]);
+      s.add(localDateStr(sat));
+      s.add(localDateStr(sun));
     }
     return s;
   })();
@@ -870,21 +870,32 @@ export default function ArtistryNerdery() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-black font-semibold">
                       <span>📅</span>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <a
-                              href={evCalUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:underline cursor-pointer"
-                            >
-                              {dateStr}{ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && <span className="font-normal opacity-60 ml-1">· {formatTime(ev.startTime)}</span>}
-                            </a>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Add to Google Calendar</p></TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      {ev.isDateUnverified ? (
+                        <button
+                          type="button"
+                          onClick={() => setCalDetailEditOpen(true)}
+                          title="Exact date not announced yet — click to confirm"
+                          className="hover:underline cursor-pointer"
+                        >
+                          Verify date
+                        </button>
+                      ) : (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <a
+                                href={evCalUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline cursor-pointer"
+                              >
+                                {dateStr}{ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && <span className="font-normal opacity-60 ml-1">· {formatTime(ev.startTime)}</span>}
+                              </a>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Add to Google Calendar</p></TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-black/80">
                       <span>📍</span>

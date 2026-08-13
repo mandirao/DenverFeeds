@@ -7,6 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ListingEventFormFields, type SpecificDateEntry } from "./ListingEventFormFields";
 import type { ListingEventBase, ListingFormConfig, ListingInsertBase } from "@/lib/listingFeedConfig";
 import { computeOccurrences, type RecurrenceRule } from "@shared/recurrence";
+import { localDateStr } from "@/lib/eventUtils";
 
 export function EditListingEventModal<T extends ListingEventBase, TInsert extends ListingInsertBase>({
   event,
@@ -191,7 +192,7 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
     const newRule = (form.recurrenceRule as RecurrenceRule | null | undefined) ?? null;
     const seriesStart = dateStartToPersist || event.dateStart;
     if (form.isRecurring && newRule && (Object.keys(updatedNotes).length > 0 || Object.keys(updatedTitles).length > 0)) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = localDateStr();
       const validDates = new Set(computeOccurrences(newRule, seriesStart, todayStr, 24));
       const orphaned = [
         ...Object.entries(updatedNotes).filter(([date]) => !validDates.has(date)).map(([date, text]) => ({ date, kind: "note" as const, text })),

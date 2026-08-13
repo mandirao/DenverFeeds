@@ -4,6 +4,19 @@
 
 export const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+/** Today (or the given Date) as a local YYYY-MM-DD string. Deliberately NOT
+ * `d.toISOString().split('T')[0]` — that converts to UTC first, so for any
+ * timezone behind UTC (Denver is UTC-6/-7) it silently rolls over to
+ * tomorrow's date once local time + the UTC offset crosses midnight, i.e.
+ * every evening from ~6pm on. That broke "today"/"tomorrow"/weekend
+ * filtering and same-day event visibility for the back half of every day. */
+export function localDateStr(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export const RISK_LABELS = ["", "Low", "Mild", "Moderate", "High", "Instant sellout"];
 
 export function ensureHttps(url: string): string {

@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ListingEventBase, ListingCalendarConfig } from "@/lib/listingFeedConfig";
+import { localDateStr } from "@/lib/eventUtils";
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAY_HEADERS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -23,7 +24,7 @@ export function ListingCalendarMonthView<T extends ListingEventBase>({
   onDayOverflowClick: (date: string, events: T[]) => void;
   config: ListingCalendarConfig<T>;
 }) {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localDateStr();
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const monthPrefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
