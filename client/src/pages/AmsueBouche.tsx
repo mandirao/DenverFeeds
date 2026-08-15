@@ -1187,7 +1187,6 @@ export default function AmsueBouche() {
                       event={ev}
                       config={foodRowConfig}
                       dateDisplay="timeOnly"
-                      bodyTextClassName="text-[13.5px] sm:text-sm leading-[1.55]"
                     />
                   ))}
                 </ul>

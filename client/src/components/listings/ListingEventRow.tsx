@@ -14,15 +14,13 @@ import {
 } from "@/lib/eventUtils";
 import type { ListingEventBase, ListingRowConfig } from "@/lib/listingFeedConfig";
 
-export function ListingEventRow<T extends ListingEventBase>({ event, config, dateDisplay = "full", bodyTextClassName = "text-base" }: {
+export function ListingEventRow<T extends ListingEventBase>({ event, config, dateDisplay = "full" }: {
   event: T;
   config: ListingRowConfig<T>;
   /** "timeOnly" is used for rows inside a day-group box, which already states
    * the date in its header — see the design handoff's day-grouping spec.
    * Multi-day ranges always keep the full range regardless of this prop. */
   dateDisplay?: "full" | "timeOnly";
-  /** Day-boxed rows render slightly smaller body text per the design handoff. */
-  bodyTextClassName?: string;
 }) {
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -138,7 +136,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
         <span className="text-2xl mr-3 select-none">{event.emoji}</span>
 
         {event.soldOut ? (
-          <div className={`flex-1 ${bodyTextClassName} opacity-60`}>
+          <div className="flex-1 text-base opacity-60">
             <span className="font-bold">{displayName}</span>
             {" "}
             <span className="inline-flex items-center align-middle text-xs font-black uppercase leading-none px-[8px] py-[4px] sm:px-2 sm:py-[3px] bg-black text-white">
@@ -156,7 +154,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
             )}
           </div>
         ) : (
-          <div className={`flex-1 ${bodyTextClassName}`}>
+          <div className="flex-1 text-base">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

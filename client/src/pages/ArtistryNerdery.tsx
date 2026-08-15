@@ -704,7 +704,6 @@ export default function ArtistryNerdery() {
                       event={ev}
                       config={artRowConfig}
                       dateDisplay="timeOnly"
-                      bodyTextClassName="text-[13.5px] sm:text-sm leading-[1.55]"
                     />
                   ))}
                 </ul>
