@@ -100,15 +100,16 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
 
   const batchExpandMutation = useMutation({
     // The first entry's title stands in for "Event Name" (hidden while in
-    // specific-dates mode) — falls back to form.name if left blank. Later
-    // entries suffix onto that resolved primary name, same as before.
+    // specific-dates mode) — falls back to form.name if left blank. Any
+    // other entry's title fully replaces that resolved primary name for its
+    // own date; entries left blank fall back to the primary name.
     mutationFn: async (entries: SpecificDateEntry[]) => {
       const basePayload = { ...(form as TInsert), instanceNotes: undefined, instanceTitles: undefined };
       const primaryName = (entries[0]?.title.trim() || (form.name as string) || "").trim();
       await apiRequest({ endpoint: `${config.apiPath}/${event.id}`, method: "PATCH", data: { ...basePayload, name: entries[0].title.trim() || primaryName, dateStart: entries[0].date, dateEnd: "" } });
       if (entries.length > 1) {
         await Promise.all(entries.slice(1).map(({ date, title }) =>
-          apiRequest({ endpoint: config.apiPath, method: "POST", data: { ...basePayload, name: title.trim() ? `${primaryName}: ${title.trim()}` : primaryName, dateStart: date, dateEnd: "" } })
+          apiRequest({ endpoint: config.apiPath, method: "POST", data: { ...basePayload, name: title.trim() || primaryName, dateStart: date, dateEnd: "" } })
         ));
       }
     },

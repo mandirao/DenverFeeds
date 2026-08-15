@@ -129,14 +129,13 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
 
   const batchCreateMutation = useMutation({
     // The first entry's title stands in for "Event Name" (hidden while in
-    // specific-dates mode) — falls back to form.name if left blank. Later
-    // entries suffix onto that resolved primary name, same as before.
+    // specific-dates mode) — falls back to form.name if left blank. Any
+    // other entry's title fully replaces that resolved primary name for its
+    // own date; entries left blank fall back to the primary name.
     mutationFn: (entries: SpecificDateEntry[]) => {
       const primaryName = (entries[0]?.title.trim() || (form.name as string) || "").trim();
-      return Promise.all(entries.map(({ date, title }, i) => {
-        const name = i === 0
-          ? (title.trim() || primaryName)
-          : (title.trim() ? `${primaryName}: ${title.trim()}` : primaryName);
+      return Promise.all(entries.map(({ date, title }) => {
+        const name = title.trim() || primaryName;
         return apiRequest({ endpoint: config.apiPath, method: "POST", data: { ...(form as TInsert), name, dateStart: date, dateEnd: "" } });
       }));
     },
