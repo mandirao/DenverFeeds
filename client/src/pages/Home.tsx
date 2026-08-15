@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { Navbar } from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getNextMonths, denverBoulderVenues } from "@/components/EventFilters";
@@ -921,13 +921,37 @@ export default function Home() {
           {calDaySheet && (() => {
             const d = new Date(calDaySheet.date + "T12:00:00");
             const label = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+            const todayStr = format(new Date(), "yyyy-MM-dd");
+            const prevDateStr = format(addDays(d, -1), "yyyy-MM-dd");
+            const nextDateStr = format(addDays(d, 1), "yyyy-MM-dd");
+            const goToDay = (date: string) => setCalDaySheet({ date, events: filteredEvents.filter(ev => ev.date.toString().slice(0, 10) === date) });
             return (
               <>
-                <div className="px-5 pt-5 pb-3" style={{ backgroundColor: MUSIC_ORANGE }}>
-                  <h2 className="text-base font-black uppercase text-black">{label}</h2>
-                  <p className="text-xs text-black/60 mt-0.5">{calDaySheet.events.length} show{calDaySheet.events.length !== 1 ? "s" : ""}</p>
+                <div className="px-5 pt-5 pb-3 flex items-center justify-between gap-2" style={{ backgroundColor: MUSIC_ORANGE }}>
+                  <button
+                    onClick={() => goToDay(prevDateStr)}
+                    disabled={prevDateStr < todayStr}
+                    className="p-1 rounded-full hover:bg-black/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                    aria-label="Previous day"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-black" />
+                  </button>
+                  <div className="text-center min-w-0">
+                    <h2 className="text-base font-black uppercase text-black truncate">{label}</h2>
+                    <p className="text-xs text-black/60 mt-0.5">{calDaySheet.events.length} show{calDaySheet.events.length !== 1 ? "s" : ""}</p>
+                  </div>
+                  <button
+                    onClick={() => goToDay(nextDateStr)}
+                    className="p-1 rounded-full hover:bg-black/10 transition-colors flex-shrink-0"
+                    aria-label="Next day"
+                  >
+                    <ChevronRight className="w-5 h-5 text-black" />
+                  </button>
                 </div>
                 <div className="divide-y divide-black/10 bg-white max-h-[60vh] overflow-y-auto">
+                  {calDaySheet.events.length === 0 && (
+                    <div className="px-5 py-8 text-center text-sm text-black/40">No shows this day</div>
+                  )}
                   {calDaySheet.events.map((ev, i) => (
                     <button
                       key={`${ev.id}-${i}`}

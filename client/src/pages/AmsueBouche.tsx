@@ -1635,13 +1635,37 @@ export default function AmsueBouche() {
           {calDaySheet && (() => {
             const d = new Date(calDaySheet.date + 'T12:00:00');
             const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            const todayStr = localDateStr();
+            const prevDateStr = addCalDays(calDaySheet.date, -1);
+            const nextDateStr = addCalDays(calDaySheet.date, 1);
+            const goToDay = (date: string) => setCalDaySheet({ date, events: filteredEvents.filter(ev => ev.dateStart === date) });
             return (
               <>
-                <div className="px-5 pt-5 pb-3" style={{ backgroundColor: AB_GOLD }}>
-                  <h2 className="text-base font-black uppercase text-black">{label}</h2>
-                  <p className="text-xs text-black/60 mt-0.5">{calDaySheet.events.length} popup{calDaySheet.events.length !== 1 ? 's' : ''}</p>
+                <div className="px-5 pt-5 pb-3 flex items-center justify-between gap-2" style={{ backgroundColor: AB_GOLD }}>
+                  <button
+                    onClick={() => goToDay(prevDateStr)}
+                    disabled={prevDateStr < todayStr}
+                    className="p-1 rounded-full hover:bg-black/10 disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                    aria-label="Previous day"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-black" />
+                  </button>
+                  <div className="text-center min-w-0">
+                    <h2 className="text-base font-black uppercase text-black truncate">{label}</h2>
+                    <p className="text-xs text-black/60 mt-0.5">{calDaySheet.events.length} popup{calDaySheet.events.length !== 1 ? 's' : ''}</p>
+                  </div>
+                  <button
+                    onClick={() => goToDay(nextDateStr)}
+                    className="p-1 rounded-full hover:bg-black/10 transition-colors flex-shrink-0"
+                    aria-label="Next day"
+                  >
+                    <ChevronRight className="w-5 h-5 text-black" />
+                  </button>
                 </div>
                 <div className="divide-y divide-black/10 bg-white max-h-[60vh] overflow-y-auto">
+                  {calDaySheet.events.length === 0 && (
+                    <div className="px-5 py-8 text-center text-sm text-black/40">No popups this day</div>
+                  )}
                   {calDaySheet.events.map((ev, i) => (
                     <button
                       key={`${ev.id}-${i}`}
@@ -1651,7 +1675,10 @@ export default function AmsueBouche() {
                       <span className="text-xl flex-shrink-0">{ev.emoji}</span>
                       <div className="min-w-0">
                         <div className="text-sm font-bold text-black truncate">{ev.name}</div>
-                        <div className="text-xs text-black/60 truncate">{ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}</div>
+                        <div className="text-xs text-black/60 truncate">
+                          {ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && <span className="font-semibold text-black/80">{formatTime(ev.startTime)} · </span>}
+                          {ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}
+                        </div>
                         {ev.price && <div className="text-xs text-black/50">{ev.price}</div>}
                       </div>
                       <ChevronRight className="w-4 h-4 text-black/30 flex-shrink-0 ml-auto" />
