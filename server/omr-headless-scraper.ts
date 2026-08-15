@@ -62,7 +62,7 @@ export class OMRHeadlessScraper {
       await page.waitForSelector('.show-list, [class*="show"], .recommended', { timeout: 10000 });
       
       // Wait a bit more for any dynamic content
-      await page.waitForTimeout(2000);
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Extract show data from the page
       const shows = await page.evaluate(() => {

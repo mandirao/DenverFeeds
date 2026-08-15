@@ -297,11 +297,11 @@ export default function DiscoveryAdmin() {
 
   // Artist discovery mutation
   const runArtistDiscoveryMutation = useMutation({
-    mutationFn: async ({ sources, limit, dryRun }: { sources: string[]; limit: number; dryRun?: boolean }) => {
+    mutationFn: async ({ sources, limit, dryRun, city }: { sources: string[]; limit: number; dryRun?: boolean; city?: string }) => {
       return apiRequest({
         endpoint: "/api/discovery/artist-scan",
         method: "POST",
-        data: { sources, limit, dryRun }
+        data: { sources, limit, dryRun, city }
       });
     },
     onSuccess: (data) => {
@@ -339,7 +339,7 @@ export default function DiscoveryAdmin() {
     });
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "Never";
     return new Date(dateString).toLocaleDateString();
   };
@@ -411,9 +411,9 @@ export default function DiscoveryAdmin() {
     }
   });
 
-  const { data: discoveredArtists = [] } = useQuery({
+  const { data: discoveredArtists = [] } = useQuery<DiscoveredArtist[]>({
     queryKey: ["/api/discovered-artists"],
-    queryFn: () => apiRequest({ endpoint: "/api/discovered-artists" }),
+    queryFn: () => apiRequest({ endpoint: "/api/discovered-artists", method: "GET" }),
   });
 
   return (

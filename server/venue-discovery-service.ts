@@ -117,13 +117,11 @@ class VenueDiscoveryService {
               artist: event.artist,
               venue: venue.name,
               date: event.date,
-              summary: event.summary,
-              soundsLike: event.soundsLike,
               genre: event.genre,
               status: 'pending',
               discoverySource: 'venue_scan',
               confidence: event.confidence,
-              rawData: JSON.stringify({ venue: venue.name, scanMethod: 'website' })
+              rawData: JSON.stringify({ venue: venue.name, scanMethod: 'website', summary: event.summary, soundsLike: event.soundsLike })
             });
             
             discoveredEvents.push(discoveredEvent);

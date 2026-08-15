@@ -23,7 +23,7 @@ async function testVenueScrapingUrls() {
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         },
-        timeout: 10000
+        signal: AbortSignal.timeout(10000)
       });
       
       if (response.ok) {
@@ -52,7 +52,8 @@ async function testVenueScrapingUrls() {
       }
       
     } catch (error) {
-      console.log(`  ❌ ${venue.name}: Error - ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      console.log(`  ❌ ${venue.name}: Error - ${message}`);
     }
   }
   

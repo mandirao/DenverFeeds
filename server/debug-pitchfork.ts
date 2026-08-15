@@ -66,7 +66,7 @@ async function debugPitchfork() {
     ryanElements.each((index, element) => {
       const $el = $(element);
       const text = $el.text().trim();
-      const tagName = element.tagName;
+      const tagName = element.type === 'tag' ? element.tagName : element.type;
       const classes = $el.attr('class') || 'no-class';
       console.log(`  Found in <${tagName}> (${classes}): "${text}"`);
     });

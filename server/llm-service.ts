@@ -1392,7 +1392,6 @@ Return ONLY valid JSON:
       'rooftop': 'Patio',
       'outdoor': 'Patio',
       'outdoor seating': 'Patio',
-      'beer garden': 'Patio',
       'patio & outdoor': 'Patio',
     };
     const validFoodCuisines = new Set([

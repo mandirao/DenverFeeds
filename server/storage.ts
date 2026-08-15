@@ -464,13 +464,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getArtistsForSearch(priority?: string, limit: number = 50): Promise<Artist[]> {
-    let query = db.select().from(artists).where(eq(artists.isActive, true));
-    
+    const conditions = [eq(artists.isActive, true)];
     if (priority) {
-      query = query.where(and(eq(artists.isActive, true), eq(artists.searchPriority, priority)));
+      conditions.push(eq(artists.searchPriority, priority));
     }
-    
-    return await query.orderBy(artists.lastSearched).limit(limit);
+
+    return await db
+      .select()
+      .from(artists)
+      .where(and(...conditions))
+      .orderBy(artists.lastSearched)
+      .limit(limit);
   }
 
   async updateArtistSearchDate(id: number): Promise<void> {
@@ -538,7 +542,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDiscoveredEvent(id: number): Promise<boolean> {
     const result = await db.delete(discoveredEvents).where(eq(discoveredEvents.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Discovered Artists methods
@@ -573,12 +577,21 @@ export class DatabaseStorage implements IStorage {
     const discoveredArtist = await this.getDiscoveredArtistById(id);
     if (!discoveredArtist) return undefined;
 
-    // Create new artist from discovered artist
+    // Create new artist from discovered artist. discoveredArtists.source holds
+    // raw discovery identifiers (e.g. "pitchfork_best_new"), which don't match
+    // the artists.source enum, so normalize it at this boundary.
+    const source = discoveredArtist.source.includes('pitchfork')
+      ? 'pitchfork'
+      : discoveredArtist.source.includes('ohmyrockness') || discoveredArtist.source.includes('oh_my_rockness')
+      ? 'ohmyrockness'
+      : discoveredArtist.source === 'existing'
+      ? 'existing'
+      : 'manual';
     const newArtist = await this.createArtist({
       name: discoveredArtist.name,
       genre: discoveredArtist.genre,
-      source: discoveredArtist.source,
-      priority: 'medium'
+      source,
+      searchPriority: 'medium'
     });
 
     // Mark discovered artist as approved
@@ -745,13 +758,14 @@ export class DatabaseStorage implements IStorage {
       try {
         await this.createArtist({
           name: artist,
-          source: 'auto_detected',
+          source: 'manual',
           searchPriority: 'medium',
           notes: `Auto-detected from event creation: ${new Date().toISOString()}`
         });
         console.log(`✅ Auto-added artist: ${artist}`);
       } catch (error) {
-        console.log(`⚠️ Artist ${artist} may already exist or failed to create:`, error.message);
+        const message = error instanceof Error ? error.message : String(error);
+        console.log(`⚠️ Artist ${artist} may already exist or failed to create:`, message);
       }
     }
 
