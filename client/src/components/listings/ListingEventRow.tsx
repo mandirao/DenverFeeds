@@ -8,16 +8,29 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ToastAction } from "@/components/ui/toast";
 import { MoreVertical } from "lucide-react";
-import { ensureHttps, formatDateRange, formatTime, createSearchUrl, createCalendarUrl } from "@/lib/eventUtils";
+import {
+  ensureHttps, formatDateRange, formatTime, createSearchUrl, createCalendarUrl,
+  formatRecurrenceCadence, announcedTooltipText, SELLOUT_LIKELY_THRESHOLD,
+} from "@/lib/eventUtils";
 import type { ListingEventBase, ListingRowConfig } from "@/lib/listingFeedConfig";
 
-export function ListingEventRow<T extends ListingEventBase>({ event, config }: { event: T; config: ListingRowConfig<T> }) {
+export function ListingEventRow<T extends ListingEventBase>({ event, config, dateDisplay = "full", bodyTextClassName = "text-base" }: {
+  event: T;
+  config: ListingRowConfig<T>;
+  /** "timeOnly" is used for rows inside a day-group box, which already states
+   * the date in its header — see the design handoff's day-grouping spec.
+   * Multi-day ranges always keep the full range regardless of this prop. */
+  dateDisplay?: "full" | "timeOnly";
+  /** Day-boxed rows render slightly smaller body text per the design handoff. */
+  bodyTextClassName?: string;
+}) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [showRequesterTooltip, setShowRequesterTooltip] = useState(false);
+  const [showSelloutTooltip, setShowSelloutTooltip] = useState(false);
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue + " Denver CO")}`;
   const calendarUrl = createCalendarUrl(event);
@@ -26,6 +39,43 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
   const EditModal = config.EditModal;
   const titleModifier = event.isRecurring ? event.instanceTitles?.[event.dateStart] : undefined;
   const displayName = titleModifier ? `${event.name}: ${titleModifier}` : event.name;
+
+  const hasValidTime = !!event.startTime && /^\d{1,2}:\d{2}$/.test(event.startTime);
+  // Recurring occurrences never count as a multi-day range here, matching
+  // the calendar-link formatting below (event.isRecurring ? null : dateEnd)
+  // — expandRecurringEvents can leave a stale dateEnd (the series anchor's
+  // original end date) on a computed occurrence, which would otherwise look
+  // like a bogus multi-day span relative to the occurrence's own dateStart.
+  const isMultiDayRange = !event.isRecurring && !!event.dateEnd && event.dateEnd !== "" && event.dateEnd !== event.dateStart;
+  const useFullDate = dateDisplay === "full" || isMultiDayRange;
+  const primaryDateLabel = useFullDate
+    ? formatDateRange(event.dateStart, event.isRecurring ? null : event.dateEnd)
+    : hasValidTime ? formatTime(event.startTime!) : formatDateRange(event.dateStart, null);
+  const cadence = event.isRecurring ? formatRecurrenceCadence(event.recurrenceLabel) : null;
+
+  const showSelloutLikely = !event.soldOut && (event.selloutRisk ?? 0) >= SELLOUT_LIKELY_THRESHOLD;
+  const selloutTooltipText = announcedTooltipText(event.announcedAt) ?? "Sellout likely";
+  const selloutPhrase = showSelloutLikely ? (
+    <TooltipProvider>
+      <Tooltip open={showSelloutTooltip}>
+        <TooltipTrigger asChild>
+          <span
+            title={selloutTooltipText}
+            className="ml-[7px] text-xs text-black/65 cursor-help"
+            style={{ borderBottom: "1px dotted rgba(0,0,0,0.5)" }}
+            onMouseEnter={() => setShowSelloutTooltip(true)}
+            onMouseLeave={() => setShowSelloutTooltip(false)}
+            onClick={() => { setShowSelloutTooltip(true); setTimeout(() => setShowSelloutTooltip(false), 2500); }}
+          >
+            sellout likely
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="rounded-none bg-black text-white text-[11.5px] px-[10px] py-[7px] max-w-[250px]">
+          <p>{selloutTooltipText}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  ) : null;
 
   const deleteMutation = useMutation({
     mutationFn: () => apiRequest({ endpoint: `${config.apiPath}/${event.id}`, method: "DELETE" }),
@@ -88,10 +138,10 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
         <span className="text-2xl mr-3 select-none">{event.emoji}</span>
 
         {event.soldOut ? (
-          <div className="flex-1 text-base opacity-60">
+          <div className={`flex-1 ${bodyTextClassName} opacity-60`}>
             <span className="font-bold">{displayName}</span>
             {" "}
-            <span className="inline-flex items-center align-middle text-xs font-black uppercase leading-none px-2 py-[3px] bg-black text-white">
+            <span className="inline-flex items-center align-middle text-xs font-black uppercase leading-none px-[8px] py-[4px] sm:px-2 sm:py-[3px] bg-black text-white">
               SOLD OUT
             </span>
             {event.sourceUrl && (
@@ -99,15 +149,14 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
                 href={ensureHttps(event.sourceUrl!)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center align-middle ml-2 bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors"
+                className="inline-flex items-center align-middle ml-2 bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-[8px] py-[4px] sm:px-2 sm:py-[3px] transition-colors"
               >
                 View Post
               </a>
             )}
-            {config.renderLiveBadge(event)}
           </div>
         ) : (
-          <div className="flex-1 text-base">
+          <div className={`flex-1 ${bodyTextClassName}`}>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -163,20 +212,19 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
                         rel="noopener noreferrer"
                         className="font-medium border-b border-dotted border-black hover:border-solid cursor-pointer text-black"
                       >
-                        {formatDateRange(event.dateStart, event.isRecurring ? null : event.dateEnd)}
+                        {primaryDateLabel}
                       </a>
                     </TooltipTrigger>
                     <TooltipContent><p>Add to Google Calendar</p></TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                {event.startTime && /^\d{1,2}:\d{2}$/.test(event.startTime) && (
-                  <span className="text-black/60">{", "}{formatTime(event.startTime)}</span>
+                {useFullDate && hasValidTime && (
+                  <span className="text-black/60">{", "}{formatTime(event.startTime!)}</span>
                 )}
+                {cadence && <span style={{ opacity: 0.6 }}> · {cadence}</span>}
               </>
             )}
             {"). "}
-
-            {config.renderRecurringNote?.(event)}
 
             {event.summary}
 
@@ -190,7 +238,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
 
             {event.price && (
               <span
-                className="inline-flex items-center align-middle ml-2 text-xs font-black uppercase leading-none px-2 py-[3px]"
+                className="inline-flex items-center align-middle ml-2 text-xs font-black uppercase leading-none px-[8px] py-[4px] sm:px-2 sm:py-[3px]"
                 style={{ backgroundColor: "white", border: "1.5px solid black" }}
               >
                 {event.price}
@@ -202,7 +250,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
                 href={ensureHttps(event.ticketUrl!)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`inline-flex items-center align-middle ml-2 bg-black ${config.ticketTextColorClass} hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors`}
+                className={`inline-flex items-center align-middle ml-2 bg-black ${config.ticketTextColorClass} hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-[8px] py-[4px] sm:px-2 sm:py-[3px] transition-colors`}
               >
                 {config.ticketLabel}
               </a>
@@ -213,13 +261,13 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config }: {
                 href={ensureHttps(event.sourceUrl!)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center align-middle ml-2 bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-2 py-[3px] transition-colors"
+                className="inline-flex items-center align-middle ml-2 bg-black text-white hover:text-[#41F2EE] text-xs font-black uppercase leading-none px-[8px] py-[4px] sm:px-2 sm:py-[3px] transition-colors"
               >
                 View Post
               </a>
             )}
 
-            {config.renderLiveBadge(event)}
+            {selloutPhrase}
 
             {event.requester && event.requester !== 'Mandi' && (
               <span className="inline-block align-middle ml-2">

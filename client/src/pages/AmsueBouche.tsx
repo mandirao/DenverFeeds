@@ -15,13 +15,13 @@ import { Label } from "@/components/ui/label";
 import { cuisineTypes, restaurantCuisineTypes, denverNeighborhoods, restaurantPricePoints, type FoodEvent, type InsertFoodEvent, type Restaurant } from "@shared/schema";
 import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import { SiteSwitcher } from "@/components/SiteSwitcher";
 import {
-  ensureHttps, riskPips, daysLive, formatDateRange, getMonthLabel, formatTime,
+  ensureHttps, formatDateRange, getMonthLabel, formatTime, formatDayHeaderLabel,
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
-  expandRecurringEvents, hasStartTimePassed, localDateStr, RISK_LABELS,
+  expandRecurringEvents, hasStartTimePassed, localDateStr,
+  announcedTooltipText, SELLOUT_LIKELY_THRESHOLD,
 } from "@/lib/eventUtils";
 import { ListingEventRow } from "@/components/listings/ListingEventRow";
 import { ListingCalendarMonthView } from "@/components/listings/ListingCalendarMonthView";
@@ -30,10 +30,11 @@ import { AddListingEventModal } from "@/components/listings/AddListingEventModal
 import type { ListingRowConfig, ListingCalendarConfig, ListingFormConfig } from "@/lib/listingFeedConfig";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
-const AB_ORANGE = "#FE6B41";
-const AB_PINK   = "#FEABDA";
-const AB_GOLD   = "#FFF8E7";
-const AB_TEAL   = "#41F2EE";
+const AB_ORANGE  = "#FE6B41";
+const AB_PINK    = "#FEABDA";
+const AB_GOLD    = "#FFF8E7";
+const AB_TEAL    = "#41F2EE";
+const AB_DAY_ALT = "#F0E9DA"; // odd-index day-box tint, see design handoff
 
 // ── Neighborhood groups ───────────────────────────────────────────────────────
 const INNER_DENVER_NEIGHBORHOODS = new Set([
@@ -60,10 +61,7 @@ const VENUE_ATTR_LIST = ['Bar', 'Cafe', 'Dive', 'Cocktails', 'Beer', 'Wine', 'Co
 
 // ── Event Row (inline sentence style, matching Setlist Social) ────────────────
 
-// Config for the shared <ListingEventRow>. Anything here is the "on/off
-// switch" for this feed — Food currently shows a standalone recurring badge
-// before the summary (renderRecurringNote) and a "live Xd/w" + risk-pip
-// cluster (renderLiveBadge) instead of Arts' recurring-label version.
+// Config for the shared <ListingEventRow>.
 const foodRowConfig: ListingRowConfig<FoodEvent> = {
   apiPath: "/api/food-events",
   queryKey: "/api/food-events",
@@ -73,22 +71,6 @@ const foodRowConfig: ListingRowConfig<FoodEvent> = {
   ticketLabel: "Reserve",
   ticketTextColorClass: "text-[#FEABDA]",
   getCategory: (event) => event.cuisine,
-  renderLiveBadge: (event) => {
-    const live = daysLive(event.announcedAt);
-    const risk = riskPips(event.selloutRisk);
-    if (!live && !risk) return null;
-    return (
-      <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : event.selloutRisk === 4 ? "#FFB700" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
-        {live && `· live ${live}`}
-        {risk && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`} style={{ fontSize: '8px', letterSpacing: '0.2em' }}>{live ? " " : "· "}{risk}</span>}
-      </span>
-    );
-  },
-  renderRecurringNote: (event) => event.isRecurring ? (
-    <span className="inline-flex items-center align-middle mr-1.5 text-[11px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-black/10 text-black/70">
-      ↻ {event.recurrenceLabel || "Recurring"}
-    </span>
-  ) : null,
   renderInstanceNote: (note) => (
     <span className="block text-xs text-black/60 mt-0.5 ml-1">
       ↳ {note}
@@ -824,19 +806,18 @@ export default function AmsueBouche() {
     return !(ev.dateStart < todayStr && ev.dateEnd >= todayStr);
   });
 
-  type MonthBucket = { events: FoodEvent[]; weekGroups: Record<string, { events: FoodEvent[] }> };
+  // Month → day-group. Day groups are keyed by dateStart and rendered in
+  // ascending order with a sequential index (spanning the whole month, not
+  // reset per calendar week) that drives the alternating day-box background —
+  // see the "Day Grouping + Indicator Redesign" design handoff.
+  type DayBucket = { date: string; events: FoodEvent[] };
+  type MonthBucket = { dayGroups: DayBucket[] };
   const grouped = upcomingFilteredEvents.reduce<Record<string, MonthBucket>>((acc, ev) => {
     const monthKey = getMonthLabel(ev.dateStart);
-    const eventDate = new Date(ev.dateStart + "T12:00:00");
-    const nowDate = new Date();
-    const eventMonthStart = new Date(eventDate.getFullYear(), eventDate.getMonth(), 1);
-    const currentMonthStart = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1);
-    const dateForWeek = eventMonthStart < currentMonthStart ? nowDate : eventDate;
-    const weekKey = getWeekRange(dateForWeek).key;
-    if (!acc[monthKey]) acc[monthKey] = { events: [], weekGroups: {} };
-    acc[monthKey].events.push(ev);
-    if (!acc[monthKey].weekGroups[weekKey]) acc[monthKey].weekGroups[weekKey] = { events: [] };
-    acc[monthKey].weekGroups[weekKey].events.push(ev);
+    if (!acc[monthKey]) acc[monthKey] = { dayGroups: [] };
+    let day = acc[monthKey].dayGroups.find(d => d.date === ev.dateStart);
+    if (!day) { day = { date: ev.dateStart, events: [] }; acc[monthKey].dayGroups.push(day); }
+    day.events.push(ev);
     return acc;
   }, {});
 
@@ -1181,43 +1162,39 @@ export default function AmsueBouche() {
           </div>
         )}
 
-        {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => {
-          const weekKeys = Object.keys(monthData.weekGroups).sort();
-          return (
-            <div key={month} className="mb-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-0.5 flex-1 bg-black" />
-                <h2 className="text-lg font-black uppercase text-black">
-                  {month.toUpperCase()}
-                </h2>
-                <div className="h-0.5 flex-1 bg-black" />
-              </div>
-              {weekKeys.map((weekKey, weekIdx) => {
-                const weekEvents = monthData.weekGroups[weekKey].events;
-                const isLastWeek = weekIdx === weekKeys.length - 1;
-                const weekNumber = weekEvents.length > 0
-                  ? getWeekOfMonth(new Date(weekEvents[0].dateStart))
-                  : 1;
-                return (
-                  <div key={weekKey}>
-                    <ul className="space-y-0">
-                      {weekEvents.map(ev => (
-                        <ListingEventRow key={ev.id} event={ev} config={foodRowConfig} />
-                      ))}
-                    </ul>
-                    {!isLastWeek && (
-                      <div className="pt-2 pb-1">
-                        <div className="text-black text-sm font-black uppercase">
-                          WEEK {weekNumber + 1}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+        {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => (
+          <div key={month} className="mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-0.5 flex-1 bg-black" />
+              <h2 className="text-lg font-black uppercase text-black">
+                {month.toUpperCase()}
+              </h2>
+              <div className="h-0.5 flex-1 bg-black" />
             </div>
-          );
-        })}
+            {monthData.dayGroups.map((day, dayIdx) => (
+              <div
+                key={day.date}
+                className="rounded-[16px] sm:rounded-[18px] px-[14px] sm:px-[22px] pt-[14px] sm:pt-4 pb-4 sm:pb-[18px] mb-3 sm:mb-[14px]"
+                style={{ backgroundColor: dayIdx % 2 === 1 ? AB_DAY_ALT : AB_GOLD }}
+              >
+                <div className="font-display font-black uppercase text-black text-[14px] sm:text-[15px] mb-[11px]">
+                  {formatDayHeaderLabel(day.date)}
+                </div>
+                <ul className="list-none m-0 p-0 flex flex-col gap-[11px] sm:gap-[9px]">
+                  {day.events.map(ev => (
+                    <ListingEventRow
+                      key={ev.id}
+                      event={ev}
+                      config={foodRowConfig}
+                      dateDisplay="timeOnly"
+                      bodyTextClassName="text-[13.5px] sm:text-sm leading-[1.55]"
+                    />
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ))}
       </main>
       )}
 
@@ -1564,6 +1541,12 @@ export default function AmsueBouche() {
                       </div>
                     )}
                   </div>
+
+                  {!ev.soldOut && (ev.selloutRisk ?? 0) >= SELLOUT_LIKELY_THRESHOLD && (
+                    <div className="pt-3 -mt-1 border-t border-black/10">
+                      <p className="text-xs text-black/60">{announcedTooltipText(ev.announcedAt) ?? "Sellout likely"}</p>
+                    </div>
+                  )}
 
                   <p className="text-sm text-black/90 leading-relaxed">{ev.summary}</p>
 

@@ -54,10 +54,6 @@ export interface ListingRowConfig<T extends ListingEventBase> {
   ticketLabel: string;      // "Reserve" / "Tickets"
   ticketTextColorClass: string; // tailwind text color class for the ticket button
   getCategory: (event: T) => string | null | undefined; // cuisine vs category
-  /** The little "live Xd/w · risk pips" (Food) or "recurring · risk pips" (Art) cluster. Returns null to render nothing. */
-  renderLiveBadge: (event: T) => ReactNode;
-  /** Standalone recurring badge shown before the summary text. Food-only today. */
-  renderRecurringNote?: (event: T) => ReactNode;
   /** Renders the "↳ note" line under a recurring event's instance note, if any. */
   renderInstanceNote: (note: string) => ReactNode;
   EditModal: React.ComponentType<{ event: T; onClose: () => void }>;

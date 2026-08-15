@@ -55,6 +55,39 @@ export function formatDateRange(dateStart: string, dateEnd?: string | null): str
   return `${dow(dateStart)} ${fmt(dateStart)} – ${dow(dateEnd)} ${fmt(dateEnd)}`;
 }
 
+/** Day-group header label for the day-boxed list view — "Fri, Aug 21".
+ * Callers apply `uppercase` via CSS rather than baking it in here. */
+export function formatDayHeaderLabel(dateStart: string): string {
+  const d = new Date(dateStart + "T12:00:00");
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+// Bare cadence words render lowercase ("monthly") while weekday-based labels
+// stay as-is ("Fridays", "3rd Sundays" read as proper nouns) — matches the
+// design handoff's mixed-case example rows.
+const GENERIC_CADENCE_LABELS = new Set(["monthly", "weekly", "quarterly", "annually"]);
+export function formatRecurrenceCadence(label: string | null | undefined): string {
+  const trimmed = (label ?? "").trim();
+  if (!trimmed) return "monthly";
+  return GENERIC_CADENCE_LABELS.has(trimmed.toLowerCase()) ? trimmed.toLowerCase() : trimmed;
+}
+
+// Threshold above which the shared "sellout likely" phrase shows on a row —
+// kept in one place per the design handoff so it's easy to retune later.
+export const SELLOUT_LIKELY_THRESHOLD = 3;
+
+/** Tooltip copy for the "sellout likely" phrase: "Announced Jul 2 — 44 days
+ * on the feed". Null when there's no announcedAt to derive it from. */
+export function announcedTooltipText(announcedAt: string | null | undefined): string | null {
+  if (!announcedAt) return null;
+  const announced = new Date(announcedAt + "T12:00:00");
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const days = Math.max(0, Math.floor((today.getTime() - announced.getTime()) / (1000 * 60 * 60 * 24)));
+  const dateLabel = announced.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `Announced ${dateLabel} — ${days} day${days === 1 ? "" : "s"} on the feed`;
+}
+
 export function getMonthLabel(dateStart: string): string {
   const eventDate = new Date(dateStart + "T12:00:00");
   const now = new Date();

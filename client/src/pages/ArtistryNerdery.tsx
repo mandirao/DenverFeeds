@@ -14,14 +14,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/ui/label";
 import { artCategories, type ArtEvent, type InsertArtEvent } from "@shared/schema";
 import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check } from "lucide-react";
-import { getWeekRange, getWeekOfMonth } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import { SiteSwitcher } from "@/components/SiteSwitcher";
 import {
-  ensureHttps, riskPips, daysLive, formatDateRange, getMonthLabel, formatTime,
+  ensureHttps, formatDateRange, getMonthLabel, formatTime, formatDayHeaderLabel,
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
-  expandRecurringEvents, hasStartTimePassed, localDateStr, RISK_LABELS,
+  expandRecurringEvents, hasStartTimePassed, localDateStr,
+  announcedTooltipText, SELLOUT_LIKELY_THRESHOLD,
 } from "@/lib/eventUtils";
 import { ListingEventRow } from "@/components/listings/ListingEventRow";
 import { ListingCalendarMonthView } from "@/components/listings/ListingCalendarMonthView";
@@ -34,15 +34,11 @@ const AN_ORANGE   = "#000000";
 const AN_LAVENDER = "#FE6B41";
 const AN_BG       = "#FEABDA";
 const AN_TEAL     = "#41F2EE";
+const AN_DAY_ALT  = "#EE9BC7"; // odd-index day-box tint, see design handoff
 
 // ── Event Row ─────────────────────────────────────────────────────────────────
 
-// Config for the shared <ListingEventRow>. Arts doesn't show a standalone
-// recurring badge before the summary (no renderRecurringNote) — instead its
-// "live badge" slot shows the recurring label in place of Food's "live Xd/w"
-// text. Also note the risk-level-4 color (#ffff00) differs from Food's
-// (#FFB700) — preserved as-is rather than unified, since that's cosmetic
-// drift nobody's asked to fix yet.
+// Config for the shared <ListingEventRow>.
 const artRowConfig: ListingRowConfig<ArtEvent> = {
   apiPath: "/api/art-events",
   queryKey: "/api/art-events",
@@ -52,16 +48,6 @@ const artRowConfig: ListingRowConfig<ArtEvent> = {
   ticketLabel: "Tickets",
   ticketTextColorClass: "text-[#FE6B41]",
   getCategory: (event) => event.category,
-  renderLiveBadge: (event) => {
-    const risk = riskPips(event.selloutRisk);
-    if (!event.isRecurring && !risk) return null;
-    return (
-      <span className="text-[10px] ml-1.5 tracking-tight" style={{ color: event.selloutRisk === 5 ? "#FE6B41" : event.selloutRisk === 4 ? "#ffff00" : undefined, opacity: (event.selloutRisk === 5 || event.selloutRisk === 4) ? 1 : 0.4 }}>
-        {event.isRecurring && <span>↻ {event.recurrenceLabel || "Recurring"}</span>}
-        {risk && <span title={`Sellout risk: ${RISK_LABELS[event.selloutRisk!]}`} style={{ fontSize: '8px', letterSpacing: '0.2em' }}>{event.isRecurring ? " " : "· "}{risk}</span>}
-      </span>
-    );
-  },
   renderInstanceNote: (note) => (
     <span className="block text-sm italic mt-0.5" style={{ opacity: 0.75 }}>
       ↳ {note}
@@ -340,19 +326,18 @@ export default function ArtistryNerdery() {
     return !(ev.dateStart < todayStr && ev.dateEnd >= todayStr);
   });
 
-  type MonthBucket = { events: ArtEvent[]; weekGroups: Record<string, { events: ArtEvent[] }> };
+  // Month → day-group. Day groups are keyed by dateStart and rendered in
+  // ascending order with a sequential index (spanning the whole month, not
+  // reset per calendar week) that drives the alternating day-box background —
+  // see the "Day Grouping + Indicator Redesign" design handoff.
+  type DayBucket = { date: string; events: ArtEvent[] };
+  type MonthBucket = { dayGroups: DayBucket[] };
   const grouped = upcomingFilteredEvents.reduce<Record<string, MonthBucket>>((acc, ev) => {
     const monthKey = getMonthLabel(ev.dateStart);
-    const eventDate = new Date(ev.dateStart + "T12:00:00");
-    const nowDate = new Date();
-    const eventMonthStart = new Date(eventDate.getFullYear(), eventDate.getMonth(), 1);
-    const currentMonthStart = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1);
-    const dateForWeek = eventMonthStart < currentMonthStart ? nowDate : eventDate;
-    const weekKey = getWeekRange(dateForWeek).key;
-    if (!acc[monthKey]) acc[monthKey] = { events: [], weekGroups: {} };
-    acc[monthKey].events.push(ev);
-    if (!acc[monthKey].weekGroups[weekKey]) acc[monthKey].weekGroups[weekKey] = { events: [] };
-    acc[monthKey].weekGroups[weekKey].events.push(ev);
+    if (!acc[monthKey]) acc[monthKey] = { dayGroups: [] };
+    let day = acc[monthKey].dayGroups.find(d => d.date === ev.dateStart);
+    if (!day) { day = { date: ev.dateStart, events: [] }; acc[monthKey].dayGroups.push(day); }
+    day.events.push(ev);
     return acc;
   }, {});
 
@@ -694,43 +679,39 @@ export default function ArtistryNerdery() {
           </div>
         )}
 
-        {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => {
-          const weekKeys = Object.keys(monthData.weekGroups).sort();
-          return (
-            <div key={month} className="mb-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-0.5 flex-1 bg-black" />
-                <h2 className="text-lg font-black uppercase text-black">
-                  {month.toUpperCase()}
-                </h2>
-                <div className="h-0.5 flex-1 bg-black" />
-              </div>
-              {weekKeys.map((weekKey, weekIdx) => {
-                const weekEvents = monthData.weekGroups[weekKey].events;
-                const isLastWeek = weekIdx === weekKeys.length - 1;
-                const weekNumber = weekEvents.length > 0
-                  ? getWeekOfMonth(new Date(weekEvents[0].dateStart))
-                  : 1;
-                return (
-                  <div key={weekKey}>
-                    <ul className="space-y-0">
-                      {weekEvents.map(ev => (
-                        <ListingEventRow key={`${ev.id}-${ev.dateStart}`} event={ev} config={artRowConfig} />
-                      ))}
-                    </ul>
-                    {!isLastWeek && (
-                      <div className="pt-2 pb-1">
-                        <div className="text-black text-sm font-black uppercase">
-                          WEEK {weekNumber + 1}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+        {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => (
+          <div key={month} className="mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-0.5 flex-1 bg-black" />
+              <h2 className="text-lg font-black uppercase text-black">
+                {month.toUpperCase()}
+              </h2>
+              <div className="h-0.5 flex-1 bg-black" />
             </div>
-          );
-        })}
+            {monthData.dayGroups.map((day, dayIdx) => (
+              <div
+                key={day.date}
+                className="rounded-[16px] sm:rounded-[18px] px-[14px] sm:px-[22px] pt-[14px] sm:pt-4 pb-4 sm:pb-[18px] mb-3 sm:mb-[14px]"
+                style={{ backgroundColor: dayIdx % 2 === 1 ? AN_DAY_ALT : AN_BG }}
+              >
+                <div className="font-display font-black uppercase text-black text-[14px] sm:text-[15px] mb-[11px]">
+                  {formatDayHeaderLabel(day.date)}
+                </div>
+                <ul className="list-none m-0 p-0 flex flex-col gap-[11px] sm:gap-[9px]">
+                  {day.events.map(ev => (
+                    <ListingEventRow
+                      key={`${ev.id}-${ev.dateStart}`}
+                      event={ev}
+                      config={artRowConfig}
+                      dateDisplay="timeOnly"
+                      bodyTextClassName="text-[13.5px] sm:text-sm leading-[1.55]"
+                    />
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ))}
       </main>
 
       {/* Footer */}
@@ -914,6 +895,12 @@ export default function ArtistryNerdery() {
                       </div>
                     )}
                   </div>
+
+                  {!ev.soldOut && (ev.selloutRisk ?? 0) >= SELLOUT_LIKELY_THRESHOLD && (
+                    <div className="pt-3 -mt-1 border-t border-black/10">
+                      <p className="text-xs text-black/60">{announcedTooltipText(ev.announcedAt) ?? "Sellout likely"}</p>
+                    </div>
+                  )}
 
                   <p className="text-sm text-black/90 leading-relaxed">{ev.summary}</p>
 
