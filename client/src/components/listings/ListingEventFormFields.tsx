@@ -111,7 +111,11 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
   // this reacts immediately if the admin switches frequency/mode to "Exact
   // date TBD" mid-edit (e.g. turning a one-off into an annual TBD series) —
   // not just when they arrived via the feed's "Verify date" link.
-  const isCurrentDateUnverified = !!(rule?.monthlyMode === "tbd" && form.dateStart && (form.verifiedThroughDate ?? null) !== form.dateStart);
+  // In Add mode there's nothing to verify against yet — whatever date the
+  // admin just typed in for a brand-new series is definitionally correct,
+  // so this only applies once editing an existing event (see
+  // AddListingEventModal, which stamps verifiedThroughDate on create).
+  const isCurrentDateUnverified = mode === "edit" && !!(rule?.monthlyMode === "tbd" && form.dateStart && (form.verifiedThroughDate ?? null) !== form.dateStart);
   const setUntil = (until: string) => {
     setForm(f => {
       const current = (f.recurrenceRule as RecurrenceRule | null | undefined) ?? null;

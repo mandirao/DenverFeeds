@@ -9,6 +9,7 @@ import { ListingEventFormFields, type SpecificDateEntry } from "./ListingEventFo
 import { Field, TextField, TextArea } from "./form-primitives";
 import { cn } from "@/lib/utils";
 import type { ListingFormConfig, ListingInsertBase } from "@/lib/listingFeedConfig";
+import type { RecurrenceRule } from "@shared/recurrence";
 
 export function AddListingEventModal<TInsert extends ListingInsertBase>({
   open,
@@ -185,6 +186,11 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
     if (form.isRecurring && form.dateStart) {
       if (instanceNote.trim()) (payload as any).instanceNotes = { [form.dateStart]: instanceNote.trim() };
       if (instanceTitle.trim()) (payload as any).instanceTitles = { [form.dateStart]: instanceTitle.trim() };
+      // A brand-new series' first date is definitionally correct — the admin
+      // just typed it in, so it doesn't need the "Verify date" round-trip
+      // that later, computed-forward occurrences of a TBD-cadence series do.
+      const rule = form.recurrenceRule as RecurrenceRule | null | undefined;
+      if (rule?.monthlyMode === "tbd") (payload as any).verifiedThroughDate = form.dateStart;
     }
     createMutation.mutate(payload);
   };
