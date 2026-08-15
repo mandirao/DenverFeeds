@@ -129,6 +129,7 @@ const artFormConfig: ListingFormConfig<InsertArtEvent> = {
   }),
   applyRedoResponse: (res, { setForm, setInstanceNote, setInstanceTitle }) => {
     if (res.status === "not-found") {
+      if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
       return { title: "Couldn't verify online ⚠️", description: res.message };
     }
     if (res.status === "confirmed") {

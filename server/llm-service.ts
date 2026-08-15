@@ -752,7 +752,7 @@ Return ONLY valid JSON (no markdown):
   // redoFoodEventAI's prompts when the event is recurring. Mechanical
   // instructions only — Task A's voice/content stays per-feed.
   private occurrenceDetailTaskPrompt(dateLabel: string, currentInstanceNote: string, currentInstanceTitle: string): string {
-    return `TASK D — FIND OCCURRENCE-SPECIFIC DETAILS:
+    return `TASK D — FIND OCCURRENCE-SPECIFIC DETAILS (skip this task if eventFound is false; set both fields null):
 This is a recurring event. Look in the search results for specifics about THIS occurrence on ${dateLabel}: who's speaking/performing/guesting this time, what book/topic/theme is featured, any special guest or one-time element.
 - Current occurrence note: "${currentInstanceNote || '(none yet)'}"
 - Current title addition: "${currentInstanceTitle || '(none yet)'}"
@@ -1092,11 +1092,11 @@ ${searchContext || '(no results found)'}
 TASK A — CONFIRM THIS EVENT IS REAL AND FINDABLE:
 Decide whether the search results genuinely confirm this specific event/series still exists — not a coincidence, a different event with a similar name, or an unrelated show/popup at the same venue. If nothing clearly corroborates it (wrong name entirely, no real signal, or the connection is too weak to trust), set eventFound to false.
 
-If eventFound is false: stop there. Return eventFound: false, every other field null, and a one-sentence message explaining nothing could be confirmed online. Do not guess at or invent anything.
+If eventFound is false: skip Task B${isRecurring ? ' and Task D' : ''} entirely — return null for dateStart, startTime, venue, neighborhood, price, ticketUrl${isRecurring ? ', occurrenceNote, and titleModifier' : ''}. Do not guess at or invent any fact about the event. Still complete Task C below using only the details already on file (no web-sourced facts), and make the message note that nothing could be confirmed online.
 
-If eventFound is true, continue with Tasks B and C below.
+If eventFound is true, continue with Tasks B${isRecurring ? ', C, and D' : ' and C'} below.
 
-TASK B — VERIFY THE DETAILS:
+TASK B — VERIFY THE DETAILS (skip this task if eventFound is false):
 ${isRecurring
   ? "This is a recurring series. Try to confirm the actual upcoming occurrence's date, along with time/venue/price/ticket link, from the search results."
   : "This is a one-time event. Confirm whether it's been rescheduled, moved, or had other details change since it was posted."}
@@ -1104,9 +1104,10 @@ For dateStart, startTime, venue, neighborhood, price, ticketUrl: only report a n
 VENUE — HIGH RISK: only report a venue change if the SAME event/series is explicitly confirmed at a new venue (an actual "we've moved" signal) — never just because a same-named result mentions a different place, which more likely means a different, unrelated event.
 DATE${isRecurring ? " — only report a date that reads as the upcoming/next occurrence, never a past one." : "."}
 
-TASK C — IMPROVE THE DESCRIPTION:
+TASK C — IMPROVE THE DESCRIPTION (always do this, even if eventFound is false):
 ${descriptionTaskGuide}
 If the current description is already excellent and nothing new was found, you may keep it as-is.
+Base this only on the EVENT DETAILS ON FILE above (plus web-confirmed facts if eventFound is true) — never invent specifics that aren't already on file or confirmed by search.
 ${isRecurring ? "Do NOT mention what's specific to only this date (the particular guest, book, menu item, or theme) — that belongs only in Task D below, never in the description." : ''}
 
 ${isRecurring ? this.occurrenceDetailTaskPrompt(dateLabel, currentInstanceNote, currentInstanceTitle) : ''}
@@ -1131,8 +1132,11 @@ Return ONLY valid JSON (no markdown):
     const { isRecurring, currentSummary, dateStart, startTime, venue, price, ticketUrl, neighborhood } = params;
 
     if (!result.eventFound) {
+      const newSummary = (result.summary || currentSummary || '').substring(0, 200);
+      const summaryChanged = newSummary.trim() !== (currentSummary || '').trim();
       return {
         status: 'not-found',
+        ...(summaryChanged ? { summary: newSummary } : {}),
         message: result.message || "Couldn't confirm this event online — details left as-is.",
       };
     }
