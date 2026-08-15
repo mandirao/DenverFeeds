@@ -660,10 +660,15 @@ export default function ArtistryNerdery() {
                 ))}
               </ul>
               {stillTimeTruncated && (
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ background: `linear-gradient(to bottom, transparent 50%, ${AN_BG} 100%)` }}
-                />
+                <div className="relative overflow-hidden pointer-events-none" style={{ maxHeight: "1.25rem" }}>
+                  <ul className="space-y-0">
+                    <ListingEventRow key={`still-peek-${stillTimeEvents[STILL_VISIBLE].id}`} event={stillTimeEvents[STILL_VISIBLE]} config={artRowConfig} />
+                  </ul>
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: `linear-gradient(to bottom, transparent 0%, ${AN_BG} 80%)` }}
+                  />
+                </div>
               )}
             </div>
             {stillTimeTruncated && (
