@@ -1,10 +1,9 @@
 import { Link } from "wouter";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Music, Users, Calendar, ChevronDown } from "lucide-react";
+import { Music, Users, Calendar } from "lucide-react";
 import { CalendarSubscribeModal } from "./CalendarSubscribeModal";
-import { siteUrls } from "@/lib/siteConfig";
+import { SiteSwitcher } from "./SiteSwitcher";
 
 export function Navbar() {
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -15,24 +14,11 @@ export function Navbar() {
         {/* Main navbar row with title and RSVP button */}
         <div className="flex flex-col sm:flex-row justify-between items-center">
           <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 group outline-none">
-                <h1 className="text-3xl md:text-4xl text-black group-hover:text-[#41F2EE] transition-colors font-black mb-2 sm:mb-0">SETLIST SOCIAL FEED</h1>
-                <ChevronDown className="h-4 w-4 text-black group-hover:text-[#41F2EE] transition-colors mb-2 sm:mb-0 shrink-0" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="rounded-none border-2 border-black bg-black text-white p-0 min-w-[240px]">
-                <DropdownMenuItem asChild className="rounded-none focus:bg-[#FFF8E7] focus:text-black px-4 py-3 cursor-pointer">
-                  <a href={siteUrls.amuseBouche} className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
-                    🍽️ AMUSE-BOUCHE INSIDER
-                  </a>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-none focus:bg-[#F2F0FF] focus:text-black px-4 py-3 cursor-pointer">
-                  <a href={siteUrls.artistryNerdistry} className="font-black uppercase tracking-wide text-sm flex items-center gap-2 text-white hover:text-black w-full">
-                    🎨 ARTISTRY/NERDISTRY LIVE
-                  </a>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <SiteSwitcher
+              title="SETLIST SOCIAL FEED"
+              titleClassName="text-3xl md:text-4xl text-black group-hover:text-[#41F2EE] transition-colors font-black mb-2 sm:mb-0"
+              chevronClassName="h-4 w-4 text-black group-hover:text-[#41F2EE] transition-colors mb-2 sm:mb-0 shrink-0"
+            />
           </div>
           <div className="flex items-center space-x-6">
             <TooltipProvider>
