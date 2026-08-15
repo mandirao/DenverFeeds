@@ -25,6 +25,7 @@ export interface IStorage {
   upvoteEvent(eventId: number, userId: number): Promise<boolean>;
   removeUpvote(eventId: number, userId: number): Promise<boolean>;
   hasUserUpvoted(eventId: number, userId: number): Promise<boolean>;
+  getUpvotedEventIds(userId: number): Promise<number[]>;
   setEventScheduled(eventId: number, scheduled: boolean): Promise<Event | undefined>;
   
   // Playlist methods
@@ -326,6 +327,11 @@ export class DatabaseStorage implements IStorage {
       )
     );
     return result.length > 0;
+  }
+
+  async getUpvotedEventIds(userId: number): Promise<number[]> {
+    const result = await db.select({ eventId: upvotes.eventId }).from(upvotes).where(eq(upvotes.userId, userId));
+    return result.map(row => row.eventId);
   }
 
   async setEventScheduled(eventId: number, scheduled: boolean = true): Promise<Event | undefined> {

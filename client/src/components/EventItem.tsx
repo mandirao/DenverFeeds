@@ -34,7 +34,7 @@ function EventItem({ event }: EventItemProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/events/${event.id}/has-upvoted`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/upvoted-events"] });
     }
   });
   
@@ -51,31 +51,28 @@ function EventItem({ event }: EventItemProps) {
   
   // Track if the user has voted for this event
   const [hasVoted, setHasVoted] = useState(false);
-  
-  // Define type for our API response
-  interface UpvoteResponse {
-    hasUpvoted: boolean;
-  }
-  
-  // Check if user has already upvoted this event
-  const hasUpvotedQuery = useQuery<UpvoteResponse>({
-    queryKey: [`/api/events/${event.id}/has-upvoted`],
-    enabled: !!event.id && !event.isScheduled
+
+  // Every EventItem shares this single query key, so React Query fetches it
+  // once per page load and dedupes across all rendered events instead of
+  // each one firing its own has-upvoted request (which was flooding the
+  // Postgres pooler under concurrent traffic).
+  const upvotedEventIdsQuery = useQuery<number[]>({
+    queryKey: ["/api/upvoted-events"],
+    enabled: !event.isScheduled
   });
-  
+
   // Set the voted state based on the query result
   useEffect(() => {
-    if (hasUpvotedQuery.data !== undefined) {
-      const serverHasVoted = hasUpvotedQuery.data.hasUpvoted;
-      
+    if (upvotedEventIdsQuery.data !== undefined) {
+      const serverHasVoted = upvotedEventIdsQuery.data.includes(event.id);
+
       // Always sync with server state when not pending
       // This ensures we stay in sync with the backend
       if (!upvoteMutation.isPending) {
-        console.log(`Setting hasVoted to ${serverHasVoted} for event ${event.id}`);
         setHasVoted(serverHasVoted);
       }
     }
-  }, [hasUpvotedQuery.data, upvoteMutation.isPending, event.id]);
+  }, [upvotedEventIdsQuery.data, upvoteMutation.isPending, event.id]);
 
   // Schedule mutation
   const scheduleMutation = useMutation({
@@ -123,8 +120,8 @@ function EventItem({ event }: EventItemProps) {
         }, 3000);
         
         // Force refresh the has-upvoted query to ensure we're in sync
-        queryClient.invalidateQueries({ 
-          queryKey: [`/api/events/${event.id}/has-upvoted`]
+        queryClient.invalidateQueries({
+          queryKey: ["/api/upvoted-events"]
         });
       },
       onError: (error) => {

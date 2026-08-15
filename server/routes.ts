@@ -405,6 +405,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Batched has-upvoted check: the feed renders dozens of events at once, and
+  // a separate has-upvoted request per event (each independently touching the
+  // session store) was amplifying Postgres pooler connection demand under
+  // concurrent traffic. One request per pageview instead of one per event.
+  apiRouter.get("/upvoted-events", async (req, res) => {
+    try {
+      // @ts-ignore - Session properties are added by express-session
+      const sessionId = req.session?.userId;
+
+      if (!sessionId) {
+        return res.json([]);
+      }
+
+      const user = await storage.getUserBySessionId(sessionId);
+      if (!user) {
+        return res.json([]);
+      }
+
+      const upvotedEventIds = await storage.getUpvotedEventIds(user.id);
+      res.json(upvotedEventIds);
+    } catch (error) {
+      console.error("Error fetching upvoted events:", error);
+      res.status(500).json({ message: "Server error fetching upvoted events" });
+    }
+  });
+
   // Upvote or remove vote for an event
   apiRouter.post("/events/:id/upvote", async (req, res) => {
     try {
