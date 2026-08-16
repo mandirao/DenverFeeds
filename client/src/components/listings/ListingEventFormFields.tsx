@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { riskPips, RISK_LABELS } from "@/lib/eventUtils";
@@ -83,7 +83,14 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
     deriveInitialWhenMode(form, !!(canUseSpecificDates && specificDatesState!.useSpecificDates))
   );
   const [showMoreDetails, setShowMoreDetails] = useState(false);
-  const [showInstanceCustomize, setShowInstanceCustomize] = useState(false);
+  const [showInstanceCustomize, setShowInstanceCustomize] = useState(!!(instanceNote.trim() || instanceTitle.trim()));
+
+  // AI parsing/redo fills instanceNote/instanceTitle asynchronously, well
+  // after mount — auto-open the panel the moment either gets real content so
+  // it isn't left sitting unseen behind a collapsed "+ Add" toggle.
+  useEffect(() => {
+    if (instanceNote.trim() || instanceTitle.trim()) setShowInstanceCustomize(true);
+  }, [instanceNote, instanceTitle]);
 
   const selectWhenMode = (next: WhenMode) => {
     if (next === whenMode) return;

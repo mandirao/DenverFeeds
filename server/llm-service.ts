@@ -588,7 +588,7 @@ ${blurb ? `\nBlurb:\n"""\n${blurb}\n"""` : ''}${imageBase64 ? '\n\nAn image from
 
 Return this exact JSON structure (no markdown, no code blocks):
 {
-  "name": "short punchy event name (e.g. 'Disco & Dumplings')",
+  "name": "short punchy event name (e.g. 'Disco & Dumplings'). For a recurring series, this MUST be the durable series name only — never fold in what's specific to only this occurrence (a menu item, theme, or guest); that belongs only in titleModifier below, never here.",
   "venue": "restaurant or location name",
   "neighborhood": "Denver neighborhood if mentioned, else empty string",
   "dateStart": "YYYY-MM-DD or empty string if unknown",
@@ -796,7 +796,7 @@ ${blurb ? `\nBlurb:\n"""\n${blurb}\n"""` : ''}${imageBase64 ? '\n\nAn image is a
 
 Return this exact JSON structure (no markdown, no code blocks):
 {
-  "name": "short evocative event name",
+  "name": "short evocative event name. For a recurring series, this MUST be the durable series name only (e.g. 'CAP Lecture Series', not 'CAP Lecture Series: David Godshall') — never fold in what's specific to only this occurrence (a guest, book, or theme); that belongs only in titleModifier below, never here.",
   "venue": "venue, museum, gallery, theater, or location name",
   "neighborhood": "Denver/Boulder neighborhood if mentioned, else empty string",
   "dateStart": "YYYY-MM-DD or empty string if unknown",
