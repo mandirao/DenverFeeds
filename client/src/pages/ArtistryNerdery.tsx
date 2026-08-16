@@ -21,7 +21,7 @@ import {
   ensureHttps, formatDateRange, getMonthLabel, formatTime, formatDayHeaderLabel,
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
   expandRecurringEvents, hasStartTimePassed, localDateStr,
-  announcedTooltipText, SELLOUT_LIKELY_THRESHOLD,
+  announcedTooltipText, SELLOUT_LIKELY_THRESHOLD, classifyRegion,
 } from "@/lib/eventUtils";
 import { ListingEventRow } from "@/components/listings/ListingEventRow";
 import { ListingCalendarMonthView } from "@/components/listings/ListingCalendarMonthView";
@@ -193,6 +193,7 @@ export default function ArtistryNerdery() {
   const [calDetailDeleteConfirm, setCalDetailDeleteConfirm] = useState(false);
   const [sortBy, setSortBy] = useState<"date" | "added">("date");
   const [filterCategory, setFilterCategory] = useState(() => new URLSearchParams(window.location.search).get("category") || "all");
+  const [filterRegion, setFilterRegion] = useState(() => new URLSearchParams(window.location.search).get("region") || "all");
   const [filterDay, setFilterDay] = useState(() => new URLSearchParams(window.location.search).get("day") || "all");
   const [filterDuration, setFilterDuration] = useState(() => new URLSearchParams(window.location.search).get("duration") || "all");
 
@@ -208,10 +209,11 @@ export default function ArtistryNerdery() {
   useEffect(() => {
     const url = new URL(window.location.href);
     filterCategory !== "all" ? url.searchParams.set("category", filterCategory) : url.searchParams.delete("category");
+    filterRegion !== "all" ? url.searchParams.set("region", filterRegion) : url.searchParams.delete("region");
     filterDay !== "all" ? url.searchParams.set("day", filterDay) : url.searchParams.delete("day");
     filterDuration !== "all" ? url.searchParams.set("duration", filterDuration) : url.searchParams.delete("duration");
     window.history.replaceState({}, "", url.toString());
-  }, [filterCategory, filterDay, filterDuration]);
+  }, [filterCategory, filterRegion, filterDay, filterDuration]);
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
@@ -251,11 +253,12 @@ export default function ArtistryNerdery() {
 
   const expandedEvents = expandRecurringEvents(events);
 
-  const hasActiveFilters = sortBy !== "date" || filterCategory !== "all" || filterDay !== "all" || filterDuration !== "all";
+  const hasActiveFilters = sortBy !== "date" || filterCategory !== "all" || filterRegion !== "all" || filterDay !== "all" || filterDuration !== "all";
 
   const resetFilters = () => {
     setSortBy("date");
     setFilterCategory("all");
+    setFilterRegion("all");
     setFilterDay("all");
     setFilterDuration("all");
   };
@@ -282,6 +285,7 @@ export default function ArtistryNerdery() {
   const filteredEvents = expandedEvents.filter(ev => {
     if (hasStartTimePassed(ev, todayStr)) return false;
     if (filterCategory !== "all" && ev.category !== filterCategory) return false;
+    if (filterRegion !== "all" && classifyRegion(ev.neighborhood) !== filterRegion) return false;
     if (filterDay !== "all") {
       const d = new Date(ev.dateStart + "T12:00:00");
       if (filterDay === "today")   { if (ev.dateStart !== todayStr) return false; }
@@ -476,6 +480,21 @@ export default function ArtistryNerdery() {
                     {artCategories.map(c => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Region filter */}
+                <Select value={filterRegion} onValueChange={setFilterRegion}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filterRegion !== "all" ? "bg-white text-black" : "text-black hover:border-white"
+                  }`} style={{ width: "145px", backgroundColor: filterRegion !== "all" ? "white" : AN_BG }}>
+                    <SelectValue placeholder="Region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Regions</SelectItem>
+                    <SelectItem value="denver">Denver</SelectItem>
+                    <SelectItem value="front_range">Front Range</SelectItem>
+                    <SelectItem value="mountains">Mountains</SelectItem>
                   </SelectContent>
                 </Select>
 

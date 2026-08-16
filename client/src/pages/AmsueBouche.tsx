@@ -21,7 +21,7 @@ import {
   ensureHttps, formatDateRange, getMonthLabel, formatTime, formatDayHeaderLabel,
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
   expandRecurringEvents, hasStartTimePassed, localDateStr,
-  announcedTooltipText, SELLOUT_LIKELY_THRESHOLD,
+  announcedTooltipText, SELLOUT_LIKELY_THRESHOLD, classifyRegion,
 } from "@/lib/eventUtils";
 import { ListingEventRow } from "@/components/listings/ListingEventRow";
 import { ListingCalendarMonthView } from "@/components/listings/ListingCalendarMonthView";
@@ -606,6 +606,7 @@ export default function AmsueBouche() {
   const [calDetailDeleteConfirm, setCalDetailDeleteConfirm] = useState(false);
   const [sortBy, setSortBy] = useState<"date" | "added">(() => new URLSearchParams(window.location.search).get("sort") === "added" ? "added" : "date");
   const [filterCuisine, setFilterCuisine] = useState(() => new URLSearchParams(window.location.search).get("evCuisine") || "all");
+  const [filterRegion, setFilterRegion] = useState(() => new URLSearchParams(window.location.search).get("evRegion") || "all");
   const [filterDay, setFilterDay] = useState(() => new URLSearchParams(window.location.search).get("evDay") || "all");
   const [pageTab, setPageTab] = useState<"events" | "bestOf">(() => {
     const params = new URLSearchParams(window.location.search);
@@ -654,15 +655,16 @@ export default function AmsueBouche() {
       filterRNeighborhood !== "all" ? url.searchParams.set("neighborhood", filterRNeighborhood) : url.searchParams.delete("neighborhood");
       filterRPrice !== "all" ? url.searchParams.set("price", filterRPrice) : url.searchParams.delete("price");
       filterRBadge !== "all" ? url.searchParams.set("spot", filterRBadge) : url.searchParams.delete("spot");
-      ["evCuisine", "evDay", "sort"].forEach(k => url.searchParams.delete(k));
+      ["evCuisine", "evRegion", "evDay", "sort"].forEach(k => url.searchParams.delete(k));
     } else {
       filterCuisine !== "all" ? url.searchParams.set("evCuisine", filterCuisine) : url.searchParams.delete("evCuisine");
+      filterRegion !== "all" ? url.searchParams.set("evRegion", filterRegion) : url.searchParams.delete("evRegion");
       filterDay !== "all" ? url.searchParams.set("evDay", filterDay) : url.searchParams.delete("evDay");
       sortBy !== "date" ? url.searchParams.set("sort", sortBy) : url.searchParams.delete("sort");
       ["type", "cuisine", "neighborhood", "price", "spot"].forEach(k => url.searchParams.delete(k));
     }
     window.history.replaceState({}, "", url.toString());
-  }, [pageTab, filterRVenueType, filterRCuisine, filterRNeighborhood, filterRPrice, filterRBadge, filterCuisine, filterDay, sortBy]);
+  }, [pageTab, filterRVenueType, filterRCuisine, filterRNeighborhood, filterRPrice, filterRBadge, filterCuisine, filterRegion, filterDay, sortBy]);
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
@@ -765,6 +767,7 @@ export default function AmsueBouche() {
   const filteredEvents = expandedEvents.filter(ev => {
     if (hasStartTimePassed(ev, todayStr)) return false;
     if (filterCuisine !== "all" && ev.cuisine !== filterCuisine) return false;
+    if (filterRegion !== "all" && classifyRegion(ev.neighborhood) !== filterRegion) return false;
     if (filterDay !== "all") {
       const [y, mo, dy] = ev.dateStart.split("-").map(Number);
       const d = new Date(y, mo - 1, dy);
@@ -776,8 +779,8 @@ export default function AmsueBouche() {
     return true;
   });
 
-  const hasActiveFilters = filterCuisine !== "all" || filterDay !== "all" || sortBy !== "date";
-  const resetFilters = () => { setFilterCuisine("all"); setFilterDay("all"); setSortBy("date"); };
+  const hasActiveFilters = filterCuisine !== "all" || filterRegion !== "all" || filterDay !== "all" || sortBy !== "date";
+  const resetFilters = () => { setFilterCuisine("all"); setFilterRegion("all"); setFilterDay("all"); setSortBy("date"); };
 
   // "Still Time" — already-started, not-yet-over one-time range events; dedupe
   // by id, sort by soonest closing. Recurring events never belong here, even
@@ -983,6 +986,21 @@ export default function AmsueBouche() {
                     {[...cuisineTypes].sort().map(c => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Region filter */}
+                <Select value={filterRegion} onValueChange={setFilterRegion}>
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
+                    filterRegion !== "all" ? "bg-white text-black" : "text-black hover:border-white"
+                  }`} style={{ width: "145px", backgroundColor: filterRegion !== "all" ? "white" : AB_GOLD }}>
+                    <SelectValue placeholder="Region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Regions</SelectItem>
+                    <SelectItem value="denver">Denver</SelectItem>
+                    <SelectItem value="front_range">Front Range</SelectItem>
+                    <SelectItem value="mountains">Mountains</SelectItem>
                   </SelectContent>
                 </Select>
 

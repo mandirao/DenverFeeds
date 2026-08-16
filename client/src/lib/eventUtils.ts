@@ -4,6 +4,46 @@
 
 export const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+export type EventRegion = "denver" | "front_range" | "mountains";
+
+// Art/Nerdistry and Amuse Bouche events carry a free-text `neighborhood`
+// (captured by the AI blurb parser at add-time) instead of the fixed venue
+// roster the music feed uses to tag regions — most venues here are one-off
+// pop-ups/galleries/parks that only ever appear once, so a hand-maintained
+// venue→region whitelist (like shared/schema.ts's venueOptions) isn't
+// practical. Classify by keyword match on the neighborhood text instead,
+// defaulting to Denver — same "unlisted defaults to Denver" fallback Home.tsx
+// uses for custom venues. Word-boundary matching (not substring) matters:
+// "Golden Triangle" is a downtown Denver neighborhood, not the city of Golden.
+const MOUNTAINS_KEYWORDS = [
+  "vail", "breckenridge", "aspen", "crested butte", "idaho springs",
+  "georgetown", "evergreen", "winter park", "steamboat", "estes park",
+  "leadville", "frisco", "silverthorne", "keystone", "dillon", "morrison",
+];
+const FRONT_RANGE_KEYWORDS = [
+  // "golden" excludes "Golden Triangle" — that's a downtown Denver
+  // neighborhood (Denver Art Museum, Clyfford Still Museum, etc.), not the
+  // city of Golden.
+  "boulder", "aurora", "westminster", "golden(?!\\s+triangle)", "lakewood",
+  "arvada", "louisville", "lyons", "longmont", "broomfield", "littleton",
+  "englewood", "centennial", "greenwood village", "erie", "colorado springs",
+  "fort collins", "greeley", "loveland", "larkspur", "wheat ?ridge",
+  "thornton", "commerce city",
+];
+
+function matchesAny(text: string, keywords: string[]): boolean {
+  return keywords.some(kw => new RegExp(`\\b${kw}\\b`, "i").test(text));
+}
+
+/** Classifies an event's `neighborhood` text into a region for the region
+ * filter. Unmatched/missing text defaults to "denver". */
+export function classifyRegion(neighborhood: string | null | undefined): EventRegion {
+  const text = neighborhood ?? "";
+  if (matchesAny(text, MOUNTAINS_KEYWORDS)) return "mountains";
+  if (matchesAny(text, FRONT_RANGE_KEYWORDS)) return "front_range";
+  return "denver";
+}
+
 /** Today (or the given Date) as a local YYYY-MM-DD string. Deliberately NOT
  * `d.toISOString().split('T')[0]` — that converts to UTC first, so for any
  * timezone behind UTC (Denver is UTC-6/-7) it silently rolls over to
