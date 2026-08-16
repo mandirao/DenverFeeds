@@ -307,7 +307,9 @@ export default function ArtistryNerdery() {
   const filteredEvents = expandedEvents.filter(ev => {
     if (hasStartTimePassed(ev, todayStr)) return false;
     if (normalizedSearch) {
-      const haystack = `${ev.name} ${ev.venue} ${ev.neighborhood ?? ""} ${ev.summary}`.toLowerCase();
+      const instanceTitle = ev.isRecurring ? ev.instanceTitles?.[ev.dateStart] ?? "" : "";
+      const instanceNote = ev.isRecurring ? ev.instanceNotes?.[ev.dateStart] ?? "" : "";
+      const haystack = `${ev.name} ${ev.venue} ${ev.neighborhood ?? ""} ${ev.summary} ${ev.category} ${instanceTitle} ${instanceNote}`.toLowerCase();
       if (!haystack.includes(normalizedSearch)) return false;
     }
     if (filterCategory !== "all" && ev.category !== filterCategory) return false;
