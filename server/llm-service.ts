@@ -694,7 +694,7 @@ Return ONLY valid JSON (no markdown):
           announcedAt: pass1.announcedAt || '',
           selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
             ? Math.round(pass1.selloutRisk) : null,
-          isRecurring: pass1.isRecurring === true,
+          isRecurring: pass1.isRecurring === true && recurrenceRule !== null,
           recurrenceLabel: recurrenceRule ? describeRecurrenceRule(recurrenceRule) : '',
           recurrenceRule,
           instanceNote: (pass1.isRecurring && typeof pass1.occurrenceNote === 'string') ? pass1.occurrenceNote : '',
@@ -706,9 +706,10 @@ Return ONLY valid JSON (no markdown):
 
   // Builds a structured RecurrenceRule from parseArtBlurb's pass-1 output.
   // Only trusts fields that form a complete, valid combination — anything
-  // partial/ambiguous falls back to null (isRecurring can still be true with
-  // no rule; the event just keeps the legacy keyword-fallback expansion
-  // until someone sets a schedule through the picker).
+  // partial/ambiguous falls back to null, and mapResult above then forces
+  // isRecurring back to false too (no clean cadence = treated as a one-time
+  // event, per product decision: an unpredictable cadence shouldn't be
+  // marked "recurring" and left to a misleading fallback label).
   private buildRecurrenceRuleFromParse(pass1: any): RecurrenceRule | null {
     if (pass1.isRecurring !== true) return null;
     const freq = pass1.recurrenceFreq;
@@ -737,8 +738,8 @@ Return ONLY valid JSON (no markdown):
   // Includes the explicit occurrence-vs-durable separation rule (issue: the
   // model was folding occurrence-specific detail into the durable summary).
   private recurrenceParseFieldsBlock(): string {
-    return `  "isRecurring": true if this is a recurring/regular event (monthly, weekly, every first Friday, ongoing series, annual, etc.) — false if it's a one-time event,
-  "recurrenceFreq": ONLY if isRecurring is true, one of "weekly" | "monthly" | "annual" — "weekly" = happens on specific day(s) every week or every N weeks (e.g. "Mondays", "every other Sunday", "weekends"); "monthly" = once a month, either the same calendar date (e.g. "the 15th of every month") or a weekday pattern (e.g. "every 3rd Thursday", "last Friday of the month"); "annual" = once a year/seasonal. null if isRecurring is false OR if no clean weekly/monthly/annual pattern fits (e.g. "recurring series" with no stated cadence) — don't force a guess.
+    return `  "isRecurring": true ONLY if this is a recurring/regular event AND it has a clear, statable weekly/monthly/annual cadence (e.g. "every Thursday", "first Friday of the month", "annual festival") — false if it's a one-time event OR if it recurs but on an unpredictable/irregular schedule (e.g. a lecture series that happens "periodically" or "occasionally" with no stated cadence). Do not force a guess at a cadence just because the source implies the event has happened before or will happen again — if you can't name the pattern, this is false. When false but the source does mention the event recurs, you may note that loosely in draftSummary (e.g. "happens periodically" / "an occasional series") — never invent a specific frequency.
+  "recurrenceFreq": ONLY if isRecurring is true, one of "weekly" | "monthly" | "annual" — "weekly" = happens on specific day(s) every week or every N weeks (e.g. "Mondays", "every other Sunday", "weekends"); "monthly" = once a month, either the same calendar date (e.g. "the 15th of every month") or a weekday pattern (e.g. "every 3rd Thursday", "last Friday of the month"); "annual" = once a year/seasonal. null if isRecurring is false.
   "recurrenceInterval": integer, weekly only — 2 if the source explicitly says "every other week"/"bi-weekly", else 1. null otherwise.
   "recurrenceByWeekdays": array of integers 0-6 (0=Sunday...6=Saturday) — required when recurrenceFreq is "weekly". Usually one day (e.g. [4] for "Thursdays"), but include multiple for patterns spanning several days (e.g. [0,6] for "weekends", [2,4] for "Tuesdays and Thursdays"). null otherwise.
   "recurrenceByWeekday": integer 0-6 (0=Sunday...6=Saturday) — required when recurrenceFreq is "monthly" and recurrenceMonthlyMode is "nth-weekday". null otherwise.
@@ -796,7 +797,7 @@ ${blurb ? `\nBlurb:\n"""\n${blurb}\n"""` : ''}${imageBase64 ? '\n\nAn image is a
 
 Return this exact JSON structure (no markdown, no code blocks):
 {
-  "name": "short evocative event name. For a recurring series, this MUST be the durable series name only (e.g. 'CAP Lecture Series', not 'CAP Lecture Series: David Godshall') — never fold in what's specific to only this occurrence (a guest, book, or theme); that belongs only in titleModifier below, never here.",
+  "name": "short, specific event name that pulls its weight in a dense feed — someone scanning past it should immediately know what KIND of event this is (a talk, an exhibit, a screening, a workshop, a reception) and get a hook about what it's actually about, not just who it's connected to. If the source gives the event/exhibition its own title, use that. If it centers on one person (an artist, author, scientist, chef) with no separate title, do NOT leave their bare name as the whole title — pair it with the event type and/or the most vivid specific detail from draftSummary, e.g. 'David Huffman: Cosmic Abstractions' or 'Artist Talk: Afrofuturism Meets Basketball' rather than just 'David Huffman'. For a recurring series, this MUST be the durable series name only (e.g. 'CAP Lecture Series', not 'CAP Lecture Series: David Godshall') — never fold in what's specific to only this occurrence (a guest, book, or theme); that belongs only in titleModifier below, never here.",
   "venue": "venue, museum, gallery, theater, or location name",
   "neighborhood": "Denver/Boulder neighborhood if mentioned, else empty string",
   "dateStart": "YYYY-MM-DD or empty string if unknown",
@@ -893,7 +894,7 @@ Return ONLY valid JSON (no markdown):
         announcedAt: pass1.announcedAt || '',
         selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
           ? Math.round(pass1.selloutRisk) : null,
-        isRecurring: pass1.isRecurring === true,
+        isRecurring: pass1.isRecurring === true && recurrenceRule !== null,
         recurrenceLabel: recurrenceRule ? describeRecurrenceRule(recurrenceRule) : '',
         recurrenceRule,
         instanceNote: (pass1.isRecurring && typeof pass1.occurrenceNote === 'string') ? pass1.occurrenceNote : '',
