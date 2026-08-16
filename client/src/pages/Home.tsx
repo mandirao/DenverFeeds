@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, addDays } from "date-fns";
 import { Navbar } from "@/components/Navbar";
@@ -12,8 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, List, ChevronLeft, ChevronRight, MoreVertical, ArrowUpDown, ChevronDown, Check } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from "@/components/ui/select";
+import { localDateStr } from "@/lib/eventUtils";
+import { CalendarDays, List, ChevronLeft, ChevronRight, MoreVertical, ArrowUpDown, ChevronDown, Check, Search, X } from "lucide-react";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
 import EventItem from "@/components/EventItem";
@@ -189,19 +190,22 @@ export default function Home() {
       venue: params.get('venue') || "all",
       dayOfWeek: params.get('dayOfWeek') || "all",
       sortBy: sortParam,
+      search: params.get('search') || "",
     };
   };
 
   const [filters, setFiltersState] = useState(getFiltersFromURL);
-  
+  const [searchOpen, setSearchOpen] = useState(() => getFiltersFromURL().search.trim() !== "");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   // Update URL when filters change
   const setFilters = (newFilters: typeof filters) => {
     const finalFilters = { ...newFilters };
     setFiltersState(finalFilters);
-    
+
     const params = new URLSearchParams();
     Object.entries(finalFilters).forEach(([key, value]) => {
-      if (value !== "all" && value !== "date") {
+      if (value && value !== "all" && value !== "date") {
         params.set(key, value as string);
       }
     });
@@ -255,8 +259,30 @@ export default function Home() {
   // Check if there are any events with venues not in our defined list
   const hasOtherVenues = events.some(event => !definedVenueValues.includes(event.venue));
 
+  const nextWeekRange = (() => {
+    const today = new Date();
+    const daysSinceMonday = (today.getDay() + 6) % 7; // Mon=0 ... Sun=6
+    const thisMonday = new Date(today); thisMonday.setDate(today.getDate() - daysSinceMonday);
+    const nextMonday = new Date(thisMonday); nextMonday.setDate(thisMonday.getDate() + 7);
+    const nextSunday = new Date(nextMonday); nextSunday.setDate(nextMonday.getDate() + 6);
+    return { start: localDateStr(nextMonday), end: localDateStr(nextSunday) };
+  })();
+  const nextMonthRange = (() => {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    return { start: localDateStr(start), end: localDateStr(end) };
+  })();
+
+  const normalizedSearch = filters.search.trim().toLowerCase();
+
   // Filter events based on selected filters
   const filteredEvents = events.filter(event => {
+    if (normalizedSearch) {
+      const haystack = `${event.artist} ${event.venue} ${event.summary} ${event.soundsLike} ${event.genre}`.toLowerCase();
+      if (!haystack.includes(normalizedSearch)) return false;
+    }
+
     // Month filter (now applied for all views including top-voted)
     if (filters.month !== "all") {
       // Parse date as local date to avoid timezone issues
@@ -336,11 +362,17 @@ export default function Home() {
     if (filters.dayOfWeek !== "all") {
       // Parse date as local date to avoid timezone issues
       const dateStr = event.date.toString().split('T')[0]; // Get just the YYYY-MM-DD part
-      const [year, month, day] = dateStr.split('-').map(Number);
-      const eventDate = new Date(year, month - 1, day); // Create local date
-      const eventDayOfWeek = eventDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      if (eventDayOfWeek.toString() !== filters.dayOfWeek) {
-        return false;
+      if (filters.dayOfWeek === "next-week") {
+        if (dateStr < nextWeekRange.start || dateStr > nextWeekRange.end) return false;
+      } else if (filters.dayOfWeek === "next-month") {
+        if (dateStr < nextMonthRange.start || dateStr > nextMonthRange.end) return false;
+      } else {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const eventDate = new Date(year, month - 1, day); // Create local date
+        const eventDayOfWeek = eventDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        if (eventDayOfWeek.toString() !== filters.dayOfWeek) {
+          return false;
+        }
       }
     }
     
@@ -379,6 +411,7 @@ export default function Home() {
     if (filters.dayOfWeek !== "all") count++;
     if (filters.status !== "all") count++;
     if (filters.sortBy !== "date") count++;
+    if (filters.search.trim() !== "") count++;
     return count;
   };
   
@@ -389,13 +422,15 @@ export default function Home() {
   const resetFilters = () => {
     setFilters({
       month: "all",
-      genre: "all", 
+      genre: "all",
       status: "all",
       location: "all",
       venue: "all",
       dayOfWeek: "all",
-      sortBy: "date"
+      sortBy: "date",
+      search: "",
     });
+    setSearchOpen(false);
   };
   
   // Determine if we should group by month/week or show a flat list
@@ -488,6 +523,41 @@ export default function Home() {
           <div className="mb-6">
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
+                {/* Search — expands from an icon into an inline input */}
+                {searchOpen ? (
+                  <div className="flex items-center gap-1 h-8 pl-2.5 pr-1 rounded-full border border-black bg-white flex-shrink-0" style={{ width: "170px" }}>
+                    <Search className="w-3.5 h-3.5 text-black/50 flex-shrink-0" />
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={filters.search}
+                      onChange={e => setFilters({ ...filters, search: e.target.value })}
+                      onBlur={() => { if (!filters.search.trim()) setSearchOpen(false); }}
+                      placeholder="Search events"
+                      className="flex-1 min-w-0 h-full text-sm text-black placeholder:text-black/40 bg-transparent focus:outline-none"
+                    />
+                    {filters.search && (
+                      <button
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => { setFilters({ ...filters, search: "" }); searchInputRef.current?.focus(); }}
+                        className="flex-shrink-0 text-black/40 hover:text-black transition-colors"
+                        aria-label="Clear search"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 0); }}
+                    className="h-8 w-8 flex items-center justify-center rounded-full border border-black text-black hover:bg-black hover:text-white transition-colors flex-shrink-0"
+                    title="Search events"
+                    aria-label="Search events"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
                 {/* View toggle */}
                 <div className="flex items-center gap-1 border border-black rounded-full overflow-hidden flex-shrink-0 mr-1">
                   <button
@@ -683,11 +753,14 @@ export default function Home() {
                     filters.dayOfWeek !== "all" 
                       ? "bg-white text-black" 
                       : "bg-[#FE6B41] text-black hover:border-white"
-                  }`} style={{ width: "115px" }}>
+                  }`} style={{ width: "140px" }}>
                     <SelectValue placeholder="Day" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Days</SelectItem>
+                    <SelectItem value="next-week">Next Week</SelectItem>
+                    <SelectItem value="next-month">Next Month</SelectItem>
+                    <SelectSeparator />
                     <SelectItem value="0">Sunday</SelectItem>
                     <SelectItem value="1">Monday</SelectItem>
                     <SelectItem value="2">Tuesday</SelectItem>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { cuisineTypes, restaurantCuisineTypes, denverNeighborhoods, restaurantPricePoints, type FoodEvent, type InsertFoodEvent, type Restaurant } from "@shared/schema";
-import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check } from "lucide-react";
+import { UtensilsCrossed, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check, Search, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import { SiteSwitcher } from "@/components/SiteSwitcher";
@@ -608,6 +608,9 @@ export default function AmsueBouche() {
   const [filterCuisine, setFilterCuisine] = useState(() => new URLSearchParams(window.location.search).get("evCuisine") || "all");
   const [filterRegion, setFilterRegion] = useState(() => new URLSearchParams(window.location.search).get("evRegion") || "all");
   const [filterDay, setFilterDay] = useState(() => new URLSearchParams(window.location.search).get("evDay") || "all");
+  const [searchQuery, setSearchQuery] = useState(() => new URLSearchParams(window.location.search).get("q") || "");
+  const [searchOpen, setSearchOpen] = useState(() => searchQuery.trim() !== "");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [pageTab, setPageTab] = useState<"events" | "bestOf">(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("tab") === "best-of" ? "bestOf" : "events";
@@ -655,16 +658,17 @@ export default function AmsueBouche() {
       filterRNeighborhood !== "all" ? url.searchParams.set("neighborhood", filterRNeighborhood) : url.searchParams.delete("neighborhood");
       filterRPrice !== "all" ? url.searchParams.set("price", filterRPrice) : url.searchParams.delete("price");
       filterRBadge !== "all" ? url.searchParams.set("spot", filterRBadge) : url.searchParams.delete("spot");
-      ["evCuisine", "evRegion", "evDay", "sort"].forEach(k => url.searchParams.delete(k));
+      ["evCuisine", "evRegion", "evDay", "sort", "q"].forEach(k => url.searchParams.delete(k));
     } else {
       filterCuisine !== "all" ? url.searchParams.set("evCuisine", filterCuisine) : url.searchParams.delete("evCuisine");
       filterRegion !== "all" ? url.searchParams.set("evRegion", filterRegion) : url.searchParams.delete("evRegion");
       filterDay !== "all" ? url.searchParams.set("evDay", filterDay) : url.searchParams.delete("evDay");
       sortBy !== "date" ? url.searchParams.set("sort", sortBy) : url.searchParams.delete("sort");
+      searchQuery.trim() ? url.searchParams.set("q", searchQuery.trim()) : url.searchParams.delete("q");
       ["type", "cuisine", "neighborhood", "price", "spot"].forEach(k => url.searchParams.delete(k));
     }
     window.history.replaceState({}, "", url.toString());
-  }, [pageTab, filterRVenueType, filterRCuisine, filterRNeighborhood, filterRPrice, filterRBadge, filterCuisine, filterRegion, filterDay, sortBy]);
+  }, [pageTab, filterRVenueType, filterRCuisine, filterRNeighborhood, filterRPrice, filterRBadge, filterCuisine, filterRegion, filterDay, sortBy, searchQuery]);
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
@@ -763,9 +767,31 @@ export default function AmsueBouche() {
     }
     return s;
   })();
+  const nextWeekRange = (() => {
+    const today = new Date();
+    const daysSinceMonday = (today.getDay() + 6) % 7; // Mon=0 ... Sun=6
+    const thisMonday = new Date(today); thisMonday.setDate(today.getDate() - daysSinceMonday);
+    const nextMonday = new Date(thisMonday); nextMonday.setDate(thisMonday.getDate() + 7);
+    const nextSunday = new Date(nextMonday); nextSunday.setDate(nextMonday.getDate() + 6);
+    return { start: localDateStr(nextMonday), end: localDateStr(nextSunday) };
+  })();
+  const nextMonthRange = (() => {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    return { start: localDateStr(start), end: localDateStr(end) };
+  })();
+
+  const normalizedSearch = searchQuery.trim().toLowerCase();
 
   const filteredEvents = expandedEvents.filter(ev => {
     if (hasStartTimePassed(ev, todayStr)) return false;
+    if (normalizedSearch) {
+      const instanceTitle = ev.isRecurring ? ev.instanceTitles?.[ev.dateStart] ?? "" : "";
+      const instanceNote = ev.isRecurring ? ev.instanceNotes?.[ev.dateStart] ?? "" : "";
+      const haystack = `${ev.name} ${ev.venue} ${ev.neighborhood ?? ""} ${ev.summary} ${ev.cuisine} ${instanceTitle} ${instanceNote}`.toLowerCase();
+      if (!haystack.includes(normalizedSearch)) return false;
+    }
     if (filterCuisine !== "all" && ev.cuisine !== filterCuisine) return false;
     if (filterRegion !== "all" && classifyRegion(ev.neighborhood) !== filterRegion) return false;
     if (filterDay !== "all") {
@@ -774,13 +800,15 @@ export default function AmsueBouche() {
       if (filterDay === "today")    { if (ev.dateStart !== todayStr) return false; }
       else if (filterDay === "tomorrow") { if (ev.dateStart !== tomorrowStr) return false; }
       else if (filterDay === "weekend")  { if (!weekendDates.has(ev.dateStart)) return false; }
+      else if (filterDay === "next-week")  { if (ev.dateStart < nextWeekRange.start || ev.dateStart > nextWeekRange.end) return false; }
+      else if (filterDay === "next-month") { if (ev.dateStart < nextMonthRange.start || ev.dateStart > nextMonthRange.end) return false; }
       else { if (d.getDay().toString() !== filterDay) return false; }
     }
     return true;
   });
 
-  const hasActiveFilters = filterCuisine !== "all" || filterRegion !== "all" || filterDay !== "all" || sortBy !== "date";
-  const resetFilters = () => { setFilterCuisine("all"); setFilterRegion("all"); setFilterDay("all"); setSortBy("date"); };
+  const hasActiveFilters = filterCuisine !== "all" || filterRegion !== "all" || filterDay !== "all" || sortBy !== "date" || searchQuery.trim() !== "";
+  const resetFilters = () => { setFilterCuisine("all"); setFilterRegion("all"); setFilterDay("all"); setSortBy("date"); setSearchQuery(""); setSearchOpen(false); };
 
   // "Still Time" — already-started, not-yet-over one-time range events; dedupe
   // by id, sort by soonest closing. Recurring events never belong here, even
@@ -925,6 +953,41 @@ export default function AmsueBouche() {
           <div className="mb-5">
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
+                {/* Search — expands from an icon into an inline input */}
+                {searchOpen ? (
+                  <div className="flex items-center gap-1 h-8 pl-2.5 pr-1 rounded-full border border-black bg-white flex-shrink-0" style={{ width: "170px" }}>
+                    <Search className="w-3.5 h-3.5 text-black/50 flex-shrink-0" />
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      onBlur={() => { if (!searchQuery.trim()) setSearchOpen(false); }}
+                      placeholder="Search events"
+                      className="flex-1 min-w-0 h-full text-sm text-black placeholder:text-black/40 bg-transparent focus:outline-none"
+                    />
+                    {searchQuery && (
+                      <button
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => { setSearchQuery(""); searchInputRef.current?.focus(); }}
+                        className="flex-shrink-0 text-black/40 hover:text-black transition-colors"
+                        aria-label="Clear search"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 0); }}
+                    className="h-8 w-8 flex items-center justify-center rounded-full border border-black text-black hover:bg-black hover:text-white transition-colors flex-shrink-0"
+                    title="Search events"
+                    aria-label="Search events"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
                 {/* View mode toggle */}
                 <div className="flex items-center gap-1 border border-black rounded-full overflow-hidden flex-shrink-0">
                   <button
@@ -1017,6 +1080,8 @@ export default function AmsueBouche() {
                     <SelectItem value="today">Today</SelectItem>
                     <SelectItem value="tomorrow">Tomorrow</SelectItem>
                     <SelectItem value="weekend">This Weekend</SelectItem>
+                    <SelectItem value="next-week">Next Week</SelectItem>
+                    <SelectItem value="next-month">Next Month</SelectItem>
                     <SelectSeparator />
                     <SelectItem value="0">Sundays</SelectItem>
                     <SelectItem value="1">Mondays</SelectItem>
