@@ -287,6 +287,20 @@ export default function ArtistryNerdery() {
     }
     return s;
   })();
+  const nextWeekRange = (() => {
+    const today = new Date();
+    const daysSinceMonday = (today.getDay() + 6) % 7; // Mon=0 ... Sun=6
+    const thisMonday = new Date(today); thisMonday.setDate(today.getDate() - daysSinceMonday);
+    const nextMonday = new Date(thisMonday); nextMonday.setDate(thisMonday.getDate() + 7);
+    const nextSunday = new Date(nextMonday); nextSunday.setDate(nextMonday.getDate() + 6);
+    return { start: localDateStr(nextMonday), end: localDateStr(nextSunday) };
+  })();
+  const nextMonthRange = (() => {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    return { start: localDateStr(start), end: localDateStr(end) };
+  })();
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
 
@@ -303,6 +317,8 @@ export default function ArtistryNerdery() {
       if (filterDay === "today")   { if (ev.dateStart !== todayStr) return false; }
       else if (filterDay === "tomorrow") { if (ev.dateStart !== tomorrowStr) return false; }
       else if (filterDay === "weekend")  { if (!weekendDateSet.has(ev.dateStart)) return false; }
+      else if (filterDay === "next-week")  { if (ev.dateStart < nextWeekRange.start || ev.dateStart > nextWeekRange.end) return false; }
+      else if (filterDay === "next-month") { if (ev.dateStart < nextMonthRange.start || ev.dateStart > nextMonthRange.end) return false; }
       else { if (d.getDay().toString() !== filterDay) return false; }
     }
     if (filterDuration !== "all") {
@@ -562,6 +578,8 @@ export default function ArtistryNerdery() {
                       <SelectItem value="today">Today</SelectItem>
                       <SelectItem value="tomorrow">Tomorrow</SelectItem>
                       <SelectItem value="weekend">This Weekend</SelectItem>
+                      <SelectItem value="next-week">Next Week</SelectItem>
+                      <SelectItem value="next-month">Next Month</SelectItem>
                     </SelectGroup>
                     <SelectSeparator />
                     <SelectGroup>
