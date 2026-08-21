@@ -1,6 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import type { ListingEventBase, ListingCalendarConfig } from "@/lib/listingFeedConfig";
-import { localDateStr, formatTime } from "@/lib/eventUtils";
+import { localDateStr, formatTime, formatRecurrenceCadence } from "@/lib/eventUtils";
 import { addCalDays } from "@shared/recurrence";
 
 const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -14,16 +14,33 @@ export function ListingDayScrollView<T extends ListingEventBase>({
   events,
   onEventClick,
   config,
+  filterBarHeight = 0,
 }: {
   events: T[];
   onEventClick: (ev: T) => void;
   config: ListingCalendarConfig<T>;
+  // Height of the fixed bottom mobile filter bar, so the day card's scroll
+  // area can stop short of it instead of running underneath and hiding its
+  // last rows — see the parent page's useElementHeight measurement of it.
+  filterBarHeight?: number;
 }) {
   const todayStr = localDateStr();
 
+  // expandRecurringEvents stamps every occurrence's dateEnd by re-applying
+  // the *base record's* full season-length span (e.g. "runs weekly Aug–Jan")
+  // onto each individual occurrence's own dateStart — so a single Saturday
+  // occurrence can end up with a computed dateEnd months later. That span is
+  // meaningless for a recurring event (it repeats, it doesn't run for
+  // months straight), so it must never be used for day-inclusion here —
+  // only a genuine one-time/limited-run listing's dateEnd is real. Desktop's
+  // month grid has the same guard (see guardRecurringMultiDaySpillover).
+  const spanEnd = (ev: T) => ev.isRecurring
+    ? ev.dateStart
+    : (ev.dateEnd && ev.dateEnd > ev.dateStart ? ev.dateEnd : ev.dateStart);
+
   let maxDate = todayStr;
   for (const ev of events) {
-    const end = ev.dateEnd && ev.dateEnd > ev.dateStart ? ev.dateEnd : ev.dateStart;
+    const end = spanEnd(ev);
     if (end > maxDate) maxDate = end;
   }
 
@@ -40,19 +57,25 @@ export function ListingDayScrollView<T extends ListingEventBase>({
   // just still running through today (dateStart before this day) — the
   // latter get pushed under a "Still Time" divider so the same limited-run
   // event repeating across several day-cards doesn't crowd out what's new.
+  // Recurring events never land in "Still Time" — see spanEnd above, they
+  // only ever appear on their own occurrence day.
   const eventsOnDay = (day: string) => {
-    const all = events.filter(ev => {
-      const end = ev.dateEnd && ev.dateEnd > ev.dateStart ? ev.dateEnd : ev.dateStart;
-      return ev.dateStart <= day && end >= day;
-    });
+    const all = events.filter(ev => ev.dateStart <= day && spanEnd(ev) >= day);
     const byStartTime = (a: T, b: T) => (a.startTime ?? '').localeCompare(b.startTime ?? '');
+    // Still Time stacks soonest-closing first, matching desktop's stillTimeEvents sort.
+    const byEndDate = (a: T, b: T) => spanEnd(a).localeCompare(spanEnd(b));
     const startingToday = all.filter(ev => ev.dateStart === day).sort(byStartTime);
-    const stillGoing = all.filter(ev => ev.dateStart !== day).sort(byStartTime);
+    const stillGoing = all.filter(ev => ev.dateStart !== day).sort(byEndDate);
     return { all, startingToday, stillGoing };
   };
 
+  const formatThrough = (d: string) => {
+    const dt = new Date(d + 'T12:00:00');
+    return `${MONTH_SHORT[dt.getMonth()]} ${dt.getDate()}`;
+  };
+
   return (
-    <div className="overflow-x-auto scrollbar-hide snap-x snap-mandatory flex gap-3 pb-2 -mx-4 px-4">
+    <div className="overflow-x-auto scrollbar-hide snap-x snap-mandatory flex gap-1 pb-2 -mx-4 px-4">
       {days.map(day => {
         const { all: dayEvents, startingToday, stillGoing } = eventsOnDay(day);
         const isToday = day === todayStr;
@@ -60,71 +83,88 @@ export function ListingDayScrollView<T extends ListingEventBase>({
         return (
           <div
             key={day}
-            className="snap-start flex-shrink-0 w-[82vw] max-w-[320px] border-2 border-black flex flex-col"
+            className="snap-start flex-shrink-0 w-[85vw] max-w-[380px] border-2 border-black flex flex-col"
             style={{ backgroundColor: config.cellBg }}
           >
-            <div className="px-4 py-3 border-b-2 border-black flex items-center justify-between gap-2 flex-shrink-0">
+            <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between gap-2 flex-shrink-0">
               <div className="min-w-0">
-                <div className="text-[10px] font-black uppercase tracking-wider text-black/50 truncate">
+                <div className="text-sm font-black uppercase tracking-wider text-black/50 truncate">
                   {isToday ? 'Today' : WEEKDAY_LONG[d.getDay()]}
                 </div>
-                <div className="text-base font-black text-black">
+                <div className="text-xl font-black text-black">
                   {MONTH_SHORT[d.getMonth()]} {d.getDate()}
                 </div>
               </div>
               {dayEvents.length > 0 && (
-                <div className="text-xs font-bold text-black/50 flex-shrink-0">
+                <div className="text-sm font-bold text-black/50 flex-shrink-0">
                   {dayEvents.length} event{dayEvents.length !== 1 ? 's' : ''}
                 </div>
               )}
             </div>
-            <div className="divide-y divide-black/10 overflow-y-auto max-h-[55vh] scrollbar-dark">
+            <div
+              className="divide-y divide-black/10 overflow-y-auto scrollbar-dark"
+              style={{ maxHeight: `calc(100dvh - 235px - ${filterBarHeight}px)` }}
+            >
               {dayEvents.length === 0 && (
-                <div className="px-4 py-8 text-center text-sm text-black/40">Nothing scheduled</div>
+                <div className="px-5 py-10 text-center text-base text-black/40">Nothing scheduled</div>
               )}
               {startingToday.map((ev, i) => (
                 <button
                   key={`${ev.id}-${day}-${i}`}
                   onClick={() => onEventClick(ev)}
-                  className="w-full text-left px-4 py-3 hover:bg-black/5 active:bg-black/10 transition-colors flex items-center gap-3"
+                  className={`w-full text-left px-5 py-4 hover:bg-black/5 active:bg-black/10 transition-colors flex items-center gap-3 ${ev.soldOut ? "opacity-50" : ""}`}
                 >
-                  <span className="text-xl flex-shrink-0">{ev.emoji}</span>
+                  <span className="text-2xl flex-shrink-0">{ev.emoji}</span>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-bold text-black truncate">{ev.name}</div>
-                    <div className="text-xs text-black/60 truncate">
+                    <div className="flex items-center gap-2">
+                      <div className={`text-base font-bold text-black truncate ${ev.soldOut ? "line-through" : ""}`}>{ev.name}</div>
+                      {ev.soldOut && (
+                        <span className="flex-shrink-0 text-[10px] font-black uppercase leading-none px-1.5 py-1 bg-black text-white">SOLD OUT</span>
+                      )}
+                    </div>
+                    <div className="text-sm text-black/60 truncate">
                       {ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && (
                         <span className="font-semibold text-black/80">{formatTime(ev.startTime)} · </span>
                       )}
+                      {ev.isRecurring && (
+                        <span className="font-semibold text-black/80">{formatRecurrenceCadence(ev.recurrenceLabel)} · </span>
+                      )}
                       {ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}
                     </div>
-                    {ev.price && <div className="text-xs text-black/50">{ev.price}</div>}
+                    {ev.price && <div className="text-sm text-black/50">{ev.price}</div>}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-black/30 flex-shrink-0" />
+                  <ChevronRight className="w-5 h-5 text-black/30 flex-shrink-0" />
                 </button>
               ))}
               {stillGoing.length > 0 && (
-                <div className="px-4 py-1.5 bg-black/5 flex items-center gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Still Time</span>
+                <div className="px-5 py-2 bg-black/5 flex items-center gap-2">
+                  <span className="text-sm font-black uppercase tracking-wider text-black/40">Still Time</span>
                 </div>
               )}
               {stillGoing.map((ev, i) => (
                 <button
                   key={`still-${ev.id}-${day}-${i}`}
                   onClick={() => onEventClick(ev)}
-                  className="w-full text-left px-4 py-3 hover:bg-black/5 active:bg-black/10 transition-colors flex items-center gap-3"
+                  className={`w-full text-left px-5 py-4 hover:bg-black/5 active:bg-black/10 transition-colors flex items-center gap-3 ${ev.soldOut ? "opacity-50" : ""}`}
                 >
-                  <span className="text-xl flex-shrink-0">{ev.emoji}</span>
+                  <span className="text-2xl flex-shrink-0">{ev.emoji}</span>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-bold text-black truncate">{ev.name}</div>
-                    <div className="text-xs text-black/60 truncate">
+                    <div className="flex items-center gap-2">
+                      <div className={`text-base font-bold text-black truncate ${ev.soldOut ? "line-through" : ""}`}>{ev.name}</div>
+                      {ev.soldOut && (
+                        <span className="flex-shrink-0 text-[10px] font-black uppercase leading-none px-1.5 py-1 bg-black text-white">SOLD OUT</span>
+                      )}
+                    </div>
+                    <div className="text-sm text-black/60 truncate">
                       {ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && (
                         <span className="font-semibold text-black/80">{formatTime(ev.startTime)} · </span>
                       )}
                       {ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}
                     </div>
-                    {ev.price && <div className="text-xs text-black/50">{ev.price}</div>}
+                    <div className="text-sm text-black/50 font-semibold">Through {formatThrough(spanEnd(ev))}</div>
+                    {ev.price && <div className="text-sm text-black/50">{ev.price}</div>}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-black/30 flex-shrink-0" />
+                  <ChevronRight className="w-5 h-5 text-black/30 flex-shrink-0" />
                 </button>
               ))}
             </div>

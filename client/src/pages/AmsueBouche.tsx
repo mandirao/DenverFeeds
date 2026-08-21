@@ -396,7 +396,7 @@ export default function AmsueBouche() {
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => setCalendarOpen(true)}
-                      className="text-black hover:text-[#41F2EE] transition-colors"
+                      className="text-black hover:text-[#41F2EE] transition-colors p-3.5 -m-3.5 md:p-0 md:m-0"
                     >
                       <Calendar className="h-4 w-4" />
                     </button>
@@ -406,7 +406,7 @@ export default function AmsueBouche() {
               </TooltipProvider>
               <a href="https://www.meetup.com/amuse-bouche/"
                 target="_blank" rel="noopener noreferrer"
-                className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1">
+                className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0">
                 <Users className="h-4 w-4" />
                 <span>Meetup</span>
               </a>
@@ -415,7 +415,7 @@ export default function AmsueBouche() {
                   <TooltipTrigger asChild>
                     <Link
                       href="/best-of-denver"
-                      className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1"
+                      className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0"
                     >
                       <Utensils className="h-4 w-4" />
                       <span>Gems</span>
@@ -425,7 +425,7 @@ export default function AmsueBouche() {
                 </Tooltip>
               </TooltipProvider>
               <button onClick={() => setAddOpen(true)}
-                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
+                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-2.5 md:py-1.5 transition-colors flex items-center gap-1">
                 <Plus className="w-4 h-4" />Popup
               </button>
             </div>
@@ -443,7 +443,7 @@ export default function AmsueBouche() {
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
                 {/* Search — expands from an icon into an inline input */}
                 {searchOpen ? (
-                  <div className="flex items-center gap-1 h-8 pl-2.5 pr-1 rounded-full border border-black bg-white flex-shrink-0" style={{ width: "170px" }}>
+                  <div className="flex items-center gap-1 h-10 md:h-8 pl-2.5 pr-1 rounded-full border border-black bg-white flex-shrink-0" style={{ width: "170px" }}>
                     <Search className="w-3.5 h-3.5 text-black/50 flex-shrink-0" />
                     <input
                       ref={searchInputRef}
@@ -468,7 +468,7 @@ export default function AmsueBouche() {
                 ) : (
                   <button
                     onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 0); }}
-                    className="h-8 w-8 flex items-center justify-center rounded-full border border-white text-white hover:bg-white hover:text-black md:border-black md:text-black md:hover:bg-black md:hover:text-white transition-colors flex-shrink-0"
+                    className="h-10 w-10 md:h-8 md:w-8 flex items-center justify-center rounded-full border border-white text-white hover:bg-white hover:text-black md:border-black md:text-black md:hover:bg-black md:hover:text-white transition-colors flex-shrink-0"
                     title="Search events"
                     aria-label="Search events"
                   >
@@ -480,7 +480,7 @@ export default function AmsueBouche() {
                 <div className="flex items-center gap-1 border border-white md:border-black rounded-full overflow-hidden flex-shrink-0">
                   <button
                     onClick={() => setViewMode("list")}
-                    className={`h-8 w-8 flex items-center justify-center transition-colors ${
+                    className={`h-10 w-10 md:h-8 md:w-8 flex items-center justify-center transition-colors ${
                       viewMode === "list" ? "bg-white text-black md:bg-black md:text-white" : "text-white hover:bg-white/10 md:text-black md:hover:bg-black/10"
                     }`}
                     title="List view"
@@ -489,7 +489,7 @@ export default function AmsueBouche() {
                   </button>
                   <button
                     onClick={() => setViewMode("calendar")}
-                    className={`h-8 w-8 flex items-center justify-center transition-colors ${
+                    className={`h-10 w-10 md:h-8 md:w-8 flex items-center justify-center transition-colors ${
                       viewMode === "calendar" ? "bg-white text-black md:bg-black md:text-white" : "text-white hover:bg-white/10 md:text-black md:hover:bg-black/10"
                     }`}
                     title="Calendar view"
@@ -502,7 +502,7 @@ export default function AmsueBouche() {
                 {viewMode !== "calendar" && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-black bg-white text-black font-medium text-sm hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0 focus:outline-none">
+                      <button className="flex items-center gap-1.5 px-3 h-10 md:h-8 rounded-full border border-black bg-white text-black font-medium text-sm hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0 focus:outline-none">
                         <ArrowUpDown className="w-3 h-3" />
                         {sortBy === "added" ? "Recently Added" : "Upcoming"}
                         <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
@@ -526,7 +526,7 @@ export default function AmsueBouche() {
 
                 {/* Cuisine filter */}
                 <Select value={filterCuisine} onValueChange={setFilterCuisine}>
-                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
                     filterCuisine !== "all"
                       ? "bg-white text-black border-black"
                       : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
@@ -544,7 +544,7 @@ export default function AmsueBouche() {
 
                 {/* Region filter */}
                 <Select value={filterRegion} onValueChange={setFilterRegion}>
-                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
                     filterRegion !== "all"
                       ? "bg-white text-black border-black"
                       : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
@@ -561,7 +561,7 @@ export default function AmsueBouche() {
 
                 {/* Day of week filter */}
                 <Select value={filterDay} onValueChange={setFilterDay}>
-                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
                     filterDay !== "all"
                       ? "bg-white text-black border-black"
                       : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
@@ -596,7 +596,7 @@ export default function AmsueBouche() {
 
                 {/* Duration filter */}
                 <Select value={filterDuration} onValueChange={setFilterDuration}>
-                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
                     filterDuration !== "all"
                       ? "bg-white text-black border-black"
                       : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
@@ -621,7 +621,7 @@ export default function AmsueBouche() {
               <div className="mt-2">
                 <button
                   onClick={resetFilters}
-                  className="text-white hover:text-white/70 md:text-black md:hover:text-white transition-colors focus:outline-none underline"
+                  className="text-white hover:text-white/70 md:text-black md:hover:text-white transition-colors focus:outline-none underline py-2.5 -my-2.5 md:py-0 md:my-0"
                 >
                   ✕ clear filters
                 </button>
@@ -696,6 +696,7 @@ export default function AmsueBouche() {
               events={filteredEvents}
               onEventClick={setCalEventDetail}
               config={foodCalendarConfig}
+              filterBarHeight={filterBarHeight}
             />
           ) : (
             <ListingCalendarMonthView
@@ -847,7 +848,8 @@ export default function AmsueBouche() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="py-4 px-4" style={{ backgroundColor: AB_GOLD }}>
+      {/* Footer - hidden on mobile in calendar view, where the day card takes priority */}
+      <footer className={`py-4 px-4 ${viewMode === "calendar" ? "hidden md:block" : ""}`} style={{ backgroundColor: AB_GOLD }}>
         <div className="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <a href={siteUrls.setlist} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">Setlist Social Feed</a>
@@ -903,20 +905,20 @@ export default function AmsueBouche() {
                         setCalEventDetailFrom(null);
                         setCalDaySheet(from);
                       }}
-                      className="flex items-center gap-1 text-xs font-bold text-black/60 hover:text-black mb-3 transition-colors"
+                      className="flex items-center gap-1 text-sm md:text-xs font-bold text-black/60 hover:text-black mb-3 transition-colors py-1 -my-1"
                     >
-                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <ChevronLeft className="w-4 h-4 md:w-3.5 md:h-3.5" />
                       {new Date(calEventDetailFrom.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                     </button>
                   )}
                   <div className="flex items-start justify-between gap-3 mb-1">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-3xl flex-shrink-0">{ev.emoji}</span>
+                      <span className="text-4xl md:text-3xl flex-shrink-0">{ev.emoji}</span>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <a href={evSearchUrl} target="_blank" rel="noopener noreferrer"
-                              className="text-xl font-black uppercase text-black leading-tight hover:underline cursor-pointer">
+                              className="text-2xl md:text-xl font-black uppercase text-black leading-tight hover:underline cursor-pointer">
                               {ev.name}
                             </a>
                           </TooltipTrigger>
@@ -926,26 +928,26 @@ export default function AmsueBouche() {
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {ev.soldOut && (
-                        <span className="text-[10px] font-black uppercase bg-black text-white px-2 py-0.5">SOLD OUT</span>
+                        <span className="text-xs md:text-[10px] font-black uppercase bg-black text-white px-2.5 py-1 md:px-2 md:py-0.5">SOLD OUT</span>
                       )}
                       <DropdownMenu open={calDetailMenuOpen} onOpenChange={setCalDetailMenuOpen}>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-black">
-                            <MoreVertical className="h-4 w-4 text-black" />
+                          <Button variant="ghost" size="sm" className="h-11 w-11 md:h-9 md:w-9 p-0 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-black">
+                            <MoreVertical className="h-5 w-5 md:h-4 md:w-4 text-black" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-36 border-none bg-gray-100 shadow-md rounded-sm font-sans">
+                        <DropdownMenuContent align="end" className="w-48 md:w-36 border-none bg-gray-100 shadow-md rounded-sm font-sans">
                           <DropdownMenuItem onClick={() => { setCalDetailMenuOpen(false); setCalDetailEditOpen(true); }}
-                            className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none">
+                            className="text-base md:text-sm py-3 md:py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none">
                             Edit details
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => { setCalDetailMenuOpen(false); calDetailSoldOutMutation.mutate(); }}
                             disabled={calDetailSoldOutMutation.isPending}
-                            className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none">
+                            className="text-base md:text-sm py-3 md:py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none">
                             {ev.soldOut ? "Mark available" : "Mark sold out"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+                            className="text-red-500 focus:text-red-500 text-base md:text-sm py-3 md:py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                             onClick={() => { setCalDetailMenuOpen(false); setTimeout(() => setCalDetailDeleteConfirm(true), 100); }}>
                             Delete event
                           </DropdownMenuItem>
@@ -954,13 +956,13 @@ export default function AmsueBouche() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border border-black/30 text-black/70">{ev.cuisine}</span>
+                    <span className="text-sm md:text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 md:px-2 md:py-0.5 rounded-full border border-black/30 text-black/70">{ev.cuisine}</span>
                   </div>
                 </div>
 
                 <div className="px-6 py-4 space-y-4 bg-white">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-black font-semibold">
+                  <div className="space-y-2 md:space-y-1">
+                    <div className="flex items-center gap-2 text-base md:text-sm text-black font-semibold">
                       <span>📅</span>
                       {ev.isDateUnverified ? (
                         <button
@@ -984,7 +986,7 @@ export default function AmsueBouche() {
                         </TooltipProvider>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-black/80">
+                    <div className="flex items-center gap-2 text-base md:text-sm text-black/80">
                       <span>📍</span>
                       <TooltipProvider>
                         <Tooltip>
@@ -998,7 +1000,7 @@ export default function AmsueBouche() {
                       </TooltipProvider>
                     </div>
                     {ev.price && (
-                      <div className="flex items-center gap-2 text-sm text-black/80">
+                      <div className="flex items-center gap-2 text-base md:text-sm text-black/80">
                         <span>🎟</span>
                         <span>{ev.price}</span>
                       </div>
@@ -1007,23 +1009,23 @@ export default function AmsueBouche() {
 
                   {!ev.soldOut && (ev.selloutRisk ?? 0) >= SELLOUT_LIKELY_THRESHOLD && (
                     <div className="pt-3 -mt-1 border-t border-black/10">
-                      <p className="text-xs text-black/60">{announcedTooltipText(ev.announcedAt) ?? "Sellout likely"}</p>
+                      <p className="text-sm md:text-xs text-black/60">{announcedTooltipText(ev.announcedAt) ?? "Sellout likely"}</p>
                     </div>
                   )}
 
-                  <p className="text-sm text-black/90 leading-relaxed">{ev.summary}</p>
+                  <p className="text-base md:text-sm text-black/90 leading-relaxed">{ev.summary}</p>
 
                   {(ev.ticketUrl || ev.sourceUrl) && (
                     <div className="flex flex-wrap gap-2 pt-1">
                       {ev.ticketUrl && (
                         <a href={ev.ticketUrl} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 bg-black text-white font-black uppercase text-xs tracking-wide px-4 py-2 hover:bg-[#FE6B41] transition-colors">
+                          className="inline-flex items-center gap-1.5 bg-black text-white font-black uppercase text-sm md:text-xs tracking-wide px-5 py-3 md:px-4 md:py-2 hover:bg-[#FE6B41] transition-colors">
                           Get Tickets ↗
                         </a>
                       )}
                       {ev.sourceUrl && (
                         <a href={ev.sourceUrl} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 border-2 border-black text-black font-black uppercase text-xs tracking-wide px-4 py-2 hover:bg-black hover:text-white transition-colors">
+                          className="inline-flex items-center gap-1.5 border-2 border-black text-black font-black uppercase text-sm md:text-xs tracking-wide px-5 py-3 md:px-4 md:py-2 hover:bg-black hover:text-white transition-colors">
                           Original Post ↗
                         </a>
                       )}
@@ -1107,11 +1109,16 @@ export default function AmsueBouche() {
                     <button
                       key={`${ev.id}-${i}`}
                       onClick={() => { setCalEventDetailFrom(calDaySheet); setCalDaySheet(null); setCalEventDetail(ev); }}
-                      className="w-full text-left px-5 py-3 hover:bg-[#FFF8E7] transition-colors flex items-center gap-3"
+                      className={`w-full text-left px-5 py-3 hover:bg-[#FFF8E7] transition-colors flex items-center gap-3 ${ev.soldOut ? "opacity-50" : ""}`}
                     >
                       <span className="text-xl flex-shrink-0">{ev.emoji}</span>
                       <div className="min-w-0">
-                        <div className="text-sm font-bold text-black truncate">{ev.name}</div>
+                        <div className="flex items-center gap-2">
+                          <div className={`text-sm font-bold text-black truncate ${ev.soldOut ? "line-through" : ""}`}>{ev.name}</div>
+                          {ev.soldOut && (
+                            <span className="flex-shrink-0 text-[10px] font-black uppercase leading-none px-1.5 py-1 bg-black text-white">SOLD OUT</span>
+                          )}
+                        </div>
                         <div className="text-xs text-black/60 truncate">
                           {ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && <span className="font-semibold text-black/80">{formatTime(ev.startTime)} · </span>}
                           {ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}

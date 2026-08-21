@@ -524,7 +524,7 @@ export default function BestOfDenver() {
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => setCalendarOpen(true)}
-                      className="text-black hover:text-[#41F2EE] transition-colors"
+                      className="text-black hover:text-[#41F2EE] transition-colors p-3.5 -m-3.5 md:p-0 md:m-0"
                     >
                       <Calendar className="h-4 w-4" />
                     </button>
@@ -534,7 +534,7 @@ export default function BestOfDenver() {
               </TooltipProvider>
               <a href="https://www.meetup.com/amuse-bouche/"
                 target="_blank" rel="noopener noreferrer"
-                className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1">
+                className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0">
                 <Users className="h-4 w-4" />
                 <span>Meetup</span>
               </a>
@@ -543,7 +543,7 @@ export default function BestOfDenver() {
                   <TooltipTrigger asChild>
                     <Link
                       href="/amuse-bouche"
-                      className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1"
+                      className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0"
                     >
                       <UtensilsCrossed className="h-4 w-4" />
                       <span>Popups</span>
@@ -553,7 +553,7 @@ export default function BestOfDenver() {
                 </Tooltip>
               </TooltipProvider>
               <button onClick={() => setRestaurantAddOpen(true)}
-                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-1.5 transition-colors flex items-center gap-1">
+                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-2.5 md:py-1.5 transition-colors flex items-center gap-1">
                 <Plus className="w-4 h-4" />Foodie Gem
               </button>
             </div>
@@ -573,7 +573,7 @@ export default function BestOfDenver() {
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
                 <Select value={filterRVenueType} onValueChange={v => setFilterRVenueType(v as any)}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0`}
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-10 md:h-8 px-3 flex-shrink-0`}
                     style={{ width: "140px", backgroundColor: filterRVenueType !== "all" ? "white" : AB_GOLD }}>
                     <SelectValue />
                   </SelectTrigger>
@@ -588,7 +588,7 @@ export default function BestOfDenver() {
                 </Select>
 
                 <Select value={filterRCuisine} onValueChange={setFilterRCuisine}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0`}
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-10 md:h-8 px-3 flex-shrink-0`}
                     style={{ width: "160px", backgroundColor: filterRCuisine !== "all" ? "white" : AB_GOLD }}>
                     <SelectValue placeholder="All Cuisine" />
                   </SelectTrigger>
@@ -602,7 +602,7 @@ export default function BestOfDenver() {
                 </Select>
 
                 <Select value={filterRNeighborhood} onValueChange={setFilterRNeighborhood}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0`}
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-10 md:h-8 px-3 flex-shrink-0`}
                     style={{ width: "190px", backgroundColor: filterRNeighborhood !== "all" ? "white" : AB_GOLD }}>
                     <SelectValue placeholder="All Neighborhoods" />
                   </SelectTrigger>
@@ -628,7 +628,7 @@ export default function BestOfDenver() {
                 </Select>
 
                 <Select value={filterRPrice} onValueChange={setFilterRPrice}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0`}
+                  <SelectTrigger className={`rounded-full border border-black text-sm h-10 md:h-8 px-3 flex-shrink-0`}
                     style={{ width: "110px", backgroundColor: filterRPrice !== "all" ? "white" : AB_GOLD }}>
                     <SelectValue placeholder="All Prices" />
                   </SelectTrigger>
@@ -642,7 +642,7 @@ export default function BestOfDenver() {
                 </Select>
 
                 <Select value={filterRBadge} onValueChange={v => setFilterRBadge(v as any)}>
-                  <SelectTrigger className="rounded-full border border-black text-sm h-8 px-3 flex-shrink-0"
+                  <SelectTrigger className="rounded-full border border-black text-sm h-10 md:h-8 px-3 flex-shrink-0"
                     style={{ width: "150px", backgroundColor: filterRBadge !== "all" ? "white" : AB_GOLD }}>
                     <SelectValue />
                   </SelectTrigger>
@@ -661,7 +661,7 @@ export default function BestOfDenver() {
 
                 {hasActiveRestaurantFilters && (
                   <button onClick={resetRestaurantFilters}
-                    className="text-xs font-bold underline text-black opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap flex-shrink-0">
+                    className="text-xs font-bold underline text-black opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap flex-shrink-0 h-10 md:h-auto flex items-center">
                     Clear
                   </button>
                 )}

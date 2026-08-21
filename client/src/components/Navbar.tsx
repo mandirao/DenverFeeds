@@ -30,9 +30,9 @@ export function Navbar({ children, onPlaylistsPage }: { children?: ReactNode; on
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button 
+                  <button
                     onClick={() => setCalendarOpen(true)}
-                    className="text-black hover:text-[#41F2EE] transition-colors"
+                    className="text-black hover:text-[#41F2EE] transition-colors p-3.5 -m-3.5 md:p-0 md:m-0"
                   >
                     <Calendar className="h-4 w-4" />
                   </button>
@@ -49,7 +49,7 @@ export function Navbar({ children, onPlaylistsPage }: { children?: ReactNode; on
                     href="https://www.meetup.com/setlist-social-indie-denver/?eventOrigin=event_home_page" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1"
+                    className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0"
                   >
                     <Users className="h-4 w-4" />
                     <span>Meetup</span>
@@ -67,7 +67,7 @@ export function Navbar({ children, onPlaylistsPage }: { children?: ReactNode; on
                   {onPlaylistsPage ? (
                     <Link
                       href="/"
-                      className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1"
+                      className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0"
                     >
                       <Ticket className="h-4 w-4" />
                       <span>Shows</span>
@@ -75,7 +75,7 @@ export function Navbar({ children, onPlaylistsPage }: { children?: ReactNode; on
                   ) : (
                     <Link
                       href="/playlists"
-                      className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1"
+                      className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0"
                     >
                       <Music className="h-4 w-4" />
                       <span>Playlists</span>
@@ -91,9 +91,9 @@ export function Navbar({ children, onPlaylistsPage }: { children?: ReactNode; on
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link 
+                  <Link
                     href="/add"
-                    className="bg-black text-[#FEABDA] hover:text-[#41F2EE] rounded-full px-3 py-1.5 font-medium transition-colors flex items-center gap-1"
+                    className="bg-black text-[#FEABDA] hover:text-[#41F2EE] rounded-full px-3 py-2.5 md:py-1.5 font-medium transition-colors flex items-center gap-1"
                   >
                     <span>+ Show</span>
                   </Link>

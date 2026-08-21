@@ -103,11 +103,13 @@ export function ListingCalendarMonthView<T extends ListingEventBase>({
                   <button
                     key={`${ev.id}-${ev.dateStart}-${i}`}
                     onClick={() => onEventClick(ev)}
-                    className="w-full text-left text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 bg-black/10 hover:bg-black/20 active:bg-black/30 rounded text-black truncate transition-colors cursor-pointer"
-                    title={ev.name}
+                    className={`w-full text-left text-[9px] sm:text-[10px] leading-tight px-1 py-0.5 rounded truncate transition-colors cursor-pointer ${
+                      ev.soldOut ? "bg-black/5 text-black/40" : "bg-black/10 hover:bg-black/20 active:bg-black/30 text-black"
+                    }`}
+                    title={ev.soldOut ? `${ev.name} (Sold Out)` : ev.name}
                   >
                     <span>{ev.emoji} </span>
-                    <span className="font-medium">{ev.name}</span>
+                    <span className={`font-medium ${ev.soldOut ? "line-through" : ""}`}>{ev.name}</span>
                   </button>
                 ))}
                 {overflow > 0 && (
