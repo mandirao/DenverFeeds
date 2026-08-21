@@ -117,6 +117,31 @@
   display: none;
 }
 
+/* Dark, high-contrast scrollbar — used where the default light-gray browser
+   scrollbar is easy to miss against a card, e.g. the mobile day-scroll
+   calendar's per-day event list. */
+.scrollbar-dark {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.7) transparent;
+}
+
+.scrollbar-dark::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 9999px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
 @layer base {
   * {
     @apply border-border;

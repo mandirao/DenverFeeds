@@ -602,7 +602,7 @@ export default function Playlists() {
 
   return (
     <div className="min-h-screen bg-[#FE6B41]">
-      <Navbar />
+      <Navbar onPlaylistsPage />
       
       <main className="container mx-auto px-4 py-8">
 

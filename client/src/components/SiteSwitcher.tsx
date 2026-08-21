@@ -1,9 +1,10 @@
+import type { ReactNode } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import { sites, currentSiteKey } from "@/lib/siteConfig";
 
 interface SiteSwitcherProps {
-  title: string;
+  title: ReactNode;
   titleClassName: string;
   chevronClassName: string;
 }

@@ -324,15 +324,28 @@ export function parseLegacyRecurrenceLabel(label: string | null | undefined, dat
 // server/routes.ts's /calendar/{food,art}-feed.ics routes. Pure date/string
 // logic, no browser APIs, so it's safe to import from either side.
 
-export function classifyRecurrence(label: string | null | undefined): 'weekly' | 'biweekly' | 'monthly' | 'annual' | 'irregular' {
+// A bare weekday name ("Fridays", "Mondays & Wednesdays") means "every week
+// on this day" — weekly. An ordinal- or "last"-prefixed weekday ("3rd
+// Fridays", "Last Mondays") means "this one day per month" — monthly. So the
+// weekday check has to run in two places: once anchored to a leading
+// ordinal/"last" (monthly, checked first) and once bare (weekly, checked
+// after monthly to avoid the ordinal case falling through and matching here
+// too, since "3rd Fridays" also contains a bare weekday name).
+const WEEKDAY = /\b(mon|tues?|wednes|thurs|fri|satur|sun)days?\b/;
+const ORDINAL_OR_LAST = /^(1st|2nd|3rd|4th|5th|last)\s/;
+
+export function classifyRecurrence(label: string | null | undefined): 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annual' | 'irregular' {
   if (!label) return 'monthly';
-  const l = label.toLowerCase();
+  const l = label.toLowerCase().trim();
   if (l.includes('annual') || l.includes('yearly') || l.includes('seasonal')) return 'annual';
+  if (l.includes('quarter')) return 'quarterly';
   if (l.includes('bi-week') || l.includes('biweek') || l.includes('every other week') ||
+      /every other (mon|tues?|wednes|thurs|fri|satur|sun)day/.test(l) ||
       /\d+(st|nd|rd|th)?.{0,5}&.{0,5}\d+(st|nd|rd|th)?/.test(l)) return 'biweekly';
-  if (l.includes('week')) return 'weekly';
   if (l.includes('month') || l.includes('every 1st') || l.includes('every first') ||
-      l.includes('every last') || /every \d+(st|nd|rd|th)/.test(l)) return 'monthly';
+      l.includes('every last') || /every \d+(st|nd|rd|th)/.test(l) ||
+      (ORDINAL_OR_LAST.test(l) && WEEKDAY.test(l))) return 'monthly';
+  if (l.includes('week') || WEEKDAY.test(l)) return 'weekly';
   return 'irregular';
 }
 
@@ -423,6 +436,12 @@ export function expandRecurringEvents<T extends RecurringEventLike>(events: T[])
       const thisYearOcc = `${yr}-${monthDay}`;
       if (thisYearOcc >= todayStr) { if (!excludedSet.has(thisYearOcc)) result.push(makeOccurrence(thisYearOcc)); }
       else if (today.getMonth() === 0) { const occ = `${yr + 1}-${monthDay}`; if (!excludedSet.has(occ)) result.push(makeOccurrence(occ)); }
+      continue;
+    }
+    if (type === 'quarterly') {
+      let d = ev.dateStart;
+      while (d < todayStr) d = addCalMonths(d, 3);
+      if (!excludedSet.has(d)) result.push(makeOccurrence(d));
       continue;
     }
     if (type === 'irregular') {

@@ -9,6 +9,7 @@ import Playlists from "@/pages/Playlists";
 import Discovery from "@/pages/Discovery";
 import DiscoveryAdmin from "@/pages/DiscoveryAdmin";
 import AmsueBouche from "@/pages/AmsueBouche";
+import BestOfDenver from "@/pages/BestOfDenver";
 import ArtistryNerdery from "@/pages/ArtistryNerdery";
 import NotFound from "@/pages/not-found";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -54,6 +55,7 @@ function Router() {
         <Route path="/playlists" component={Playlists} />
         <Route path="/discovery" component={DiscoveryAdmin} />
         <Route path="/amuse-bouche" component={AmsueBouche} />
+        <Route path="/best-of-denver" component={BestOfDenver} />
         <Route path="/artistry-nerdistry" component={ArtistryNerdery} />
         <Route component={NotFound} />
       </Switch>

@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from "@/components/ui/select";
 import { localDateStr } from "@/lib/eventUtils";
+import { addCalDays } from "@shared/recurrence";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CalendarDays, List, ChevronLeft, ChevronRight, MoreVertical, ArrowUpDown, ChevronDown, Check, Search, X } from "lucide-react";
 import MonthGroup from "@/components/MonthGroup";
 import EmptyState from "@/components/EmptyState";
@@ -21,6 +23,7 @@ import EventItem from "@/components/EventItem";
 import WeekDivider from "@/components/WeekDivider";
 import JustAddedView from "@/components/JustAddedView";
 import { groupEventsByMonth, groupEventsByCreationTime, isRecentlyAdded, getAddedTimeCategory } from "@/lib/utils";
+import { useElementHeight } from "@/hooks/use-element-height";
 import { venueOptions, VenueOption, Event, genres as schemaGenres } from "@shared/schema";
 import { apiRequest, queryClient as qc } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -123,6 +126,91 @@ function ConcertCalendarMonthView({
   );
 }
 
+const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Mobile-optimized alternative to <ConcertCalendarMonthView> — a horizontal,
+// scroll-snapped strip of day cards (today first) instead of a month grid,
+// since a 7-column grid reads as tiny text on a phone.
+function ConcertDayScrollView({
+  events,
+  onEventClick,
+}: {
+  events: Event[];
+  onEventClick: (ev: Event) => void;
+}) {
+  const todayStr = localDateStr();
+
+  let maxDate = todayStr;
+  for (const ev of events) {
+    const d = ev.date.toString().slice(0, 10);
+    if (d > maxDate) maxDate = d;
+  }
+
+  const MAX_DAYS = 90;
+  const days: string[] = [];
+  let cursor = todayStr;
+  for (let i = 0; i < MAX_DAYS && cursor <= maxDate; i++) {
+    days.push(cursor);
+    cursor = addCalDays(cursor, 1);
+  }
+  if (days.length === 0) days.push(todayStr);
+
+  const eventsOnDay = (day: string) => events.filter(ev => ev.date.toString().slice(0, 10) === day);
+
+  return (
+    <div className="overflow-x-auto scrollbar-hide snap-x snap-mandatory flex gap-3 pb-2 -mx-4 px-4">
+      {days.map(day => {
+        const dayEvents = eventsOnDay(day);
+        const isToday = day === todayStr;
+        const d = new Date(day + 'T12:00:00');
+        return (
+          <div
+            key={day}
+            className="snap-start flex-shrink-0 w-[82vw] max-w-[320px] border-2 border-black bg-white flex flex-col"
+          >
+            <div className="px-4 py-3 border-b-2 border-black flex items-center justify-between gap-2 flex-shrink-0" style={{ backgroundColor: "#FEABDA" }}>
+              <div className="min-w-0">
+                <div className="text-[10px] font-black uppercase tracking-wider text-black/50 truncate">
+                  {isToday ? 'Today' : WEEKDAY_LONG[d.getDay()]}
+                </div>
+                <div className="text-base font-black text-black">
+                  {MONTH_SHORT[d.getMonth()]} {d.getDate()}
+                </div>
+              </div>
+              {dayEvents.length > 0 && (
+                <div className="text-xs font-bold text-black/50 flex-shrink-0">
+                  {dayEvents.length} show{dayEvents.length !== 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
+            <div className="divide-y divide-black/10 overflow-y-auto max-h-[55vh] scrollbar-dark">
+              {dayEvents.length === 0 && (
+                <div className="px-4 py-8 text-center text-sm text-black/40">No shows this day</div>
+              )}
+              {dayEvents.map((ev, i) => (
+                <button
+                  key={`${ev.id}-${i}`}
+                  onClick={() => onEventClick(ev)}
+                  className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors flex items-center gap-3"
+                >
+                  <span className="text-xl flex-shrink-0">{ev.emoji}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-bold text-black truncate">{ev.artist}</div>
+                    <div className="text-xs text-black/60 truncate">{ev.venue}</div>
+                    <div className="text-xs text-black/50">{ev.genre}</div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-black/30 flex-shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function Home() {
   const { toast } = useToast();
   const queryClientHook = useQueryClient();
@@ -197,6 +285,8 @@ export default function Home() {
   const [filters, setFiltersState] = useState(getFiltersFromURL);
   const [searchOpen, setSearchOpen] = useState(() => getFiltersFromURL().search.trim() !== "");
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { ref: filterBarRef, height: filterBarHeight } = useElementHeight<HTMLDivElement>();
+  const isMobile = useIsMobile();
 
   // Update URL when filters change
   const setFilters = (newFilters: typeof filters) => {
@@ -482,34 +572,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#FE6B41]">
-      <Navbar />
-      
-      <main className={`container mx-auto px-4 py-8 transition-all duration-200 ${viewMode === "calendar" ? "max-w-5xl" : ""}`}>
-        {/* Recent Events Banner - prioritize "today", fall back to "this week", else hide */}
-        {!isLoading && !error && events.length > 0 && filters.status === "all" && filters.sortBy !== "just-added" && (() => {
-          const todayCount = events.filter(event => getAddedTimeCategory(event.createdAt) === 'today').length;
-          const weekCount = todayCount + events.filter(event => getAddedTimeCategory(event.createdAt) === 'this_week').length;
-          const count = todayCount > 0 ? todayCount : weekCount;
-          if (count === 0) return null;
-          const label = todayCount > 0 ? "added today." : "added in the last week.";
-          return (
-            <div className="mb-6 text-left">
-              <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '24px' }}>
-                <button
-                  onClick={() => setFilters({ ...filters, sortBy: "just-added" })}
-                  className="text-white hover:text-[#41F2EE] underline font-light focus:outline-none"
-                >
-                  {count} shows
-                </button>
-                {' '}{label}
-              </p>
-            </div>
-          );
-        })()}
-
-        {/* Filter Pills - Horizontal scrolling to prevent line wrapping */}
+      <Navbar>
+        {/* Filter Pills - a persistent bottom section of the nav on desktop, pinned to the bottom of the screen on mobile */}
         {!isLoading && !error && events.length > 0 && (
-          <div className="mb-6">
+          <div
+            ref={filterBarRef}
+            className="fixed inset-x-0 bottom-0 z-40 py-2 bg-black md:bg-[#FE6B41] shadow-[0_-4px_12px_rgba(0,0,0,0.12)] border-t border-white/10 md:static md:inset-x-auto md:bottom-auto md:pb-3 md:shadow-none md:border-t-0"
+          >
+            <div className="px-4 md:container md:mx-auto">
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
                 {/* Search — expands from an icon into an inline input */}
@@ -539,7 +609,7 @@ export default function Home() {
                 ) : (
                   <button
                     onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 0); }}
-                    className="h-8 w-8 flex items-center justify-center rounded-full border border-black text-black hover:bg-black hover:text-white transition-colors flex-shrink-0"
+                    className="h-8 w-8 flex items-center justify-center rounded-full border border-white text-white hover:bg-white hover:text-black md:border-black md:text-black md:hover:bg-black md:hover:text-white transition-colors flex-shrink-0"
                     title="Search events"
                     aria-label="Search events"
                   >
@@ -548,17 +618,17 @@ export default function Home() {
                 )}
 
                 {/* View toggle */}
-                <div className="flex items-center gap-1 border border-black rounded-full overflow-hidden flex-shrink-0 mr-1">
+                <div className="flex items-center gap-1 border border-white md:border-black rounded-full overflow-hidden flex-shrink-0 mr-1">
                   <button
                     onClick={() => setViewMode("list")}
-                    className={`h-8 w-8 flex items-center justify-center transition-colors ${viewMode === "list" ? "bg-black text-white" : "text-black hover:bg-black/10"}`}
+                    className={`h-8 w-8 flex items-center justify-center transition-colors ${viewMode === "list" ? "bg-white text-black md:bg-black md:text-white" : "text-white hover:bg-white/10 md:text-black md:hover:bg-black/10"}`}
                     title="List view"
                   >
                     <List className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => setViewMode("calendar")}
-                    className={`h-8 w-8 flex items-center justify-center transition-colors ${viewMode === "calendar" ? "bg-black text-white" : "text-black hover:bg-black/10"}`}
+                    className={`h-8 w-8 flex items-center justify-center transition-colors ${viewMode === "calendar" ? "bg-white text-black md:bg-black md:text-white" : "text-white hover:bg-white/10 md:text-black md:hover:bg-black/10"}`}
                     title="Calendar view"
                   >
                     <CalendarDays className="w-3.5 h-3.5" />
@@ -592,47 +662,47 @@ export default function Home() {
                 </>)}
 
                 {/* Separator between sort and filter pills */}
-                <div className="h-6 w-px bg-black opacity-40 mx-1 flex-shrink-0" />
+                <div className="h-6 w-px bg-white md:bg-black opacity-40 mx-1 flex-shrink-0" />
                 <button
                   onClick={() => setFilters({ ...filters, status: filters.status === "cheap-thrills" ? "all" : "cheap-thrills" })}
-                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
-                    filters.status === "cheap-thrills" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
+                  className={`px-3 py-1 rounded-full font-medium transition-colors border text-sm whitespace-nowrap ${
+                    filters.status === "cheap-thrills"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FE6B41] border-white md:bg-[#FE6B41] md:text-black md:border-black md:hover:border-white"
                   }`}
                 >
                   Cheap Thrills
                 </button>
                 <button
                   onClick={() => setFilters({ ...filters, status: filters.status === "scheduled" ? "all" : "scheduled" })}
-                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
-                    filters.status === "scheduled" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
+                  className={`px-3 py-1 rounded-full font-medium transition-colors border text-sm whitespace-nowrap ${
+                    filters.status === "scheduled"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FE6B41] border-white md:bg-[#FE6B41] md:text-black md:border-black md:hover:border-white"
                   }`}
                 >
                   Scheduled
                 </button>
                 <button
                   onClick={() => setFilters({ ...filters, status: filters.status === "member-picks" ? "all" : "member-picks" })}
-                  className={`px-3 py-1 rounded-full font-medium transition-colors border border-black text-sm whitespace-nowrap ${
-                    filters.status === "member-picks" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
+                  className={`px-3 py-1 rounded-full font-medium transition-colors border text-sm whitespace-nowrap ${
+                    filters.status === "member-picks"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FE6B41] border-white md:bg-[#FE6B41] md:text-black md:border-black md:hover:border-white"
                   }`}
                 >
                   Member Adds
                 </button>
 
                 {/* Vertical separator */}
-                <div className="h-6 w-px bg-black opacity-40 mx-2 flex-shrink-0"></div>
+                <div className="h-6 w-px bg-white md:bg-black opacity-40 mx-2 flex-shrink-0"></div>
                 
                 {/* Location/Region Filter Dropdown */}
                 <Select value={filters.location} onValueChange={(value) => setFilters({ ...filters, location: value })}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
-                    filters.location !== "all" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
+                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                    filters.location !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FE6B41] border-white md:bg-[#FE6B41] md:text-black md:border-black md:hover:border-white"
                   }`} style={{ width: "145px" }}>
                     <SelectValue placeholder="Region" />
                   </SelectTrigger>
@@ -646,10 +716,10 @@ export default function Home() {
 
                 {/* Month Filter Dropdown */}
                 <Select value={filters.month} onValueChange={(value) => setFilters({ ...filters, month: value })}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
-                    filters.month !== "all" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
+                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                    filters.month !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FE6B41] border-white md:bg-[#FE6B41] md:text-black md:border-black md:hover:border-white"
                   }`} style={{ width: "120px" }}>
                     <SelectValue placeholder="Month" />
                   </SelectTrigger>
@@ -663,10 +733,10 @@ export default function Home() {
 
                 {/* Genre Filter Dropdown */}
                 <Select value={filters.genre} onValueChange={(value) => setFilters({ ...filters, genre: value })}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
-                    filters.genre !== "all" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
+                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                    filters.genre !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FE6B41] border-white md:bg-[#FE6B41] md:text-black md:border-black md:hover:border-white"
                   }`} style={{ width: "115px" }}>
                     <SelectValue placeholder="Genre" />
                   </SelectTrigger>
@@ -680,10 +750,10 @@ export default function Home() {
 
                 {/* Venue Filter Dropdown */}
                 <Select value={filters.venue} onValueChange={(value) => setFilters({ ...filters, venue: value })}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
-                    filters.venue !== "all" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
+                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                    filters.venue !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FE6B41] border-white md:bg-[#FE6B41] md:text-black md:border-black md:hover:border-white"
                   }`} style={{ width: "115px" }}>
                     <SelectValue placeholder="Venue" />
                   </SelectTrigger>
@@ -738,10 +808,10 @@ export default function Home() {
 
                 {/* Day of Week Filter Dropdown */}
                 <Select value={filters.dayOfWeek} onValueChange={(value) => setFilters({ ...filters, dayOfWeek: value })}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
-                    filters.dayOfWeek !== "all" 
-                      ? "bg-white text-black" 
-                      : "bg-[#FE6B41] text-black hover:border-white"
+                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                    filters.dayOfWeek !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FE6B41] border-white md:bg-[#FE6B41] md:text-black md:border-black md:hover:border-white"
                   }`} style={{ width: "140px" }}>
                     <SelectValue placeholder="Day" />
                   </SelectTrigger>
@@ -765,17 +835,42 @@ export default function Home() {
             {/* Clear filters link - only show when filters are active */}
             {hasActiveFilters && (
               <div className="mt-2">
-                <button 
+                <button
                   onClick={resetFilters}
-                  className="text-black text-sm hover:text-white transition-colors focus:outline-none underline"
+                  className="text-white hover:text-white/70 md:text-black md:hover:text-white transition-colors focus:outline-none underline"
                 >
                   ✕ clear filters
                 </button>
               </div>
             )}
+            </div>
           </div>
         )}
-        
+      </Navbar>
+
+      <main className="container mx-auto px-4 py-8 transition-all duration-200">
+        {/* Recent Events Banner - prioritize "today", fall back to "this week", else hide. Hidden on desktop in calendar view to give the calendar more room. */}
+        {!isLoading && !error && events.length > 0 && filters.status === "all" && filters.sortBy !== "just-added" && (() => {
+          const todayCount = events.filter(event => getAddedTimeCategory(event.createdAt) === 'today').length;
+          const weekCount = todayCount + events.filter(event => getAddedTimeCategory(event.createdAt) === 'this_week').length;
+          const count = todayCount > 0 ? todayCount : weekCount;
+          if (count === 0) return null;
+          const label = todayCount > 0 ? "added today." : "added in the last week.";
+          return (
+            <div className={`mb-6 text-left ${viewMode === "calendar" ? "hidden" : ""}`}>
+              <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '24px' }}>
+                <button
+                  onClick={() => setFilters({ ...filters, sortBy: "just-added" })}
+                  className="text-white hover:text-[#41F2EE] underline font-light focus:outline-none"
+                >
+                  {count} shows
+                </button>
+                {' '}{label}
+              </p>
+            </div>
+          );
+        })()}
+
         {/* Events Feed */}
         <div className="mb-8 min-h-[400px]">
           {isLoading ? (
@@ -788,15 +883,22 @@ export default function Home() {
               </button>
             </div>
           ) : viewMode === "calendar" ? (
-            <ConcertCalendarMonthView
-              events={filteredEvents}
-              viewYear={calViewYear}
-              viewMonth={calViewMonth}
-              onPrevMonth={prevCalMonth}
-              onNextMonth={nextCalMonth}
-              onEventClick={setCalEventDetail}
-              onDayOverflowClick={(date, evs) => setCalDaySheet({ date, events: evs })}
-            />
+            isMobile ? (
+              <ConcertDayScrollView
+                events={filteredEvents}
+                onEventClick={setCalEventDetail}
+              />
+            ) : (
+              <ConcertCalendarMonthView
+                events={filteredEvents}
+                viewYear={calViewYear}
+                viewMonth={calViewMonth}
+                onPrevMonth={prevCalMonth}
+                onNextMonth={nextCalMonth}
+                onEventClick={setCalEventDetail}
+                onDayOverflowClick={(date, evs) => setCalDaySheet({ date, events: evs })}
+              />
+            )
           ) : !hasEvents ? (
             <EmptyState />
           ) : (
@@ -804,6 +906,11 @@ export default function Home() {
             displayContent
           )}
         </div>
+
+        {/* Reserves space for the mobile bottom-pinned filter bar so it doesn't cover the feed */}
+        {!isLoading && !error && events.length > 0 && (
+          <div className="md:hidden" style={{ height: filterBarHeight }} />
+        )}
       </main>
       <Footer />
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +18,7 @@ import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileTe
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import { SiteSwitcher } from "@/components/SiteSwitcher";
+import { getNextMonths } from "@/components/EventFilters";
 import {
   ensureHttps, formatDateRange, getMonthLabel, formatTime, formatDayHeaderLabel,
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
@@ -24,8 +26,11 @@ import {
   announcedTooltipText, SELLOUT_LIKELY_THRESHOLD, classifyRegion,
 } from "@/lib/eventUtils";
 import { getAddedTimeCategory } from "@/lib/utils";
+import { useElementHeight } from "@/hooks/use-element-height";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ListingEventRow } from "@/components/listings/ListingEventRow";
 import { ListingCalendarMonthView } from "@/components/listings/ListingCalendarMonthView";
+import { ListingDayScrollView } from "@/components/listings/ListingDayScrollView";
 import { EditListingEventModal } from "@/components/listings/EditListingEventModal";
 import { AddListingEventModal } from "@/components/listings/AddListingEventModal";
 import type { ListingRowConfig, ListingCalendarConfig, ListingFormConfig } from "@/lib/listingFeedConfig";
@@ -200,6 +205,8 @@ export default function ArtistryNerdery() {
   const [searchQuery, setSearchQuery] = useState(() => new URLSearchParams(window.location.search).get("q") || "");
   const [searchOpen, setSearchOpen] = useState(() => searchQuery.trim() !== "");
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { ref: filterBarRef, height: filterBarHeight } = useElementHeight<HTMLDivElement>();
+  const isMobile = useIsMobile();
 
   // Forces a re-render every minute so today's events drop off the feed
   // (via hasStartTimePassed below) as their start time passes, without
@@ -304,6 +311,7 @@ export default function ArtistryNerdery() {
   })();
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
+  const monthOptions = getNextMonths();
 
   const filteredEvents = expandedEvents.filter(ev => {
     if (hasStartTimePassed(ev, todayStr)) return false;
@@ -322,12 +330,18 @@ export default function ArtistryNerdery() {
       else if (filterDay === "weekend")  { if (!weekendDateSet.has(ev.dateStart)) return false; }
       else if (filterDay === "next-week")  { if (ev.dateStart < nextWeekRange.start || ev.dateStart > nextWeekRange.end) return false; }
       else if (filterDay === "next-month") { if (ev.dateStart < nextMonthRange.start || ev.dateStart > nextMonthRange.end) return false; }
+      else if (filterDay.startsWith("month:")) { if (format(d, "MMMM yyyy") !== filterDay.slice(6)) return false; }
       else { if (d.getDay().toString() !== filterDay) return false; }
     }
     if (filterDuration !== "all") {
       const isRecurring = ev.isRecurring === true;
       const hasSpan = ev.dateEnd && ev.dateEnd !== "" && ev.dateEnd !== ev.dateStart;
+      const recurrenceType = isRecurring ? classifyRecurrence(ev.recurrenceLabel) : null;
       if (filterDuration === "recurring" && !isRecurring) return false;
+      if (filterDuration === "annual" && recurrenceType !== "annual") return false;
+      if (filterDuration === "monthly" && recurrenceType !== "monthly") return false;
+      if (filterDuration === "weekly" && recurrenceType !== "weekly") return false;
+      if (filterDuration === "quarterly" && recurrenceType !== "quarterly") return false;
       if (filterDuration === "limited-run" && (isRecurring || !hasSpan)) return false;
       if (filterDuration === "one-time" && (isRecurring || hasSpan)) return false;
     }
@@ -380,12 +394,12 @@ export default function ArtistryNerdery() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: AN_BG }}>
 
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 shadow-md px-4 py-3" style={{ backgroundColor: AN_ORANGE }}>
-        <div className="container mx-auto">
+      <nav className="sticky top-0 z-50 shadow-md" style={{ backgroundColor: AN_ORANGE }}>
+        <div className="container mx-auto px-4 py-3">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
             <div className="flex items-baseline gap-3">
               <SiteSwitcher
-                title="ARTISTRY/NERDISTRY LIVE"
+                title={<>ARTISTRY/NERDISTRY<span className="hidden md:inline"> LIVE</span></>}
                 titleClassName="text-3xl md:text-4xl text-white group-hover:text-[#41F2EE] transition-colors font-black"
                 chevronClassName="h-4 w-4 text-white group-hover:text-[#41F2EE] transition-colors shrink-0 self-center"
               />
@@ -417,40 +431,14 @@ export default function ArtistryNerdery() {
             </div>
           </div>
         </div>
-      </nav>
 
-      {/* Feed */}
-      <main className={`container mx-auto px-4 py-6 flex-1 transition-all duration-200 ${viewMode === "calendar" ? "max-w-5xl" : "max-w-2xl"}`}>
-
-        <p className="text-xs text-black mb-4 opacity-60 leading-snug">
-          Exhibits, talks, screenings, performances, workshops and similar fun.
-        </p>
-
-        {/* Recent events banner - prioritize "today", fall back to "this week", else hide */}
-        {!isLoading && events.length > 0 && sortBy !== "added" && (() => {
-          const todayCount = events.filter(e => getAddedTimeCategory(e.createdAt ?? null) === 'today').length;
-          const weekCount = todayCount + events.filter(e => getAddedTimeCategory(e.createdAt ?? null) === 'this_week').length;
-          const count = todayCount > 0 ? todayCount : weekCount;
-          if (count === 0) return null;
-          const label = todayCount > 0 ? "added today." : "added in the last week.";
-          return (
-            <div className="mb-6 text-left">
-              <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '24px' }}>
-                <button
-                  onClick={() => setSortBy("added")}
-                  className="text-[#FE6B41] hover:text-[#41F2EE] underline font-light focus:outline-none"
-                >
-                  {count} {count === 1 ? "event" : "events"}
-                </button>
-                {' '}{label}
-              </p>
-            </div>
-          );
-        })()}
-
-        {/* Filters */}
+        {/* Filters - a persistent bottom section of the nav on desktop, pinned to the bottom of the screen on mobile */}
         {!isLoading && events.length > 0 && (
-          <div className="mb-5">
+          <div
+            ref={filterBarRef}
+            className="fixed inset-x-0 bottom-0 z-40 py-2 bg-black md:bg-[#FEABDA] shadow-[0_-4px_12px_rgba(0,0,0,0.12)] border-t border-white/10 md:static md:inset-x-auto md:bottom-auto md:pb-3 md:shadow-none md:border-t-0"
+          >
+            <div className="px-4 md:container md:mx-auto">
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
                 {/* Search — expands from an icon into an inline input */}
@@ -480,7 +468,7 @@ export default function ArtistryNerdery() {
                 ) : (
                   <button
                     onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 0); }}
-                    className="h-8 w-8 flex items-center justify-center rounded-full border border-black text-black hover:bg-black hover:text-white transition-colors flex-shrink-0"
+                    className="h-8 w-8 flex items-center justify-center rounded-full border border-white text-white hover:bg-white hover:text-black md:border-black md:text-black md:hover:bg-black md:hover:text-white transition-colors flex-shrink-0"
                     title="Search events"
                     aria-label="Search events"
                   >
@@ -489,11 +477,11 @@ export default function ArtistryNerdery() {
                 )}
 
                 {/* View mode toggle */}
-                <div className="flex items-center gap-1 border border-black rounded-full overflow-hidden flex-shrink-0">
+                <div className="flex items-center gap-1 border border-white md:border-black rounded-full overflow-hidden flex-shrink-0">
                   <button
                     onClick={() => setViewMode("list")}
                     className={`h-8 w-8 flex items-center justify-center transition-colors ${
-                      viewMode === "list" ? "bg-black text-white" : "text-black hover:bg-black/10"
+                      viewMode === "list" ? "bg-white text-black md:bg-black md:text-white" : "text-white hover:bg-white/10 md:text-black md:hover:bg-black/10"
                     }`}
                     title="List view"
                   >
@@ -502,7 +490,7 @@ export default function ArtistryNerdery() {
                   <button
                     onClick={() => setViewMode("calendar")}
                     className={`h-8 w-8 flex items-center justify-center transition-colors ${
-                      viewMode === "calendar" ? "bg-black text-white" : "text-black hover:bg-black/10"
+                      viewMode === "calendar" ? "bg-white text-black md:bg-black md:text-white" : "text-white hover:bg-white/10 md:text-black md:hover:bg-black/10"
                     }`}
                     title="Calendar view"
                   >
@@ -534,12 +522,14 @@ export default function ArtistryNerdery() {
                   </DropdownMenu>
                 )}
                 {/* Vertical separator */}
-                <div className="h-6 w-px bg-black opacity-40 mx-1 flex-shrink-0" />
+                <div className="h-6 w-px bg-white md:bg-black opacity-40 mx-1 flex-shrink-0" />
                 {/* Category filter */}
                 <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
-                    filterCategory !== "all" ? "bg-white text-black" : "text-black hover:border-white"
-                  }`} style={{ width: "160px", backgroundColor: filterCategory !== "all" ? "white" : AN_BG }}>
+                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                    filterCategory !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FEABDA] border-white md:bg-[#FEABDA] md:text-black md:border-black md:hover:border-white"
+                  }`} style={{ width: "160px" }}>
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -552,9 +542,11 @@ export default function ArtistryNerdery() {
 
                 {/* Region filter */}
                 <Select value={filterRegion} onValueChange={setFilterRegion}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
-                    filterRegion !== "all" ? "bg-white text-black" : "text-black hover:border-white"
-                  }`} style={{ width: "145px", backgroundColor: filterRegion !== "all" ? "white" : AN_BG }}>
+                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                    filterRegion !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FEABDA] border-white md:bg-[#FEABDA] md:text-black md:border-black md:hover:border-white"
+                  }`} style={{ width: "145px" }}>
                     <SelectValue placeholder="Region" />
                   </SelectTrigger>
                   <SelectContent>
@@ -567,9 +559,11 @@ export default function ArtistryNerdery() {
 
                 {/* Day filter */}
                 <Select value={filterDay} onValueChange={setFilterDay}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
-                    filterDay !== "all" ? "bg-white text-black" : "text-black hover:border-white"
-                  }`} style={{ width: "148px", backgroundColor: filterDay !== "all" ? "white" : AN_BG }}>
+                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                    filterDay !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FEABDA] border-white md:bg-[#FEABDA] md:text-black md:border-black md:hover:border-white"
+                  }`} style={{ width: "148px" }}>
                     <SelectValue placeholder="Day" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[320px] overflow-y-auto">
@@ -596,21 +590,34 @@ export default function ArtistryNerdery() {
                       <SelectItem value="5">Fridays</SelectItem>
                       <SelectItem value="6">Saturdays</SelectItem>
                     </SelectGroup>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px] uppercase tracking-wider text-gray-400 px-2 pb-0.5">Months</SelectLabel>
+                      {monthOptions.map(m => (
+                        <SelectItem key={m.key} value={`month:${m.key}`}>{m.display}</SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
 
                 {/* Duration filter */}
                 <Select value={filterDuration} onValueChange={setFilterDuration}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-8 px-3 flex-shrink-0 ${
-                    filterDuration !== "all" ? "bg-white text-black" : "text-black hover:border-white"
-                  }`} style={{ width: "140px", backgroundColor: filterDuration !== "all" ? "white" : AN_BG }}>
+                  <SelectTrigger className={`rounded-full border text-sm h-8 px-3 flex-shrink-0 ${
+                    filterDuration !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FEABDA] border-white md:bg-[#FEABDA] md:text-black md:border-black md:hover:border-white"
+                  }`} style={{ width: "140px" }}>
                     <SelectValue placeholder="Duration" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Durations</SelectItem>
-                    <SelectItem value="one-time">One-time</SelectItem>
-                    <SelectItem value="limited-run">Limited run</SelectItem>
-                    <SelectItem value="recurring">Recurring</SelectItem>
+                    <SelectItem value="one-time">One Time</SelectItem>
+                    <SelectItem value="limited-run">Limited Run</SelectItem>
+                    <SelectItem value="annual">Annually</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                    <SelectItem value="recurring">All Recurring</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -621,14 +628,46 @@ export default function ArtistryNerdery() {
               <div className="mt-2">
                 <button
                   onClick={resetFilters}
-                  className="text-black text-sm hover:text-white transition-colors focus:outline-none underline"
+                  className="text-white hover:text-white/70 md:text-black md:hover:text-white transition-colors focus:outline-none underline"
                 >
                   ✕ clear filters
                 </button>
               </div>
             )}
+            </div>
           </div>
         )}
+      </nav>
+
+      {/* Feed */}
+      <main className={`container mx-auto px-4 py-6 flex-1 transition-all duration-200 ${viewMode === "calendar" ? "" : "max-w-2xl"}`}>
+
+        {/* Hidden on desktop in calendar view to give the calendar more room */}
+        <p className={`text-xs text-black mb-4 opacity-60 leading-snug ${viewMode === "calendar" ? "hidden" : ""}`}>
+          Exhibits, talks, screenings, performances, workshops and similar fun.
+        </p>
+
+        {/* Recent events banner - prioritize "today", fall back to "this week", else hide. Hidden on desktop in calendar view. */}
+        {!isLoading && events.length > 0 && sortBy !== "added" && (() => {
+          const todayCount = events.filter(e => getAddedTimeCategory(e.createdAt ?? null) === 'today').length;
+          const weekCount = todayCount + events.filter(e => getAddedTimeCategory(e.createdAt ?? null) === 'this_week').length;
+          const count = todayCount > 0 ? todayCount : weekCount;
+          if (count === 0) return null;
+          const label = todayCount > 0 ? "added today." : "added in the last week.";
+          return (
+            <div className={`mb-6 text-left ${viewMode === "calendar" ? "hidden" : ""}`}>
+              <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '24px' }}>
+                <button
+                  onClick={() => setSortBy("added")}
+                  className="text-[#FE6B41] hover:text-[#41F2EE] underline font-light focus:outline-none"
+                >
+                  {count} {count === 1 ? "event" : "events"}
+                </button>
+                {' '}{label}
+              </p>
+            </div>
+          );
+        })()}
 
         {isLoading && (
           <div className="text-center py-16 text-gray-400">
@@ -659,16 +698,24 @@ export default function ArtistryNerdery() {
         )}
 
         {!isLoading && viewMode === "calendar" && (
-          <ListingCalendarMonthView
-            events={filteredEvents}
-            viewYear={calViewYear}
-            viewMonth={calViewMonth}
-            onPrevMonth={prevCalMonth}
-            onNextMonth={nextCalMonth}
-            onEventClick={setCalEventDetail}
-            onDayOverflowClick={(date, events) => setCalDaySheet({ date, events })}
-            config={artCalendarConfig}
-          />
+          isMobile ? (
+            <ListingDayScrollView
+              events={filteredEvents}
+              onEventClick={setCalEventDetail}
+              config={artCalendarConfig}
+            />
+          ) : (
+            <ListingCalendarMonthView
+              events={filteredEvents}
+              viewYear={calViewYear}
+              viewMonth={calViewMonth}
+              onPrevMonth={prevCalMonth}
+              onNextMonth={nextCalMonth}
+              onEventClick={setCalEventDetail}
+              onDayOverflowClick={(date, events) => setCalDaySheet({ date, events })}
+              config={artCalendarConfig}
+            />
+          )
         )}
 
         {viewMode === "list" && sortBy === "added" && (() => {
@@ -799,6 +846,11 @@ export default function ArtistryNerdery() {
             ))}
           </div>
         ))}
+
+        {/* Reserves space for the mobile bottom-pinned filter bar so it doesn't cover the feed */}
+        {!isLoading && events.length > 0 && (
+          <div className="md:hidden" style={{ height: filterBarHeight }} />
+        )}
       </main>
 
       {/* Footer */}

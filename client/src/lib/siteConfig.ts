@@ -4,7 +4,9 @@ const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
 // Each site is its own domain in prod, so hostname is authoritative there.
 // The /amuse-bouche and /artistry-nerdistry paths only exist as a local dev
 // preview convenience, so fall back to pathname when hostname doesn't match.
-export const onAmuseBouche = hostname.includes('amuseboucheinsider') || pathname.startsWith('/amuse-bouche');
+// /best-of-denver is a real flat route on the amuse-bouche domain (same
+// pattern as /playlists on setlist), so it needs the same dev fallback.
+export const onAmuseBouche = hostname.includes('amuseboucheinsider') || pathname.startsWith('/amuse-bouche') || pathname.startsWith('/best-of-denver');
 export const onArtistryNerdistry = hostname.includes('artistrynerdistry') || pathname.startsWith('/artistry-nerdistry');
 export const onSetlistSocial = !onAmuseBouche && !onArtistryNerdistry;
 

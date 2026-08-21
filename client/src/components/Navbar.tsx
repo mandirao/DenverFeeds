@@ -1,16 +1,22 @@
 import { Link } from "wouter";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Music, Users, Calendar } from "lucide-react";
+import { Music, Users, Calendar, Ticket } from "lucide-react";
 import { CalendarSubscribeModal } from "./CalendarSubscribeModal";
 import { SiteSwitcher } from "./SiteSwitcher";
 
-export function Navbar() {
+// `children`, if passed, renders as a persistent bottom section of this sticky nav
+// (e.g. a filter bar) — see Home.tsx for how it's positioned per breakpoint.
+//
+// `onPlaylistsPage`, when true, swaps the "Playlists" link for a "Shows" link
+// back to the main feed — same nav-swap pattern as Amuse-Bouche's Popups/Gems
+// links, so the nav never links to the page you're already on.
+export function Navbar({ children, onPlaylistsPage }: { children?: ReactNode; onPlaylistsPage?: boolean }) {
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#FEABDA] shadow-md px-4 py-3">
-      <div className="container mx-auto">
+    <nav className="sticky top-0 z-50 bg-[#FEABDA] shadow-md">
+      <div className="container mx-auto px-4 py-3">
         {/* Main navbar row with title and RSVP button */}
         <div className="flex flex-col sm:flex-row justify-between items-center">
           <div className="flex items-center gap-2">
@@ -58,16 +64,26 @@ export function Navbar() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link 
-                    href="/playlists"
-                    className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1"
-                  >
-                    <Music className="h-4 w-4" />
-                    <span>Playlists</span>
-                  </Link>
+                  {onPlaylistsPage ? (
+                    <Link
+                      href="/"
+                      className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1"
+                    >
+                      <Ticket className="h-4 w-4" />
+                      <span>Shows</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/playlists"
+                      className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1"
+                    >
+                      <Music className="h-4 w-4" />
+                      <span>Playlists</span>
+                    </Link>
+                  )}
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Browse our curated playlists</p>
+                  <p>{onPlaylistsPage ? "Back to the shows feed" : "Browse our curated playlists"}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -90,7 +106,9 @@ export function Navbar() {
           </div>
         </div>
       </div>
-      
+
+      {children}
+
       <CalendarSubscribeModal open={calendarOpen} onOpenChange={setCalendarOpen} />
     </nav>
   );
