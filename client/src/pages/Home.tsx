@@ -485,38 +485,27 @@ export default function Home() {
       <Navbar />
       
       <main className={`container mx-auto px-4 py-8 transition-all duration-200 ${viewMode === "calendar" ? "max-w-5xl" : ""}`}>
-        {/* Recent Events Banner - Only show in default view and if there are recent events */}
+        {/* Recent Events Banner - prioritize "today", fall back to "this week", else hide */}
         {!isLoading && !error && events.length > 0 && filters.status === "all" && filters.sortBy !== "just-added" && (() => {
-          // Count events added in the last week (today + this_week)
-          const recentEvents = events.filter(event => {
-            const category = getAddedTimeCategory(event.createdAt);
-            return category === 'today' || category === 'this_week';
-          });
-          return recentEvents.length > 0;
-        })() && (
-          <div className="mb-6 text-left">
-            <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '24px' }}>
-              {(() => {
-                // Count events added in the last week (today + this_week)
-                const recentEvents = events.filter(event => {
-                  const category = getAddedTimeCategory(event.createdAt);
-                  return category === 'today' || category === 'this_week';
-                });
-                return (
-                  <>
-                    <button
-                      onClick={() => setFilters({ ...filters, sortBy: "just-added" })}
-                      className="text-white hover:text-[#41F2EE] underline font-light focus:outline-none"
-                    >
-                      {recentEvents.length} shows
-                    </button>
-                    {' '}added in the last week.
-                  </>
-                );
-              })()}
-            </p>
-          </div>
-        )}
+          const todayCount = events.filter(event => getAddedTimeCategory(event.createdAt) === 'today').length;
+          const weekCount = todayCount + events.filter(event => getAddedTimeCategory(event.createdAt) === 'this_week').length;
+          const count = todayCount > 0 ? todayCount : weekCount;
+          if (count === 0) return null;
+          const label = todayCount > 0 ? "added today." : "added in the last week.";
+          return (
+            <div className="mb-6 text-left">
+              <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '24px' }}>
+                <button
+                  onClick={() => setFilters({ ...filters, sortBy: "just-added" })}
+                  className="text-white hover:text-[#41F2EE] underline font-light focus:outline-none"
+                >
+                  {count} shows
+                </button>
+                {' '}{label}
+              </p>
+            </div>
+          );
+        })()}
 
         {/* Filter Pills - Horizontal scrolling to prevent line wrapping */}
         {!isLoading && !error && events.length > 0 && (

@@ -23,6 +23,7 @@ import {
   expandRecurringEvents, hasStartTimePassed, localDateStr,
   announcedTooltipText, SELLOUT_LIKELY_THRESHOLD, classifyRegion,
 } from "@/lib/eventUtils";
+import { getAddedTimeCategory } from "@/lib/utils";
 import { ListingEventRow } from "@/components/listings/ListingEventRow";
 import { ListingCalendarMonthView } from "@/components/listings/ListingCalendarMonthView";
 import { EditListingEventModal } from "@/components/listings/EditListingEventModal";
@@ -927,12 +928,13 @@ export default function AmsueBouche() {
           Pop-ups fill up fast! If something looks good, act on it.
         </p>
 
-        {/* Recent events banner */}
+        {/* Recent events banner - prioritize "today", fall back to "this week", else hide */}
         {!isLoading && events.length > 0 && sortBy !== "added" && (() => {
-          const oneWeekAgo = new Date();
-          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-          const recentCount = events.filter(e => e.createdAt && new Date(e.createdAt) > oneWeekAgo).length;
-          if (recentCount === 0) return null;
+          const todayCount = events.filter(e => getAddedTimeCategory(e.createdAt ?? null) === 'today').length;
+          const weekCount = todayCount + events.filter(e => getAddedTimeCategory(e.createdAt ?? null) === 'this_week').length;
+          const count = todayCount > 0 ? todayCount : weekCount;
+          if (count === 0) return null;
+          const label = todayCount > 0 ? "added today." : "added in the last week.";
           return (
             <div className="mb-6 text-left">
               <p className="font-light text-black mb-4 lowercase" style={{ fontSize: '24px' }}>
@@ -940,9 +942,9 @@ export default function AmsueBouche() {
                   onClick={() => setSortBy("added")}
                   className="text-[#FE6B41] hover:text-[#41F2EE] underline font-light focus:outline-none"
                 >
-                  {recentCount} {recentCount === 1 ? "popup" : "popups"}
+                  {count} {count === 1 ? "popup" : "popups"}
                 </button>
-                {' '}added in the last week.
+                {' '}{label}
               </p>
             </div>
           );
