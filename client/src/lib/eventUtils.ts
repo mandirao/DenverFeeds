@@ -2,6 +2,8 @@
 // These were byte-for-byte identical copies living in both page files —
 // consolidated here so a fix/change only has to happen once.
 
+import { format } from "date-fns";
+
 export const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export type EventRegion = "denver" | "front_range" | "mountains";
@@ -55,6 +57,48 @@ export function localDateStr(d: Date = new Date()): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+// Mirrors the `filterDay` matching rules AmsueBouche/ArtistryNerdery apply to
+// `dateStart` when building filteredEvents — but as a pure function of a date
+// string, independent of whether any event actually falls on it. Lets a
+// day-scroll view tell "this day is empty because nothing's on" apart from
+// "this day was excluded by the filter on purpose" (e.g. "Mondays only").
+export function dayMatchesFilter(dateStr: string, filterDay: string): boolean {
+  if (filterDay === "all") return true;
+  const todayStr = localDateStr();
+  if (filterDay === "today") return dateStr === todayStr;
+  if (filterDay === "tomorrow") {
+    const d = new Date(); d.setDate(d.getDate() + 1);
+    return dateStr === localDateStr(d);
+  }
+  if (filterDay === "weekend") {
+    const today = new Date();
+    const dow = today.getDay(); // 0=Sun, 6=Sat
+    if (dow === 0) return dateStr === todayStr;
+    const daysUntilSat = dow === 6 ? 0 : 6 - dow;
+    const sat = new Date(today); sat.setDate(today.getDate() + daysUntilSat);
+    const sun = new Date(sat); sun.setDate(sat.getDate() + 1);
+    return dateStr === localDateStr(sat) || dateStr === localDateStr(sun);
+  }
+  if (filterDay === "next-week") {
+    const today = new Date();
+    const daysSinceMonday = (today.getDay() + 6) % 7; // Mon=0 ... Sun=6
+    const thisMonday = new Date(today); thisMonday.setDate(today.getDate() - daysSinceMonday);
+    const nextMonday = new Date(thisMonday); nextMonday.setDate(thisMonday.getDate() + 7);
+    const nextSunday = new Date(nextMonday); nextSunday.setDate(nextMonday.getDate() + 6);
+    return dateStr >= localDateStr(nextMonday) && dateStr <= localDateStr(nextSunday);
+  }
+  if (filterDay === "next-month") {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    return dateStr >= localDateStr(start) && dateStr <= localDateStr(end);
+  }
+  const [y, mo, dy] = dateStr.split("-").map(Number);
+  const d = new Date(y, mo - 1, dy);
+  if (filterDay.startsWith("month:")) return format(d, "MMMM yyyy") === filterDay.slice(6);
+  return d.getDay().toString() === filterDay;
 }
 
 export const RISK_LABELS = ["", "Low", "Mild", "Moderate", "High", "Instant sellout"];

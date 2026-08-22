@@ -697,6 +697,9 @@ export default function AmsueBouche() {
                 events={filteredEvents}
                 onEventClick={setCalEventDetail}
                 config={foodCalendarConfig}
+                filterDay={filterDay}
+                hasActiveFilters={hasActiveFilters}
+                onClearFilters={resetFilters}
               />
             </div>
           ) : (
@@ -714,41 +717,28 @@ export default function AmsueBouche() {
         )}
 
         {viewMode === "list" && sortBy === "added" && (() => {
-          const now = new Date();
-          const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const dayOfWeek = todayDate.getDay();
-          const startOfWeek = new Date(todayDate);
-          startOfWeek.setDate(todayDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-
-          const getGroup = (ev: FoodEvent): "today" | "week" | "month" | "earlier" => {
-            if (!ev.createdAt) return "earlier";
-            const c = new Date(ev.createdAt);
-            const cDate = new Date(c.getFullYear(), c.getMonth(), c.getDate());
-            if (cDate.getTime() === todayDate.getTime()) return "today";
-            if (cDate >= startOfWeek) return "week";
-            if (c.getMonth() === now.getMonth() && c.getFullYear() === now.getFullYear()) return "month";
-            return "earlier";
-          };
+          const categoryLabels = {
+            today: "NEW TODAY",
+            this_week: "NEW THIS WEEK",
+            last_week: "NEW LAST WEEK",
+            this_month: "NEW THIS MONTH",
+            last_month: "NEW LAST MONTH",
+            older: "OLD NEWS",
+          } as const;
 
           const seen = new Set<number>();
           const sorted = [...filteredEvents]
             .filter(ev => { if (seen.has(ev.id)) return false; seen.add(ev.id); return true; })
             .sort((a, b) => b.id - a.id);
-          const buckets: { key: "today" | "week" | "month" | "earlier"; label: string; events: FoodEvent[] }[] = [
-            { key: "today",   label: "Added today",        events: [] },
-            { key: "week",    label: "Added this week",    events: [] },
-            { key: "month",   label: "Added this month",   events: [] },
-            { key: "earlier", label: "Added earlier",      events: [] },
-          ];
-          for (const ev of sorted) buckets.find(b => b.key === getGroup(ev))!.events.push(ev);
+          const buckets = (Object.keys(categoryLabels) as (keyof typeof categoryLabels)[]).map(key => ({
+            key,
+            label: categoryLabels[key],
+            events: sorted.filter(ev => getAddedTimeCategory(ev.createdAt ?? null) === key),
+          }));
 
           return buckets.filter(b => b.events.length > 0).map(bucket => (
             <div key={bucket.key} className="mb-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-0.5 flex-1 bg-black" />
-                <h2 className="text-lg font-black uppercase text-black">{bucket.label.toUpperCase()}</h2>
-                <div className="h-0.5 flex-1 bg-black" />
-              </div>
+              <h3 className="text-xl text-black mb-3 font-black">{bucket.label}</h3>
               <ul className="space-y-0">
                 {bucket.events.map(ev => (
                   <ListingEventRow key={ev.id} event={ev} config={foodRowConfig} />
