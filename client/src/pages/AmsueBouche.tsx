@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSepa
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { cuisineTypes, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
+import { cuisineTypes, denverProperNeighborhoods, denverMetroSuburbs, frontRangeCities, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
 import { UtensilsCrossed, Utensils, Plus, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check, Search, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
@@ -21,7 +21,7 @@ import {
   ensureHttps, formatDateRange, getMonthLabel, formatTime, formatDayHeaderLabel,
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
   expandRecurringEvents, hasStartTimePassed, localDateStr,
-  announcedTooltipText, SELLOUT_LIKELY_THRESHOLD, classifyRegion,
+  announcedTooltipText, SELLOUT_LIKELY_THRESHOLD, matchesRegionFilter,
 } from "@/lib/eventUtils";
 import { getAddedTimeCategory } from "@/lib/utils";
 import { useElementHeight } from "@/hooks/use-element-height";
@@ -309,7 +309,7 @@ export default function AmsueBouche() {
       if (!haystack.includes(normalizedSearch)) return false;
     }
     if (filterCuisine !== "all" && ev.cuisine !== filterCuisine) return false;
-    if (filterRegion !== "all" && classifyRegion(ev.neighborhood) !== filterRegion) return false;
+    if (!matchesRegionFilter(ev.neighborhood, filterRegion)) return false;
     if (filterDay !== "all") {
       const [y, mo, dy] = ev.dateStart.split("-").map(Number);
       const d = new Date(y, mo - 1, dy);
@@ -547,20 +547,45 @@ export default function AmsueBouche() {
                   </SelectContent>
                 </Select>
 
-                {/* Region filter */}
+                {/* Region filter — broad tiers (Denver/Suburbs/Front Range/
+                    Mountains) up top for a quick pick, with each tier's
+                    specific neighborhoods/cities broken out in their own
+                    section further down for anyone who wants to get precise. */}
                 <Select value={filterRegion} onValueChange={setFilterRegion}>
                   <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
                     filterRegion !== "all"
                       ? "bg-white text-black border-black"
                       : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
-                  }`} style={{ width: "145px" }}>
+                  }`} style={{ width: "190px" }}>
                     <SelectValue placeholder="Region" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[340px] overflow-y-auto">
                     <SelectItem value="all">All Regions</SelectItem>
                     <SelectItem value="denver">Denver</SelectItem>
+                    <SelectItem value="suburbs">Suburbs</SelectItem>
                     <SelectItem value="front_range">Front Range</SelectItem>
                     <SelectItem value="mountains">Mountains</SelectItem>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Denver proper</SelectLabel>
+                      {denverProperNeighborhoods.map(n => (
+                        <SelectItem key={n} value={n}>{n}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Suburbs</SelectLabel>
+                      {denverMetroSuburbs.map(n => (
+                        <SelectItem key={n} value={n}>{n}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Front Range</SelectLabel>
+                      {frontRangeCities.map(n => (
+                        <SelectItem key={n} value={n}>{n}</SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
 

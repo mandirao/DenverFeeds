@@ -342,7 +342,12 @@ export default function Home() {
     .filter(venue => venue.group === "denver" && venue.value !== "other" && venue.value !== "TBD")
     .map(venue => venue.value)
     .sort();
-    
+
+  const suburbVenues = venueOptions
+    .filter(venue => venue.group === "suburbs")
+    .map(venue => venue.value)
+    .sort();
+
   const frontRangeVenues = venueOptions
     .filter(venue => venue.group === "front_range")
     .map(venue => venue.value)
@@ -415,19 +420,25 @@ export default function Home() {
     }
     // Note: we removed the just-added filter here, as we'll now show all events but sorted differently
     
-    // Location filter (All Regions, Denver, Front Range, or Mountains)
+    // Location filter (All Regions, Denver, Suburbs, Front Range, or Mountains)
     // Get all known venue names to check if venue is custom/unknown
     const allKnownVenues = venueOptions.map(v => v.value);
     const denverVenuesList = venueOptions.filter(v => v.group === "denver").map(v => v.value);
+    const suburbVenuesList = venueOptions.filter(v => v.group === "suburbs").map(v => v.value);
     const frontRangeVenuesList = venueOptions.filter(v => v.group === "front_range").map(v => v.value);
     const mountainsVenuesList = venueOptions.filter(v => v.group === "mountains").map(v => v.value);
-    
+
     // Custom venues (not in our defined list) are treated as Denver by default
     const isCustomVenue = !allKnownVenues.includes(event.venue);
-      
+
     if (filters.location === "denver") {
       // Show Denver venues AND custom venues (festivals, one-off locations)
       if (!denverVenuesList.includes(event.venue) && !isCustomVenue) {
+        return false;
+      }
+    } else if (filters.location === "suburbs") {
+      // Show only Denver-suburb venues
+      if (!suburbVenuesList.includes(event.venue)) {
         return false;
       }
     } else if (filters.location === "front_range") {
@@ -719,6 +730,7 @@ export default function Home() {
                   <SelectContent>
                     <SelectItem value="all">All Regions</SelectItem>
                     <SelectItem value="denver">Denver</SelectItem>
+                    <SelectItem value="suburbs">Suburbs</SelectItem>
                     <SelectItem value="front_range">Front Range</SelectItem>
                     <SelectItem value="mountains">Mountains</SelectItem>
                   </SelectContent>
@@ -779,7 +791,24 @@ export default function Home() {
                     {hasOtherVenues && (
                       <SelectItem value="other">Other</SelectItem>
                     )}
-                    
+
+                    {/* Separator and Suburb venues */}
+                    {suburbVenues.length > 0 && (
+                      <>
+                        <div className="relative py-2">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-gray-300" />
+                          </div>
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-white px-2 text-gray-500">Suburbs</span>
+                          </div>
+                        </div>
+                        {suburbVenues.map((venue) => (
+                          <SelectItem key={venue} value={venue}>{venue}</SelectItem>
+                        ))}
+                      </>
+                    )}
+
                     {/* Separator and Front Range venues */}
                     {frontRangeVenues.length > 0 && (
                       <>

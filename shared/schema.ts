@@ -108,7 +108,11 @@ export const genres = [
 export interface VenueOption {
   value: string;
   label: string;
-  group: "denver" | "front_range" | "mountains" | "other";
+  // Reuses the same broad-tier taxonomy as the Amuse-Bouche/Artistry-
+  // Nerdistry/Best of Denver Region filters (see MetroBroadRegion below) —
+  // "denver" is the default here too (see hasOtherVenues/isCustomVenue in
+  // Home.tsx: any venue not in this list is treated as Denver).
+  group: MetroBroadRegion;
 }
 
 export const venueOptions: VenueOption[] = [
@@ -125,12 +129,9 @@ export const venueOptions: VenueOption[] = [
   { value: "Coors Field", label: "Coors Field", group: "denver" },
   { value: "Dazzle Denver", label: "Dazzle Denver", group: "denver" },
   { value: "Denver Botanic Gardens", label: "Denver Botanic Gardens", group: "denver" },
-  { value: "Dick's Sporting Goods Park", label: "Dick's Sporting Goods Park", group: "denver" },
   { value: "Empower Field at Mile High", label: "Empower Field at Mile High", group: "denver" },
-  { value: "Fiddlers Green Amphitheatre", label: "Fiddlers Green Amphitheatre", group: "denver" },
   { value: "Fillmore Auditorium", label: "Fillmore Auditorium", group: "denver" },
   { value: "Globe Hall", label: "Globe Hall", group: "denver" },
-  { value: "Gothic Theatre", label: "Gothic Theatre", group: "denver" },
   { value: "Greek Theater", label: "Greek Theater", group: "denver" },
   { value: "HQ", label: "HQ", group: "denver" },
   { value: "Hi-Dive", label: "Hi-Dive", group: "denver" },
@@ -157,7 +158,12 @@ export const venueOptions: VenueOption[] = [
   { value: "The Church", label: "The Church", group: "denver" },
   { value: "The Meadowlark", label: "The Meadowlark", group: "denver" },
   { value: "The Velvet Elk Lounge", label: "The Velvet Elk Lounge", group: "denver" },
-  
+
+  // Denver suburb venues
+  { value: "Dick's Sporting Goods Park", label: "Dick's Sporting Goods Park", group: "suburbs" },
+  { value: "Fiddlers Green Amphitheatre", label: "Fiddlers Green Amphitheatre", group: "suburbs" },
+  { value: "Gothic Theatre", label: "Gothic Theatre", group: "suburbs" },
+
   // Front Range venues (Boulder, Fort Collins, Colorado Springs, Greeley)
   { value: "Aggie Theatre", label: "Aggie Theatre", group: "front_range" },
   { value: "Black Sheep", label: "Black Sheep", group: "front_range" },
@@ -618,27 +624,137 @@ export type ArtEvent = typeof artEvents.$inferSelect;
 // ── Restaurants (Best of Denver) ─────────────────────────────────────────────
 
 export const denverNeighborhoods = [
+  'Arvada',
   'Aurora',
   'Baker & South Broadway',
   'Boulder',
   'Capitol Hill & Uptown',
+  'Centennial',
   'Cherry Creek & Glendale',
+  'Commerce City',
   'Downtown & LoDo',
   'DTC & Tech Center',
+  'Englewood',
   'Federal Blvd',
   'Golden',
+  'Greenwood Village',
   'Highlands & LoHi',
   'Lakewood',
+  'Littleton',
+  'RiNo & Five Points',
+  "Sloan's Lake",
+  'Stapleton & Central Park',
+  'Sunnyside & Berkeley',
+  'Thornton',
+  'University Hills',
+  'Wash Park & Platt Park',
+  'Westminster',
+  'Wheat Ridge',
+  'Other',
+] as const;
+export type DenverNeighborhood = typeof denverNeighborhoods[number];
+
+// ── Denver-metro region taxonomy ────────────────────────────────────────────
+// Shared by Best of Denver's restaurant filter and the Amuse-Bouche/
+// Artistry-Nerdistry feeds' Region filter. Groups the neighborhoods above
+// into a broad tier — Denver / Suburbs / Front Range / Mountains — plus,
+// within Denver proper, a specific named neighborhood. Best of Denver's
+// restaurant `neighborhood` field is a controlled value already drawn from
+// denverNeighborhoods (see RESTAURANT_NEIGHBORHOOD_BROAD_REGION below for its
+// direct lookup); Amuse-Bouche/Artistry-Nerdistry events carry free text
+// instead, so they classify it by keyword match (see matchesRegionFilter in
+// eventUtils.ts). "Denver" is a genuine default there: text that doesn't
+// match anything more specific (bare "Denver", "Various", "Golden Triangle",
+// "City Park") still counts as Denver at the broad tier, it just doesn't get
+// sorted into one of the 12 named neighborhoods below.
+export const denverProperNeighborhoods = [
+  'Baker & South Broadway',
+  'Capitol Hill & Uptown',
+  'Cherry Creek & Glendale',
+  'Downtown & LoDo',
+  'Federal Blvd',
+  'Highlands & LoHi',
   'RiNo & Five Points',
   "Sloan's Lake",
   'Stapleton & Central Park',
   'Sunnyside & Berkeley',
   'University Hills',
   'Wash Park & Platt Park',
-  'Westminster',
-  'Other',
 ] as const;
-export type DenverNeighborhood = typeof denverNeighborhoods[number];
+export type DenverProperNeighborhood = typeof denverProperNeighborhoods[number];
+
+export const denverMetroSuburbs = [
+  'Arvada',
+  'Aurora',
+  'Centennial',
+  'Commerce City',
+  'DTC & Tech Center',
+  'Englewood',
+  'Greenwood Village',
+  'Lakewood',
+  'Littleton',
+  'Thornton',
+  'Westminster',
+  'Wheat Ridge',
+] as const;
+export type DenverMetroSuburb = typeof denverMetroSuburbs[number];
+
+export const frontRangeCities = [
+  'Boulder',
+  'Broomfield',
+  'Colorado Springs',
+  'Erie',
+  'Fort Collins',
+  'Golden',
+  'Greeley',
+  'Larkspur',
+  'Longmont',
+  'Louisville',
+  'Loveland',
+  'Lyons',
+] as const;
+export type FrontRangeCity = typeof frontRangeCities[number];
+
+export type MetroBroadRegion = "denver" | "suburbs" | "front_range" | "mountains";
+
+// Direct lookup from a Best of Denver restaurant's controlled `neighborhood`
+// value to its broad region tier — unlike the free-text classifier in
+// eventUtils.ts, this doesn't need to guess: the value is already precise.
+// No restaurant neighborhood is ever a mountain town, so that tier never
+// appears here. "Other" (a real, selectable value — see denverNeighborhoods)
+// counts as Denver, matching the same "assume Denver unless proven
+// otherwise" default the free-text classifier uses for ambiguous text. A
+// missing key here is a compile error (TS enforces every DenverNeighborhood
+// is covered), so a new neighborhood can't silently fall through unclassified.
+export const RESTAURANT_NEIGHBORHOOD_BROAD_REGION: Record<DenverNeighborhood, Exclude<MetroBroadRegion, "mountains">> = {
+  'Baker & South Broadway': 'denver',
+  'Capitol Hill & Uptown': 'denver',
+  'Cherry Creek & Glendale': 'denver',
+  'Downtown & LoDo': 'denver',
+  'Federal Blvd': 'denver',
+  'Highlands & LoHi': 'denver',
+  'RiNo & Five Points': 'denver',
+  "Sloan's Lake": 'denver',
+  'Stapleton & Central Park': 'denver',
+  'Sunnyside & Berkeley': 'denver',
+  'University Hills': 'denver',
+  'Wash Park & Platt Park': 'denver',
+  'Other': 'denver',
+  'Arvada': 'suburbs',
+  'Aurora': 'suburbs',
+  'Centennial': 'suburbs',
+  'Commerce City': 'suburbs',
+  'DTC & Tech Center': 'suburbs',
+  'Englewood': 'suburbs',
+  'Greenwood Village': 'suburbs',
+  'Lakewood': 'suburbs',
+  'Littleton': 'suburbs',
+  'Thornton': 'suburbs',
+  'Westminster': 'suburbs',
+  'Wheat Ridge': 'suburbs',
+  'Boulder': 'front_range',
+  'Golden': 'front_range',
+};
 
 export const restaurantPricePoints = ['$', '$$', '$$$', '$$$$'] as const;
 export type RestaurantPricePoint = typeof restaurantPricePoints[number];

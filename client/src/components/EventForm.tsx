@@ -382,10 +382,28 @@ export default function EventForm({
                         ))
                       }
                     </CommandGroup>
+                    <CommandGroup heading="Suburbs">
+                      {venueOptions
+                        .filter(venue =>
+                          venue.group === "suburbs" &&
+                          venue.label.toLowerCase().includes(searchValue.toLowerCase())
+                        )
+                        .map(venue => (
+                          <CommandItem
+                            key={venue.value}
+                            value={venue.value}
+                            onSelect={handleVenueSelect}
+                            className="cursor-pointer"
+                          >
+                            {venue.label}
+                          </CommandItem>
+                        ))
+                      }
+                    </CommandGroup>
                     <CommandGroup heading="Front Range">
                       {venueOptions
-                        .filter(venue => 
-                          venue.group === "front_range" && 
+                        .filter(venue =>
+                          venue.group === "front_range" &&
                           venue.label.toLowerCase().includes(searchValue.toLowerCase())
                         )
                         .map(venue => (

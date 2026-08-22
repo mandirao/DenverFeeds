@@ -3,47 +3,136 @@
 // consolidated here so a fix/change only has to happen once.
 
 import { format } from "date-fns";
+import {
+  denverProperNeighborhoods, denverMetroSuburbs, frontRangeCities,
+  type DenverProperNeighborhood, type DenverMetroSuburb, type FrontRangeCity, type MetroBroadRegion,
+} from "@shared/schema";
 
 export const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-export type EventRegion = "denver" | "front_range" | "mountains";
 
 // Art/Nerdistry and Amuse Bouche events carry a free-text `neighborhood`
 // (captured by the AI blurb parser at add-time) instead of the fixed venue
 // roster the music feed uses to tag regions — most venues here are one-off
 // pop-ups/galleries/parks that only ever appear once, so a hand-maintained
 // venue→region whitelist (like shared/schema.ts's venueOptions) isn't
-// practical. Classify by keyword match on the neighborhood text instead,
-// defaulting to Denver — same "unlisted defaults to Denver" fallback Home.tsx
-// uses for custom venues. Word-boundary matching (not substring) matters:
-// "Golden Triangle" is a downtown Denver neighborhood, not the city of Golden.
+// practical. Classify by keyword match on the neighborhood text instead.
+// Word-boundary matching (not substring) matters: "Golden Triangle" is a
+// downtown Denver neighborhood, not the city of Golden.
 const MOUNTAINS_KEYWORDS = [
   "vail", "breckenridge", "aspen", "crested butte", "idaho springs",
   "georgetown", "evergreen", "winter park", "steamboat", "estes park",
   "leadville", "frisco", "silverthorne", "keystone", "dillon", "morrison",
 ];
-const FRONT_RANGE_KEYWORDS = [
+
+// Each Front Range city and each Denver suburb gets its own keyword rule
+// (rather than one flat keyword list per broad tier) so the *specific* city/
+// suburb can be reported too, not just the broad tier — these double as the
+// options nested under "Front Range" / "Suburbs" in the filter dropdown.
+const FRONT_RANGE_CITY_RULES: [FrontRangeCity, string[]][] = [
+  ["Boulder", ["boulder"]],
+  ["Broomfield", ["broomfield"]],
+  ["Colorado Springs", ["colorado springs"]],
+  ["Erie", ["erie"]],
+  ["Fort Collins", ["fort collins"]],
   // "golden" excludes "Golden Triangle" — that's a downtown Denver
   // neighborhood (Denver Art Museum, Clyfford Still Museum, etc.), not the
-  // city of Golden.
-  "boulder", "aurora", "westminster", "golden(?!\\s+triangle)", "lakewood",
-  "arvada", "louisville", "lyons", "longmont", "broomfield", "littleton",
-  "englewood", "centennial", "greenwood village", "erie", "colorado springs",
-  "fort collins", "greeley", "loveland", "larkspur", "wheat ?ridge",
-  "thornton", "commerce city",
+  // foothills city of Golden.
+  ["Golden", ["golden(?!\\s+triangle)"]],
+  ["Greeley", ["greeley"]],
+  ["Larkspur", ["larkspur"]],
+  ["Longmont", ["longmont"]],
+  ["Louisville", ["louisville"]],
+  ["Loveland", ["loveland"]],
+  ["Lyons", ["lyons"]],
+];
+const SUBURB_RULES: [DenverMetroSuburb, string[]][] = [
+  ["Arvada", ["arvada"]],
+  ["Aurora", ["aurora"]],
+  ["Centennial", ["centennial"]],
+  ["Commerce City", ["commerce city"]],
+  ["DTC & Tech Center", ["\\bdtc\\b", "tech center"]],
+  ["Englewood", ["englewood"]],
+  ["Greenwood Village", ["greenwood village"]],
+  ["Lakewood", ["lakewood"]],
+  ["Littleton", ["littleton"]],
+  ["Thornton", ["thornton"]],
+  ["Westminster", ["westminster"]],
+  ["Wheat Ridge", ["wheat ?ridge"]],
+];
+
+// The 12 named Denver-proper neighborhoods. Built from the actual
+// neighborhood strings logged against food/art events — first match wins,
+// and anything that doesn't clear a bar of real confidence (e.g. "City
+// Park", "Golden Triangle", "Congress Park" — genuinely distinct areas none
+// of these 12 buckets cover) is left unmatched rather than guessing at the
+// nearest-sounding neighborhood. Unmatched text still counts as the broad
+// "Denver" region (see classifyBroadRegion below) — it just doesn't get
+// sorted into one of these 12.
+const DENVER_PROPER_RULES: [DenverProperNeighborhood, string[]][] = [
+  ["Downtown & LoDo", ["lodo", "downtown(?!\\s+boulder)", "union station", "larimer square", "denver performing arts center", "civic center"]],
+  ["RiNo & Five Points", ["rino", "five points", "curtis park", "cole", "arapahoe square"]],
+  ["Highlands & LoHi", ["highlands?", "lohi", "jefferson park"]],
+  ["Capitol Hill & Uptown", ["capitol hill", "uptown", "cheese?man park"]],
+  ["Cherry Creek & Glendale", ["cherry creek", "glendale"]],
+  ["Baker & South Broadway", ["baker", "south broadway", "s\\.? broadway", "santa fe arts? district", "art district on santa fe", "navajo street arts district", "santa fe", "lincoln park"]],
+  ["Sloan's Lake", ["sloan'?s? lake", "edgewater", "west colfax"]],
+  ["Sunnyside & Berkeley", ["sunnyside", "berkeley"]],
+  ["Stapleton & Central Park", ["stapleton", "central park"]],
+  ["Wash Park & Platt Park", ["wash park", "washington park", "platt park"]],
+  ["Federal Blvd", ["federal blvd", "north federal", "little saigon"]],
+  ["University Hills", ["university hills", "university of denver", "university"]],
 ];
 
 function matchesAny(text: string, keywords: string[]): boolean {
   return keywords.some(kw => new RegExp(`\\b${kw}\\b`, "i").test(text));
 }
 
-/** Classifies an event's `neighborhood` text into a region for the region
- * filter. Unmatched/missing text defaults to "denver". */
-export function classifyRegion(neighborhood: string | null | undefined): EventRegion {
+function firstMatch<T extends string>(text: string, rules: [T, string[]][]): T | null {
+  for (const [bucket, keywords] of rules) {
+    if (matchesAny(text, keywords)) return bucket;
+  }
+  return null;
+}
+
+/** Classifies an event's `neighborhood` text into a broad region. Front
+ * Range/Suburbs/Mountains require a real keyword match; "denver" is the
+ * genuine default for everything else (bare "Denver", "Various", "City
+ * Park" — text that's presumably in Denver but not confidently one of the
+ * 12 named neighborhoods still belongs in the broad Denver bucket). */
+export function classifyBroadRegion(neighborhood: string | null | undefined): MetroBroadRegion {
   const text = neighborhood ?? "";
   if (matchesAny(text, MOUNTAINS_KEYWORDS)) return "mountains";
-  if (matchesAny(text, FRONT_RANGE_KEYWORDS)) return "front_range";
+  if (firstMatch(text, FRONT_RANGE_CITY_RULES)) return "front_range";
+  if (firstMatch(text, SUBURB_RULES)) return "suburbs";
   return "denver";
+}
+
+/** Precise, no-fallback classification into one of the 12 named Denver-proper
+ * neighborhoods — null if the text isn't confidently one of them (it may
+ * still be broadly "Denver", see classifyBroadRegion). */
+export function classifyDenverProperNeighborhood(neighborhood: string | null | undefined): DenverProperNeighborhood | null {
+  return firstMatch(neighborhood ?? "", DENVER_PROPER_RULES);
+}
+
+/** Whether `neighborhood` satisfies a Region filter value, which may be
+ * "all", a broad tier ("denver"/"suburbs"/"front_range"/"mountains"), or one
+ * of the specific neighborhoods/cities nested under those tiers. */
+export function matchesRegionFilter(neighborhood: string | null | undefined, filterValue: string): boolean {
+  if (filterValue === "all") return true;
+  const text = neighborhood ?? "";
+  if (filterValue === "denver" || filterValue === "suburbs" || filterValue === "front_range" || filterValue === "mountains") {
+    return classifyBroadRegion(text) === filterValue;
+  }
+  if ((denverProperNeighborhoods as readonly string[]).includes(filterValue)) {
+    return classifyDenverProperNeighborhood(text) === filterValue;
+  }
+  if ((denverMetroSuburbs as readonly string[]).includes(filterValue)) {
+    return firstMatch(text, SUBURB_RULES) === filterValue;
+  }
+  if ((frontRangeCities as readonly string[]).includes(filterValue)) {
+    return firstMatch(text, FRONT_RANGE_CITY_RULES) === filterValue;
+  }
+  return true;
 }
 
 /** Today (or the given Date) as a local YYYY-MM-DD string. Deliberately NOT

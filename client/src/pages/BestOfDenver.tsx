@@ -12,32 +12,28 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import { restaurantCuisineTypes, denverNeighborhoods, restaurantPricePoints, type Restaurant } from "@shared/schema";
+import {
+  restaurantCuisineTypes, denverNeighborhoods, denverProperNeighborhoods,
+  RESTAURANT_NEIGHBORHOOD_BROAD_REGION, restaurantPricePoints, type Restaurant, type DenverNeighborhood,
+} from "@shared/schema";
 import { Sparkles, MoreVertical, Users, Calendar, UtensilsCrossed, Plus } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import { SiteSwitcher } from "@/components/SiteSwitcher";
+import { useElementHeight } from "@/hooks/use-element-height";
 
 // ── Colors (matching Amuse-Bouche Insider's branding) ──────────────────────────
 const AB_ORANGE = "#FE6B41";
 const AB_GOLD    = "#FFF8E7";
 
-// ── Neighborhood groups ───────────────────────────────────────────────────────
-const INNER_DENVER_NEIGHBORHOODS = new Set([
-  'Baker & South Broadway',
-  'Capitol Hill & Uptown',
-  'Cherry Creek & Glendale',
-  'Downtown & LoDo',
-  'Federal Blvd',
-  'Highlands & LoHi',
-  'RiNo & Five Points',
-  "Sloan's Lake",
-  'Stapleton & Central Park',
-  'Sunnyside & Berkeley',
-  'University Hills',
-  'Wash Park & Platt Park',
-]);
-const SUBURB_NEIGHBORHOODS = ['Aurora', 'Boulder', 'DTC & Tech Center', 'Golden', 'Lakewood', 'Westminster', 'Other'];
+// Derived from the enum + lookup (not food/art's fuller denverMetroSuburbs/
+// frontRangeCities lists) so this only ever offers filter options that some
+// restaurant could actually be tagged with — e.g. Fort Collins/Greeley/
+// Colorado Springs are Front Range cities in the events feeds' taxonomy but
+// were never in scope for a "Best of Denver" restaurant directory, so they
+// stay out of denverNeighborhoods and correctly don't show up here either.
+const RESTAURANT_SUBURBS = denverNeighborhoods.filter(n => RESTAURANT_NEIGHBORHOOD_BROAD_REGION[n] === "suburbs");
+const RESTAURANT_FRONT_RANGE_CITIES = denverNeighborhoods.filter(n => RESTAURANT_NEIGHBORHOOD_BROAD_REGION[n] === "front_range");
 
 const BAR_CUISINES = new Set(['Bar', 'Dive', 'Cocktails', 'Beer', 'Wine']);
 const SHOP_CUISINES = new Set(['Grocery & Market']);
@@ -65,7 +61,7 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <a href={searchUrl} target="_blank" rel="noopener noreferrer"
-                      className="font-black uppercase text-black text-sm leading-tight underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity">
+                      className="font-black uppercase text-black text-base leading-tight underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity">
                       {restaurant.name}
                     </a>
                   </TooltipTrigger>
@@ -75,7 +71,7 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
                 </Tooltip>
               </TooltipProvider>
               {restaurant.pricePoint && (
-                <span className="text-[11px] font-bold text-black/50 leading-none">{restaurant.pricePoint}</span>
+                <span className="text-xs font-bold text-black/50 leading-none">{restaurant.pricePoint}</span>
               )}
               {restaurant.michelinStar && (
                 <TooltipProvider delayDuration={100}>
@@ -139,12 +135,12 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
               )}
             </div>
             {restaurant.neighborhood && (
-              <p className="text-[11px] text-black/40 font-medium mt-0.5 leading-none">{restaurant.neighborhood}</p>
+              <p className="text-xs text-black/40 font-medium mt-0.5 leading-none">{restaurant.neighborhood}</p>
             )}
-            <p className="text-sm text-black/75 mt-1 leading-snug">{restaurant.description}</p>
+            <p className="text-base text-black/75 mt-1 leading-snug">{restaurant.description}</p>
             <div className="flex flex-wrap gap-1.5 mt-2">
               {(restaurant.cuisine ?? []).map(c => (
-                <span key={c} className="text-[11px] font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{c}</span>
+                <span key={c} className="text-xs font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{c}</span>
               ))}
             </div>
           </div>
@@ -454,6 +450,7 @@ export default function BestOfDenver() {
   const [filterRCuisine, setFilterRCuisine] = useState(() => new URLSearchParams(window.location.search).get("cuisine") || "all");
   const [filterRNeighborhood, setFilterRNeighborhood] = useState(() => new URLSearchParams(window.location.search).get("neighborhood") || "all");
   const [filterRPrice, setFilterRPrice] = useState(() => new URLSearchParams(window.location.search).get("price") || "all");
+  const { ref: filterBarRef, height: filterBarHeight } = useElementHeight<HTMLDivElement>();
   const [filterRBadge, setFilterRBadge] = useState<"all" | "hotNew" | "michelin" | "jamesBeard" | "fixture" | "foodTruck" | "happyHour" | "patio">(() => {
     const p = new URLSearchParams(window.location.search);
     return (p.get("spot") as any) || "all";
@@ -484,8 +481,11 @@ export default function BestOfDenver() {
       if (filterRVenueType === "shop" && !cuisine.some(c => SHOP_CUISINES.has(c))) return false;
       if (filterRVenueType === "restaurant" && !cuisine.some(c => !BAR_CUISINES.has(c) && !SHOP_CUISINES.has(c))) return false;
       if (filterRCuisine !== "all" && !cuisine.includes(filterRCuisine)) return false;
-      if (filterRNeighborhood === "inner_denver" && !INNER_DENVER_NEIGHBORHOODS.has(r.neighborhood)) return false;
-      if (filterRNeighborhood !== "all" && filterRNeighborhood !== "inner_denver" && r.neighborhood !== filterRNeighborhood) return false;
+      if (filterRNeighborhood === "denver" || filterRNeighborhood === "suburbs" || filterRNeighborhood === "front_range") {
+        if (RESTAURANT_NEIGHBORHOOD_BROAD_REGION[r.neighborhood as DenverNeighborhood] !== filterRNeighborhood) return false;
+      } else if (filterRNeighborhood !== "all" && r.neighborhood !== filterRNeighborhood) {
+        return false;
+      }
       if (filterRPrice !== "all" && r.pricePoint !== filterRPrice) return false;
       if (filterRBadge === "hotNew" && !r.hotNew) return false;
       if (filterRBadge === "michelin" && !r.michelinStar) return false;
@@ -559,22 +559,22 @@ export default function BestOfDenver() {
             </div>
           </div>
         </div>
-      </nav>
 
-      {/* ── Feed ── */}
-      <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
-        <p className="text-xs text-black mb-4 opacity-60 leading-snug">
-          Foodie gems around Denver worth going back to.
-        </p>
-
-        {/* Filter row */}
+        {/* Filter row - a persistent bottom section of the nav on desktop, pinned to the bottom of the screen on mobile */}
         {restaurantList.length > 0 && (
-          <div className="mb-5">
+          <div
+            ref={filterBarRef}
+            className="fixed inset-x-0 bottom-0 z-40 py-2 bg-black md:bg-[#FFF8E7] shadow-[0_-4px_12px_rgba(0,0,0,0.12)] border-t border-white/10 md:static md:inset-x-auto md:bottom-auto md:pb-3 md:shadow-none md:border-t-0"
+          >
+            <div className="px-4 md:container md:mx-auto">
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
                 <Select value={filterRVenueType} onValueChange={v => setFilterRVenueType(v as any)}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-10 md:h-8 px-3 flex-shrink-0`}
-                    style={{ width: "140px", backgroundColor: filterRVenueType !== "all" ? "white" : AB_GOLD }}>
+                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
+                    filterRVenueType !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
+                  }`} style={{ width: "140px" }}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -588,8 +588,11 @@ export default function BestOfDenver() {
                 </Select>
 
                 <Select value={filterRCuisine} onValueChange={setFilterRCuisine}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-10 md:h-8 px-3 flex-shrink-0`}
-                    style={{ width: "160px", backgroundColor: filterRCuisine !== "all" ? "white" : AB_GOLD }}>
+                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
+                    filterRCuisine !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
+                  }`} style={{ width: "160px" }}>
                     <SelectValue placeholder="All Cuisine" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[320px] overflow-y-auto">
@@ -601,26 +604,44 @@ export default function BestOfDenver() {
                   </SelectContent>
                 </Select>
 
+                {/* Region filter — broad tiers (Denver/Suburbs/Front Range) up
+                    top for a quick pick, matching Amuse-Bouche/Artistry-
+                    Nerdistry's Region filter, with each tier's specific
+                    neighborhoods/cities broken out in their own section
+                    further down. No Mountains tier — no restaurant here is
+                    ever tagged a mountain town. */}
                 <Select value={filterRNeighborhood} onValueChange={setFilterRNeighborhood}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-10 md:h-8 px-3 flex-shrink-0`}
-                    style={{ width: "190px", backgroundColor: filterRNeighborhood !== "all" ? "white" : AB_GOLD }}>
-                    <SelectValue placeholder="All Neighborhoods" />
+                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
+                    filterRNeighborhood !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
+                  }`} style={{ width: "190px" }}>
+                    <SelectValue placeholder="Region" />
                   </SelectTrigger>
                   <SelectContent className="max-h-[340px] overflow-y-auto">
-                    <SelectItem value="all">All Neighborhoods</SelectItem>
-                    <SelectSeparator />
-                    <SelectItem value="inner_denver">Inner Denver</SelectItem>
+                    <SelectItem value="all">All Regions</SelectItem>
+                    <SelectItem value="denver">Denver</SelectItem>
+                    <SelectItem value="suburbs">Suburbs</SelectItem>
+                    <SelectItem value="front_range">Front Range</SelectItem>
                     <SelectSeparator />
                     <SelectGroup>
                       <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Denver proper</SelectLabel>
-                      {[...INNER_DENVER_NEIGHBORHOODS].sort().map(n => (
+                      {denverProperNeighborhoods.map(n => (
+                        <SelectItem key={n} value={n}>{n}</SelectItem>
+                      ))}
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectGroup>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Suburbs</SelectLabel>
+                      {RESTAURANT_SUBURBS.map(n => (
                         <SelectItem key={n} value={n}>{n}</SelectItem>
                       ))}
                     </SelectGroup>
                     <SelectSeparator />
                     <SelectGroup>
-                      <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Suburbs &amp; beyond</SelectLabel>
-                      {SUBURB_NEIGHBORHOODS.map(n => (
+                      <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Front Range</SelectLabel>
+                      {RESTAURANT_FRONT_RANGE_CITIES.map(n => (
                         <SelectItem key={n} value={n}>{n}</SelectItem>
                       ))}
                     </SelectGroup>
@@ -628,8 +649,11 @@ export default function BestOfDenver() {
                 </Select>
 
                 <Select value={filterRPrice} onValueChange={setFilterRPrice}>
-                  <SelectTrigger className={`rounded-full border border-black text-sm h-10 md:h-8 px-3 flex-shrink-0`}
-                    style={{ width: "110px", backgroundColor: filterRPrice !== "all" ? "white" : AB_GOLD }}>
+                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
+                    filterRPrice !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
+                  }`} style={{ width: "110px" }}>
                     <SelectValue placeholder="All Prices" />
                   </SelectTrigger>
                   <SelectContent>
@@ -642,8 +666,11 @@ export default function BestOfDenver() {
                 </Select>
 
                 <Select value={filterRBadge} onValueChange={v => setFilterRBadge(v as any)}>
-                  <SelectTrigger className="rounded-full border border-black text-sm h-10 md:h-8 px-3 flex-shrink-0"
-                    style={{ width: "150px", backgroundColor: filterRBadge !== "all" ? "white" : AB_GOLD }}>
+                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
+                    filterRBadge !== "all"
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
+                  }`} style={{ width: "150px" }}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -661,14 +688,22 @@ export default function BestOfDenver() {
 
                 {hasActiveRestaurantFilters && (
                   <button onClick={resetRestaurantFilters}
-                    className="text-xs font-bold underline text-black opacity-50 hover:opacity-80 transition-opacity whitespace-nowrap flex-shrink-0 h-10 md:h-auto flex items-center">
+                    className="text-xs font-bold underline text-white opacity-70 hover:opacity-100 md:text-black md:opacity-50 md:hover:opacity-80 transition-opacity whitespace-nowrap flex-shrink-0 h-10 md:h-auto flex items-center">
                     Clear
                   </button>
                 )}
               </div>
             </div>
+            </div>
           </div>
         )}
+      </nav>
+
+      {/* ── Feed ── */}
+      <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
+        <p className="text-xs text-black mb-4 opacity-60 leading-snug">
+          Foodie gems around Denver worth going back to.
+        </p>
 
         {/* Restaurant list */}
         {restaurantsLoading ? (
@@ -716,6 +751,11 @@ export default function BestOfDenver() {
               />
             ))}
           </ul>
+        )}
+
+        {/* Reserves space for the mobile bottom-pinned filter bar so it doesn't cover the feed */}
+        {restaurantList.length > 0 && (
+          <div className="md:hidden" style={{ height: filterBarHeight }} />
         )}
       </main>
 
