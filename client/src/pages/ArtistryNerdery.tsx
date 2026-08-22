@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { artCategories, denverProperNeighborhoods, denverMetroSuburbs, frontRangeCities, type ArtEvent, type InsertArtEvent } from "@shared/schema";
-import { Telescope, Plus, Sparkles, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check, Search, X } from "lucide-react";
+import { Telescope, Plus, Sparkles, List, MoreVertical, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check, Search, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import { SiteSwitcher } from "@/components/SiteSwitcher";
@@ -426,11 +426,10 @@ export default function ArtistryNerdery() {
               <a href="https://www.meetup.com/artistry-nerdistry-live"
                 target="_blank" rel="noopener noreferrer"
                 className="text-white hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0">
-                <Users className="h-4 w-4" />
                 <span>Meetup</span>
               </a>
               <button onClick={() => setAddOpen(true)}
-                className="bg-black text-[#FE6B41] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-2.5 md:py-1.5 transition-colors flex items-center gap-1">
+                className="bg-black text-[#FE6B41] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-2.5 md:py-1.5 transition-colors flex items-center gap-1 border border-[#FE6B41] hover:border-[#41F2EE]">
                 <Plus className="w-4 h-4" />Event
               </button>
             </div>
@@ -821,7 +820,7 @@ export default function ArtistryNerdery() {
 
         {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => (
           <div key={month} className="mb-6">
-            <h2 className="text-xl text-black mb-2 font-black">{month.toUpperCase()}</h2>
+            <h2 className="text-xl text-black mb-1 font-black">{month.toUpperCase()}</h2>
             {monthData.dayGroups.map((day, dayIdx) => (
               <div
                 key={day.date}
@@ -831,7 +830,7 @@ export default function ArtistryNerdery() {
                 {/* Sticks to the base of the nav while this day's events scroll by,
                     so a reader never loses track of which day they're looking at. */}
                 <div
-                  className={`sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pb-[11px] ${dayIdx % 2 === 1 ? "pt-[10px] sm:pt-3" : "pt-[6px] sm:pt-2"}`}
+                  className={`sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pb-[11px] ${dayIdx % 2 === 1 ? "pt-[10px] sm:pt-3" : "pt-1 sm:pt-1.5"}`}
                   style={{ top: navHeight, backgroundColor: dayIdx % 2 === 1 ? AN_DAY_ALT : AN_BG }}
                 >
                   {formatDayHeaderLabel(day.date)}

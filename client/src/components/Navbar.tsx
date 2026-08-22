@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { forwardRef, useState, type ReactNode } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Music, Users, Calendar, Ticket } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { CalendarSubscribeModal } from "./CalendarSubscribeModal";
 import { SiteSwitcher } from "./SiteSwitcher";
 
@@ -50,13 +50,12 @@ export const Navbar = forwardRef<HTMLElement, { children?: ReactNode; onPlaylist
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <a 
-                    href="https://www.meetup.com/setlist-social-indie-denver/?eventOrigin=event_home_page" 
-                    target="_blank" 
+                  <a
+                    href="https://www.meetup.com/setlist-social-indie-denver/?eventOrigin=event_home_page"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0"
                   >
-                    <Users className="h-4 w-4" />
                     <span>Meetup</span>
                   </a>
                 </TooltipTrigger>
@@ -74,7 +73,6 @@ export const Navbar = forwardRef<HTMLElement, { children?: ReactNode; onPlaylist
                       href="/"
                       className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0"
                     >
-                      <Ticket className="h-4 w-4" />
                       <span>Shows</span>
                     </Link>
                   ) : (
@@ -82,7 +80,6 @@ export const Navbar = forwardRef<HTMLElement, { children?: ReactNode; onPlaylist
                       href="/playlists"
                       className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0"
                     >
-                      <Music className="h-4 w-4" />
                       <span>Playlists</span>
                     </Link>
                   )}

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cuisineTypes, denverProperNeighborhoods, denverMetroSuburbs, frontRangeCities, type FoodEvent, type InsertFoodEvent } from "@shared/schema";
-import { UtensilsCrossed, Utensils, Plus, List, MoreVertical, Users, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check, Search, X } from "lucide-react";
+import { UtensilsCrossed, Plus, List, MoreVertical, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check, Search, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import { SiteSwitcher } from "@/components/SiteSwitcher";
@@ -412,7 +412,6 @@ export default function AmsueBouche() {
               <a href="https://www.meetup.com/amuse-bouche/"
                 target="_blank" rel="noopener noreferrer"
                 className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0">
-                <Users className="h-4 w-4" />
                 <span>Meetup</span>
               </a>
               <TooltipProvider>
@@ -422,7 +421,6 @@ export default function AmsueBouche() {
                       href="/best-of-denver"
                       className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0"
                     >
-                      <Utensils className="h-4 w-4" />
                       <span>Gems</span>
                     </Link>
                   </TooltipTrigger>
@@ -814,7 +812,7 @@ export default function AmsueBouche() {
 
         {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => (
           <div key={month} className="mb-6">
-            <h2 className="text-xl text-black mb-2 font-black">{month.toUpperCase()}</h2>
+            <h2 className="text-xl text-black mb-1 font-black">{month.toUpperCase()}</h2>
             {monthData.dayGroups.map((day, dayIdx) => (
               <div
                 key={day.date}
@@ -824,7 +822,7 @@ export default function AmsueBouche() {
                 {/* Sticks to the base of the nav while this day's events scroll by,
                     so a reader never loses track of which day they're looking at. */}
                 <div
-                  className={`sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pb-[11px] ${dayIdx % 2 === 1 ? "pt-[10px] sm:pt-3" : "pt-[6px] sm:pt-2"}`}
+                  className={`sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pb-[11px] ${dayIdx % 2 === 1 ? "pt-[10px] sm:pt-3" : "pt-1 sm:pt-1.5"}`}
                   style={{ top: navHeight, backgroundColor: dayIdx % 2 === 1 ? AB_DAY_ALT : AB_GOLD }}
                 >
                   {formatDayHeaderLabel(day.date)}

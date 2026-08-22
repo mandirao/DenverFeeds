@@ -66,7 +66,7 @@ function WeekGroup({ weekEvents, dayIndexStart, altBg, pageBg, navHeight }: Week
             {/* Sticks to the base of the nav while this day's events scroll by,
                 so a reader never loses track of which day they're looking at. */}
             <div
-              className={`sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pb-[11px] ${hasBg ? "pt-[10px] sm:pt-3" : "pt-[6px] sm:pt-2"}`}
+              className={`sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pb-[11px] ${hasBg ? "pt-[10px] sm:pt-3" : "pt-1 sm:pt-1.5"}`}
               style={{ top: navHeight, backgroundColor: bgColor }}
             >
               {formatDayHeaderLabel(day.date)}
@@ -94,7 +94,7 @@ export function MonthGroup({ monthName, events, altBg, pageBg, navHeight }: Mont
 
   return (
     <div className="mb-6">
-      <h2 className="text-xl text-black mb-2 font-black">{formatMonth(monthName)}</h2>
+      <h2 className="text-xl text-black mb-1 font-black">{formatMonth(monthName)}</h2>
       {weekKeys.map((weekKey) => {
         const weekData = events.weekGroups[weekKey];
         const dayIndexStart = runningDayIndex;

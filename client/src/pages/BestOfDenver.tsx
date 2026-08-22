@@ -16,7 +16,7 @@ import {
   restaurantCuisineTypes, denverNeighborhoods, denverProperNeighborhoods,
   RESTAURANT_NEIGHBORHOOD_BROAD_REGION, restaurantPricePoints, type Restaurant, type DenverNeighborhood,
 } from "@shared/schema";
-import { Sparkles, MoreVertical, Users, Calendar, UtensilsCrossed, Plus } from "lucide-react";
+import { Sparkles, MoreVertical, Calendar, Plus } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import { SiteSwitcher } from "@/components/SiteSwitcher";
@@ -535,7 +535,6 @@ export default function BestOfDenver() {
               <a href="https://www.meetup.com/amuse-bouche/"
                 target="_blank" rel="noopener noreferrer"
                 className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0">
-                <Users className="h-4 w-4" />
                 <span>Meetup</span>
               </a>
               <TooltipProvider>
@@ -545,7 +544,6 @@ export default function BestOfDenver() {
                       href="/amuse-bouche"
                       className="text-black hover:text-[#41F2EE] font-medium transition-colors flex items-center gap-1 py-3 -my-3 md:py-0 md:my-0"
                     >
-                      <UtensilsCrossed className="h-4 w-4" />
                       <span>Popups</span>
                     </Link>
                   </TooltipTrigger>
