@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { useState, type ReactNode } from "react";
+import { forwardRef, useState, type ReactNode } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Music, Users, Calendar, Ticket } from "lucide-react";
 import { CalendarSubscribeModal } from "./CalendarSubscribeModal";
@@ -11,11 +11,16 @@ import { SiteSwitcher } from "./SiteSwitcher";
 // `onPlaylistsPage`, when true, swaps the "Playlists" link for a "Shows" link
 // back to the main feed — same nav-swap pattern as Amuse-Bouche's Popups/Gems
 // links, so the nav never links to the page you're already on.
-export function Navbar({ children, onPlaylistsPage }: { children?: ReactNode; onPlaylistsPage?: boolean }) {
+//
+// Forwards its ref to the root <nav> so callers can measure its height (e.g.
+// to stick day headers just below it), matching the pattern used on the
+// Amuse-Bouche and Artistry/Nerdery feeds' inline navs.
+export const Navbar = forwardRef<HTMLElement, { children?: ReactNode; onPlaylistsPage?: boolean }>(
+  function Navbar({ children, onPlaylistsPage }, ref) {
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#FEABDA] shadow-md">
+    <nav ref={ref} className="sticky top-0 z-50 bg-[#FEABDA] shadow-md">
       <div className="container mx-auto px-4 py-3">
         {/* Main navbar row with title and RSVP button */}
         <div className="flex flex-col sm:flex-row justify-between items-center">
@@ -112,4 +117,4 @@ export function Navbar({ children, onPlaylistsPage }: { children?: ReactNode; on
       <CalendarSubscribeModal open={calendarOpen} onOpenChange={setCalendarOpen} />
     </nav>
   );
-}
+});

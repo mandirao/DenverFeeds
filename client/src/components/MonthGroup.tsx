@@ -1,6 +1,6 @@
 import { Event } from "@shared/schema";
 import EventItem from "@/components/EventItem";
-import { formatMonth, getWeekOfMonth, extractUtcDateComponents } from "@/lib/utils";
+import { formatMonth, extractUtcDateComponents } from "@/lib/utils";
 import { formatDayHeaderLabel } from "@/lib/eventUtils";
 
 interface MonthGroupProps {
@@ -15,16 +15,22 @@ interface MonthGroupProps {
   };
   // Darker "card" tint for odd-index day groups, matching the alternating-day
   // pattern used on Artistry/Nerdistry and Amuse-Bouche's feeds. Even-index
-  // days stay transparent so they blend with the page background.
+  // days use pageBg instead, so their (opaque) day headers can still stick
+  // without showing scrolled-under content through them.
   altBg: string;
+  // Page background color, painted behind even-index day headers — same
+  // opaque-header trick the Amuse-Bouche and Artistry/Nerdery feeds use.
+  pageBg: string;
+  // Height of the sticky nav above this feed, so day headers stick just below it.
+  navHeight: number;
 }
 
 interface WeekProps {
   weekEvents: Event[];
-  weekNumber: number;
-  totalWeeks: number;
   dayIndexStart: number;
   altBg: string;
+  pageBg: string;
+  navHeight: number;
 }
 
 // Day-group key ("YYYY-MM-DD"), derived the same way groupEventsByMonth
@@ -34,7 +40,7 @@ function dayKey(event: Event): string {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-function WeekGroup({ weekEvents, weekNumber, totalWeeks, dayIndexStart, altBg }: WeekProps) {
+function WeekGroup({ weekEvents, dayIndexStart, altBg, pageBg, navHeight }: WeekProps) {
   if (weekEvents.length === 0) return null;
 
   // weekEvents arrives pre-sorted by date (see groupEventsByMonth) — group
@@ -49,34 +55,38 @@ function WeekGroup({ weekEvents, weekNumber, totalWeeks, dayIndexStart, altBg }:
 
   return (
     <div className="relative">
-      {totalWeeks > 1 && (
-        <div className="pt-2 pb-1">
-          <div className="text-black text-sm font-black uppercase">
-            WEEK {weekNumber}
+      {dayGroups.map((day, i) => {
+        const hasBg = (dayIndexStart + i) % 2 === 1;
+        const bgColor = hasBg ? altBg : pageBg;
+        return (
+          <div
+            key={day.date}
+            className={`rounded-[16px] sm:rounded-[18px] ${hasBg ? "mb-3 sm:mb-[14px]" : "mb-1.5 sm:mb-2"}`}
+          >
+            {/* Sticks to the base of the nav while this day's events scroll by,
+                so a reader never loses track of which day they're looking at. */}
+            <div
+              className={`sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pb-[11px] ${hasBg ? "pt-[10px] sm:pt-3" : "pt-[6px] sm:pt-2"}`}
+              style={{ top: navHeight, backgroundColor: bgColor }}
+            >
+              {formatDayHeaderLabel(day.date)}
+            </div>
+            <ul
+              className={`list-none pl-0 space-y-2 mb-0 px-[14px] sm:px-[22px] rounded-b-[16px] sm:rounded-b-[18px] ${hasBg ? "pb-4 sm:pb-[18px]" : "pb-2 sm:pb-3"}`}
+              style={{ backgroundColor: bgColor }}
+            >
+              {day.events.map(event => (
+                <EventItem key={event.id} event={event} />
+              ))}
+            </ul>
           </div>
-        </div>
-      )}
-      {dayGroups.map((day, i) => (
-        <div
-          key={day.date}
-          className="rounded-[16px] sm:rounded-[18px] px-[14px] sm:px-[22px] pt-[14px] sm:pt-4 pb-4 sm:pb-[18px] mb-3 sm:mb-[14px]"
-          style={{ backgroundColor: (dayIndexStart + i) % 2 === 1 ? altBg : "transparent" }}
-        >
-          <div className="font-display font-black uppercase text-black text-[14px] sm:text-[15px] mb-[11px]">
-            {formatDayHeaderLabel(day.date)}
-          </div>
-          <ul className="list-none pl-0 space-y-2 mb-0">
-            {day.events.map(event => (
-              <EventItem key={event.id} event={event} />
-            ))}
-          </ul>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
-export function MonthGroup({ monthName, events, altBg }: MonthGroupProps) {
+export function MonthGroup({ monthName, events, altBg, pageBg, navHeight }: MonthGroupProps) {
   if (!events || events.events.length === 0) return null;
 
   const weekKeys = Object.keys(events.weekGroups).sort();
@@ -84,12 +94,9 @@ export function MonthGroup({ monthName, events, altBg }: MonthGroupProps) {
 
   return (
     <div className="mb-6">
-      <h2 className="text-xl text-black mb-3 font-black">{formatMonth(monthName)}</h2>
+      <h2 className="text-xl text-black mb-2 font-black">{formatMonth(monthName)}</h2>
       {weekKeys.map((weekKey) => {
         const weekData = events.weekGroups[weekKey];
-        const weekNumber = weekData.events.length > 0
-          ? getWeekOfMonth(new Date(weekData.events[0].date))
-          : 1;
         const dayIndexStart = runningDayIndex;
         runningDayIndex += new Set(weekData.events.map(dayKey)).size;
 
@@ -97,10 +104,10 @@ export function MonthGroup({ monthName, events, altBg }: MonthGroupProps) {
           <WeekGroup
             key={weekKey}
             weekEvents={weekData.events}
-            weekNumber={weekNumber}
-            totalWeeks={weekKeys.length}
             dayIndexStart={dayIndexStart}
             altBg={altBg}
+            pageBg={pageBg}
+            navHeight={navHeight}
           />
         );
       })}

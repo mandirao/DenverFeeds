@@ -292,6 +292,7 @@ export default function Home() {
   const [searchOpen, setSearchOpen] = useState(() => getFiltersFromURL().search.trim() !== "");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { ref: filterBarRef, height: filterBarHeight } = useElementHeight<HTMLDivElement>();
+  const { ref: navRef, height: navHeight } = useElementHeight<HTMLElement>();
   const isMobile = useIsMobile();
 
   // Update URL when filters change
@@ -562,6 +563,8 @@ export default function Home() {
             monthName={month}
             events={monthEvents}
             altBg={CONCERT_CARD_BG}
+            pageBg={MUSIC_ORANGE}
+            navHeight={navHeight}
           />
         ))}
       </>
@@ -579,7 +582,7 @@ export default function Home() {
 
   return (
     <div className={`min-h-screen bg-[#FE6B41] ${viewMode === "calendar" && isMobile ? "h-dvh flex flex-col" : ""}`}>
-      <Navbar>
+      <Navbar ref={navRef}>
         {/* Filter Pills - a persistent bottom section of the nav on desktop, pinned to the bottom of the screen on mobile */}
         {!isLoading && !error && events.length > 0 && (
           <div
@@ -855,7 +858,7 @@ export default function Home() {
         )}
       </Navbar>
 
-      <main className={`container mx-auto px-4 py-8 transition-all duration-200 ${viewMode === "calendar" && isMobile ? "flex-1 flex flex-col min-h-0" : ""}`}>
+      <main className={`container mx-auto px-4 py-8 transition-all duration-200 ${viewMode === "calendar" ? (isMobile ? "flex-1 flex flex-col min-h-0" : "") : "max-w-3xl"}`}>
         {/* Recent Events Banner - prioritize "today", fall back to "this week", else hide. Hidden on desktop in calendar view to give the calendar more room. */}
         {!isLoading && !error && events.length > 0 && filters.status === "all" && filters.sortBy !== "just-added" && (() => {
           const todayCount = events.filter(event => getAddedTimeCategory(event.createdAt) === 'today').length;

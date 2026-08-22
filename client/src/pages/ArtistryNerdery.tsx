@@ -645,7 +645,7 @@ export default function ArtistryNerdery() {
       </nav>
 
       {/* Feed */}
-      <main className={`container mx-auto px-4 py-6 flex-1 transition-all duration-200 ${viewMode === "calendar" ? (isMobile ? "flex flex-col min-h-0" : "") : "max-w-2xl"}`}>
+      <main className={`container mx-auto px-4 py-6 flex-1 transition-all duration-200 ${viewMode === "calendar" ? (isMobile ? "flex flex-col min-h-0" : "") : "max-w-3xl"}`}>
 
         {/* Recent events banner - prioritize "today", fall back to "this week", else hide. Hidden on desktop in calendar view. */}
         {!isLoading && events.length > 0 && sortBy !== "added" && (() => {
@@ -806,22 +806,22 @@ export default function ArtistryNerdery() {
 
         {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => (
           <div key={month} className="mb-6">
-            <h2 className="text-xl text-black mb-3 font-black">{month.toUpperCase()}</h2>
+            <h2 className="text-xl text-black mb-2 font-black">{month.toUpperCase()}</h2>
             {monthData.dayGroups.map((day, dayIdx) => (
               <div
                 key={day.date}
-                className="rounded-[16px] sm:rounded-[18px] mb-3 sm:mb-[14px]"
+                className={`rounded-[16px] sm:rounded-[18px] ${dayIdx % 2 === 1 ? "mb-3 sm:mb-[14px]" : "mb-1.5 sm:mb-2"}`}
                 style={{ backgroundColor: dayIdx % 2 === 1 ? AN_DAY_ALT : AN_BG }}
               >
                 {/* Sticks to the base of the nav while this day's events scroll by,
                     so a reader never loses track of which day they're looking at. */}
                 <div
-                  className="sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pt-[14px] sm:pt-4 pb-[11px]"
+                  className={`sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pb-[11px] ${dayIdx % 2 === 1 ? "pt-[10px] sm:pt-3" : "pt-[6px] sm:pt-2"}`}
                   style={{ top: navHeight, backgroundColor: dayIdx % 2 === 1 ? AN_DAY_ALT : AN_BG }}
                 >
                   {formatDayHeaderLabel(day.date)}
                 </div>
-                <ul className="list-none m-0 p-0 flex flex-col gap-[11px] sm:gap-[9px] px-[14px] sm:px-[22px] pb-4 sm:pb-[18px]">
+                <ul className={`list-none m-0 p-0 flex flex-col gap-[11px] sm:gap-[9px] px-[14px] sm:px-[22px] ${dayIdx % 2 === 1 ? "pb-4 sm:pb-[18px]" : "pb-2 sm:pb-3"}`}>
                   {day.events.map(ev => (
                     <ListingEventRow
                       key={`${ev.id}-${ev.dateStart}`}
