@@ -62,6 +62,8 @@ export interface ListingRowConfig<T extends ListingEventBase> {
 // Per-feed configuration for <ListingCalendarMonthView>.
 export interface ListingCalendarConfig<T extends ListingEventBase> {
   cellBg: string;
+  /** Darker "card" tint for the mobile day-scroll view, matching the feed's alternating-day rows. */
+  cardBg: string;
   /**
    * Whether a multi-day event's spillover into this month's first cell should
    * skip recurring events. Art guards against this (recurring events are

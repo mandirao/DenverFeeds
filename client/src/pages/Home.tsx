@@ -29,6 +29,9 @@ import { apiRequest, queryClient as qc } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 const MUSIC_ORANGE = "#FE6B41";
+// Darker "card" tint — mobile calendar day-cards and the list view's
+// alternating-day background both use this.
+const CONCERT_CARD_BG = "#E85F3A";
 
 function ConcertCalendarMonthView({
   events,
@@ -135,14 +138,9 @@ const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 function ConcertDayScrollView({
   events,
   onEventClick,
-  filterBarHeight = 0,
 }: {
   events: Event[];
   onEventClick: (ev: Event) => void;
-  // Height of the fixed bottom mobile filter bar, so the day card's scroll
-  // area can stop short of it instead of running underneath and hiding its
-  // last rows.
-  filterBarHeight?: number;
 }) {
   const todayStr = localDateStr();
 
@@ -164,7 +162,7 @@ function ConcertDayScrollView({
   const eventsOnDay = (day: string) => events.filter(ev => ev.date.toString().slice(0, 10) === day);
 
   return (
-    <div className="overflow-x-auto scrollbar-hide snap-x snap-mandatory flex gap-1 pb-2 -mx-4 px-4">
+    <div className="overflow-x-auto scrollbar-hide snap-x snap-mandatory flex gap-3 -mx-4 px-4 scroll-pl-4 scroll-pr-4 flex-1 min-h-0">
       {days.map(day => {
         const dayEvents = eventsOnDay(day);
         const isToday = day === todayStr;
@@ -172,9 +170,10 @@ function ConcertDayScrollView({
         return (
           <div
             key={day}
-            className="snap-start flex-shrink-0 w-[85vw] max-w-[380px] border-2 border-black bg-white flex flex-col"
+            className="snap-start flex-shrink-0 w-[85vw] max-w-[380px] rounded-[16px] sm:rounded-[18px] overflow-hidden flex flex-col"
+            style={{ backgroundColor: CONCERT_CARD_BG }}
           >
-            <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between gap-2 flex-shrink-0" style={{ backgroundColor: "#FEABDA" }}>
+            <div className="px-5 py-4 border-b border-black/10 flex items-center justify-between gap-2 flex-shrink-0">
               <div className="min-w-0">
                 <div className="text-sm font-black uppercase tracking-wider text-black/50 truncate">
                   {isToday ? 'Today' : WEEKDAY_LONG[d.getDay()]}
@@ -190,8 +189,7 @@ function ConcertDayScrollView({
               )}
             </div>
             <div
-              className="divide-y divide-black/10 overflow-y-auto scrollbar-dark"
-              style={{ maxHeight: `calc(100dvh - 235px - ${filterBarHeight}px)` }}
+              className="divide-y divide-black/10 overflow-y-auto scrollbar-dark flex-1 min-h-0"
             >
               {dayEvents.length === 0 && (
                 <div className="px-5 py-10 text-center text-base text-black/40">No shows this day</div>
@@ -559,10 +557,11 @@ export default function Home() {
     displayContent = (
       <>
         {Object.entries(groupedByMonthAndWeek).map(([month, monthEvents]) => (
-          <MonthGroup 
-            key={month} 
-            monthName={month} 
-            events={monthEvents} 
+          <MonthGroup
+            key={month}
+            monthName={month}
+            events={monthEvents}
+            altBg={CONCERT_CARD_BG}
           />
         ))}
       </>
@@ -579,7 +578,7 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen bg-[#FE6B41]">
+    <div className={`min-h-screen bg-[#FE6B41] ${viewMode === "calendar" && isMobile ? "h-dvh flex flex-col" : ""}`}>
       <Navbar>
         {/* Filter Pills - a persistent bottom section of the nav on desktop, pinned to the bottom of the screen on mobile */}
         {!isLoading && !error && events.length > 0 && (
@@ -856,7 +855,7 @@ export default function Home() {
         )}
       </Navbar>
 
-      <main className="container mx-auto px-4 py-8 transition-all duration-200">
+      <main className={`container mx-auto px-4 py-8 transition-all duration-200 ${viewMode === "calendar" && isMobile ? "flex-1 flex flex-col min-h-0" : ""}`}>
         {/* Recent Events Banner - prioritize "today", fall back to "this week", else hide. Hidden on desktop in calendar view to give the calendar more room. */}
         {!isLoading && !error && events.length > 0 && filters.status === "all" && filters.sortBy !== "just-added" && (() => {
           const todayCount = events.filter(event => getAddedTimeCategory(event.createdAt) === 'today').length;
@@ -880,7 +879,7 @@ export default function Home() {
         })()}
 
         {/* Events Feed */}
-        <div className="mb-8 min-h-[400px]">
+        <div className={viewMode === "calendar" && isMobile ? "flex-1 min-h-0 flex flex-col" : "mb-8 min-h-[400px]"}>
           {isLoading ? (
             <div className="py-10 text-center">Loading events...</div>
           ) : error ? (
@@ -895,7 +894,6 @@ export default function Home() {
               <ConcertDayScrollView
                 events={filteredEvents}
                 onEventClick={setCalEventDetail}
-                filterBarHeight={filterBarHeight}
               />
             ) : (
               <ConcertCalendarMonthView

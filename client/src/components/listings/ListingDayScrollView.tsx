@@ -14,15 +14,10 @@ export function ListingDayScrollView<T extends ListingEventBase>({
   events,
   onEventClick,
   config,
-  filterBarHeight = 0,
 }: {
   events: T[];
   onEventClick: (ev: T) => void;
   config: ListingCalendarConfig<T>;
-  // Height of the fixed bottom mobile filter bar, so the day card's scroll
-  // area can stop short of it instead of running underneath and hiding its
-  // last rows — see the parent page's useElementHeight measurement of it.
-  filterBarHeight?: number;
 }) {
   const todayStr = localDateStr();
 
@@ -75,7 +70,7 @@ export function ListingDayScrollView<T extends ListingEventBase>({
   };
 
   return (
-    <div className="overflow-x-auto scrollbar-hide snap-x snap-mandatory flex gap-1 pb-2 -mx-4 px-4">
+    <div className="overflow-x-auto scrollbar-hide snap-x snap-mandatory flex gap-3 -mx-4 px-4 scroll-pl-4 scroll-pr-4 flex-1 min-h-0">
       {days.map(day => {
         const { all: dayEvents, startingToday, stillGoing } = eventsOnDay(day);
         const isToday = day === todayStr;
@@ -83,10 +78,10 @@ export function ListingDayScrollView<T extends ListingEventBase>({
         return (
           <div
             key={day}
-            className="snap-start flex-shrink-0 w-[85vw] max-w-[380px] border-2 border-black flex flex-col"
-            style={{ backgroundColor: config.cellBg }}
+            className="snap-start flex-shrink-0 w-[85vw] max-w-[380px] rounded-[16px] sm:rounded-[18px] overflow-hidden flex flex-col"
+            style={{ backgroundColor: config.cardBg }}
           >
-            <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between gap-2 flex-shrink-0">
+            <div className="px-5 py-4 border-b border-black/10 flex items-center justify-between gap-2 flex-shrink-0">
               <div className="min-w-0">
                 <div className="text-sm font-black uppercase tracking-wider text-black/50 truncate">
                   {isToday ? 'Today' : WEEKDAY_LONG[d.getDay()]}
@@ -101,10 +96,7 @@ export function ListingDayScrollView<T extends ListingEventBase>({
                 </div>
               )}
             </div>
-            <div
-              className="divide-y divide-black/10 overflow-y-auto scrollbar-dark"
-              style={{ maxHeight: `calc(100dvh - 235px - ${filterBarHeight}px)` }}
-            >
+            <div className="divide-y divide-black/10 overflow-y-auto scrollbar-dark flex-1 min-h-0">
               {dayEvents.length === 0 && (
                 <div className="px-5 py-10 text-center text-base text-black/40">Nothing scheduled</div>
               )}
@@ -122,16 +114,18 @@ export function ListingDayScrollView<T extends ListingEventBase>({
                         <span className="flex-shrink-0 text-[10px] font-black uppercase leading-none px-1.5 py-1 bg-black text-white">SOLD OUT</span>
                       )}
                     </div>
-                    <div className="text-sm text-black/60 truncate">
-                      {ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && (
-                        <span className="font-semibold text-black/80">{formatTime(ev.startTime)} · </span>
-                      )}
-                      {ev.isRecurring && (
-                        <span className="font-semibold text-black/80">{formatRecurrenceCadence(ev.recurrenceLabel)} · </span>
-                      )}
-                      {ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}
-                    </div>
-                    {ev.price && <div className="text-sm text-black/50">{ev.price}</div>}
+                    {!ev.soldOut && (
+                      <div className="text-sm text-black/60 truncate">
+                        {ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && (
+                          <span className="font-semibold text-black/80">{formatTime(ev.startTime)} · </span>
+                        )}
+                        {ev.isRecurring && (
+                          <span className="font-semibold text-black/80">{formatRecurrenceCadence(ev.recurrenceLabel)} · </span>
+                        )}
+                        {ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}
+                      </div>
+                    )}
+                    {!ev.soldOut && ev.price && <div className="text-sm text-black/50">{ev.price}</div>}
                   </div>
                   <ChevronRight className="w-5 h-5 text-black/30 flex-shrink-0" />
                 </button>
@@ -155,14 +149,16 @@ export function ListingDayScrollView<T extends ListingEventBase>({
                         <span className="flex-shrink-0 text-[10px] font-black uppercase leading-none px-1.5 py-1 bg-black text-white">SOLD OUT</span>
                       )}
                     </div>
-                    <div className="text-sm text-black/60 truncate">
-                      {ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && (
-                        <span className="font-semibold text-black/80">{formatTime(ev.startTime)} · </span>
-                      )}
-                      {ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}
-                    </div>
-                    <div className="text-sm text-black/50 font-semibold">Through {formatThrough(spanEnd(ev))}</div>
-                    {ev.price && <div className="text-sm text-black/50">{ev.price}</div>}
+                    {!ev.soldOut && (
+                      <div className="text-sm text-black/60 truncate">
+                        {ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && (
+                          <span className="font-semibold text-black/80">{formatTime(ev.startTime)} · </span>
+                        )}
+                        {ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}
+                      </div>
+                    )}
+                    {!ev.soldOut && <div className="text-sm text-black/50 font-semibold">Through {formatThrough(spanEnd(ev))}</div>}
+                    {!ev.soldOut && ev.price && <div className="text-sm text-black/50">{ev.price}</div>}
                   </div>
                   <ChevronRight className="w-5 h-5 text-black/30 flex-shrink-0" />
                 </button>

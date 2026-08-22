@@ -64,6 +64,7 @@ const artRowConfig: ListingRowConfig<ArtEvent> = {
 
 const artCalendarConfig: ListingCalendarConfig<ArtEvent> = {
   cellBg: AN_BG,
+  cardBg: AN_DAY_ALT,
   guardRecurringMultiDaySpillover: true,
 };
 
@@ -206,6 +207,10 @@ export default function ArtistryNerdery() {
   const [searchOpen, setSearchOpen] = useState(() => searchQuery.trim() !== "");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { ref: filterBarRef, height: filterBarHeight } = useElementHeight<HTMLDivElement>();
+  // Measures the sticky nav's own rendered height (which differs by breakpoint —
+  // the filter bar is part of the nav's flow on desktop but fixed-to-bottom on
+  // mobile) so the sticky day-header bars below can stick flush beneath it.
+  const { ref: navRef, height: navHeight } = useElementHeight<HTMLElement>();
   const isMobile = useIsMobile();
 
   // Forces a re-render every minute so today's events drop off the feed
@@ -391,10 +396,10 @@ export default function ArtistryNerdery() {
   }, {});
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: AN_BG }}>
+    <div className={`min-h-screen flex flex-col ${viewMode === "calendar" && isMobile ? "h-dvh" : ""}`} style={{ backgroundColor: AN_BG }}>
 
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 shadow-md" style={{ backgroundColor: AN_ORANGE }}>
+      <nav ref={navRef} className="sticky top-0 z-50 shadow-md" style={{ backgroundColor: AN_ORANGE }}>
         <div className="container mx-auto px-4 py-3">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
             <div className="flex items-baseline gap-3">
@@ -640,12 +645,7 @@ export default function ArtistryNerdery() {
       </nav>
 
       {/* Feed */}
-      <main className={`container mx-auto px-4 py-6 flex-1 transition-all duration-200 ${viewMode === "calendar" ? "" : "max-w-2xl"}`}>
-
-        {/* Hidden on desktop in calendar view to give the calendar more room */}
-        <p className={`text-xs text-black mb-4 opacity-60 leading-snug ${viewMode === "calendar" ? "hidden" : ""}`}>
-          Exhibits, talks, screenings, performances, workshops and similar fun.
-        </p>
+      <main className={`container mx-auto px-4 py-6 flex-1 transition-all duration-200 ${viewMode === "calendar" ? (isMobile ? "flex flex-col min-h-0" : "") : "max-w-2xl"}`}>
 
         {/* Recent events banner - prioritize "today", fall back to "this week", else hide. Hidden on desktop in calendar view. */}
         {!isLoading && events.length > 0 && sortBy !== "added" && (() => {
@@ -699,12 +699,13 @@ export default function ArtistryNerdery() {
 
         {!isLoading && viewMode === "calendar" && (
           isMobile ? (
-            <ListingDayScrollView
-              events={filteredEvents}
-              onEventClick={setCalEventDetail}
-              config={artCalendarConfig}
-              filterBarHeight={filterBarHeight}
-            />
+            <div className="flex-1 min-h-0 flex flex-col">
+              <ListingDayScrollView
+                events={filteredEvents}
+                onEventClick={setCalEventDetail}
+                config={artCalendarConfig}
+              />
+            </div>
           ) : (
             <ListingCalendarMonthView
               events={filteredEvents}
@@ -766,74 +767,61 @@ export default function ArtistryNerdery() {
 
         {viewMode === "list" && sortBy === "date" && stillTimeEvents.length > 0 && (
           <div className="mb-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-0.5 flex-1 bg-black" />
-              <h2 className="text-lg font-black uppercase text-black flex items-center gap-2">
-                STILL TIME
-              </h2>
-              <div className="h-0.5 flex-1 bg-black" />
-            </div>
+            <h2 className="text-xl text-black mb-3 font-black">STILL TIME</h2>
 
-            <div className="relative">
-              <ul className="space-y-0">
-                {visibleStillTimeEvents.map(ev => (
-                  <ListingEventRow key={`still-${ev.id}`} event={ev} config={artRowConfig} />
-                ))}
-              </ul>
-              {stillTimeTruncated && (
-                <div className="relative overflow-hidden pointer-events-none" style={{ maxHeight: "1.25rem" }}>
-                  <ul className="space-y-0">
-                    <ListingEventRow key={`still-peek-${stillTimeEvents[STILL_VISIBLE].id}`} event={stillTimeEvents[STILL_VISIBLE]} config={artRowConfig} />
-                  </ul>
-                  <div
-                    className="absolute inset-0"
-                    style={{ background: `linear-gradient(to bottom, transparent 0%, ${AN_BG} 80%)` }}
-                  />
-                </div>
+            <div
+              className="rounded-[16px] sm:rounded-[18px] overflow-hidden"
+              style={{ backgroundColor: AN_DAY_ALT }}
+            >
+              <div className={`px-[14px] sm:px-[22px] pt-[14px] sm:pt-4 ${stillTimeTruncated ? "" : "pb-3"}`}>
+                <ul className="list-none m-0 p-0 flex flex-col gap-[11px] sm:gap-[9px]">
+                  {visibleStillTimeEvents.map(ev => (
+                    <ListingEventRow key={`still-${ev.id}`} event={ev} config={artRowConfig} />
+                  ))}
+                </ul>
+                {/* Hard-clipped peek at the next hidden event, flush against the
+                    footer button below — no fade, no gap, the button visibly
+                    "cuts it off". */}
+                {stillTimeTruncated && (
+                  <div className="overflow-hidden pointer-events-none mt-[11px] sm:mt-[9px]" style={{ maxHeight: "1.1rem" }}>
+                    <ul className="list-none m-0 p-0 flex flex-col gap-[11px] sm:gap-[9px]">
+                      <ListingEventRow key={`still-peek-${stillTimeEvents[STILL_VISIBLE].id}`} event={stillTimeEvents[STILL_VISIBLE]} config={artRowConfig} />
+                    </ul>
+                  </div>
+                )}
+              </div>
+              {stillTimeEvents.length > STILL_VISIBLE && (
+                <button
+                  onClick={() => setStillTimeExpanded(!stillTimeExpanded)}
+                  className="w-full px-5 py-2 border-t border-black/10 bg-black/5 hover:bg-black/10 transition-colors flex items-center gap-2 text-left"
+                >
+                  <span className="text-sm font-black uppercase tracking-wider text-black/40">
+                    {stillTimeTruncated ? `↓ Show ${stillTimeHiddenCount} more closing soon` : "↑ Show less"}
+                  </span>
+                </button>
               )}
             </div>
-            {stillTimeTruncated && (
-              <div className="text-center mt-3">
-                <button
-                  onClick={() => setStillTimeExpanded(true)}
-                  className="text-black text-xs underline hover:opacity-60 transition-opacity focus:outline-none opacity-50"
-                >
-                  ↓ show {stillTimeHiddenCount} more closing soon
-                </button>
-              </div>
-            )}
-            {!stillTimeTruncated && stillTimeEvents.length > STILL_VISIBLE && (
-              <div className="text-center mt-2">
-                <button
-                  onClick={() => setStillTimeExpanded(false)}
-                  className="text-black text-xs underline hover:opacity-60 transition-opacity focus:outline-none opacity-50"
-                >
-                  ↑ show less
-                </button>
-              </div>
-            )}
           </div>
         )}
 
         {viewMode === "list" && sortBy === "date" && Object.entries(grouped).map(([month, monthData]) => (
           <div key={month} className="mb-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-0.5 flex-1 bg-black" />
-              <h2 className="text-lg font-black uppercase text-black">
-                {month.toUpperCase()}
-              </h2>
-              <div className="h-0.5 flex-1 bg-black" />
-            </div>
+            <h2 className="text-xl text-black mb-3 font-black">{month.toUpperCase()}</h2>
             {monthData.dayGroups.map((day, dayIdx) => (
               <div
                 key={day.date}
-                className="rounded-[16px] sm:rounded-[18px] px-[14px] sm:px-[22px] pt-[14px] sm:pt-4 pb-4 sm:pb-[18px] mb-3 sm:mb-[14px]"
+                className="rounded-[16px] sm:rounded-[18px] mb-3 sm:mb-[14px]"
                 style={{ backgroundColor: dayIdx % 2 === 1 ? AN_DAY_ALT : AN_BG }}
               >
-                <div className="font-display font-black uppercase text-black text-[14px] sm:text-[15px] mb-[11px]">
+                {/* Sticks to the base of the nav while this day's events scroll by,
+                    so a reader never loses track of which day they're looking at. */}
+                <div
+                  className="sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pt-[14px] sm:pt-4 pb-[11px]"
+                  style={{ top: navHeight, backgroundColor: dayIdx % 2 === 1 ? AN_DAY_ALT : AN_BG }}
+                >
                   {formatDayHeaderLabel(day.date)}
                 </div>
-                <ul className="list-none m-0 p-0 flex flex-col gap-[11px] sm:gap-[9px]">
+                <ul className="list-none m-0 p-0 flex flex-col gap-[11px] sm:gap-[9px] px-[14px] sm:px-[22px] pb-4 sm:pb-[18px]">
                   {day.events.map(ev => (
                     <ListingEventRow
                       key={`${ev.id}-${ev.dateStart}`}
