@@ -540,6 +540,13 @@ export const foodEvents = pgTable("food_events", {
   // action (or auto-set when correcting an unverified occurrence's date),
   // not by any date-math inference — see expandRecurringEvents.
   verifiedThroughDate: text("verified_through_date"),
+  // Weekday subset (0=Sun..6=Sat) a bounded date-range event actually runs
+  // on — e.g. a theatre run Sept-Dec that's only Thu/Fri/Sat. Only
+  // meaningful when isRecurring is false and dateEnd differs from
+  // dateStart (Range mode); null means every day in the range is active,
+  // same as before this field existed. Orthogonal to recurrenceRule, which
+  // covers indefinite series instead of a bounded span.
+  activeWeekdays: jsonb("active_weekdays").$type<number[]>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -556,6 +563,7 @@ export const insertFoodEventSchema = createInsertSchema(foodEvents).omit({
   recurrenceRule: recurrenceRuleSchema.nullable().optional(),
   excludedDates: z.array(z.string()).nullable().optional(),
   verifiedThroughDate: z.string().nullable().optional(),
+  activeWeekdays: z.array(z.number().min(0).max(6)).nullable().optional(),
 });
 
 export type InsertFoodEvent = z.infer<typeof insertFoodEventSchema>;
@@ -600,6 +608,8 @@ export const artEvents = pgTable("art_events", {
   excludedDates: jsonb("excluded_dates").$type<string[]>(),
   // See foodEvents.verifiedThroughDate — same meaning here.
   verifiedThroughDate: text("verified_through_date"),
+  // See foodEvents.activeWeekdays — same meaning here.
+  activeWeekdays: jsonb("active_weekdays").$type<number[]>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -616,6 +626,7 @@ export const insertArtEventSchema = createInsertSchema(artEvents).omit({
   recurrenceRule: recurrenceRuleSchema.nullable().optional(),
   excludedDates: z.array(z.string()).nullable().optional(),
   verifiedThroughDate: z.string().nullable().optional(),
+  activeWeekdays: z.array(z.number().min(0).max(6)).nullable().optional(),
 });
 
 export type InsertArtEvent = z.infer<typeof insertArtEventSchema>;

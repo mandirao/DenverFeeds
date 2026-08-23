@@ -111,21 +111,27 @@ function nthWeekdayOfMonth(year: number, month: number, weekday: number, ordinal
 /** Deterministic terse label from a structured rule — matches the existing
  * feed voice ("Mondays", not "Weekly on Mondays"). Single source of truth so
  * the picker, AI output, and backfill all produce the same style. */
+/** Joins a set of weekday indices into the feed-voice label ("Weekends",
+ * "Thursdays, Fridays & Saturdays") — the single source of truth for this
+ * join logic, shared by describeRecurrenceRule below and by Range mode's
+ * weekday-filtered display (see eventUtils.ts). */
+export function describeWeekdaySet(days: number[]): string {
+  const weekdayPlural = (wd: number) => WEEKDAY_NAMES[wd] + 's';
+  const sorted = [...days].sort((a, b) => a - b);
+  if (sorted.length === 2 && sorted[0] === 0 && sorted[1] === 6) return 'Weekends';
+  const names = sorted.map(weekdayPlural);
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} & ${names[1]}`;
+  return `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}`;
+}
+
 export function describeRecurrenceRule(rule: RecurrenceRule): string {
   const weekdayPlural = (wd: number) => WEEKDAY_NAMES[wd] + 's';
-  const joinWeekdayLabels = (days: number[]) => {
-    const sorted = [...days].sort((a, b) => a - b);
-    if (sorted.length === 2 && sorted[0] === 0 && sorted[1] === 6) return 'Weekends';
-    const names = sorted.map(weekdayPlural);
-    if (names.length === 1) return names[0];
-    if (names.length === 2) return `${names[0]} & ${names[1]}`;
-    return `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}`;
-  };
   switch (rule.freq) {
     case 'weekly': {
       const days = rule.byWeekdays ?? (rule.byWeekday !== undefined ? [rule.byWeekday] : []);
       if (days.length === 0) return 'Weekly';
-      const base = joinWeekdayLabels(days);
+      const base = describeWeekdaySet(days);
       if (rule.interval === 2) {
         // Singular for a single weekday ("Every other Monday"), plural join
         // stays as-is for multi-day sets ("Every other Weekends" reads fine).

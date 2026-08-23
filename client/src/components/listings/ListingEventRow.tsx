@@ -47,7 +47,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
   const isMultiDayRange = !event.isRecurring && !!event.dateEnd && event.dateEnd !== "" && event.dateEnd !== event.dateStart;
   const useFullDate = dateDisplay === "full" || isMultiDayRange;
   const primaryDateLabel = useFullDate
-    ? formatDateRange(event.dateStart, event.isRecurring ? null : event.dateEnd)
+    ? formatDateRange(event.dateStart, event.isRecurring ? null : event.dateEnd, event.isRecurring ? null : event.activeWeekdays)
     : hasValidTime ? formatTime(event.startTime!) : formatDateRange(event.dateStart, null);
   const cadence = event.isRecurring ? formatRecurrenceCadence(event.recurrenceLabel) : null;
 

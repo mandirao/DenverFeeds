@@ -49,6 +49,14 @@ export function ListingDayScrollView<T extends ListingEventBase>({
     ? ev.dateStart
     : (ev.dateEnd && ev.dateEnd > ev.dateStart ? ev.dateEnd : ev.dateStart);
 
+  // Range-mode events can carry an optional weekday filter (e.g. a theatre
+  // run that's only Thu/Fri/Sat within its dateStart..dateEnd span) — when
+  // set, a day only counts toward the strip if its weekday is in the set.
+  // Empty/unset means every day in the span is active, same as before this
+  // field existed.
+  const matchesActiveWeekday = (ev: T, day: string) =>
+    !ev.activeWeekdays?.length || ev.activeWeekdays.includes(new Date(day + "T12:00:00").getDay());
+
   let maxDate = todayStr;
   for (const ev of events) {
     const end = spanEnd(ev);
@@ -75,7 +83,7 @@ export function ListingDayScrollView<T extends ListingEventBase>({
   // Recurring events never land in "Still Time" — see spanEnd above, they
   // only ever appear on their own occurrence day.
   const eventsOnDay = (day: string) => {
-    const all = events.filter(ev => ev.dateStart <= day && spanEnd(ev) >= day);
+    const all = events.filter(ev => ev.dateStart <= day && spanEnd(ev) >= day && matchesActiveWeekday(ev, day));
     const byStartTime = (a: T, b: T) => (a.startTime ?? '').localeCompare(b.startTime ?? '');
     // Still Time stacks soonest-closing first, matching desktop's stillTimeEvents sort.
     const byEndDate = (a: T, b: T) => spanEnd(a).localeCompare(spanEnd(b));

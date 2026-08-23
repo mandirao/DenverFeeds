@@ -986,9 +986,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return `${toDateStr(date)}T${String(nh).padStart(2,'0')}${String(nm).padStart(2,'0')}00`;
       };
 
+      // Weekday-filtered Range-mode events (e.g. a theatre run that's only
+      // Thu/Fri/Sat within its dateStart..dateEnd span) get a single VEVENT
+      // with an RRULE instead of a flat DTSTART..DTEND block, so subscribed
+      // calendars show the real per-week schedule rather than every day.
+      const ICAL_WEEKDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+      const addOneDay = (d: string) => { const dt = new Date(d + "T12:00:00"); dt.setDate(dt.getDate() + 1); return dt.toISOString().split('T')[0]; };
+      const firstActiveDate = (start: string, activeWeekdays: number[]) => {
+        let d = start;
+        for (let i = 0; i < 7; i++) {
+          if (activeWeekdays.includes(new Date(d + "T12:00:00").getDay())) return d;
+          d = addOneDay(d);
+        }
+        return start;
+      };
+
       upcoming.forEach(ev => {
         const endDateStr = ev.dateEnd && ev.dateEnd !== ev.dateStart ? nextDay(ev.dateEnd) : nextDay(ev.dateStart);
         const hasTime = ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime);
+        const hasWeekdayFilter = !ev.isRecurring && Array.isArray(ev.activeWeekdays) && ev.activeWeekdays.length > 0
+          && !!ev.dateEnd && ev.dateEnd !== ev.dateStart;
+        const rruleStartDate = hasWeekdayFilter ? firstActiveDate(ev.dateStart, ev.activeWeekdays!) : ev.dateStart;
         const titleModifier = ev.isRecurring ? ev.instanceTitles?.[ev.dateStart] : undefined;
         const displayName = titleModifier ? `${ev.name}: ${titleModifier}` : ev.name;
         const instanceNote = ev.isRecurring ? ev.instanceNotes?.[ev.dateStart] : undefined;
@@ -1006,11 +1024,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lines.push(`UID:${uid}`);
         lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
         if (hasTime) {
-          lines.push(`DTSTART;TZID=America/Denver:${toLocalDT(ev.dateStart, ev.startTime!)}`);
-          lines.push(`DTEND;TZID=America/Denver:${addHours(ev.dateStart, ev.startTime!, 2)}`);
+          lines.push(`DTSTART;TZID=America/Denver:${toLocalDT(rruleStartDate, ev.startTime!)}`);
+          lines.push(`DTEND;TZID=America/Denver:${addHours(rruleStartDate, ev.startTime!, 2)}`);
         } else {
-          lines.push(`DTSTART;VALUE=DATE:${toDateStr(ev.dateStart)}`);
-          lines.push(`DTEND;VALUE=DATE:${endDateStr}`);
+          lines.push(`DTSTART;VALUE=DATE:${toDateStr(rruleStartDate)}`);
+          lines.push(`DTEND;VALUE=DATE:${hasWeekdayFilter ? nextDay(rruleStartDate) : endDateStr}`);
+        }
+        if (hasWeekdayFilter) {
+          const byDay = [...ev.activeWeekdays!].sort((a: number, b: number) => a - b).map((d: number) => ICAL_WEEKDAY[d]).join(',');
+          // UNTIL's value type must match DTSTART's; a timed DTSTART needs a
+          // UTC date-time, so this pads 8 hours past midnight on the day
+          // after dateEnd — always after any Denver-local end-of-day
+          // occurrence regardless of DST, without needing a real TZ convert.
+          const until = hasTime ? `${nextDay(ev.dateEnd!)}T080000Z` : toDateStr(ev.dateEnd!);
+          lines.push(`RRULE:FREQ=WEEKLY;BYDAY=${byDay};UNTIL=${until}`);
         }
         lines.push(foldLine(`SUMMARY:${escapeIcal(displayName + ' @ ' + ev.venue)}`));
         lines.push(foldLine(`DESCRIPTION:${escapeIcal(desc)}`));
@@ -1083,9 +1110,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return `${toDateStr(date)}T${String(nh).padStart(2,'0')}${String(nm).padStart(2,'0')}00`;
       };
 
+      // See food-feed.ics's identical helpers for why weekday-filtered
+      // Range-mode events get an RRULE instead of a flat DTSTART..DTEND span.
+      const ICAL_WEEKDAY2 = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+      const addOneDay2 = (d: string) => { const dt = new Date(d + "T12:00:00"); dt.setDate(dt.getDate() + 1); return dt.toISOString().split('T')[0]; };
+      const firstActiveDate2 = (start: string, activeWeekdays: number[]) => {
+        let d = start;
+        for (let i = 0; i < 7; i++) {
+          if (activeWeekdays.includes(new Date(d + "T12:00:00").getDay())) return d;
+          d = addOneDay2(d);
+        }
+        return start;
+      };
+
       upcoming.forEach(ev => {
         const endDateStr = ev.dateEnd && ev.dateEnd !== ev.dateStart ? nextDay(ev.dateEnd) : nextDay(ev.dateStart);
         const hasTime = ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime);
+        const hasWeekdayFilter = !ev.isRecurring && Array.isArray(ev.activeWeekdays) && ev.activeWeekdays.length > 0
+          && !!ev.dateEnd && ev.dateEnd !== ev.dateStart;
+        const rruleStartDate = hasWeekdayFilter ? firstActiveDate2(ev.dateStart, ev.activeWeekdays!) : ev.dateStart;
         const titleModifier = ev.isRecurring ? ev.instanceTitles?.[ev.dateStart] : undefined;
         const displayName = titleModifier ? `${ev.name}: ${titleModifier}` : ev.name;
         const instanceNote = ev.isRecurring ? ev.instanceNotes?.[ev.dateStart] : undefined;
@@ -1103,11 +1146,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lines.push(`UID:${uid}`);
         lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
         if (hasTime) {
-          lines.push(`DTSTART;TZID=America/Denver:${toLocalDT2(ev.dateStart, ev.startTime!)}`);
-          lines.push(`DTEND;TZID=America/Denver:${addHours2(ev.dateStart, ev.startTime!, 2)}`);
+          lines.push(`DTSTART;TZID=America/Denver:${toLocalDT2(rruleStartDate, ev.startTime!)}`);
+          lines.push(`DTEND;TZID=America/Denver:${addHours2(rruleStartDate, ev.startTime!, 2)}`);
         } else {
-          lines.push(`DTSTART;VALUE=DATE:${toDateStr(ev.dateStart)}`);
-          lines.push(`DTEND;VALUE=DATE:${endDateStr}`);
+          lines.push(`DTSTART;VALUE=DATE:${toDateStr(rruleStartDate)}`);
+          lines.push(`DTEND;VALUE=DATE:${hasWeekdayFilter ? nextDay(rruleStartDate) : endDateStr}`);
+        }
+        if (hasWeekdayFilter) {
+          const byDay = [...ev.activeWeekdays!].sort((a: number, b: number) => a - b).map((d: number) => ICAL_WEEKDAY2[d]).join(',');
+          const until = hasTime ? `${nextDay(ev.dateEnd!)}T080000Z` : toDateStr(ev.dateEnd!);
+          lines.push(`RRULE:FREQ=WEEKLY;BYDAY=${byDay};UNTIL=${until}`);
         }
         lines.push(foldLine(`SUMMARY:${escapeIcal(displayName + ' @ ' + ev.venue)}`));
         lines.push(foldLine(`DESCRIPTION:${escapeIcal(desc)}`));

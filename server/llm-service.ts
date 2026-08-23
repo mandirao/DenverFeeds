@@ -576,6 +576,7 @@ Respond with ONLY valid JSON, no markdown formatting:
     isRecurring: boolean;
     recurrenceLabel: string;
     recurrenceRule: RecurrenceRule | null;
+    activeWeekdays: number[] | null;
     instanceNote: string;
     titleModifier: string;
   }> {
@@ -679,12 +680,14 @@ Return ONLY valid JSON (no markdown):
 
       mapResult: (pass1, pass2) => {
         const recurrenceRule = this.buildRecurrenceRuleFromParse(pass1);
+        const dateStart = pass1.dateStart || '';
+        const dateEnd = pass1.dateEnd || '';
         return {
           name: pass1.name || '',
           venue: pass1.venue || '',
           neighborhood: pass2.neighborhood || pass1.neighborhood || '',
-          dateStart: pass1.dateStart || '',
-          dateEnd: pass1.dateEnd || '',
+          dateStart,
+          dateEnd,
           startTime: pass1.startTime || '',
           emoji: pass1.emoji || '🍴',
           summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
@@ -697,6 +700,7 @@ Return ONLY valid JSON (no markdown):
           isRecurring: pass1.isRecurring === true && recurrenceRule !== null,
           recurrenceLabel: recurrenceRule ? describeRecurrenceRule(recurrenceRule) : '',
           recurrenceRule,
+          activeWeekdays: this.buildActiveWeekdaysFromParse(pass1, dateStart, dateEnd),
           instanceNote: (pass1.isRecurring && typeof pass1.occurrenceNote === 'string') ? pass1.occurrenceNote : '',
           titleModifier: (pass1.isRecurring && typeof pass1.titleModifier === 'string') ? pass1.titleModifier.trim().substring(0, 60) : '',
         };
@@ -733,6 +737,20 @@ Return ONLY valid JSON (no markdown):
     return null;
   }
 
+  // Builds Range mode's optional weekday filter from parse output —
+  // mutually exclusive with recurrenceRule (a bounded run either carries
+  // activeWeekdays or is isRecurring, never both; see the activeWeekdays
+  // field description in recurrenceParseFieldsBlock). Only meaningful for a
+  // genuine bounded span, so it's dropped whenever dateEnd isn't a real
+  // end date distinct from dateStart.
+  private buildActiveWeekdaysFromParse(pass1: any, dateStart: string, dateEnd: string): number[] | null {
+    if (pass1.isRecurring === true) return null;
+    if (!dateEnd || dateEnd === dateStart) return null;
+    if (!Array.isArray(pass1.activeWeekdays)) return null;
+    const days = pass1.activeWeekdays.filter((n: any) => typeof n === 'number' && n >= 0 && n <= 6);
+    return days.length > 0 ? days : null;
+  }
+
   // Shared JSON-field block spliced into both parseArtBlurb's and parseBlurb's
   // pass-1 prompts — field semantics are identical regardless of feed voice.
   // Includes the explicit occurrence-vs-durable separation rule (issue: the
@@ -746,7 +764,8 @@ Return ONLY valid JSON (no markdown):
   "recurrenceMonthlyMode": "day-of-month" | "nth-weekday" — required only when recurrenceFreq is "monthly". "nth-weekday" for "every Nth <weekday>" / "last <weekday>" patterns; "day-of-month" for same-calendar-date-every-month or a bare "monthly" with no weekday mentioned. null otherwise.
   "recurrenceWeekdayOrdinal": 1, 2, 3, 4, or -1 (-1 means "last") — required only when recurrenceMonthlyMode is "nth-weekday". null otherwise.
   "occurrenceNote": ONLY for recurring events — a short factual detail explicitly stated as SPECIFIC TO THIS occurrence only (e.g. "this month we're reading X", "featuring guest Y", "theme: Z this week"), ≤120 chars. Empty string if nothing occurrence-specific is mentioned or if isRecurring is false. CRITICAL: never repeat this detail inside draftSummary — draftSummary must describe only what's durably true of the series every time it happens, not what's true of this one date.
-  "titleModifier": ONLY for recurring events — a SHORT label (a few words, not a sentence) to append after the event name for this occurrence only, e.g. a book title, guest name, or theme, so it would read naturally as "Book Club: Piranesi by Susanna Clarke". Only extract if explicitly named in the source; empty string otherwise. Never invent one.`;
+  "titleModifier": ONLY for recurring events — a SHORT label (a few words, not a sentence) to append after the event name for this occurrence only, e.g. a book title, guest name, or theme, so it would read naturally as "Book Club: Piranesi by Susanna Clarke". Only extract if explicitly named in the source; empty string otherwise. Never invent one.
+  "activeWeekdays": ONLY when isRecurring is false AND this is a bounded, dated run (dateEnd is a real end date, not an indefinite series) that explicitly happens on specific day(s) of the week within that range — e.g. "Thursdays through Saturdays, Sept 1–Dec 1", "Fri & Sat nights only, runs through October", "weekends only through the summer". Array of integers 0-6 (0=Sunday...6=Saturday). null if the run happens every day in its range, if dateEnd is empty/unknown, or if isRecurring is true — never set both isRecurring:true and activeWeekdays; a bounded run with a stated end date and specific weekdays is isRecurring:false + dateEnd + activeWeekdays, while an open-ended series with no announced end is isRecurring:true + the recurrence fields above.`;
   }
 
   // Shared Task-B block spliced into both redoArtEventAI's and
@@ -784,6 +803,7 @@ CRITICAL: Task C's description must NOT repeat what you put in occurrenceNote/ti
     isRecurring: boolean;
     recurrenceLabel: string;
     recurrenceRule: RecurrenceRule | null;
+    activeWeekdays: number[] | null;
     instanceNote: string;
     titleModifier: string;
     specificDates: string[];
@@ -879,12 +899,14 @@ Return ONLY valid JSON (no markdown):
 
       mapResult: (pass1, pass2) => {
         const recurrenceRule = this.buildRecurrenceRuleFromParse(pass1);
+        const dateStart = pass1.dateStart || '';
+        const dateEnd = pass1.dateEnd || '';
         return {
         name: pass1.name || '',
         venue: pass1.venue || '',
         neighborhood: pass2.neighborhood || pass1.neighborhood || '',
-        dateStart: pass1.dateStart || '',
-        dateEnd: pass1.dateEnd || '',
+        dateStart,
+        dateEnd,
         startTime: pass1.startTime || '',
         emoji: pass1.emoji || '🎨',
         summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
@@ -897,6 +919,7 @@ Return ONLY valid JSON (no markdown):
         isRecurring: pass1.isRecurring === true && recurrenceRule !== null,
         recurrenceLabel: recurrenceRule ? describeRecurrenceRule(recurrenceRule) : '',
         recurrenceRule,
+        activeWeekdays: this.buildActiveWeekdaysFromParse(pass1, dateStart, dateEnd),
         instanceNote: (pass1.isRecurring && typeof pass1.occurrenceNote === 'string') ? pass1.occurrenceNote : '',
         titleModifier: (pass1.isRecurring && typeof pass1.titleModifier === 'string') ? pass1.titleModifier.trim().substring(0, 60) : '',
         specificDates: Array.isArray(pass1.specificDates)

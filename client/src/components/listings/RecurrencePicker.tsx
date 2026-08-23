@@ -25,6 +25,31 @@ const dayBtn = (active: boolean) =>
     active ? "border-primary bg-primary text-primary-foreground" : "border-field-border bg-field text-field-foreground hover:bg-muted/60",
   );
 
+/** Single-letter weekday toggle row (S M T W T F S) — shared by the
+ * "Recurring" weekly picker above and Range mode's optional weekday filter
+ * in ListingEventFormFields. At-least-one-selected is enforced by the
+ * caller ignoring an onChange that would empty the set. */
+export function WeekdayChips({ days, onChange }: { days: number[]; onChange: (days: number[]) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {DAYS.map((d, i) => {
+        const active = days.includes(i);
+        return (
+          <button key={d} type="button" aria-label={d}
+            onClick={() => {
+              const next = active ? days.filter(x => x !== i) : [...days, i].sort((a, b) => a - b);
+              if (next.length === 0) return; // at least one day must stay selected
+              onChange(next);
+            }}
+            className={dayBtn(active)}>
+            {d[0]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function freqSelectValue(rule: RecurrenceRule | null): FreqButtonValue | "" {
   if (!rule) return "";
   if (rule.freq === "weekly") return rule.interval === 2 ? "biweekly" : "weekly";
@@ -154,22 +179,7 @@ export function RecurrencePicker({
     const days = rule.byWeekdays ?? (rule.byWeekday !== undefined ? [rule.byWeekday] : []);
     return (
       <Field label="On days" required hint="pick one or more" className="flex-1 min-w-[12rem]">
-        <div className="flex flex-wrap gap-1.5">
-          {DAYS.map((d, i) => {
-            const active = days.includes(i);
-            return (
-              <button key={d} type="button" aria-label={d}
-                onClick={() => {
-                  const next = active ? days.filter(x => x !== i) : [...days, i].sort((a, b) => a - b);
-                  if (next.length === 0) return; // at least one day must stay selected
-                  applyRule({ ...rule, byWeekdays: next, byWeekday: undefined });
-                }}
-                className={dayBtn(active)}>
-                {d[0]}
-              </button>
-            );
-          })}
-        </div>
+        <WeekdayChips days={days} onChange={next => applyRule({ ...rule, byWeekdays: next, byWeekday: undefined })} />
       </Field>
     );
   }

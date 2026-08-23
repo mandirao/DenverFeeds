@@ -31,6 +31,10 @@ export interface ListingEventBase {
   /** Date of the most recent occurrence a human explicitly confirmed as
    * real — only meaningful alongside recurrenceRule.monthlyMode 'tbd'. */
   verifiedThroughDate?: string | null;
+  /** Weekday subset (0=Sun..6=Sat) a bounded Range-mode event actually runs
+   * on — null/empty means every day in [dateStart, dateEnd] counts. See
+   * shared/schema.ts's activeWeekdays column comment. */
+  activeWeekdays?: number[] | null;
   /** Set only on occurrences produced by expandRecurringEvents — the row's
    * real persisted dateStart (the recurrence anchor), distinct from this
    * particular occurrence's computed date living in `dateStart` itself. */
@@ -100,6 +104,7 @@ export interface ListingInsertBase {
   instanceTitles?: Record<string, string> | null;
   excludedDates?: string[] | null;
   verifiedThroughDate?: string | null;
+  activeWeekdays?: number[] | null;
 }
 
 export interface RedoAIResult {

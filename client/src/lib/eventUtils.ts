@@ -214,18 +214,31 @@ export function daysLive(announcedAt: string | null | undefined): string | null 
   return `${Math.floor(days / 7)}w`;
 }
 
-export function formatDateRange(dateStart: string, dateEnd?: string | null): string {
+/** Compact weekday-set label for row density — "Thu/Fri/Sat", or "Weekends"
+ * for the Sat+Sun special case. Companion to shared/recurrence.ts's
+ * describeWeekdaySet (full plural form, used for recurrence labels); this
+ * one is for Range mode's optional activeWeekdays filter. Empty string when
+ * there's no filter (every day in the range is active). */
+export function formatActiveWeekdays(days: number[] | null | undefined): string {
+  if (!days || days.length === 0) return "";
+  const sorted = [...days].sort((a, b) => a - b);
+  if (sorted.length === 2 && sorted[0] === 0 && sorted[1] === 6) return "Weekends";
+  return sorted.map(d => DAYS[d]).join("/");
+}
+
+export function formatDateRange(dateStart: string, dateEnd?: string | null, activeWeekdays?: number[] | null): string {
   const parse = (d: string) => new Date(d + "T12:00:00");
   const fmt = (d: string) =>
     parse(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   const dow = (d: string) => DAYS[parse(d).getDay()];
+  const weekdaySuffix = activeWeekdays?.length ? ` · ${formatActiveWeekdays(activeWeekdays)}` : "";
 
   if (!dateEnd || dateEnd === dateStart) return `${dow(dateStart)} ${fmt(dateStart)}`;
   const s = parse(dateStart);
   const e = parse(dateEnd);
   if (s.getMonth() === e.getMonth())
-    return `${dow(dateStart)} ${s.toLocaleDateString("en-US", { month: "short", day: "numeric" })}–${e.getDate()}`;
-  return `${dow(dateStart)} ${fmt(dateStart)} – ${dow(dateEnd)} ${fmt(dateEnd)}`;
+    return `${dow(dateStart)} ${s.toLocaleDateString("en-US", { month: "short", day: "numeric" })}–${e.getDate()}${weekdaySuffix}`;
+  return `${dow(dateStart)} ${fmt(dateStart)} – ${dow(dateEnd)} ${fmt(dateEnd)}${weekdaySuffix}`;
 }
 
 /** Day-group header label for the day-boxed list view — "Fri, Aug 21".

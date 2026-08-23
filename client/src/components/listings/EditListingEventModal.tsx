@@ -58,6 +58,7 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
     recurrenceRule: event.recurrenceRule ?? null,
     excludedDates: event.excludedDates ?? [],
     verifiedThroughDate: event.verifiedThroughDate ?? null,
+    activeWeekdays: event.activeWeekdays ?? null,
   } as Partial<TInsert>);
   const currentOccurrenceDate = (form.dateStart as string) || event.dateStart;
   const [orphanConfirm, setOrphanConfirm] = useState<{
@@ -81,6 +82,7 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
       || JSON.stringify(form.recurrenceRule ?? null) !== JSON.stringify(event.recurrenceRule ?? null)
       || JSON.stringify(form.excludedDates ?? []) !== JSON.stringify(event.excludedDates ?? [])
       || (form.verifiedThroughDate ?? null) !== (event.verifiedThroughDate ?? null)
+      || JSON.stringify(form.activeWeekdays ?? []) !== JSON.stringify(event.activeWeekdays ?? [])
       || instanceNote !== originalNote
       || instanceTitle !== originalTitle;
   };

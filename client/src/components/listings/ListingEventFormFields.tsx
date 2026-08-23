@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { riskPips, RISK_LABELS } from "@/lib/eventUtils";
 import { cn } from "@/lib/utils";
 import type { ListingFormConfig, ListingInsertBase, SpecificDateEntry } from "@/lib/listingFeedConfig";
-import { RecurrenceFreqSelect, RecurrencePicker } from "./RecurrencePicker";
+import { RecurrenceFreqSelect, RecurrencePicker, WeekdayChips } from "./RecurrencePicker";
 import { SegmentedControl } from "./segmented-control";
 import { Field, TextField, TextArea, controlBase } from "./form-primitives";
 import { describeRecurrenceRule, type RecurrenceRule } from "@shared/recurrence";
@@ -83,6 +83,7 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
     deriveInitialWhenMode(form, !!(canUseSpecificDates && specificDatesState!.useSpecificDates))
   );
   const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const [showWeekdayFilter, setShowWeekdayFilter] = useState(!!(form.activeWeekdays && form.activeWeekdays.length > 0));
   const [showInstanceCustomize, setShowInstanceCustomize] = useState(!!(instanceNote.trim() || instanceTitle.trim()));
 
   // AI parsing/redo fills instanceNote/instanceTitle asynchronously, well
@@ -108,6 +109,7 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
         ...f,
         isRecurring: next === "recurring",
         dateEnd: next === "range" ? (f.dateEnd || "") : "",
+        activeWeekdays: next === "range" ? (f.activeWeekdays ?? null) : null,
       } as Partial<TInsert>));
     }
     setWhenMode(next);
@@ -235,14 +237,43 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
       )}
 
       {whenMode === "range" && (
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Start date" required htmlFor={idFor("dateStart")}>
-            <TextField id={idFor("dateStart")} type="date" value={form.dateStart || ""} onChange={e => set("dateStart" as keyof TInsert, e.target.value)}
-              className={fieldErr("dateStart")} />
-          </Field>
-          <Field label="End date" required htmlFor="dateEnd">
-            <TextField id="dateEnd" type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd" as keyof TInsert, e.target.value)} />
-          </Field>
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Start date" required htmlFor={idFor("dateStart")}>
+              <TextField id={idFor("dateStart")} type="date" value={form.dateStart || ""} onChange={e => set("dateStart" as keyof TInsert, e.target.value)}
+                className={fieldErr("dateStart")} />
+            </Field>
+            <Field label="End date" required htmlFor="dateEnd">
+              <TextField id="dateEnd" type="date" value={form.dateEnd || ""} onChange={e => set("dateEnd" as keyof TInsert, e.target.value)} />
+            </Field>
+          </div>
+
+          <div className={cn("rounded-none border-2 transition-colors", showWeekdayFilter ? "border-field-border/40" : "border-field-border/50 bg-muted/40")}>
+            <button type="button" aria-expanded={showWeekdayFilter}
+              onClick={() => {
+                const next = !showWeekdayFilter;
+                setShowWeekdayFilter(next);
+                if (!next) setForm(f => ({ ...f, activeWeekdays: null } as Partial<TInsert>));
+              }}
+              className="flex w-full items-center gap-2 px-3 py-3 text-left text-sm font-semibold text-card-foreground">
+              <CollapseIcon open={showWeekdayFilter} />
+              <span className="flex flex-1 flex-col">
+                <span>Only on certain days?</span>
+                {!showWeekdayFilter && (
+                  <span className="text-xs font-medium text-muted-foreground">e.g. Thu/Fri/Sat only — not every day in the range</span>
+                )}
+              </span>
+            </button>
+            {showWeekdayFilter && (
+              <div className="flex flex-col gap-2 border-t border-field-border/30 p-3">
+                <WeekdayChips
+                  days={(form.activeWeekdays as number[] | null | undefined) ?? []}
+                  onChange={days => setForm(f => ({ ...f, activeWeekdays: days } as Partial<TInsert>))}
+                />
+                <p className="text-xs leading-relaxed text-muted-foreground">Only these days within the range count as active — the rest are skipped.</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
