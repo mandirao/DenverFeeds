@@ -440,7 +440,7 @@ export default function ArtistryNerdery() {
         {!isLoading && events.length > 0 && (
           <div
             ref={filterBarRef}
-            className="fixed inset-x-0 bottom-0 z-40 py-2 bg-black md:bg-[#FEABDA] shadow-[0_-4px_12px_rgba(0,0,0,0.12)] border-t border-white/10 md:static md:inset-x-auto md:bottom-auto md:pb-3 md:shadow-none md:border-t-0"
+            className="fixed inset-x-0 bottom-0 z-40 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-black md:bg-[#FEABDA] shadow-[0_-4px_12px_rgba(0,0,0,0.12)] border-t border-white/10 md:static md:inset-x-auto md:bottom-auto md:pb-3 md:shadow-none md:border-t-0"
           >
             <div className="px-4 md:container md:mx-auto">
             <div className="overflow-x-auto scrollbar-hide">
@@ -456,7 +456,7 @@ export default function ArtistryNerdery() {
                       onChange={e => setSearchQuery(e.target.value)}
                       onBlur={() => { if (!searchQuery.trim()) setSearchOpen(false); }}
                       placeholder="Search events"
-                      className="flex-1 min-w-0 h-full text-sm text-black placeholder:text-black/40 bg-transparent focus:outline-none"
+                      className="flex-1 min-w-0 h-full text-base md:text-sm text-black placeholder:text-black/40 bg-transparent focus:outline-none"
                     />
                     {searchQuery && (
                       <button
@@ -888,7 +888,7 @@ export default function ArtistryNerdery() {
 
       {/* Event detail dialog */}
       <Dialog open={calEventDetail !== null} onOpenChange={open => { if (!open) { setCalEventDetail(null); setCalEventDetailFrom(null); } }}>
-        <DialogContent className="max-w-lg rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
+        <DialogContent className="max-w-lg max-h-[85vh] rounded-none border-2 border-black p-0 overflow-hidden flex flex-col" aria-describedby={undefined}>
           <DialogTitle className="sr-only">{calEventDetail?.name ?? "Event Details"}</DialogTitle>
           {calEventDetail && (() => {
             const ev = calEventDetail;
@@ -902,7 +902,7 @@ export default function ArtistryNerdery() {
             const evMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.venue + " Denver CO")}`;
             const evCalUrl = createCalendarUrl(ev);
             return (
-              <>
+              <div className="overflow-y-auto min-h-0 flex-1">
                 <div className="pl-6 pr-12 pt-9 pb-4" style={{ backgroundColor: AN_BG }}>
                   {/* Back button row */}
                   {calEventDetailFrom && (
@@ -1071,7 +1071,7 @@ export default function ArtistryNerdery() {
                     </div>
                   )}
                 </div>
-              </>
+              </div>
             );
           })()}
         </DialogContent>

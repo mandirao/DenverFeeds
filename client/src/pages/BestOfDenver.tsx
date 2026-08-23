@@ -147,7 +147,7 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm"
-                className="h-7 w-7 p-0 flex items-center justify-center rounded-full bg-transparent opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+                className="h-7 w-7 p-0 flex items-center justify-center rounded-full bg-transparent opacity-30 group-hover:opacity-70 hover:!opacity-100 transition-opacity flex-shrink-0 mt-0.5">
                 <MoreVertical className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -562,7 +562,7 @@ export default function BestOfDenver() {
         {restaurantList.length > 0 && (
           <div
             ref={filterBarRef}
-            className="fixed inset-x-0 bottom-0 z-40 py-2 bg-black md:bg-[#FFF8E7] shadow-[0_-4px_12px_rgba(0,0,0,0.12)] border-t border-white/10 md:static md:inset-x-auto md:bottom-auto md:pb-3 md:shadow-none md:border-t-0"
+            className="fixed inset-x-0 bottom-0 z-40 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-black md:bg-[#FFF8E7] shadow-[0_-4px_12px_rgba(0,0,0,0.12)] border-t border-white/10 md:static md:inset-x-auto md:bottom-auto md:pb-3 md:shadow-none md:border-t-0"
           >
             <div className="px-4 md:container md:mx-auto">
             <div className="overflow-x-auto scrollbar-hide">

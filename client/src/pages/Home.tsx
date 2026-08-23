@@ -598,7 +598,7 @@ export default function Home() {
         {!isLoading && !error && events.length > 0 && (
           <div
             ref={filterBarRef}
-            className="fixed inset-x-0 bottom-0 z-40 py-2 bg-black md:bg-[#FE6B41] shadow-[0_-4px_12px_rgba(0,0,0,0.12)] border-t border-white/10 md:static md:inset-x-auto md:bottom-auto md:pb-3 md:shadow-none md:border-t-0"
+            className="fixed inset-x-0 bottom-0 z-40 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-black md:bg-[#FE6B41] shadow-[0_-4px_12px_rgba(0,0,0,0.12)] border-t border-white/10 md:static md:inset-x-auto md:bottom-auto md:pb-3 md:shadow-none md:border-t-0"
           >
             <div className="px-4 md:container md:mx-auto">
             <div className="overflow-x-auto scrollbar-hide">
@@ -614,7 +614,7 @@ export default function Home() {
                       onChange={e => setFilters({ ...filters, search: e.target.value })}
                       onBlur={() => { if (!filters.search.trim()) setSearchOpen(false); }}
                       placeholder="Search events"
-                      className="flex-1 min-w-0 h-full text-sm text-black placeholder:text-black/40 bg-transparent focus:outline-none"
+                      className="flex-1 min-w-0 h-full text-base md:text-sm text-black placeholder:text-black/40 bg-transparent focus:outline-none"
                     />
                     {filters.search && (
                       <button
@@ -958,7 +958,7 @@ export default function Home() {
 
       {/* Calendar event detail dialog */}
       <Dialog open={calEventDetail !== null} onOpenChange={open => { if (!open) { setCalEventDetail(null); setCalEventDetailFrom(null); } }}>
-        <DialogContent className="max-w-lg rounded-none border-2 border-black p-0 overflow-hidden" aria-describedby={undefined}>
+        <DialogContent className="max-w-lg max-h-[85vh] rounded-none border-2 border-black p-0 overflow-hidden flex flex-col" aria-describedby={undefined}>
           <DialogTitle className="sr-only">{calEventDetail?.artist ?? "Event Details"}</DialogTitle>
           {calEventDetail && (() => {
             const ev = calEventDetail;
@@ -976,7 +976,7 @@ export default function Home() {
             })();
             const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(ev.artist + " " + ev.venue + " concert")}`;
             return (
-              <>
+              <div className="overflow-y-auto min-h-0 flex-1">
                 <div className="pl-6 pr-12 pt-9 pb-4" style={{ backgroundColor: MUSIC_ORANGE }}>
                   {calEventDetailFrom && (
                     <button
@@ -1095,7 +1095,7 @@ export default function Home() {
                     </a>
                   </div>
                 </div>
-              </>
+              </div>
             );
           })()}
         </DialogContent>
