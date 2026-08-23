@@ -61,18 +61,18 @@ function WeekGroup({ weekEvents, dayIndexStart, altBg, pageBg, navHeight }: Week
         return (
           <div
             key={day.date}
-            className={`rounded-[16px] sm:rounded-[18px] ${hasBg ? "mb-3 sm:mb-[14px]" : "mb-1.5 sm:mb-2"}`}
+            className={`rounded-[16px] sm:rounded-[18px] ${hasBg ? "mb-3 sm:mb-[14px]" : "mb-1 sm:mb-1.5"}`}
           >
             {/* Sticks to the base of the nav while this day's events scroll by,
                 so a reader never loses track of which day they're looking at. */}
             <div
-              className={`sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pb-[11px] ${hasBg ? "pt-[10px] sm:pt-3" : "pt-1 sm:pt-1.5"}`}
+              className={`sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pb-[11px] ${hasBg ? "pt-[10px] sm:pt-3" : "pt-0.5 sm:pt-1"}`}
               style={{ top: navHeight, backgroundColor: bgColor }}
             >
               {formatDayHeaderLabel(day.date)}
             </div>
             <ul
-              className={`list-none pl-0 space-y-2 mb-0 px-[14px] sm:px-[22px] rounded-b-[16px] sm:rounded-b-[18px] ${hasBg ? "pb-4 sm:pb-[18px]" : "pb-2 sm:pb-3"}`}
+              className={`list-none pl-0 space-y-2 mb-0 px-[14px] sm:px-[22px] rounded-b-[16px] sm:rounded-b-[18px] ${hasBg ? "pb-4 sm:pb-[18px]" : "pb-1 sm:pb-1.5"}`}
               style={{ backgroundColor: bgColor }}
             >
               {day.events.map(event => (

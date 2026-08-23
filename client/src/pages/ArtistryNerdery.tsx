@@ -824,18 +824,18 @@ export default function ArtistryNerdery() {
             {monthData.dayGroups.map((day, dayIdx) => (
               <div
                 key={day.date}
-                className={`rounded-[16px] sm:rounded-[18px] ${dayIdx % 2 === 1 ? "mb-3 sm:mb-[14px]" : "mb-1.5 sm:mb-2"}`}
+                className={`rounded-[16px] sm:rounded-[18px] ${dayIdx % 2 === 1 ? "mb-3 sm:mb-[14px]" : "mb-1 sm:mb-1.5"}`}
                 style={{ backgroundColor: dayIdx % 2 === 1 ? AN_DAY_ALT : AN_BG }}
               >
                 {/* Sticks to the base of the nav while this day's events scroll by,
                     so a reader never loses track of which day they're looking at. */}
                 <div
-                  className={`sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pb-[11px] ${dayIdx % 2 === 1 ? "pt-[10px] sm:pt-3" : "pt-1 sm:pt-1.5"}`}
+                  className={`sticky z-30 rounded-t-[16px] sm:rounded-t-[18px] font-display font-black uppercase text-black text-[14px] sm:text-[15px] px-[14px] sm:px-[22px] pb-[11px] ${dayIdx % 2 === 1 ? "pt-[10px] sm:pt-3" : "pt-0.5 sm:pt-1"}`}
                   style={{ top: navHeight, backgroundColor: dayIdx % 2 === 1 ? AN_DAY_ALT : AN_BG }}
                 >
                   {formatDayHeaderLabel(day.date)}
                 </div>
-                <ul className={`list-none m-0 p-0 flex flex-col gap-[11px] sm:gap-[9px] px-[14px] sm:px-[22px] ${dayIdx % 2 === 1 ? "pb-4 sm:pb-[18px]" : "pb-2 sm:pb-3"}`}>
+                <ul className={`list-none m-0 p-0 flex flex-col gap-[11px] sm:gap-[9px] px-[14px] sm:px-[22px] ${dayIdx % 2 === 1 ? "pb-4 sm:pb-[18px]" : "pb-1 sm:pb-1.5"}`}>
                   {day.events.map(ev => (
                     <ListingEventRow
                       key={`${ev.id}-${ev.dateStart}`}
