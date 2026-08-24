@@ -17,7 +17,7 @@ import {
   restaurantCuisineTypes, denverNeighborhoods, denverProperNeighborhoods,
   RESTAURANT_NEIGHBORHOOD_BROAD_REGION, restaurantPricePoints, type Restaurant, type DenverNeighborhood,
 } from "@shared/schema";
-import { Sparkles, MoreVertical, Calendar, Plus, Search, X, ChevronDown, Check } from "lucide-react";
+import { Sparkles, MoreVertical, Calendar, Plus, Search, X, ChevronDown, Check, ArrowUpDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import { SiteSwitcher } from "@/components/SiteSwitcher";
@@ -525,6 +525,7 @@ export default function BestOfDenver() {
   const [filterRPrices, setFilterRPrices] = useState<string[]>(() => parseMultiParam("price"));
   const { ref: filterBarRef, height: filterBarHeight } = useElementHeight<HTMLDivElement>();
   const [filterRSpots, setFilterRSpots] = useState<string[]>(() => parseMultiParam("spot"));
+  const [sortBy, setSortBy] = useState<"alpha" | "added">(() => new URLSearchParams(window.location.search).get("sort") === "added" ? "added" : "alpha");
   const [searchQuery, setSearchQuery] = useState(() => new URLSearchParams(window.location.search).get("q") || "");
   const [searchOpen, setSearchOpen] = useState(() => searchQuery.trim() !== "");
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -605,12 +606,12 @@ export default function BestOfDenver() {
       }
       return true;
     })
-    .sort((a, b) => a.name.trim().localeCompare(b.name.trim()));
+    .sort((a, b) => sortBy === "added" ? b.id - a.id : a.name.trim().localeCompare(b.name.trim()));
 
-  const hasActiveRestaurantFilters = filterRVenueTypes.length > 0 || filterRCuisines.length > 0 || filterRRegions.length > 0 || filterRPrices.length > 0 || filterRSpots.length > 0 || searchQuery.trim() !== "";
+  const hasActiveRestaurantFilters = filterRVenueTypes.length > 0 || filterRCuisines.length > 0 || filterRRegions.length > 0 || filterRPrices.length > 0 || filterRSpots.length > 0 || sortBy !== "alpha" || searchQuery.trim() !== "";
   const resetRestaurantFilters = () => {
     setFilterRVenueTypes([]); setFilterRCuisines([]); setFilterRRegions([]);
-    setFilterRPrices([]); setFilterRSpots([]); setSearchQuery(""); setSearchOpen(false);
+    setFilterRPrices([]); setFilterRSpots([]); setSortBy("alpha"); setSearchQuery(""); setSearchOpen(false);
   };
 
   return (
@@ -710,6 +711,30 @@ export default function BestOfDenver() {
                     <Search className="w-3.5 h-3.5" />
                   </button>
                 )}
+
+                {/* Sort dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1.5 px-3 h-10 md:h-8 rounded-full border border-black bg-white text-black font-medium text-sm hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0 focus:outline-none">
+                      <ArrowUpDown className="w-3 h-3" />
+                      {sortBy === "added" ? "Recently Added" : "Alphabetical"}
+                      <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-44 p-0">
+                    {([
+                      { label: "Alphabetical", value: "alpha" as const },
+                      { label: "Recently Added", value: "added" as const },
+                    ]).map(opt => (
+                      <DropdownMenuItem key={opt.label} onClick={() => setSortBy(opt.value)} className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide rounded-none focus:bg-gray-100 hover:bg-gray-100 cursor-pointer">
+                        <span className="w-3.5 flex-shrink-0">{sortBy === opt.value ? <Check className="w-3 h-3" /> : null}</span>
+                        {opt.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {/* Separator */}
+                <div className="h-6 w-px bg-white md:bg-black opacity-40 mx-1 flex-shrink-0" />
 
                 <DropdownMenu>
                   <MultiSelectTrigger active={filterRVenueTypes.length > 0} width="140px" ariaLabel="Type filter">
@@ -811,14 +836,18 @@ export default function BestOfDenver() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {hasActiveRestaurantFilters && (
-                  <button onClick={resetRestaurantFilters}
-                    className="text-xs font-bold underline text-white opacity-70 hover:opacity-100 md:text-black md:opacity-50 md:hover:opacity-80 transition-opacity whitespace-nowrap flex-shrink-0 h-10 md:h-auto flex items-center">
-                    Clear
-                  </button>
-                )}
               </div>
             </div>
+            {hasActiveRestaurantFilters && (
+              <div className="mt-2">
+                <button
+                  onClick={resetRestaurantFilters}
+                  className="text-white hover:text-white/70 md:text-black md:hover:text-white transition-colors focus:outline-none underline py-2.5 -my-2.5 md:py-0 md:my-0"
+                >
+                  ✕ clear filters
+                </button>
+              </div>
+            )}
             </div>
           </div>
         )}
