@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import {
   restaurantCuisineTypes, denverNeighborhoods, denverProperNeighborhoods,
@@ -471,6 +472,10 @@ function RestaurantModal({ mode, initial, onClose }: {
 // Shared trigger + row building blocks for the filter bar's multi-select
 // dropdowns (Type/Cuisine/Region/Price all use "match any selected" OR logic;
 // Spots uses "match all selected" AND logic — see filteredRestaurants below).
+// Built on Popover (opens on click) rather than DropdownMenu (opens on
+// pointerdown) — the other feeds' equivalent filters use Select, which is
+// also click-based, so this matches their behavior and, on mobile, no longer
+// hijacks a horizontal swipe across the filter row into an open-menu tap.
 
 const toggleInArray = (arr: string[], value: string) =>
   arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value];
@@ -482,7 +487,7 @@ const multiTriggerLabel = (selected: string[], placeholder: string, labels: Reco
 
 function MultiSelectTrigger({ active, width, ariaLabel, children }: { active: boolean; width: string; ariaLabel: string; children: ReactNode }) {
   return (
-    <DropdownMenuTrigger asChild>
+    <PopoverTrigger asChild>
       <button
         aria-label={ariaLabel}
         className={`flex items-center justify-between gap-1 rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 overflow-hidden focus:outline-none ${
@@ -495,20 +500,25 @@ function MultiSelectTrigger({ active, width, ariaLabel, children }: { active: bo
         <span className="truncate">{children}</span>
         <ChevronDown className="w-3 h-3 flex-shrink-0 opacity-60" />
       </button>
-    </DropdownMenuTrigger>
+    </PopoverTrigger>
   );
 }
 
 function MultiSelectRow({ label, checked, onToggle }: { label: ReactNode; checked: boolean; onToggle: () => void }) {
   return (
-    <DropdownMenuItem
-      onSelect={e => { e.preventDefault(); onToggle(); }}
-      className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide rounded-none focus:bg-gray-100 hover:bg-gray-100 cursor-pointer"
+    <button
+      type="button"
+      onClick={onToggle}
+      className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide focus:bg-gray-100 hover:bg-gray-100 cursor-pointer text-left focus:outline-none"
     >
       <span className="w-3.5 flex-shrink-0">{checked ? <Check className="w-3 h-3" /> : null}</span>
       {label}
-    </DropdownMenuItem>
+    </button>
   );
+}
+
+function MultiSelectSeparator() {
+  return <div className="my-1 h-px bg-black/10" />;
 }
 
 const MULTI_SELECT_LABEL_CLASS = "text-[10px] uppercase tracking-widest text-black/35 px-2 pt-1.5";
@@ -751,32 +761,32 @@ export default function BestOfDenver() {
                 {/* Separator */}
                 <div className="h-6 w-px bg-white md:bg-black opacity-40 mx-1 flex-shrink-0" />
 
-                <DropdownMenu>
+                <Popover>
                   <MultiSelectTrigger active={filterRVenueTypes.length > 0} width="140px" ariaLabel="Type filter">
                     {multiTriggerLabel(filterRVenueTypes, "All Types", TYPE_LABELS)}
                   </MultiSelectTrigger>
-                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-44 p-0">
+                  <PopoverContent align="start" className="w-44 p-1">
                     <MultiSelectRow label="All Types" checked={filterRVenueTypes.length === 0} onToggle={() => setFilterRVenueTypes([])} />
-                    <DropdownMenuSeparator />
+                    <MultiSelectSeparator />
                     <MultiSelectRow label="Restaurants" checked={filterRVenueTypes.includes("restaurant")} onToggle={() => setFilterRVenueTypes(prev => toggleInArray(prev, "restaurant"))} />
                     <MultiSelectRow label="Bars" checked={filterRVenueTypes.includes("bar")} onToggle={() => setFilterRVenueTypes(prev => toggleInArray(prev, "bar"))} />
                     <MultiSelectRow label="Cafes" checked={filterRVenueTypes.includes("cafe")} onToggle={() => setFilterRVenueTypes(prev => toggleInArray(prev, "cafe"))} />
                     <MultiSelectRow label="Shops" checked={filterRVenueTypes.includes("shop")} onToggle={() => setFilterRVenueTypes(prev => toggleInArray(prev, "shop"))} />
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </PopoverContent>
+                </Popover>
 
-                <DropdownMenu>
+                <Popover>
                   <MultiSelectTrigger active={filterRCuisines.length > 0} width="160px" ariaLabel="Cuisine filter">
                     {multiTriggerLabel(filterRCuisines, "All Cuisine")}
                   </MultiSelectTrigger>
-                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-52 p-0 max-h-[320px] overflow-y-auto">
+                  <PopoverContent align="start" className="w-52 p-1 max-h-[320px] overflow-y-auto">
                     <MultiSelectRow label="All Cuisine" checked={filterRCuisines.length === 0} onToggle={() => setFilterRCuisines([])} />
-                    <DropdownMenuSeparator />
+                    <MultiSelectSeparator />
                     {[...new Set(restaurantList.flatMap(r => r.cuisine ?? []))].filter(c => !VENUE_ATTR_TAGS.has(c)).sort().map(c => (
                       <MultiSelectRow key={c} label={c} checked={filterRCuisines.includes(c)} onToggle={() => setFilterRCuisines(prev => toggleInArray(prev, c))} />
                     ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </PopoverContent>
+                </Popover>
 
                 {/* Region filter — broad tiers (Denver/Suburbs/Front Range) up
                     top for a quick pick, matching Amuse-Bouche/Artistry-
@@ -784,62 +794,62 @@ export default function BestOfDenver() {
                     neighborhoods/cities broken out in their own section
                     further down. No Mountains tier — no restaurant here is
                     ever tagged a mountain town. */}
-                <DropdownMenu>
+                <Popover>
                   <MultiSelectTrigger active={filterRRegions.length > 0} width="190px" ariaLabel="Region filter">
                     {multiTriggerLabel(filterRRegions, "Region", REGION_LABELS)}
                   </MultiSelectTrigger>
-                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-56 p-0 max-h-[340px] overflow-y-auto">
+                  <PopoverContent align="start" className="w-56 p-1 max-h-[340px] overflow-y-auto">
                     <MultiSelectRow label="All Regions" checked={filterRRegions.length === 0} onToggle={() => setFilterRRegions([])} />
                     <MultiSelectRow label="Denver" checked={filterRRegions.includes("denver")} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, "denver"))} />
                     <MultiSelectRow label="Suburbs" checked={filterRRegions.includes("suburbs")} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, "suburbs"))} />
                     <MultiSelectRow label="Front Range" checked={filterRRegions.includes("front_range")} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, "front_range"))} />
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className={MULTI_SELECT_LABEL_CLASS}>Denver proper</DropdownMenuLabel>
+                    <MultiSelectSeparator />
+                    <div className={MULTI_SELECT_LABEL_CLASS}>Denver proper</div>
                     {denverProperNeighborhoods.map(n => (
                       <MultiSelectRow key={n} label={n} checked={filterRRegions.includes(n)} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, n))} />
                     ))}
                     <MultiSelectRow label="Other" checked={filterRRegions.includes("Other")} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, "Other"))} />
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className={MULTI_SELECT_LABEL_CLASS}>Suburbs</DropdownMenuLabel>
+                    <MultiSelectSeparator />
+                    <div className={MULTI_SELECT_LABEL_CLASS}>Suburbs</div>
                     {RESTAURANT_SUBURBS.map(n => (
                       <MultiSelectRow key={n} label={n} checked={filterRRegions.includes(n)} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, n))} />
                     ))}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className={MULTI_SELECT_LABEL_CLASS}>Front Range</DropdownMenuLabel>
+                    <MultiSelectSeparator />
+                    <div className={MULTI_SELECT_LABEL_CLASS}>Front Range</div>
                     {RESTAURANT_FRONT_RANGE_CITIES.map(n => (
                       <MultiSelectRow key={n} label={n} checked={filterRRegions.includes(n)} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, n))} />
                     ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </PopoverContent>
+                </Popover>
 
-                <DropdownMenu>
+                <Popover>
                   <MultiSelectTrigger active={filterRPrices.length > 0} width="110px" ariaLabel="Price filter">
                     {multiTriggerLabel(filterRPrices, "All Prices")}
                   </MultiSelectTrigger>
-                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-32 p-0">
+                  <PopoverContent align="start" className="w-32 p-1">
                     <MultiSelectRow label="All Prices" checked={filterRPrices.length === 0} onToggle={() => setFilterRPrices([])} />
-                    <DropdownMenuSeparator />
+                    <MultiSelectSeparator />
                     {restaurantPricePoints.map(p => (
                       <MultiSelectRow key={p} label={p} checked={filterRPrices.includes(p)} onToggle={() => setFilterRPrices(prev => toggleInArray(prev, p))} />
                     ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </PopoverContent>
+                </Popover>
 
-                <DropdownMenu>
+                <Popover>
                   <MultiSelectTrigger active={filterRSpots.length > 0} width="150px" ariaLabel="Spots filter">
                     {multiTriggerLabel(filterRSpots, "All Spots", SPOT_LABELS)}
                   </MultiSelectTrigger>
-                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-52 p-0 max-h-[340px] overflow-y-auto">
+                  <PopoverContent align="start" className="w-52 p-1 max-h-[340px] overflow-y-auto">
                     <MultiSelectRow label="All Spots" checked={filterRSpots.length === 0} onToggle={() => setFilterRSpots([])} />
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className={MULTI_SELECT_LABEL_CLASS}>Badges</DropdownMenuLabel>
+                    <MultiSelectSeparator />
+                    <div className={MULTI_SELECT_LABEL_CLASS}>Badges</div>
                     <MultiSelectRow label="🔥 Hot & New" checked={filterRSpots.includes("hotNew")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "hotNew"))} />
                     <MultiSelectRow label="⭐ Michelin" checked={filterRSpots.includes("michelin")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "michelin"))} />
                     <MultiSelectRow label="🏆 James Beard" checked={filterRSpots.includes("jamesBeard")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "jamesBeard"))} />
                     <MultiSelectRow label="📌 Fixture" checked={filterRSpots.includes("fixture")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "fixture"))} />
                     <MultiSelectRow label="🚚 Food Truck" checked={filterRSpots.includes("foodTruck")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "foodTruck"))} />
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className={MULTI_SELECT_LABEL_CLASS}>Drinks &amp; Amenities</DropdownMenuLabel>
+                    <MultiSelectSeparator />
+                    <div className={MULTI_SELECT_LABEL_CLASS}>Drinks &amp; Amenities</div>
                     <MultiSelectRow label="⏰ Happy Hour" checked={filterRSpots.includes("happyHour")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "happyHour"))} />
                     <MultiSelectRow label="☀️ Patio" checked={filterRSpots.includes("patio")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "patio"))} />
                     <MultiSelectRow label="🍸 Cocktails" checked={filterRSpots.includes("cocktails")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "cocktails"))} />
@@ -848,8 +858,8 @@ export default function BestOfDenver() {
                     <MultiSelectRow label="☕ Coffee" checked={filterRSpots.includes("coffee")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "coffee"))} />
                     <MultiSelectRow label="🍵 Tea" checked={filterRSpots.includes("tea")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "tea"))} />
                     <MultiSelectRow label="🎱 Dive Bar" checked={filterRSpots.includes("dive")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "dive"))} />
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </PopoverContent>
+                </Popover>
 
               </div>
             </div>
