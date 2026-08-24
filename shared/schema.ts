@@ -130,6 +130,7 @@ export const venueOptions: VenueOption[] = [
   { value: "Dazzle Denver", label: "Dazzle Denver", group: "denver" },
   { value: "Denver Botanic Gardens", label: "Denver Botanic Gardens", group: "denver" },
   { value: "Empower Field at Mile High", label: "Empower Field at Mile High", group: "denver" },
+  { value: "Federal Theatre", label: "Federal Theatre", group: "denver" },
   { value: "Fillmore Auditorium", label: "Fillmore Auditorium", group: "denver" },
   { value: "Globe Hall", label: "Globe Hall", group: "denver" },
   { value: "Greek Theater", label: "Greek Theater", group: "denver" },

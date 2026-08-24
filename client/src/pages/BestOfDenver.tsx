@@ -53,10 +53,12 @@ const SPOT_LABELS: Record<string, string> = {
 
 // ── Restaurant Row ────────────────────────────────────────────────────────────
 
-function RestaurantRow({ restaurant, onEdit, onDelete }: {
+function RestaurantRow({ restaurant, onEdit, onDelete, activeCuisines, onTagClick }: {
   restaurant: Restaurant;
   onEdit: () => void;
   onDelete: () => void;
+  activeCuisines: string[];
+  onTagClick: (cuisine: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(restaurant.name + " Denver restaurant")}`;
@@ -149,9 +151,23 @@ function RestaurantRow({ restaurant, onEdit, onDelete }: {
             )}
             <p className="text-base text-black/75 mt-1 leading-snug">{restaurant.description}</p>
             <div className="flex flex-wrap gap-1.5 mt-2">
-              {(restaurant.cuisine ?? []).map(c => (
-                <span key={c} className="text-xs font-bold border border-black/25 px-2 py-0.5 rounded-full text-black/60">{c}</span>
-              ))}
+              {(restaurant.cuisine ?? []).map(c => {
+                const active = activeCuisines.includes(c);
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => onTagClick(c)}
+                    className={`text-xs font-bold border px-2 py-0.5 rounded-full transition-colors ${
+                      active
+                        ? "bg-black text-white border-black"
+                        : "border-black/25 text-black/60 hover:border-black hover:text-black"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                );
+              })}
             </div>
           </div>
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
@@ -857,6 +873,8 @@ export default function BestOfDenver() {
                 restaurant={r}
                 onEdit={() => setRestaurantToEdit(r)}
                 onDelete={() => setRestaurantToDelete(r)}
+                activeCuisines={filterRCuisines}
+                onTagClick={c => setFilterRCuisines(prev => toggleInArray(prev, c))}
               />
             ))}
           </ul>
