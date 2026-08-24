@@ -42,6 +42,16 @@ const AN_BG       = "#FEABDA";
 const AN_TEAL     = "#41F2EE";
 const AN_DAY_ALT  = "#EE9BC7"; // odd-index day-box tint, see design handoff
 
+// Display labels for the active-filters summary line next to "clear filters".
+const REGION_LABELS: Record<string, string> = { denver: "Denver", suburbs: "Suburbs", front_range: "Front Range", mountains: "Mountains" };
+const DAY_LABELS: Record<string, string> = {
+  today: "Today", tomorrow: "Tomorrow", weekend: "This Weekend", "next-week": "Next Week", "next-month": "Next Month",
+  "0": "Sundays", "1": "Mondays", "2": "Tuesdays", "3": "Wednesdays", "4": "Thursdays", "5": "Fridays", "6": "Saturdays",
+};
+const DURATION_LABELS: Record<string, string> = {
+  "one-time": "One Time", "limited-run": "Limited Run", annual: "Annually", monthly: "Monthly", weekly: "Weekly", quarterly: "Quarterly", recurring: "All Recurring",
+};
+
 // ── Event Row ─────────────────────────────────────────────────────────────────
 
 // Config for the shared <ListingEventRow>.
@@ -281,6 +291,14 @@ export default function ArtistryNerdery() {
     setSearchQuery("");
     setSearchOpen(false);
   };
+
+  const activeFilterLabels: string[] = [];
+  if (filterCategory !== "all") activeFilterLabels.push(filterCategory);
+  if (filterRegion !== "all") activeFilterLabels.push(REGION_LABELS[filterRegion] ?? filterRegion);
+  if (filterDay !== "all") activeFilterLabels.push(filterDay.startsWith("month:") ? filterDay.slice(6) : DAY_LABELS[filterDay] ?? filterDay);
+  if (filterDuration !== "all") activeFilterLabels.push(DURATION_LABELS[filterDuration] ?? filterDuration);
+  if (sortBy !== "date") activeFilterLabels.push("Recently Added");
+  if (searchQuery.trim() !== "") activeFilterLabels.push(`"${searchQuery.trim()}"`);
 
   const todayStr = localDateStr();
   const tomorrowDate = new Date(); tomorrowDate.setDate(tomorrowDate.getDate() + 1);
@@ -654,13 +672,17 @@ export default function ArtistryNerdery() {
             </div>
 
             {hasActiveFilters && (
-              <div className="mt-2">
+              <div className="mt-2 flex items-center gap-2 flex-wrap text-sm">
                 <button
                   onClick={resetFilters}
                   className="text-white hover:text-white/70 md:text-black md:hover:text-white transition-colors focus:outline-none underline py-2.5 -my-2.5 md:py-0 md:my-0"
                 >
                   ✕ clear filters
                 </button>
+                <span className="text-white/70 md:text-black/50">
+                  {filteredEvents.length} {filteredEvents.length === 1 ? "event" : "events"}
+                  {activeFilterLabels.length > 0 && ` · ${activeFilterLabels.join(" · ")}`}
+                </span>
               </div>
             )}
             </div>

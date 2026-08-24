@@ -540,7 +540,28 @@ export default function Home() {
     });
     setSearchOpen(false);
   };
-  
+
+  // Display labels for the active-filters summary line next to "clear filters".
+  const REGION_LABELS: Record<string, string> = { denver: "Denver", suburbs: "Suburbs", front_range: "Front Range", mountains: "Mountains" };
+  const STATUS_LABELS: Record<string, string> = { "cheap-thrills": "Cheap Thrills", scheduled: "Scheduled", "member-picks": "Member Adds" };
+  const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const activeFilterLabels: string[] = [];
+  if (filters.month !== "all") {
+    const m = months.find(m => m.key === filters.month);
+    if (m) activeFilterLabels.push(m.display);
+  }
+  if (filters.genre !== "all") activeFilterLabels.push(filters.genre);
+  if (filters.location !== "all") activeFilterLabels.push(REGION_LABELS[filters.location] ?? filters.location);
+  if (filters.venue !== "all") activeFilterLabels.push(filters.venue === "other" ? "Other" : filters.venue);
+  if (filters.dayOfWeek !== "all") {
+    if (filters.dayOfWeek === "next-week") activeFilterLabels.push("Next Week");
+    else if (filters.dayOfWeek === "next-month") activeFilterLabels.push("Next Month");
+    else activeFilterLabels.push(`${DAY_NAMES[Number(filters.dayOfWeek)]}s`);
+  }
+  if (filters.status !== "all") activeFilterLabels.push(STATUS_LABELS[filters.status] ?? filters.status);
+  if (filters.sortBy !== "date") activeFilterLabels.push(filters.sortBy === "just-added" ? "Recently Added" : filters.sortBy === "votes" ? "Top Voted" : filters.sortBy);
+  if (filters.search.trim() !== "") activeFilterLabels.push(`"${filters.search.trim()}"`);
+
   // Determine if we should group by month/week or show a flat list
   let displayContent;
   
@@ -873,13 +894,17 @@ export default function Home() {
             
             {/* Clear filters link - only show when filters are active */}
             {hasActiveFilters && (
-              <div className="mt-2">
+              <div className="mt-2 flex items-center gap-2 flex-wrap text-sm">
                 <button
                   onClick={resetFilters}
                   className="text-white hover:text-white/70 md:text-black md:hover:text-white transition-colors focus:outline-none underline py-2.5 -my-2.5 md:py-0 md:my-0"
                 >
                   ✕ clear filters
                 </button>
+                <span className="text-white/70 md:text-black/50">
+                  {filteredEvents.length} {filteredEvents.length === 1 ? "event" : "events"}
+                  {activeFilterLabels.length > 0 && ` · ${activeFilterLabels.join(" · ")}`}
+                </span>
               </div>
             )}
             </div>

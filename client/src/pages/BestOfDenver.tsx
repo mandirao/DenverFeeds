@@ -50,6 +50,11 @@ const SPOT_LABELS: Record<string, string> = {
   hotNew: "🔥 Hot & New", michelin: "⭐ Michelin", jamesBeard: "🏆 James Beard", fixture: "📌 Fixture", foodTruck: "🚚 Food Truck",
   happyHour: "⏰ Happy Hour", patio: "☀️ Patio", cocktails: "🍸 Cocktails", wine: "🍷 Wine", beer: "🍺 Beer", coffee: "☕ Coffee", tea: "🍵 Tea", dive: "🎱 Dive Bar",
 };
+// Plain-text (no-emoji) equivalent of SPOT_LABELS, for the active-filters summary line.
+const SPOT_PLAIN_LABELS: Record<string, string> = {
+  hotNew: "Hot & New", michelin: "Michelin", jamesBeard: "James Beard", fixture: "Fixture", foodTruck: "Food Truck",
+  happyHour: "Happy Hour", patio: "Patio", cocktails: "Cocktails", wine: "Wine", beer: "Beer", coffee: "Coffee", tea: "Tea", dive: "Dive Bar",
+};
 
 // ── Restaurant Row ────────────────────────────────────────────────────────────
 
@@ -614,6 +619,16 @@ export default function BestOfDenver() {
     setFilterRPrices([]); setFilterRSpots([]); setSortBy("alpha"); setSearchQuery(""); setSearchOpen(false);
   };
 
+  const activeFilterLabels: string[] = [
+    ...filterRVenueTypes.map(t => TYPE_LABELS[t] ?? t),
+    ...filterRCuisines,
+    ...filterRRegions.map(r => REGION_LABELS[r] ?? r),
+    ...filterRPrices,
+    ...filterRSpots.map(s => SPOT_PLAIN_LABELS[s] ?? s),
+  ];
+  if (sortBy !== "alpha") activeFilterLabels.push("Recently Added");
+  if (searchQuery.trim() !== "") activeFilterLabels.push(`"${searchQuery.trim()}"`);
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: AB_GOLD }}>
 
@@ -839,13 +854,17 @@ export default function BestOfDenver() {
               </div>
             </div>
             {hasActiveRestaurantFilters && (
-              <div className="mt-2">
+              <div className="mt-2 flex items-center gap-2 flex-wrap text-sm">
                 <button
                   onClick={resetRestaurantFilters}
                   className="text-white hover:text-white/70 md:text-black md:hover:text-white transition-colors focus:outline-none underline py-2.5 -my-2.5 md:py-0 md:my-0"
                 >
                   ✕ clear filters
                 </button>
+                <span className="text-white/70 md:text-black/50">
+                  {filteredRestaurants.length} {filteredRestaurants.length === 1 ? "restaurant" : "restaurants"}
+                  {activeFilterLabels.length > 0 && ` · ${activeFilterLabels.join(" · ")}`}
+                </span>
               </div>
             )}
             </div>
