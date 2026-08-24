@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import type { ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -10,13 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import {
   restaurantCuisineTypes, denverNeighborhoods, denverProperNeighborhoods,
   RESTAURANT_NEIGHBORHOOD_BROAD_REGION, restaurantPricePoints, type Restaurant, type DenverNeighborhood,
 } from "@shared/schema";
-import { Sparkles, MoreVertical, Calendar, Plus } from "lucide-react";
+import { Sparkles, MoreVertical, Calendar, Plus, Search, X, ChevronDown, Check } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
 import { SiteSwitcher } from "@/components/SiteSwitcher";
@@ -40,6 +41,15 @@ const SHOP_CUISINES = new Set(['Grocery & Market']);
 // Tags that describe venue type/attributes, not cuisine — shown separately in modal, no count limit
 const VENUE_ATTR_TAGS = new Set(['Bar', 'Cafe', 'Dive', 'Cocktails', 'Beer', 'Wine', 'Coffee', 'Tea', 'Grocery & Market', 'Happy Hour', 'Patio']);
 const VENUE_ATTR_LIST = ['Bar', 'Cafe', 'Dive', 'Cocktails', 'Beer', 'Wine', 'Coffee', 'Tea', 'Grocery & Market', 'Happy Hour', 'Patio'];
+
+// Display labels for the filter bar's multi-select triggers (only needed
+// where the filter value itself isn't already the display text).
+const TYPE_LABELS: Record<string, string> = { restaurant: "Restaurants", bar: "Bars", cafe: "Cafes", shop: "Shops" };
+const REGION_LABELS: Record<string, string> = { denver: "Denver", suburbs: "Suburbs", front_range: "Front Range" };
+const SPOT_LABELS: Record<string, string> = {
+  hotNew: "🔥 Hot & New", michelin: "⭐ Michelin", jamesBeard: "🏆 James Beard", fixture: "📌 Fixture", foodTruck: "🚚 Food Truck",
+  happyHour: "⏰ Happy Hour", patio: "☀️ Patio", cocktails: "🍸 Cocktails", wine: "🍷 Wine", beer: "🍺 Beer", coffee: "☕ Coffee", tea: "🍵 Tea", dive: "🎱 Dive Bar",
+};
 
 // ── Restaurant Row ────────────────────────────────────────────────────────────
 
@@ -436,6 +446,52 @@ function RestaurantModal({ mode, initial, onClose }: {
   );
 }
 
+// ── Multi-select filter pill ─────────────────────────────────────────────────
+// Shared trigger + row building blocks for the filter bar's multi-select
+// dropdowns (Type/Cuisine/Region/Price all use "match any selected" OR logic;
+// Spots uses "match all selected" AND logic — see filteredRestaurants below).
+
+const toggleInArray = (arr: string[], value: string) =>
+  arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value];
+
+const multiTriggerLabel = (selected: string[], placeholder: string, labels: Record<string, string> = {}) =>
+  selected.length === 0 ? placeholder
+    : selected.length === 1 ? (labels[selected[0]] ?? selected[0])
+    : `${selected.length} selected`;
+
+function MultiSelectTrigger({ active, width, ariaLabel, children }: { active: boolean; width: string; ariaLabel: string; children: ReactNode }) {
+  return (
+    <DropdownMenuTrigger asChild>
+      <button
+        aria-label={ariaLabel}
+        className={`flex items-center justify-between gap-1 rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 overflow-hidden focus:outline-none ${
+          active
+            ? "bg-white text-black border-black"
+            : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
+        }`}
+        style={{ width }}
+      >
+        <span className="truncate">{children}</span>
+        <ChevronDown className="w-3 h-3 flex-shrink-0 opacity-60" />
+      </button>
+    </DropdownMenuTrigger>
+  );
+}
+
+function MultiSelectRow({ label, checked, onToggle }: { label: ReactNode; checked: boolean; onToggle: () => void }) {
+  return (
+    <DropdownMenuItem
+      onSelect={e => { e.preventDefault(); onToggle(); }}
+      className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide rounded-none focus:bg-gray-100 hover:bg-gray-100 cursor-pointer"
+    >
+      <span className="w-3.5 flex-shrink-0">{checked ? <Check className="w-3 h-3" /> : null}</span>
+      {label}
+    </DropdownMenuItem>
+  );
+}
+
+const MULTI_SELECT_LABEL_CLASS = "text-[10px] uppercase tracking-widest text-black/35 px-2 pt-1.5";
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function BestOfDenver() {
@@ -443,18 +499,19 @@ export default function BestOfDenver() {
   const [restaurantAddOpen, setRestaurantAddOpen] = useState(false);
   const [restaurantToEdit, setRestaurantToEdit] = useState<Restaurant | null>(null);
   const [restaurantToDelete, setRestaurantToDelete] = useState<Restaurant | null>(null);
-  const [filterRVenueType, setFilterRVenueType] = useState<"all" | "restaurant" | "bar" | "cafe" | "shop">(() => {
-    const p = new URLSearchParams(window.location.search);
-    return (p.get("type") as any) || "all";
-  });
-  const [filterRCuisine, setFilterRCuisine] = useState(() => new URLSearchParams(window.location.search).get("cuisine") || "all");
-  const [filterRNeighborhood, setFilterRNeighborhood] = useState(() => new URLSearchParams(window.location.search).get("neighborhood") || "all");
-  const [filterRPrice, setFilterRPrice] = useState(() => new URLSearchParams(window.location.search).get("price") || "all");
+  const parseMultiParam = (name: string) => {
+    const raw = new URLSearchParams(window.location.search).get(name);
+    return raw ? raw.split(",").filter(Boolean) : [];
+  };
+  const [filterRVenueTypes, setFilterRVenueTypes] = useState<string[]>(() => parseMultiParam("type"));
+  const [filterRCuisines, setFilterRCuisines] = useState<string[]>(() => parseMultiParam("cuisine"));
+  const [filterRRegions, setFilterRRegions] = useState<string[]>(() => parseMultiParam("neighborhood"));
+  const [filterRPrices, setFilterRPrices] = useState<string[]>(() => parseMultiParam("price"));
   const { ref: filterBarRef, height: filterBarHeight } = useElementHeight<HTMLDivElement>();
-  const [filterRBadge, setFilterRBadge] = useState<"all" | "hotNew" | "michelin" | "jamesBeard" | "fixture" | "foodTruck" | "happyHour" | "patio">(() => {
-    const p = new URLSearchParams(window.location.search);
-    return (p.get("spot") as any) || "all";
-  });
+  const [filterRSpots, setFilterRSpots] = useState<string[]>(() => parseMultiParam("spot"));
+  const [searchQuery, setSearchQuery] = useState(() => new URLSearchParams(window.location.search).get("q") || "");
+  const [searchOpen, setSearchOpen] = useState(() => searchQuery.trim() !== "");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
   const qcMain = useQueryClient();
@@ -473,35 +530,71 @@ export default function BestOfDenver() {
     onError: () => toast({ title: "Error", description: "Couldn't delete.", variant: "destructive" }),
   });
 
+  const normalizedRestaurantSearch = searchQuery.trim().toLowerCase();
+
   const filteredRestaurants = restaurantList
     .filter(r => {
       const cuisine = r.cuisine ?? [];
-      if (filterRVenueType === "bar" && !cuisine.includes('Bar')) return false;
-      if (filterRVenueType === "cafe" && !cuisine.includes('Cafe')) return false;
-      if (filterRVenueType === "shop" && !cuisine.some(c => SHOP_CUISINES.has(c))) return false;
-      if (filterRVenueType === "restaurant" && !cuisine.some(c => !BAR_CUISINES.has(c) && !SHOP_CUISINES.has(c))) return false;
-      if (filterRCuisine !== "all" && !cuisine.includes(filterRCuisine)) return false;
-      if (filterRNeighborhood === "denver" || filterRNeighborhood === "suburbs" || filterRNeighborhood === "front_range") {
-        if (RESTAURANT_NEIGHBORHOOD_BROAD_REGION[r.neighborhood as DenverNeighborhood] !== filterRNeighborhood) return false;
-      } else if (filterRNeighborhood !== "all" && r.neighborhood !== filterRNeighborhood) {
-        return false;
+      if (normalizedRestaurantSearch) {
+        const haystack = `${r.name} ${r.description} ${r.neighborhood} ${cuisine.join(" ")}`.toLowerCase();
+        if (!haystack.includes(normalizedRestaurantSearch)) return false;
       }
-      if (filterRPrice !== "all" && r.pricePoint !== filterRPrice) return false;
-      if (filterRBadge === "hotNew" && !r.hotNew) return false;
-      if (filterRBadge === "michelin" && !r.michelinStar) return false;
-      if (filterRBadge === "jamesBeard" && !(r as any).jamesBeard) return false;
-      if (filterRBadge === "fixture" && !(r as any).fixture) return false;
-      if (filterRBadge === "foodTruck" && !(r as any).foodTruck) return false;
-      if (filterRBadge === "happyHour" && !cuisine.includes('Happy Hour')) return false;
-      if (filterRBadge === "patio" && !cuisine.includes('Patio')) return false;
+      // Type/Cuisine/Region/Price: "match ANY selected" (OR) — these are
+      // mutually-exclusive-ish categories, so picking Bar + Cafe should
+      // broaden results to either, not narrow to venues tagged as both.
+      if (filterRVenueTypes.length > 0) {
+        const matchesType = (t: string) => {
+          if (t === "bar") return cuisine.includes('Bar');
+          if (t === "cafe") return cuisine.includes('Cafe');
+          if (t === "shop") return cuisine.some(c => SHOP_CUISINES.has(c));
+          if (t === "restaurant") return cuisine.some(c => !BAR_CUISINES.has(c) && !SHOP_CUISINES.has(c));
+          return false;
+        };
+        if (!filterRVenueTypes.some(matchesType)) return false;
+      }
+      if (filterRCuisines.length > 0 && !filterRCuisines.some(c => cuisine.includes(c))) return false;
+      if (filterRRegions.length > 0) {
+        const matchesRegion = (val: string) => {
+          if (val === "denver" || val === "suburbs" || val === "front_range") {
+            return RESTAURANT_NEIGHBORHOOD_BROAD_REGION[r.neighborhood as DenverNeighborhood] === val;
+          }
+          return r.neighborhood === val;
+        };
+        if (!filterRRegions.some(matchesRegion)) return false;
+      }
+      if (filterRPrices.length > 0 && !filterRPrices.includes(r.pricePoint)) return false;
+      // Spots (badges + drinks/amenities): "match ALL selected" (AND) — these
+      // are independent attributes a single venue can genuinely have at once
+      // (e.g. Patio + Happy Hour), so checking more should narrow the results.
+      if (filterRSpots.length > 0) {
+        const matchesSpot = (val: string) => {
+          switch (val) {
+            case "hotNew": return r.hotNew;
+            case "michelin": return r.michelinStar;
+            case "jamesBeard": return !!(r as any).jamesBeard;
+            case "fixture": return !!(r as any).fixture;
+            case "foodTruck": return !!(r as any).foodTruck;
+            case "happyHour": return cuisine.includes('Happy Hour');
+            case "patio": return cuisine.includes('Patio');
+            case "cocktails": return cuisine.includes('Cocktails');
+            case "wine": return cuisine.includes('Wine');
+            case "beer": return cuisine.includes('Beer');
+            case "coffee": return cuisine.includes('Coffee');
+            case "tea": return cuisine.includes('Tea');
+            case "dive": return cuisine.includes('Dive');
+            default: return false;
+          }
+        };
+        if (!filterRSpots.every(matchesSpot)) return false;
+      }
       return true;
     })
     .sort((a, b) => a.name.trim().localeCompare(b.name.trim()));
 
-  const hasActiveRestaurantFilters = filterRVenueType !== "all" || filterRCuisine !== "all" || filterRNeighborhood !== "all" || filterRPrice !== "all" || filterRBadge !== "all";
+  const hasActiveRestaurantFilters = filterRVenueTypes.length > 0 || filterRCuisines.length > 0 || filterRRegions.length > 0 || filterRPrices.length > 0 || filterRSpots.length > 0 || searchQuery.trim() !== "";
   const resetRestaurantFilters = () => {
-    setFilterRVenueType("all"); setFilterRCuisine("all"); setFilterRNeighborhood("all");
-    setFilterRPrice("all"); setFilterRBadge("all");
+    setFilterRVenueTypes([]); setFilterRCuisines([]); setFilterRRegions([]);
+    setFilterRPrices([]); setFilterRSpots([]); setSearchQuery(""); setSearchOpen(false);
   };
 
   return (
@@ -567,40 +660,67 @@ export default function BestOfDenver() {
             <div className="px-4 md:container md:mx-auto">
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2 items-center" style={{ minWidth: "max-content" }}>
-                <Select value={filterRVenueType} onValueChange={v => setFilterRVenueType(v as any)}>
-                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
-                    filterRVenueType !== "all"
-                      ? "bg-white text-black border-black"
-                      : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
-                  }`} style={{ width: "140px" }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectSeparator />
-                    <SelectItem value="restaurant">Restaurants</SelectItem>
-                    <SelectItem value="bar">Bars</SelectItem>
-                    <SelectItem value="cafe">Cafes</SelectItem>
-                    <SelectItem value="shop">Shops</SelectItem>
-                  </SelectContent>
-                </Select>
+                {/* Search — expands from an icon into an inline input */}
+                {searchOpen ? (
+                  <div className="flex items-center gap-1 h-10 md:h-8 pl-2.5 pr-1 rounded-full border border-black bg-white flex-shrink-0" style={{ width: "170px" }}>
+                    <Search className="w-3.5 h-3.5 text-black/50 flex-shrink-0" />
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      onBlur={() => { if (!searchQuery.trim()) setSearchOpen(false); }}
+                      placeholder="Search gems"
+                      className="flex-1 min-w-0 h-full text-base md:text-sm text-black placeholder:text-black/40 bg-transparent focus:outline-none"
+                    />
+                    {searchQuery && (
+                      <button
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => { setSearchQuery(""); searchInputRef.current?.focus(); }}
+                        className="flex-shrink-0 text-black/40 hover:text-black transition-colors"
+                        aria-label="Clear search"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 0); }}
+                    className="h-10 w-10 md:h-8 md:w-8 flex items-center justify-center rounded-full border border-white text-white hover:bg-white hover:text-black md:border-black md:text-black md:hover:bg-black md:hover:text-white transition-colors flex-shrink-0"
+                    title="Search gems"
+                    aria-label="Search gems"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                  </button>
+                )}
 
-                <Select value={filterRCuisine} onValueChange={setFilterRCuisine}>
-                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
-                    filterRCuisine !== "all"
-                      ? "bg-white text-black border-black"
-                      : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
-                  }`} style={{ width: "160px" }}>
-                    <SelectValue placeholder="All Cuisine" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[320px] overflow-y-auto">
-                    <SelectItem value="all">All Cuisine</SelectItem>
-                    <SelectSeparator />
+                <DropdownMenu>
+                  <MultiSelectTrigger active={filterRVenueTypes.length > 0} width="140px" ariaLabel="Type filter">
+                    {multiTriggerLabel(filterRVenueTypes, "All Types", TYPE_LABELS)}
+                  </MultiSelectTrigger>
+                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-44 p-0">
+                    <MultiSelectRow label="All Types" checked={filterRVenueTypes.length === 0} onToggle={() => setFilterRVenueTypes([])} />
+                    <DropdownMenuSeparator />
+                    <MultiSelectRow label="Restaurants" checked={filterRVenueTypes.includes("restaurant")} onToggle={() => setFilterRVenueTypes(prev => toggleInArray(prev, "restaurant"))} />
+                    <MultiSelectRow label="Bars" checked={filterRVenueTypes.includes("bar")} onToggle={() => setFilterRVenueTypes(prev => toggleInArray(prev, "bar"))} />
+                    <MultiSelectRow label="Cafes" checked={filterRVenueTypes.includes("cafe")} onToggle={() => setFilterRVenueTypes(prev => toggleInArray(prev, "cafe"))} />
+                    <MultiSelectRow label="Shops" checked={filterRVenueTypes.includes("shop")} onToggle={() => setFilterRVenueTypes(prev => toggleInArray(prev, "shop"))} />
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                  <MultiSelectTrigger active={filterRCuisines.length > 0} width="160px" ariaLabel="Cuisine filter">
+                    {multiTriggerLabel(filterRCuisines, "All Cuisine")}
+                  </MultiSelectTrigger>
+                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-52 p-0 max-h-[320px] overflow-y-auto">
+                    <MultiSelectRow label="All Cuisine" checked={filterRCuisines.length === 0} onToggle={() => setFilterRCuisines([])} />
+                    <DropdownMenuSeparator />
                     {[...new Set(restaurantList.flatMap(r => r.cuisine ?? []))].filter(c => !VENUE_ATTR_TAGS.has(c)).sort().map(c => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                      <MultiSelectRow key={c} label={c} checked={filterRCuisines.includes(c)} onToggle={() => setFilterRCuisines(prev => toggleInArray(prev, c))} />
                     ))}
-                  </SelectContent>
-                </Select>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 {/* Region filter — broad tiers (Denver/Suburbs/Front Range) up
                     top for a quick pick, matching Amuse-Bouche/Artistry-
@@ -608,81 +728,72 @@ export default function BestOfDenver() {
                     neighborhoods/cities broken out in their own section
                     further down. No Mountains tier — no restaurant here is
                     ever tagged a mountain town. */}
-                <Select value={filterRNeighborhood} onValueChange={setFilterRNeighborhood}>
-                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
-                    filterRNeighborhood !== "all"
-                      ? "bg-white text-black border-black"
-                      : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
-                  }`} style={{ width: "190px" }}>
-                    <SelectValue placeholder="Region" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[340px] overflow-y-auto">
-                    <SelectItem value="all">All Regions</SelectItem>
-                    <SelectItem value="denver">Denver</SelectItem>
-                    <SelectItem value="suburbs">Suburbs</SelectItem>
-                    <SelectItem value="front_range">Front Range</SelectItem>
-                    <SelectSeparator />
-                    <SelectGroup>
-                      <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Denver proper</SelectLabel>
-                      {denverProperNeighborhoods.map(n => (
-                        <SelectItem key={n} value={n}>{n}</SelectItem>
-                      ))}
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectGroup>
-                    <SelectSeparator />
-                    <SelectGroup>
-                      <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Suburbs</SelectLabel>
-                      {RESTAURANT_SUBURBS.map(n => (
-                        <SelectItem key={n} value={n}>{n}</SelectItem>
-                      ))}
-                    </SelectGroup>
-                    <SelectSeparator />
-                    <SelectGroup>
-                      <SelectLabel className="text-[10px] uppercase tracking-widest text-black/35 px-2">Front Range</SelectLabel>
-                      {RESTAURANT_FRONT_RANGE_CITIES.map(n => (
-                        <SelectItem key={n} value={n}>{n}</SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-
-                <Select value={filterRPrice} onValueChange={setFilterRPrice}>
-                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
-                    filterRPrice !== "all"
-                      ? "bg-white text-black border-black"
-                      : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
-                  }`} style={{ width: "110px" }}>
-                    <SelectValue placeholder="All Prices" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Prices</SelectItem>
-                    <SelectSeparator />
-                    {restaurantPricePoints.map(p => (
-                      <SelectItem key={p} value={p}>{p}</SelectItem>
+                <DropdownMenu>
+                  <MultiSelectTrigger active={filterRRegions.length > 0} width="190px" ariaLabel="Region filter">
+                    {multiTriggerLabel(filterRRegions, "Region", REGION_LABELS)}
+                  </MultiSelectTrigger>
+                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-56 p-0 max-h-[340px] overflow-y-auto">
+                    <MultiSelectRow label="All Regions" checked={filterRRegions.length === 0} onToggle={() => setFilterRRegions([])} />
+                    <MultiSelectRow label="Denver" checked={filterRRegions.includes("denver")} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, "denver"))} />
+                    <MultiSelectRow label="Suburbs" checked={filterRRegions.includes("suburbs")} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, "suburbs"))} />
+                    <MultiSelectRow label="Front Range" checked={filterRRegions.includes("front_range")} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, "front_range"))} />
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className={MULTI_SELECT_LABEL_CLASS}>Denver proper</DropdownMenuLabel>
+                    {denverProperNeighborhoods.map(n => (
+                      <MultiSelectRow key={n} label={n} checked={filterRRegions.includes(n)} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, n))} />
                     ))}
-                  </SelectContent>
-                </Select>
+                    <MultiSelectRow label="Other" checked={filterRRegions.includes("Other")} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, "Other"))} />
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className={MULTI_SELECT_LABEL_CLASS}>Suburbs</DropdownMenuLabel>
+                    {RESTAURANT_SUBURBS.map(n => (
+                      <MultiSelectRow key={n} label={n} checked={filterRRegions.includes(n)} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, n))} />
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className={MULTI_SELECT_LABEL_CLASS}>Front Range</DropdownMenuLabel>
+                    {RESTAURANT_FRONT_RANGE_CITIES.map(n => (
+                      <MultiSelectRow key={n} label={n} checked={filterRRegions.includes(n)} onToggle={() => setFilterRRegions(prev => toggleInArray(prev, n))} />
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-                <Select value={filterRBadge} onValueChange={v => setFilterRBadge(v as any)}>
-                  <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
-                    filterRBadge !== "all"
-                      ? "bg-white text-black border-black"
-                      : "bg-black text-[#FFF8E7] border-white md:bg-[#FFF8E7] md:text-black md:border-black md:hover:border-white"
-                  }`} style={{ width: "150px" }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Spots</SelectItem>
-                    <SelectSeparator />
-                    <SelectItem value="hotNew">🔥 Hot &amp; New</SelectItem>
-                    <SelectItem value="michelin">⭐ Michelin</SelectItem>
-                    <SelectItem value="jamesBeard">🏆 James Beard</SelectItem>
-                    <SelectItem value="fixture">📌 Fixture</SelectItem>
-                    <SelectItem value="foodTruck">🚚 Food Truck</SelectItem>
-                    <SelectItem value="happyHour">⏰ Happy Hour</SelectItem>
-                    <SelectItem value="patio">☀️ Patio</SelectItem>
-                  </SelectContent>
-                </Select>
+                <DropdownMenu>
+                  <MultiSelectTrigger active={filterRPrices.length > 0} width="110px" ariaLabel="Price filter">
+                    {multiTriggerLabel(filterRPrices, "All Prices")}
+                  </MultiSelectTrigger>
+                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-32 p-0">
+                    <MultiSelectRow label="All Prices" checked={filterRPrices.length === 0} onToggle={() => setFilterRPrices([])} />
+                    <DropdownMenuSeparator />
+                    {restaurantPricePoints.map(p => (
+                      <MultiSelectRow key={p} label={p} checked={filterRPrices.includes(p)} onToggle={() => setFilterRPrices(prev => toggleInArray(prev, p))} />
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                  <MultiSelectTrigger active={filterRSpots.length > 0} width="150px" ariaLabel="Spots filter">
+                    {multiTriggerLabel(filterRSpots, "All Spots", SPOT_LABELS)}
+                  </MultiSelectTrigger>
+                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-52 p-0 max-h-[340px] overflow-y-auto">
+                    <MultiSelectRow label="All Spots" checked={filterRSpots.length === 0} onToggle={() => setFilterRSpots([])} />
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className={MULTI_SELECT_LABEL_CLASS}>Badges</DropdownMenuLabel>
+                    <MultiSelectRow label="🔥 Hot & New" checked={filterRSpots.includes("hotNew")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "hotNew"))} />
+                    <MultiSelectRow label="⭐ Michelin" checked={filterRSpots.includes("michelin")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "michelin"))} />
+                    <MultiSelectRow label="🏆 James Beard" checked={filterRSpots.includes("jamesBeard")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "jamesBeard"))} />
+                    <MultiSelectRow label="📌 Fixture" checked={filterRSpots.includes("fixture")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "fixture"))} />
+                    <MultiSelectRow label="🚚 Food Truck" checked={filterRSpots.includes("foodTruck")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "foodTruck"))} />
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className={MULTI_SELECT_LABEL_CLASS}>Drinks &amp; Amenities</DropdownMenuLabel>
+                    <MultiSelectRow label="⏰ Happy Hour" checked={filterRSpots.includes("happyHour")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "happyHour"))} />
+                    <MultiSelectRow label="☀️ Patio" checked={filterRSpots.includes("patio")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "patio"))} />
+                    <MultiSelectRow label="🍸 Cocktails" checked={filterRSpots.includes("cocktails")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "cocktails"))} />
+                    <MultiSelectRow label="🍷 Wine" checked={filterRSpots.includes("wine")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "wine"))} />
+                    <MultiSelectRow label="🍺 Beer" checked={filterRSpots.includes("beer")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "beer"))} />
+                    <MultiSelectRow label="☕ Coffee" checked={filterRSpots.includes("coffee")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "coffee"))} />
+                    <MultiSelectRow label="🍵 Tea" checked={filterRSpots.includes("tea")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "tea"))} />
+                    <MultiSelectRow label="🎱 Dive Bar" checked={filterRSpots.includes("dive")} onToggle={() => setFilterRSpots(prev => toggleInArray(prev, "dive"))} />
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 {hasActiveRestaurantFilters && (
                   <button onClick={resetRestaurantFilters}
