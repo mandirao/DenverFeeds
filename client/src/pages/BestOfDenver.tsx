@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import type { ReactNode } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -57,147 +58,166 @@ const SPOT_PLAIN_LABELS: Record<string, string> = {
   happyHour: "Happy Hour", patio: "Patio", cocktails: "Cocktails", wine: "Wine", beer: "Beer", coffee: "Coffee", tea: "Tea", dive: "Dive Bar",
 };
 
+type RestaurantSort = "alpha" | "added" | "priceAsc" | "priceDesc";
+const SORT_LABELS: Record<RestaurantSort, string> = {
+  alpha: "Alphabetical", added: "Recently Added", priceAsc: "Price: Low to High", priceDesc: "Price: High to Low",
+};
+
 // ── Restaurant Row ────────────────────────────────────────────────────────────
 
-function RestaurantRow({ restaurant, onEdit, onDelete, activeCuisines, onTagClick }: {
+function BadgeButton({ emoji, label, active, onClick }: { emoji: string; label: string; active: boolean; onClick: () => void }) {
+  return (
+    <TooltipProvider delayDuration={100}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={onClick}
+            aria-label={label}
+            className={`w-6 h-6 flex items-center justify-center rounded-full text-base leading-none select-none transition-colors ${
+              active ? "bg-white ring-1 ring-black" : "hover:bg-black/10"
+            }`}
+          >
+            {emoji}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+function RestaurantRow({
+  restaurant, onEdit, onDelete, activeCuisines, onTagClick,
+  activeRegions, onNeighborhoodClick, activePrices, onPriceClick, activeSpots, onSpotClick,
+}: {
   restaurant: Restaurant;
   onEdit: () => void;
   onDelete: () => void;
   activeCuisines: string[];
   onTagClick: (cuisine: string) => void;
+  activeRegions: string[];
+  onNeighborhoodClick: (neighborhood: string) => void;
+  activePrices: string[];
+  onPriceClick: (price: string) => void;
+  activeSpots: string[];
+  onSpotClick: (spot: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(restaurant.name + " Denver restaurant")}`;
   return (
-    <li className="flex items-start gap-3 py-3.5 border-b border-black/10 group last:border-0">
-      <span className="text-2xl flex-shrink-0 mt-0.5">{restaurant.emoji}</span>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <TooltipProvider delayDuration={300}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <a href={searchUrl} target="_blank" rel="noopener noreferrer"
-                      className="font-black uppercase text-black text-base leading-tight underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity">
-                      {restaurant.name}
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
-                    Opens Google search
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              {restaurant.pricePoint && (
-                <span className="text-xs font-bold text-black/50 leading-none">{restaurant.pricePoint}</span>
-              )}
-              {restaurant.michelinStar && (
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="text-base leading-none cursor-default select-none">⭐</span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
-                      Michelin Star
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {restaurant.hotNew && (
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="text-base leading-none cursor-default select-none">🔥</span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
-                      Hot &amp; New
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {(restaurant as any).fixture && (
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="text-base leading-none cursor-default select-none">📌</span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
-                      Fixture
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {(restaurant as any).foodTruck && (
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="text-base leading-none cursor-default select-none">🚚</span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
-                      Food Truck
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {(restaurant as any).jamesBeard && (
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="text-base leading-none cursor-default select-none">🏆</span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
-                      James Beard
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-            {restaurant.neighborhood && (
-              <p className="text-xs text-black/40 font-medium mt-0.5 leading-none">{restaurant.neighborhood}</p>
-            )}
-            <p className="text-base text-black/75 mt-1 leading-snug">{restaurant.description}</p>
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {(restaurant.cuisine ?? []).map(c => {
-                const active = activeCuisines.includes(c);
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => onTagClick(c)}
-                    className={`text-xs font-bold border px-2 py-0.5 rounded-full transition-colors ${
-                      active
-                        ? "bg-black text-white border-black"
-                        : "border-black/25 text-black/60 hover:border-black hover:text-black"
-                    }`}
-                  >
-                    {c}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm"
-                className="h-7 w-7 p-0 flex items-center justify-center rounded-full bg-transparent opacity-30 group-hover:opacity-70 hover:!opacity-100 transition-opacity flex-shrink-0 mt-0.5">
-                <MoreVertical className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36 border-none bg-gray-100 shadow-md rounded-sm font-sans">
-              <DropdownMenuItem onClick={() => { setMenuOpen(false); onEdit(); }}
-                className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none">
-                Edit details
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
-                onClick={() => { setMenuOpen(false); onDelete(); }}>
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <motion.li
+      layout
+      initial={false}
+      exit={{ opacity: 0, height: 0, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+      transition={{ duration: 0.25, ease: "easeInOut" }}
+      className="overflow-hidden py-3.5 border-b border-black/10 group last:border-0"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <span className="text-2xl leading-none flex-shrink-0">{restaurant.emoji}</span>
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a href={searchUrl} target="_blank" rel="noopener noreferrer"
+                  className="font-black uppercase text-black text-base leading-tight underline decoration-dotted underline-offset-2 hover:opacity-70 transition-opacity">
+                  {restaurant.name}
+                </a>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs rounded-none border-black bg-black text-white px-2 py-1">
+                Opens Google search
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm"
+              className="h-7 w-7 p-0 flex items-center justify-center rounded-full bg-transparent opacity-30 group-hover:opacity-70 hover:!opacity-100 transition-opacity flex-shrink-0">
+              <MoreVertical className="h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-36 border-none bg-gray-100 shadow-md rounded-sm font-sans">
+            <DropdownMenuItem onClick={() => { setMenuOpen(false); onEdit(); }}
+              className="text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none">
+              Edit details
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
+              onClick={() => { setMenuOpen(false); onDelete(); }}>
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className="pl-10">
+        <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+          {restaurant.neighborhood && (
+            <button
+              type="button"
+              onClick={() => onNeighborhoodClick(restaurant.neighborhood)}
+              className={`text-xs font-bold rounded-full border px-1.5 py-0.5 -ml-1.5 transition-colors ${
+                activeRegions.includes(restaurant.neighborhood)
+                  ? "bg-white text-black border-black"
+                  : "border-black/15 text-black/60 hover:border-black hover:text-black"
+              }`}
+            >
+              {restaurant.neighborhood}
+            </button>
+          )}
+          {restaurant.pricePoint && (
+            <button
+              type="button"
+              onClick={() => onPriceClick(restaurant.pricePoint)}
+              className={`text-xs font-bold rounded-full border px-2 py-0.5 transition-colors ${
+                activePrices.includes(restaurant.pricePoint)
+                  ? "bg-white text-black border-black"
+                  : "border-black/15 text-black/60 hover:border-black hover:text-black"
+              }`}
+            >
+              {restaurant.pricePoint}
+            </button>
+          )}
+          {restaurant.michelinStar && (
+            <BadgeButton emoji="⭐" label="Michelin Star" active={activeSpots.includes("michelin")} onClick={() => onSpotClick("michelin")} />
+          )}
+          {restaurant.hotNew && (
+            <BadgeButton emoji="🔥" label="Hot & New" active={activeSpots.includes("hotNew")} onClick={() => onSpotClick("hotNew")} />
+          )}
+          {(restaurant as any).fixture && (
+            <BadgeButton emoji="📌" label="Fixture" active={activeSpots.includes("fixture")} onClick={() => onSpotClick("fixture")} />
+          )}
+          {(restaurant as any).foodTruck && (
+            <BadgeButton emoji="🚚" label="Food Truck" active={activeSpots.includes("foodTruck")} onClick={() => onSpotClick("foodTruck")} />
+          )}
+          {(restaurant as any).jamesBeard && (
+            <BadgeButton emoji="🏆" label="James Beard" active={activeSpots.includes("jamesBeard")} onClick={() => onSpotClick("jamesBeard")} />
+          )}
+        </div>
+        <p className="text-base text-black/75 mt-0.5 leading-snug">{restaurant.description}</p>
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          {(restaurant.cuisine ?? []).map(c => {
+            const active = activeCuisines.includes(c);
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => onTagClick(c)}
+                className={`text-xs font-bold border px-2 py-0.5 rounded-full transition-colors ${
+                  active
+                    ? "bg-white text-black border-black"
+                    : "border-black/25 text-black/60 hover:border-black hover:text-black"
+                }`}
+              >
+                {c}
+              </button>
+            );
+          })}
         </div>
       </div>
-    </li>
+    </motion.li>
   );
 }
 
@@ -540,7 +560,10 @@ export default function BestOfDenver() {
   const [filterRPrices, setFilterRPrices] = useState<string[]>(() => parseMultiParam("price"));
   const { ref: filterBarRef, height: filterBarHeight } = useElementHeight<HTMLDivElement>();
   const [filterRSpots, setFilterRSpots] = useState<string[]>(() => parseMultiParam("spot"));
-  const [sortBy, setSortBy] = useState<"alpha" | "added">(() => new URLSearchParams(window.location.search).get("sort") === "added" ? "added" : "alpha");
+  const [sortBy, setSortBy] = useState<RestaurantSort>(() => {
+    const s = new URLSearchParams(window.location.search).get("sort");
+    return s === "added" || s === "priceAsc" || s === "priceDesc" ? s : "alpha";
+  });
   const [searchQuery, setSearchQuery] = useState(() => new URLSearchParams(window.location.search).get("q") || "");
   const [searchOpen, setSearchOpen] = useState(() => searchQuery.trim() !== "");
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -621,7 +644,15 @@ export default function BestOfDenver() {
       }
       return true;
     })
-    .sort((a, b) => sortBy === "added" ? b.id - a.id : a.name.trim().localeCompare(b.name.trim()));
+    .sort((a, b) => {
+      if (sortBy === "added") return b.id - a.id;
+      if (sortBy === "priceAsc" || sortBy === "priceDesc") {
+        const dir = sortBy === "priceAsc" ? 1 : -1;
+        const diff = (restaurantPricePoints.indexOf(a.pricePoint as any) - restaurantPricePoints.indexOf(b.pricePoint as any)) * dir;
+        if (diff !== 0) return diff;
+      }
+      return a.name.trim().localeCompare(b.name.trim());
+    });
 
   const hasActiveRestaurantFilters = filterRVenueTypes.length > 0 || filterRCuisines.length > 0 || filterRRegions.length > 0 || filterRPrices.length > 0 || filterRSpots.length > 0 || sortBy !== "alpha" || searchQuery.trim() !== "";
   const resetRestaurantFilters = () => {
@@ -636,7 +667,7 @@ export default function BestOfDenver() {
     ...filterRPrices,
     ...filterRSpots.map(s => SPOT_PLAIN_LABELS[s] ?? s),
   ];
-  if (sortBy !== "alpha") activeFilterLabels.push("Recently Added");
+  if (sortBy !== "alpha") activeFilterLabels.push(SORT_LABELS[sortBy]);
   if (searchQuery.trim() !== "") activeFilterLabels.push(`"${searchQuery.trim()}"`);
 
   return (
@@ -742,18 +773,20 @@ export default function BestOfDenver() {
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-1.5 px-3 h-10 md:h-8 rounded-full border border-black bg-white text-black font-medium text-sm hover:bg-black hover:text-white transition-colors whitespace-nowrap flex-shrink-0 focus:outline-none">
                       <ArrowUpDown className="w-3 h-3" />
-                      {sortBy === "added" ? "Recently Added" : "Alphabetical"}
+                      {SORT_LABELS[sortBy]}
                       <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-44 p-0">
+                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-48 p-0">
                     {([
-                      { label: "Alphabetical", value: "alpha" as const },
-                      { label: "Recently Added", value: "added" as const },
+                      { value: "alpha" as const },
+                      { value: "added" as const },
+                      { value: "priceAsc" as const },
+                      { value: "priceDesc" as const },
                     ]).map(opt => (
-                      <DropdownMenuItem key={opt.label} onClick={() => setSortBy(opt.value)} className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide rounded-none focus:bg-gray-100 hover:bg-gray-100 cursor-pointer">
+                      <DropdownMenuItem key={opt.value} onClick={() => setSortBy(opt.value)} className="flex items-center gap-2 px-3 py-2 text-xs font-bold uppercase tracking-wide rounded-none focus:bg-gray-100 hover:bg-gray-100 cursor-pointer">
                         <span className="w-3.5 flex-shrink-0">{sortBy === opt.value ? <Check className="w-3 h-3" /> : null}</span>
-                        {opt.label}
+                        {SORT_LABELS[opt.value]}
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
@@ -925,16 +958,24 @@ export default function BestOfDenver() {
           </div>
         ) : (
           <ul className="divide-y-0">
-            {filteredRestaurants.map(r => (
-              <RestaurantRow
-                key={r.id}
-                restaurant={r}
-                onEdit={() => setRestaurantToEdit(r)}
-                onDelete={() => setRestaurantToDelete(r)}
-                activeCuisines={filterRCuisines}
-                onTagClick={c => setFilterRCuisines(prev => toggleInArray(prev, c))}
-              />
-            ))}
+            <AnimatePresence initial={false}>
+              {filteredRestaurants.map(r => (
+                <RestaurantRow
+                  key={r.id}
+                  restaurant={r}
+                  onEdit={() => setRestaurantToEdit(r)}
+                  onDelete={() => setRestaurantToDelete(r)}
+                  activeCuisines={filterRCuisines}
+                  onTagClick={c => setFilterRCuisines(prev => toggleInArray(prev, c))}
+                  activeRegions={filterRRegions}
+                  onNeighborhoodClick={n => setFilterRRegions(prev => toggleInArray(prev, n))}
+                  activePrices={filterRPrices}
+                  onPriceClick={p => setFilterRPrices(prev => toggleInArray(prev, p))}
+                  activeSpots={filterRSpots}
+                  onSpotClick={s => setFilterRSpots(prev => toggleInArray(prev, s))}
+                />
+              ))}
+            </AnimatePresence>
           </ul>
         )}
 
