@@ -42,6 +42,7 @@ export const restaurantCuisineTypes = [
   'Pan Latin',
   'Patio',
   'Pizza',
+  'Sandwiches',
   'Seafood',
   'Small Plates',
   'Steakhouse',

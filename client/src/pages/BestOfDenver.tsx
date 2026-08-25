@@ -958,7 +958,7 @@ export default function BestOfDenver() {
           </div>
         ) : (
           <ul className="divide-y-0">
-            <AnimatePresence initial={false}>
+            <AnimatePresence initial={false} mode="popLayout">
               {filteredRestaurants.map(r => (
                 <RestaurantRow
                   key={r.id}
