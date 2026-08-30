@@ -22,6 +22,7 @@ import {
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
   expandRecurringEvents, hasStartTimePassed, localDateStr,
   announcedTooltipText, SELLOUT_LIKELY_THRESHOLD, matchesRegionFilter,
+  splitDayEvents, spanEnd, formatMonthDay,
 } from "@/lib/eventUtils";
 import { getAddedTimeCategory } from "@/lib/utils";
 import { useElementHeight } from "@/hooks/use-element-height";
@@ -196,8 +197,8 @@ export default function AmsueBouche() {
   const [calViewYear, setCalViewYear] = useState(() => new Date().getFullYear());
   const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
   const [calEventDetail, setCalEventDetail] = useState<(FoodEvent & { isDateUnverified?: boolean | null }) | null>(null);
-  const [calDaySheet, setCalDaySheet] = useState<{ date: string; events: FoodEvent[] } | null>(null);
-  const [calEventDetailFrom, setCalEventDetailFrom] = useState<{ date: string; events: FoodEvent[] } | null>(null);
+  const [calDaySheet, setCalDaySheet] = useState<{ date: string } | null>(null);
+  const [calEventDetailFrom, setCalEventDetailFrom] = useState<{ date: string } | null>(null);
   const [calDetailMenuOpen, setCalDetailMenuOpen] = useState(false);
   const [calDetailEditOpen, setCalDetailEditOpen] = useState(false);
   const [calDetailDeleteConfirm, setCalDetailDeleteConfirm] = useState(false);
@@ -755,7 +756,7 @@ export default function AmsueBouche() {
               onPrevMonth={prevCalMonth}
               onNextMonth={nextCalMonth}
               onEventClick={setCalEventDetail}
-              onDayOverflowClick={(date, evs) => setCalDaySheet({ date, events: evs })}
+              onDayOverflowClick={date => setCalDaySheet({ date })}
               config={foodCalendarConfig}
             />
           )
@@ -1100,7 +1101,32 @@ export default function AmsueBouche() {
             const todayStr = localDateStr();
             const prevDateStr = addCalDays(calDaySheet.date, -1);
             const nextDateStr = addCalDays(calDaySheet.date, 1);
-            const goToDay = (date: string) => setCalDaySheet({ date, events: filteredEvents.filter(ev => ev.dateStart === date) });
+            const goToDay = (date: string) => setCalDaySheet({ date });
+            const { all: dayEvents, startingToday, stillGoing } = splitDayEvents(filteredEvents, calDaySheet.date);
+            const renderRow = (ev: FoodEvent, i: number, keyPrefix: string, showThrough: boolean) => (
+              <button
+                key={`${keyPrefix}-${ev.id}-${i}`}
+                onClick={() => { setCalEventDetailFrom({ date: calDaySheet.date }); setCalDaySheet(null); setCalEventDetail(ev); }}
+                className={`w-full text-left px-5 py-3 hover:bg-[#FFF8E7] transition-colors flex items-center gap-3 ${ev.soldOut ? "opacity-50" : ""}`}
+              >
+                <span className="text-xl flex-shrink-0">{ev.emoji}</span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className={`text-sm font-bold text-black truncate ${ev.soldOut ? "line-through" : ""}`}>{ev.name}</div>
+                    {ev.soldOut && (
+                      <span className="flex-shrink-0 text-[10px] font-black uppercase leading-none px-1.5 py-1 bg-black text-white">SOLD OUT</span>
+                    )}
+                  </div>
+                  <div className="text-xs text-black/60 truncate">
+                    {ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && <span className="font-semibold text-black/80">{formatTime(ev.startTime)} · </span>}
+                    {ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}
+                  </div>
+                  {showThrough && <div className="text-xs text-black/50 font-semibold">Through {formatMonthDay(spanEnd(ev))}</div>}
+                  {ev.price && <div className="text-xs text-black/50">{ev.price}</div>}
+                </div>
+                <ChevronRight className="w-4 h-4 text-black/30 flex-shrink-0 ml-auto" />
+              </button>
+            );
             return (
               <>
                 <div className="px-5 pt-5 pb-3 flex items-center justify-between gap-2" style={{ backgroundColor: AB_GOLD }}>
@@ -1114,7 +1140,7 @@ export default function AmsueBouche() {
                   </button>
                   <div className="text-center min-w-0">
                     <h2 className="text-base font-black uppercase text-black truncate">{label}</h2>
-                    <p className="text-xs text-black/60 mt-0.5">{calDaySheet.events.length} popup{calDaySheet.events.length !== 1 ? 's' : ''}</p>
+                    <p className="text-xs text-black/60 mt-0.5">{dayEvents.length} popup{dayEvents.length !== 1 ? 's' : ''}</p>
                   </div>
                   <button
                     onClick={() => goToDay(nextDateStr)}
@@ -1125,32 +1151,16 @@ export default function AmsueBouche() {
                   </button>
                 </div>
                 <div className="divide-y divide-black/10 bg-white max-h-[60vh] overflow-y-auto">
-                  {calDaySheet.events.length === 0 && (
+                  {dayEvents.length === 0 && (
                     <div className="px-5 py-8 text-center text-sm text-black/40">No popups this day</div>
                   )}
-                  {calDaySheet.events.map((ev, i) => (
-                    <button
-                      key={`${ev.id}-${i}`}
-                      onClick={() => { setCalEventDetailFrom(calDaySheet); setCalDaySheet(null); setCalEventDetail(ev); }}
-                      className={`w-full text-left px-5 py-3 hover:bg-[#FFF8E7] transition-colors flex items-center gap-3 ${ev.soldOut ? "opacity-50" : ""}`}
-                    >
-                      <span className="text-xl flex-shrink-0">{ev.emoji}</span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className={`text-sm font-bold text-black truncate ${ev.soldOut ? "line-through" : ""}`}>{ev.name}</div>
-                          {ev.soldOut && (
-                            <span className="flex-shrink-0 text-[10px] font-black uppercase leading-none px-1.5 py-1 bg-black text-white">SOLD OUT</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-black/60 truncate">
-                          {ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && <span className="font-semibold text-black/80">{formatTime(ev.startTime)} · </span>}
-                          {ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}
-                        </div>
-                        {ev.price && <div className="text-xs text-black/50">{ev.price}</div>}
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-black/30 flex-shrink-0 ml-auto" />
-                    </button>
-                  ))}
+                  {startingToday.map((ev, i) => renderRow(ev, i, 'start', false))}
+                  {stillGoing.length > 0 && (
+                    <div className="px-5 py-1.5 bg-black/5 flex items-center gap-2">
+                      <span className="text-xs font-black uppercase tracking-wider text-black/40">Still Time</span>
+                    </div>
+                  )}
+                  {stillGoing.map((ev, i) => renderRow(ev, i, 'still', true))}
                 </div>
               </>
             );

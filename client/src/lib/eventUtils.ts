@@ -248,6 +248,56 @@ export function formatDayHeaderLabel(dateStart: string): string {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
+/** Short "Aug 21" date label — used by the "Through {date}" line on Still
+ * Time rows, where a weekday would just add noise. */
+export function formatMonthDay(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// ── Day-bucketing (Still Time) ──────────────────────────────────────────────
+// Shared by the mobile day-scroll view and the desktop day-sheet modal so a
+// given day's event list — and its "Still Time" split — matches between the
+// two, rather than each screen growing its own copy that can drift.
+
+export interface DaySpannableEvent {
+  dateStart: string;
+  dateEnd?: string | null;
+  isRecurring?: boolean | null;
+  activeWeekdays?: number[] | null;
+  startTime?: string | null;
+}
+
+/** True end date of an event's span for day-inclusion purposes.
+ * expandRecurringEvents stamps every occurrence's dateEnd by re-applying the
+ * *base record's* full season-length span onto each occurrence's own
+ * dateStart — so a single Saturday occurrence can end up with a computed
+ * dateEnd months later. That span is meaningless for a recurring event (it
+ * repeats, it doesn't run for months straight), so recurring events only
+ * ever count on their own dateStart day here. */
+export function spanEnd<T extends DaySpannableEvent>(ev: T): string {
+  return ev.isRecurring ? ev.dateStart : (ev.dateEnd && ev.dateEnd > ev.dateStart ? ev.dateEnd : ev.dateStart);
+}
+
+function matchesActiveWeekday<T extends DaySpannableEvent>(ev: T, day: string): boolean {
+  return !ev.activeWeekdays?.length || ev.activeWeekdays.includes(new Date(day + "T12:00:00").getDay());
+}
+
+/** Splits the events touching `day` into ones that start that day vs.
+ * multi-day listings just still running through it (dateStart before `day`)
+ * — the latter is the "Still Time" bucket, sorted soonest-closing first so
+ * it doesn't crowd out what's new. Recurring events never land in Still
+ * Time — see spanEnd above, they only ever appear on their own occurrence
+ * day. */
+export function splitDayEvents<T extends DaySpannableEvent>(events: T[], day: string): { all: T[]; startingToday: T[]; stillGoing: T[] } {
+  const all = events.filter(ev => ev.dateStart <= day && spanEnd(ev) >= day && matchesActiveWeekday(ev, day));
+  const byStartTime = (a: T, b: T) => (a.startTime ?? "").localeCompare(b.startTime ?? "");
+  const byEndDate = (a: T, b: T) => spanEnd(a).localeCompare(spanEnd(b));
+  const startingToday = all.filter(ev => ev.dateStart === day).sort(byStartTime);
+  const stillGoing = all.filter(ev => ev.dateStart !== day).sort(byEndDate);
+  return { all, startingToday, stillGoing };
+}
+
 // Bare cadence words render lowercase ("monthly") while weekday-based labels
 // stay as-is ("Fridays", "3rd Sundays" read as proper nouns) — matches the
 // design handoff's mixed-case example rows.

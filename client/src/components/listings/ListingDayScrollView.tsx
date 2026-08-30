@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { ChevronRight } from "lucide-react";
 import type { ListingEventBase, ListingCalendarConfig } from "@/lib/listingFeedConfig";
-import { localDateStr, formatTime, formatRecurrenceCadence, dayMatchesFilter } from "@/lib/eventUtils";
+import { localDateStr, formatTime, formatRecurrenceCadence, dayMatchesFilter, spanEnd, splitDayEvents, formatMonthDay } from "@/lib/eventUtils";
 import { addCalDays } from "@shared/recurrence";
 
 const WEEKDAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -37,26 +37,6 @@ export function ListingDayScrollView<T extends ListingEventBase>({
   const scrollRef = useRef<HTMLDivElement>(null);
   const todayStr = localDateStr();
 
-  // expandRecurringEvents stamps every occurrence's dateEnd by re-applying
-  // the *base record's* full season-length span (e.g. "runs weekly Aug–Jan")
-  // onto each individual occurrence's own dateStart — so a single Saturday
-  // occurrence can end up with a computed dateEnd months later. That span is
-  // meaningless for a recurring event (it repeats, it doesn't run for
-  // months straight), so it must never be used for day-inclusion here —
-  // only a genuine one-time/limited-run listing's dateEnd is real. Desktop's
-  // month grid has the same guard (see guardRecurringMultiDaySpillover).
-  const spanEnd = (ev: T) => ev.isRecurring
-    ? ev.dateStart
-    : (ev.dateEnd && ev.dateEnd > ev.dateStart ? ev.dateEnd : ev.dateStart);
-
-  // Range-mode events can carry an optional weekday filter (e.g. a theatre
-  // run that's only Thu/Fri/Sat within its dateStart..dateEnd span) — when
-  // set, a day only counts toward the strip if its weekday is in the set.
-  // Empty/unset means every day in the span is active, same as before this
-  // field existed.
-  const matchesActiveWeekday = (ev: T, day: string) =>
-    !ev.activeWeekdays?.length || ev.activeWeekdays.includes(new Date(day + "T12:00:00").getDay());
-
   let maxDate = todayStr;
   for (const ev of events) {
     const end = spanEnd(ev);
@@ -77,20 +57,10 @@ export function ListingDayScrollView<T extends ListingEventBase>({
   const days = filterDay === "all" ? allDays : allDays.filter(d => dayMatchesFilter(d, filterDay));
 
   // Splits a day's events into ones that start today vs. multi-day listings
-  // just still running through today (dateStart before this day) — the
-  // latter get pushed under a "Still Time" divider so the same limited-run
-  // event repeating across several day-cards doesn't crowd out what's new.
-  // Recurring events never land in "Still Time" — see spanEnd above, they
-  // only ever appear on their own occurrence day.
-  const eventsOnDay = (day: string) => {
-    const all = events.filter(ev => ev.dateStart <= day && spanEnd(ev) >= day && matchesActiveWeekday(ev, day));
-    const byStartTime = (a: T, b: T) => (a.startTime ?? '').localeCompare(b.startTime ?? '');
-    // Still Time stacks soonest-closing first, matching desktop's stillTimeEvents sort.
-    const byEndDate = (a: T, b: T) => spanEnd(a).localeCompare(spanEnd(b));
-    const startingToday = all.filter(ev => ev.dateStart === day).sort(byStartTime);
-    const stillGoing = all.filter(ev => ev.dateStart !== day).sort(byEndDate);
-    return { all, startingToday, stillGoing };
-  };
+  // just still running through today ("Still Time") — pushed under a divider
+  // so the same limited-run event repeating across several day-cards doesn't
+  // crowd out what's new. Same bucketing the desktop day-sheet modal uses.
+  const eventsOnDay = (day: string) => splitDayEvents(events, day);
 
   // Empty days between event days are simply omitted — no marker, no
   // count, just the next real day card butted up against the last one.
@@ -127,11 +97,6 @@ export function ListingDayScrollView<T extends ListingEventBase>({
   useEffect(() => {
     scrollRef.current?.scrollTo({ left: 0 });
   }, [filterDay, hasActiveFilters]);
-
-  const formatThrough = (d: string) => {
-    const dt = new Date(d + 'T12:00:00');
-    return `${MONTH_SHORT[dt.getMonth()]} ${dt.getDate()}`;
-  };
 
   if (items.length === 0) {
     return (
@@ -249,7 +214,7 @@ export function ListingDayScrollView<T extends ListingEventBase>({
                         {ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}
                       </div>
                     )}
-                    {!ev.soldOut && <div className="text-sm text-black/50 font-semibold">Through {formatThrough(spanEnd(ev))}</div>}
+                    {!ev.soldOut && <div className="text-sm text-black/50 font-semibold">Through {formatMonthDay(spanEnd(ev))}</div>}
                     {!ev.soldOut && ev.price && <div className="text-sm text-black/50">{ev.price}</div>}
                   </div>
                   <ChevronRight className="w-5 h-5 text-black/30 flex-shrink-0" />
