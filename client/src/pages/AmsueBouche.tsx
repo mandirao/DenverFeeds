@@ -22,7 +22,7 @@ import {
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
   expandRecurringEvents, hasStartTimePassed, localDateStr,
   announcedTooltipText, SELLOUT_LIKELY_THRESHOLD, matchesRegionFilter,
-  splitDayEvents, spanEnd, formatMonthDay,
+  splitDayEvents, spanEnd, formatMonthDay, formatRecurrenceCadence,
 } from "@/lib/eventUtils";
 import { getAddedTimeCategory } from "@/lib/utils";
 import { useElementHeight } from "@/hooks/use-element-height";
@@ -1119,6 +1119,7 @@ export default function AmsueBouche() {
                   </div>
                   <div className="text-xs text-black/60 truncate">
                     {ev.startTime && /^\d{1,2}:\d{2}$/.test(ev.startTime) && <span className="font-semibold text-black/80">{formatTime(ev.startTime)} · </span>}
+                    {ev.isRecurring && <span className="font-semibold text-black/80">{formatRecurrenceCadence(ev.recurrenceLabel)} · </span>}
                     {ev.venue}{ev.neighborhood ? ` · ${ev.neighborhood}` : ''}
                   </div>
                   {showThrough && <div className="text-xs text-black/50 font-semibold">Through {formatMonthDay(spanEnd(ev))}</div>}
