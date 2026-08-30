@@ -31,6 +31,7 @@ interface ConcertMatch {
 interface RedoListingResult {
   status: 'updated' | 'confirmed' | 'not-found';
   dateStart?: string;
+  dateEnd?: string;
   startTime?: string;
   venue?: string;
   neighborhood?: string;
@@ -49,6 +50,7 @@ interface ListingVerifyParams {
   recurrenceLabel: string;
   recurrenceRule: RecurrenceRule | null;
   dateStart: string;
+  dateEnd: string;
   startTime: string;
   price: string;
   ticketUrl: string;
@@ -593,7 +595,7 @@ Return this exact JSON structure (no markdown, no code blocks):
   "venue": "restaurant or location name",
   "neighborhood": "Denver neighborhood if mentioned, else empty string",
   "dateStart": "YYYY-MM-DD or empty string if unknown",
-  "dateEnd": "YYYY-MM-DD for last day if multi-day, else empty string",
+  "dateEnd": "YYYY-MM-DD for the last day if this runs across multiple days — including open-ended phrasing like 'through Oct 25', 'thru the summer', or 'runs through October', and cross-month ranges like 'Aug 1 – Oct 4', not just same-month hyphenated ranges. Else empty string.",
   "emoji": "single food-related emoji that fits the event",
   "draftSummary": "raw factual notes about the event — food, vibe, key details that are DURABLY true of this event/series every time it happens. Not the final summary, just the raw material. Do NOT include anything specific to only one occurrence (a particular date's menu item or theme) — that goes only in occurrenceNote/titleModifier below.",
   "notableNames": ["array of any named chefs, DJs, collaborators, pop-up brands worth researching — empty array if none"],
@@ -614,7 +616,7 @@ ${this.recurrenceParseFieldsBlock()}
 
 Rules:
 - Use current year (${new Date().getFullYear()}) unless another year is clearly stated
-- If a date range is mentioned (e.g. March 26-28), dateStart=first date, dateEnd=last date
+- If a date range or run is mentioned — a hyphenated range ("March 26-28"), an open-ended "through"/"thru" phrase ("through October 25", "runs through the summer"), or a cross-month range ("Aug 1 – Oct 4") — dateStart=first date, dateEnd=last date
 - Pick the most specific cuisine type that fits
 - For announcedAt: '3d' ago means subtract 3 days from today's date; '1w' means subtract 7 days; '2h' means today`,
 
@@ -821,7 +823,7 @@ Return this exact JSON structure (no markdown, no code blocks):
   "venue": "venue, museum, gallery, theater, or location name",
   "neighborhood": "Denver/Boulder neighborhood if mentioned, else empty string",
   "dateStart": "YYYY-MM-DD or empty string if unknown",
-  "dateEnd": "YYYY-MM-DD for last day if multi-day, else empty string",
+  "dateEnd": "YYYY-MM-DD for the last day if this runs across multiple days — including open-ended phrasing like 'through Oct 25', 'thru the summer', or 'runs through October', and cross-month ranges like 'Aug 1 – Oct 4', not just same-month hyphenated ranges. Else empty string.",
   "emoji": "single emoji that captures what's SPECIFIC and interesting about THIS event — not its broad category. Think: what is the event actually ABOUT? A story slam → 🦋 (if by the Moth) or 🎤. Ballet → 🩰. A talk about the universe → 🌌. Dinosaur exhibit → 🦕. Pasta dinner with film → 🍝. 2D art exhibit → 🖼️. Sculpture → 🗿. Textile/fiber arts → 🧶. Writing workshop → ✍️. Photography → 📸. Mushrooms/foraging → 🍄. Bees/insects → 🐝. Ocean/marine life → 🐙. Ancient history → 🏺. Renaissance art → 🏛️. Jazz → 🎷. Poetry → 📜. Chess → ♟️. Origami → 🦢. Astronomy → 🔭. Geology → 🪨. Fermentation → 🍶. Plants/botany → 🌱. Choose the emoji that best conveys the specific vibe and subject — make someone curious just from the emoji alone. Avoid generic fallbacks like 🎨 or 📚 unless nothing more specific fits.",
   "draftSummary": "raw factual notes — theme, format, speakers, vibe, key details that are DURABLY true of this event/series every time it happens. Not the final summary. Do NOT include anything specific to only one occurrence (a particular date's guest, book, or theme) — that goes only in occurrenceNote/titleModifier below.",
   "notableNames": ["array of any named artists, scientists, authors, performers, organizations worth researching — empty array if none"],
@@ -843,7 +845,7 @@ ${this.recurrenceParseFieldsBlock()}
 
 Rules:
 - Use current year (${new Date().getFullYear()}) unless another year is clearly stated
-- If a date range is mentioned (e.g. March 26–28), dateStart=first date, dateEnd=last date
+- If a date range or run is mentioned — a hyphenated range ("March 26–28"), an open-ended "through"/"thru" phrase ("through October 25", "runs through the summer"), or a cross-month range ("Aug 1 – Oct 4") — dateStart=first date, dateEnd=last date
 - For announcedAt: '3d' ago means subtract 3 days from today; '1w' means subtract 7 days; '2h' means today`,
 
       buildSearchQueries: (pass1) => {
@@ -975,6 +977,7 @@ Return ONLY valid JSON (no markdown):
     recurrenceLabel: string;
     recurrenceRule: RecurrenceRule | null;
     dateStart: string;
+    dateEnd: string;
     startTime: string;
     price: string;
     ticketUrl: string;
@@ -1027,6 +1030,7 @@ Use real names of performers/speakers/artists if found in search results.`,
     recurrenceLabel: string;
     recurrenceRule: RecurrenceRule | null;
     dateStart: string;
+    dateEnd: string;
     startTime: string;
     price: string;
     ticketUrl: string;
@@ -1080,13 +1084,16 @@ Name the chef or collaborators if found in search results.`,
     searchContext: string;
   }): string {
     const {
-      name, venue, isRecurring, recurrenceLabel, recurrenceRule, dateStart, startTime, price, ticketUrl,
+      name, venue, isRecurring, recurrenceLabel, recurrenceRule, dateStart, dateEnd, startTime, price, ticketUrl,
       neighborhood, currentSummary, currentInstanceNote, currentInstanceTitle,
       feedName, feedVoiceIntro, categoryLabel, categoryValue, descriptionTaskGuide, searchContext,
     } = p;
 
     const dateLabel = dateStart
       ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : '';
+    const dateEndLabel = (dateEnd && dateEnd !== dateStart)
+      ? new Date(dateEnd + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
       : '';
     const todayStr = new Date().toISOString().split('T')[0];
     const expectedNext = (isRecurring && recurrenceRule && dateStart)
@@ -1103,7 +1110,7 @@ EVENT DETAILS ON FILE:
 - Venue: ${venue}
 - Neighborhood: ${neighborhood || 'unknown'}
 - ${categoryLabel}: ${categoryValue || 'unknown'}
-- Date on file: ${dateLabel || 'unknown'}${expectedNextLabel && expectedNextLabel !== dateLabel ? ` (our own recurrence math expects the next edition around ${expectedNextLabel} — a reference point, not a confirmed fact)` : ''}
+- Date on file: ${dateLabel || 'unknown'}${dateEndLabel ? ` through ${dateEndLabel}` : ''}${expectedNextLabel && expectedNextLabel !== dateLabel ? ` (our own recurrence math expects the next edition around ${expectedNextLabel} — a reference point, not a confirmed fact)` : ''}
 - Time: ${startTime || 'unknown'}
 - Price: ${price || 'unknown'}
 - Ticket URL: ${ticketUrl || 'none'}
@@ -1116,7 +1123,7 @@ ${searchContext || '(no results found)'}
 TASK A — CONFIRM THIS EVENT IS REAL AND FINDABLE:
 Decide whether the search results genuinely confirm this specific event/series still exists — not a coincidence, a different event with a similar name, or an unrelated show/popup at the same venue. If nothing clearly corroborates it (wrong name entirely, no real signal, or the connection is too weak to trust), set eventFound to false.
 
-If eventFound is false: skip Task B${isRecurring ? ' and Task D' : ''} entirely — return null for dateStart, startTime, venue, neighborhood, price, ticketUrl${isRecurring ? ', occurrenceNote, and titleModifier' : ''}. Do not guess at or invent any fact about the event. Still complete Task C below using only the details already on file (no web-sourced facts), and make the message note that nothing could be confirmed online.
+If eventFound is false: skip Task B${isRecurring ? ' and Task D' : ''} entirely — return null for dateStart, dateEnd, startTime, venue, neighborhood, price, ticketUrl${isRecurring ? ', occurrenceNote, and titleModifier' : ''}. Do not guess at or invent any fact about the event. Still complete Task C below using only the details already on file (no web-sourced facts), and make the message note that nothing could be confirmed online.
 
 If eventFound is true, continue with Tasks B${isRecurring ? ', C, and D' : ' and C'} below.
 
@@ -1125,6 +1132,7 @@ ${isRecurring
   ? "This is a recurring series. Try to confirm the actual upcoming occurrence's date, along with time/venue/price/ticket link, from the search results."
   : "This is a one-time event. Confirm whether it's been rescheduled, moved, or had other details change since it was posted."}
 For dateStart, startTime, venue, neighborhood, price, ticketUrl: only report a new value if a search result genuinely confirms something different from what's on file, with a real corroborating source. If a field isn't mentioned, or results simply don't contradict what's on file, leave it null — a missing correction is far better than a wrong one.
+${!isRecurring ? `DATE END — if this is a multi-day or limited-run event (not a single-day one-time event), also check whether a run/closing date is confirmed by search — including open-ended phrasing like "through October 25" or "runs through the summer", or a range like "Aug 1 – Oct 4". Report it in dateEnd, whether you're filling in a missing end date or correcting one already on file — same rule: only report it if search genuinely confirms it. Leave null if this reads as a single-day event or nothing confirms an end date.` : ''}
 VENUE — HIGH RISK: only report a venue change if the SAME event/series is explicitly confirmed at a new venue (an actual "we've moved" signal) — never just because a same-named result mentions a different place, which more likely means a different, unrelated event.
 DATE${isRecurring ? " — only report a date that reads as the upcoming/next occurrence, never a past one." : "."}
 
@@ -1140,6 +1148,7 @@ Return ONLY valid JSON (no markdown):
 {
   "eventFound": true or false,
   "dateStart": "YYYY-MM-DD confirmed correction, or null",
+  "dateEnd": "YYYY-MM-DD confirmed correction for the last day if multi-day/limited-run, or null",
   "startTime": "HH:MM confirmed correction, or null",
   "venue": "confirmed correction, or null",
   "neighborhood": "confirmed correction, or null",
@@ -1153,7 +1162,7 @@ Return ONLY valid JSON (no markdown):
   }
 
   private interpretListingVerifyResult(result: any, params: ListingVerifyParams): RedoListingResult {
-    const { isRecurring, currentSummary, dateStart, startTime, venue, price, ticketUrl, neighborhood } = params;
+    const { isRecurring, currentSummary, dateStart, dateEnd, startTime, venue, price, ticketUrl, neighborhood } = params;
 
     if (!result.eventFound) {
       const newSummary = (result.summary || currentSummary || '').substring(0, 200);
@@ -1167,6 +1176,7 @@ Return ONLY valid JSON (no markdown):
 
     const changed: Partial<RedoListingResult> = {};
     if (result.dateStart && result.dateStart !== dateStart) changed.dateStart = result.dateStart;
+    if (result.dateEnd && result.dateEnd !== dateEnd) changed.dateEnd = result.dateEnd;
     if (result.startTime && result.startTime !== startTime) changed.startTime = result.startTime;
     if (result.venue && result.venue !== venue) changed.venue = result.venue;
     if (result.neighborhood && result.neighborhood !== neighborhood) changed.neighborhood = result.neighborhood;
