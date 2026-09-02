@@ -2,6 +2,7 @@ import { events, type Event, type InsertEvent, upvotes, type Upvote, type Insert
 import { db } from "./db";
 import { eq, and, sql, count, desc, gt } from "drizzle-orm";
 import { spotifyService } from "./spotify";
+import { expandRecurringEvents } from "@shared/recurrence";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -68,6 +69,7 @@ export interface IStorage {
   updateFoodEvent(id: number, data: Partial<FoodEvent>): Promise<FoodEvent | undefined>;
   deleteFoodEvent(id: number): Promise<boolean>;
   upvoteFoodEvent(id: number): Promise<boolean>;
+  findFoodEventPossibleDuplicates(event: InsertFoodEvent): Promise<FoodEvent[]>;
 
   // Art event methods for Artistry & Nerdery Live
   getAllArtEvents(): Promise<ArtEvent[]>;
@@ -76,6 +78,7 @@ export interface IStorage {
   updateArtEvent(id: number, data: Partial<ArtEvent>): Promise<ArtEvent | undefined>;
   deleteArtEvent(id: number): Promise<boolean>;
   upvoteArtEvent(id: number): Promise<boolean>;
+  findArtEventPossibleDuplicates(event: InsertArtEvent): Promise<ArtEvent[]>;
 
   // Venues methods for tracking and scraping
   getAllVenues(): Promise<Venue[]>;
@@ -101,8 +104,8 @@ export interface IStorage {
 // schedule/discovery-pipeline concepts the other two don't, so folding it in
 // here would force together things that genuinely differ.
 function makeListingCrud<
-  TSelect extends { id: number; dateStart: string; dateEnd?: string | null; isRecurring?: boolean | null },
-  TInsert
+  TSelect extends { id: number; venue: string; dateStart: string; dateEnd?: string | null; isRecurring?: boolean | null },
+  TInsert extends { venue?: string | null; dateStart?: string | null; dateEnd?: string | null }
 >(table: any) {
   return {
     async getAll(): Promise<TSelect[]> {
@@ -149,6 +152,28 @@ function makeListingCrud<
       } catch {
         return false;
       }
+    },
+    // Soft duplicate signal for the Add modal's "possible duplicate" warning.
+    // Title text isn't a reliable match key here (the AI blurb parser phrases
+    // the same real-world event slightly differently run to run), so this
+    // matches on normalized venue + overlapping date range instead — expanding
+    // recurring rows to their real upcoming occurrence dates first (via
+    // expandRecurringEvents, same as the feed itself) so a new one-off doesn't
+    // silently collide with an existing recurring series without a warning.
+    async findPossibleDuplicates(candidate: TInsert): Promise<TSelect[]> {
+      const venue = candidate.venue?.trim().toLowerCase();
+      const candStart = candidate.dateStart?.trim();
+      if (!venue || !candStart) return [];
+      const candEnd = candidate.dateEnd?.trim() || candStart;
+
+      const all: TSelect[] = await db.select().from(table);
+      const expanded = expandRecurringEvents(all as any) as TSelect[];
+
+      return expanded.filter(ev => {
+        if (ev.venue.trim().toLowerCase() !== venue) return false;
+        const evEnd = (ev.dateEnd && ev.dateEnd.trim()) ? ev.dateEnd.trim() : ev.dateStart;
+        return ev.dateStart <= candEnd && candStart <= evEnd;
+      });
     },
   };
 }
@@ -641,6 +666,10 @@ export class DatabaseStorage implements IStorage {
     return foodEventCrud.upvote(id);
   }
 
+  async findFoodEventPossibleDuplicates(event: InsertFoodEvent): Promise<FoodEvent[]> {
+    return foodEventCrud.findPossibleDuplicates(event);
+  }
+
   // Art event methods for Artistry & Nerdery Live
   async getAllArtEvents(): Promise<ArtEvent[]> {
     return artEventCrud.getAll();
@@ -664,6 +693,10 @@ export class DatabaseStorage implements IStorage {
 
   async upvoteArtEvent(id: number): Promise<boolean> {
     return artEventCrud.upvote(id);
+  }
+
+  async findArtEventPossibleDuplicates(event: InsertArtEvent): Promise<ArtEvent[]> {
+    return artEventCrud.findPossibleDuplicates(event);
   }
 
   // Venues methods

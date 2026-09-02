@@ -8,6 +8,7 @@ import { Sparkles, ImageIcon, FileText, Upload } from "lucide-react";
 import { ListingEventFormFields, type SpecificDateEntry } from "./ListingEventFormFields";
 import { Field, TextField, TextArea } from "./form-primitives";
 import { cn } from "@/lib/utils";
+import { formatDateRange } from "@/lib/eventUtils";
 import type { ListingFormConfig, ListingInsertBase } from "@/lib/listingFeedConfig";
 import type { RecurrenceRule } from "@shared/recurrence";
 
@@ -37,6 +38,8 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
   const [redoLoading, setRedoLoading] = useState(false);
   const [useSpecificDates, setUseSpecificDates] = useState(false);
   const [specificDates, setSpecificDates] = useState<SpecificDateEntry[]>([]);
+  const [possibleDuplicates, setPossibleDuplicates] = useState<{ id: number; name: string; venue: string; dateStart: string; dateEnd?: string | null }[]>([]);
+  const [pendingPayload, setPendingPayload] = useState<TInsert | null>(null);
 
   const switchMode = (mode: "screenshot" | "blurb") => {
     setInputMode(mode);
@@ -118,7 +121,12 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
   const createMutation = useMutation({
     mutationFn: (data: TInsert) =>
       apiRequest({ endpoint: config.apiPath, method: "POST", data }),
-    onSuccess: () => {
+    onSuccess: (data: any, variables) => {
+      if (Array.isArray(data?.possibleDuplicates) && data.possibleDuplicates.length > 0) {
+        setPossibleDuplicates(data.possibleDuplicates);
+        setPendingPayload(variables);
+        return;
+      }
       qc.invalidateQueries({ queryKey: [config.queryKey] });
       toast({ title: config.createToastTitle, description: "It's now on the feed." });
       forceClose();
@@ -127,6 +135,17 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
       toast({ title: "Error", description: e?.message || "Couldn't add event.", variant: "destructive" });
     },
   });
+
+  const confirmAddAnyway = () => {
+    if (pendingPayload) createMutation.mutate({ ...pendingPayload, force: true } as TInsert);
+    setPossibleDuplicates([]);
+    setPendingPayload(null);
+  };
+
+  const dismissDuplicateWarning = () => {
+    setPossibleDuplicates([]);
+    setPendingPayload(null);
+  };
 
   const batchCreateMutation = useMutation({
     // The first entry's title stands in for "Event Name" (hidden while in
@@ -137,7 +156,9 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
       const primaryName = (entries[0]?.title.trim() || (form.name as string) || "").trim();
       return Promise.all(entries.map(({ date, title }) => {
         const name = title.trim() || primaryName;
-        return apiRequest({ endpoint: config.apiPath, method: "POST", data: { ...(form as TInsert), name, dateStart: date, dateEnd: "" } });
+        // Skips the possible-duplicate check: each row here is an explicitly
+        // typed date the admin already reviewed, not an AI-parsed guess.
+        return apiRequest({ endpoint: config.apiPath, method: "POST", data: { ...(form as TInsert), name, dateStart: date, dateEnd: "", force: true } });
       }));
     },
     onSuccess: (_, entries) => {
@@ -237,6 +258,8 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
     setErrorField(null);
     setUseSpecificDates(false);
     setSpecificDates([]);
+    setPossibleDuplicates([]);
+    setPendingPayload(null);
   };
 
   const handleClose = () => {
@@ -255,6 +278,31 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
         <AlertDialogFooter>
           <AlertDialogCancel className="border-2 border-black rounded-none font-black uppercase text-sm">Keep editing</AlertDialogCancel>
           <AlertDialogAction onClick={forceClose} className="bg-black text-white border-2 border-black rounded-none font-black uppercase text-sm hover:text-[#41F2EE]">Discard</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    <AlertDialog open={possibleDuplicates.length > 0} onOpenChange={(o) => { if (!o) dismissDuplicateWarning(); }}>
+      <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: config.dialogBg }}>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="font-black uppercase">Possible duplicate</AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-2">
+              <p>This looks like it might already be on the feed:</p>
+              <ul className="space-y-1">
+                {possibleDuplicates.map(m => (
+                  <li key={m.id} className="text-sm font-semibold text-card-foreground">
+                    {m.name} — {m.venue} · {formatDateRange(m.dateStart, m.dateEnd)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={dismissDuplicateWarning} className="border-2 border-black rounded-none font-black uppercase text-sm">Go back</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmAddAnyway} disabled={createMutation.isPending} className="bg-black text-white border-2 border-black rounded-none font-black uppercase text-sm hover:text-[#41F2EE]">
+            {createMutation.isPending ? "Adding…" : "Add anyway"}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

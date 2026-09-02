@@ -28,9 +28,16 @@ function registerListingCrudRoutes<TSelect extends { id: number; createdAt?: unk
     update: (id: number, data: Partial<TSelect>) => Promise<TSelect | undefined>;
     delete: (id: number) => Promise<boolean>;
     upvote: (id: number) => Promise<boolean>;
+    // Optional soft-duplicate check run before create. Title text isn't a
+    // reliable match key (AI blurb parsing rephrases the same real event
+    // differently run to run), so this is venue+date-overlap based and never
+    // hard-blocks — the client shows the matches and lets the user confirm
+    // "add anyway", which resubmits with `force: true` in the body to skip
+    // this check.
+    findPossibleDuplicates?: (data: TInsert) => Promise<TSelect[]>;
   }
 ) {
-  const { path, insertSchema, resourceLabel, getAll, getById, create, update, delete: del, upvote } = config;
+  const { path, insertSchema, resourceLabel, getAll, getById, create, update, delete: del, upvote, findPossibleDuplicates } = config;
 
   router.get(`/${path}`, async (_req, res) => {
     try {
@@ -45,6 +52,12 @@ function registerListingCrudRoutes<TSelect extends { id: number; createdAt?: unk
       const parsed = insertSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: parsed.error.issues[0]?.message || "Validation failed" });
+      }
+      if (findPossibleDuplicates && !req.body.force) {
+        const possibleDuplicates = await findPossibleDuplicates(parsed.data);
+        if (possibleDuplicates.length > 0) {
+          return res.json({ possibleDuplicates });
+        }
       }
       const created = await create(parsed.data);
       res.status(201).json(created);
@@ -1599,6 +1612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     update: (id, data) => storage.updateFoodEvent(id, data),
     delete: (id) => storage.deleteFoodEvent(id),
     upvote: (id) => storage.upvoteFoodEvent(id),
+    findPossibleDuplicates: (data) => storage.findFoodEventPossibleDuplicates(data),
   });
 
   // AI blurb parser for Amuse Bouche
@@ -1628,6 +1642,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     update: (id, data) => storage.updateArtEvent(id, data),
     delete: (id) => storage.deleteArtEvent(id),
     upvote: (id) => storage.upvoteArtEvent(id),
+    findPossibleDuplicates: (data) => storage.findArtEventPossibleDuplicates(data),
   });
 
   // AI blurb parser for Artistry & Nerdery
