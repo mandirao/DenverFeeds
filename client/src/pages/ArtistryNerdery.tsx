@@ -30,7 +30,7 @@ import { getAddedTimeCategory } from "@/lib/utils";
 import { useElementHeight } from "@/hooks/use-element-height";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ListingEventRow } from "@/components/listings/ListingEventRow";
-import { ListingCalendarMonthView } from "@/components/listings/ListingCalendarMonthView";
+import { ListingCalendarMonthView, type CalendarDensity } from "@/components/listings/ListingCalendarMonthView";
 import { ListingDayScrollView } from "@/components/listings/ListingDayScrollView";
 import { EditListingEventModal } from "@/components/listings/EditListingEventModal";
 import { AddListingEventModal } from "@/components/listings/AddListingEventModal";
@@ -75,6 +75,7 @@ const artRowConfig: ListingRowConfig<ArtEvent> = {
 
 const artCalendarConfig: ListingCalendarConfig<ArtEvent> = {
   cellBg: AN_BG,
+  todayBg: "#F6A0D2",
   cardBg: AN_DAY_ALT,
   guardRecurringMultiDaySpillover: true,
 };
@@ -203,6 +204,7 @@ export default function ArtistryNerdery() {
   const [stillTimeExpanded, setStillTimeExpanded] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [calendarDensity, setCalendarDensity] = useState<CalendarDensity>("comfortable");
   const [calViewYear, setCalViewYear] = useState(() => new Date().getFullYear());
   const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
   const [calEventDetail, setCalEventDetail] = useState<(ArtEvent & { isDateUnverified?: boolean | null }) | null>(null);
@@ -768,6 +770,9 @@ export default function ArtistryNerdery() {
               onEventClick={setCalEventDetail}
               onDayOverflowClick={date => setCalDaySheet({ date })}
               config={artCalendarConfig}
+              density={calendarDensity}
+              onDensityChange={setCalendarDensity}
+              activeCategoryLabel={filterCategory !== "all" ? filterCategory : null}
             />
           )
         )}

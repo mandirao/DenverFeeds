@@ -342,6 +342,18 @@ export function formatTime(hhmm: string): string {
   return m === 0 ? `${h12} ${ampm}` : `${h12}:${mStr} ${ampm}`;
 }
 
+/** Condensed time for tight columns (calendar cell rows): drops ":00" and
+ * abbreviates the meridiem to a single lowercase letter — "7:00 PM" → "7p",
+ * "10:30 AM" → "10:30a". */
+export function formatTimeShort(hhmm: string): string {
+  const [hStr, mStr] = hhmm.split(":");
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  const ampm = h >= 12 ? "p" : "a";
+  const h12 = h % 12 || 12;
+  return m === 0 ? `${h12}${ampm}` : `${h12}:${mStr.padStart(2, "0")}${ampm}`;
+}
+
 /** True once a same-day, single-day event's start time has passed (local
  * wall-clock time) — used to drop it from the feed once it's already
  * underway. Multi-day spans are excluded (their true end is dateEnd, handled

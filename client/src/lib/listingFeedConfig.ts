@@ -66,6 +66,8 @@ export interface ListingRowConfig<T extends ListingEventBase> {
 // Per-feed configuration for <ListingCalendarMonthView>.
 export interface ListingCalendarConfig<T extends ListingEventBase> {
   cellBg: string;
+  /** One-step-darker tint for today's cell in the desktop month grid — distinct from cardBg. */
+  todayBg: string;
   /** Darker "card" tint for the mobile day-scroll view, matching the feed's alternating-day rows. */
   cardBg: string;
   /**

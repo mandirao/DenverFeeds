@@ -28,7 +28,7 @@ import { getAddedTimeCategory } from "@/lib/utils";
 import { useElementHeight } from "@/hooks/use-element-height";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ListingEventRow } from "@/components/listings/ListingEventRow";
-import { ListingCalendarMonthView } from "@/components/listings/ListingCalendarMonthView";
+import { ListingCalendarMonthView, type CalendarDensity } from "@/components/listings/ListingCalendarMonthView";
 import { ListingDayScrollView } from "@/components/listings/ListingDayScrollView";
 import { EditListingEventModal } from "@/components/listings/EditListingEventModal";
 import { AddListingEventModal } from "@/components/listings/AddListingEventModal";
@@ -73,6 +73,7 @@ const foodRowConfig: ListingRowConfig<FoodEvent> = {
 
 const foodCalendarConfig: ListingCalendarConfig<FoodEvent> = {
   cellBg: AB_GOLD,
+  todayBg: "#F5EEDD",
   cardBg: AB_DAY_ALT,
   guardRecurringMultiDaySpillover: false,
 };
@@ -195,6 +196,7 @@ export default function AmsueBouche() {
   const [addOpen, setAddOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [calendarDensity, setCalendarDensity] = useState<CalendarDensity>("comfortable");
   const [stillTimeExpanded, setStillTimeExpanded] = useState(false);
   const [calViewYear, setCalViewYear] = useState(() => new Date().getFullYear());
   const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
@@ -760,6 +762,9 @@ export default function AmsueBouche() {
               onEventClick={setCalEventDetail}
               onDayOverflowClick={date => setCalDaySheet({ date })}
               config={foodCalendarConfig}
+              density={calendarDensity}
+              onDensityChange={setCalendarDensity}
+              activeCategoryLabel={filterCuisine !== "all" ? filterCuisine : null}
             />
           )
         )}
