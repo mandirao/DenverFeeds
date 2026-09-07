@@ -33,6 +33,18 @@ const MUSIC_ORANGE = "#FE6B41";
 // alternating-day background both use this.
 const CONCERT_CARD_BG = "#E85F3A";
 
+export type ConcertCalendarDensity = "comfortable" | "compact";
+
+const ROW_CAP: Record<ConcertCalendarDensity, number> = { comfortable: 8, compact: 3 };
+const ROW_GAP: Record<ConcertCalendarDensity, number> = { comfortable: 5, compact: 4 };
+const HEADER_MARGIN_B: Record<ConcertCalendarDensity, number> = { comfortable: 7, compact: 6 };
+const CELL_MIN_H: Record<ConcertCalendarDensity, number> = { comfortable: 112, compact: 96 };
+// Concerts have no startTime at the schema level, so there's never a time
+// column to align to — rows always indent to the emoji column, in both
+// densities (unlike the shared cell, which reserves 36px for a time column
+// that here would only ever be blank).
+const OVERFLOW_INDENT = 19;
+
 function ConcertCalendarMonthView({
   events,
   viewYear,
@@ -41,6 +53,9 @@ function ConcertCalendarMonthView({
   onNextMonth,
   onEventClick,
   onDayOverflowClick,
+  density,
+  onDensityChange,
+  activeGenreLabel,
 }: {
   events: Event[];
   viewYear: number;
@@ -49,6 +64,9 @@ function ConcertCalendarMonthView({
   onNextMonth: () => void;
   onEventClick: (ev: Event) => void;
   onDayOverflowClick: (date: string, evs: Event[]) => void;
+  density: ConcertCalendarDensity;
+  onDensityChange: (density: ConcertCalendarDensity) => void;
+  activeGenreLabel?: string | null;
 }) {
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -67,55 +85,128 @@ function ConcertCalendarMonthView({
   const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
   while (cells.length % 7 !== 0) cells.push(null);
 
+  const rowCap = ROW_CAP[density];
+  const cellMinH = CELL_MIN_H[density];
+  const totalMonthEvents = Object.values(eventsByDate).reduce((sum, evs) => sum + evs.length, 0);
+  const DAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={onPrevMonth} className="h-8 w-8 flex items-center justify-center border border-black rounded-full hover:bg-black/10 transition-colors">
-          <ChevronLeft className="w-4 h-4 text-black" />
-        </button>
-        <h2 className="font-black uppercase text-black text-lg tracking-wide">{monthLabel}</h2>
-        <button onClick={onNextMonth} className="h-8 w-8 flex items-center justify-center border border-black rounded-full hover:bg-black/10 transition-colors">
-          <ChevronRight className="w-4 h-4 text-black" />
-        </button>
+      <div className="flex items-center justify-between mb-3.5">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={onPrevMonth}
+            aria-label="Previous month"
+            className="w-[30px] h-[30px] rounded-full border border-black/25 flex items-center justify-center text-black hover:bg-black/10 transition-colors leading-none"
+            style={{ fontSize: 15 }}
+          >
+            ‹
+          </button>
+          <h2 className="font-display font-black uppercase text-black" style={{ fontSize: 19, letterSpacing: '.05em' }}>
+            {monthLabel}
+          </h2>
+          <button
+            onClick={onNextMonth}
+            aria-label="Next month"
+            className="w-[30px] h-[30px] rounded-full border border-black/25 flex items-center justify-center text-black hover:bg-black/10 transition-colors leading-none"
+            style={{ fontSize: 15 }}
+          >
+            ›
+          </button>
+          <span className="ml-1.5" style={{ fontSize: 13, color: 'rgba(0,0,0,0.55)' }}>
+            {totalMonthEvents} event{totalMonthEvents === 1 ? '' : 's'}{activeGenreLabel ? ` · ${activeGenreLabel}` : ''}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="font-display font-black uppercase" style={{ fontSize: 10, letterSpacing: '.14em', color: 'rgba(0,0,0,0.5)' }}>
+            Density
+          </span>
+          <div role="radiogroup" aria-label="Calendar density" className="flex border border-black rounded-full overflow-hidden">
+            {(["comfortable", "compact"] as const).map(opt => {
+              const selected = density === opt;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => onDensityChange(opt)}
+                  className={`px-3 py-[5px] font-semibold whitespace-nowrap cursor-pointer transition-colors ${selected ? 'bg-black text-white' : 'bg-transparent text-black'}`}
+                  style={{ fontSize: 12 }}
+                >
+                  {opt === "comfortable" ? "Comfortable" : "Compact"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-7 border-t border-l border-black">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
-          <div key={d} className="border-b border-r border-black px-1 py-1 text-[10px] font-black uppercase text-black/60 text-center bg-black/5">
+      <div className="grid grid-cols-7 mb-1">
+        {DAY_HEADERS.map(d => (
+          <div key={d} className="text-center font-display font-black uppercase" style={{ fontSize: 10, letterSpacing: '.16em', color: 'rgba(0,0,0,0.5)', padding: '6px 0' }}>
             {d}
           </div>
         ))}
+      </div>
+
+      <div className="grid grid-cols-7 border-t border-l border-black/20">
         {cells.map((day, idx) => {
           if (day === null) return (
-            <div key={`empty-${idx}`} className="border-b border-r border-black bg-black/5 min-h-[80px]" />
+            <div key={`empty-${idx}`} className="border-b border-r border-black/20 bg-black/5" style={{ minHeight: cellMinH }} />
           );
           const key = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const dayEvents = eventsByDate[key] || [];
           const isToday = key === todayKey;
-          const MAX_VISIBLE = 3;
-          const visible = dayEvents.slice(0, MAX_VISIBLE);
-          const overflow = dayEvents.length - MAX_VISIBLE;
+          const shown = dayEvents.slice(0, rowCap);
+          const overflow = dayEvents.length - rowCap;
+          const weekdayLabel = DAY_HEADERS[idx % 7];
           return (
-            <div key={key} className={`border-b border-r border-black min-h-[80px] p-1 flex flex-col ${isToday ? "bg-white/60" : "bg-white/20 hover:bg-white/30"} transition-colors`}>
-              <div className={`text-xs font-bold mb-0.5 w-5 h-5 flex items-center justify-center rounded-full flex-shrink-0 ${isToday ? "bg-black text-white" : "text-black/70"}`}>
-                {day}
+            <div
+              key={key}
+              className={`border-b border-r border-black/20 pt-2 px-2.5 pb-2.5 transition-colors ${isToday ? "bg-white/60" : "bg-white/20 hover:bg-white/30"}`}
+              style={{ minHeight: cellMinH }}
+            >
+              <div className="flex items-center gap-1.5" style={{ marginBottom: HEADER_MARGIN_B[density] }}>
+                <div
+                  className={`w-[22px] h-[22px] rounded-full flex items-center justify-center font-display font-black flex-shrink-0 ${isToday ? 'bg-black text-white' : 'text-black'}`}
+                  style={{ fontSize: 13 }}
+                >
+                  {day}
+                </div>
+                {density === "comfortable" && (
+                  <div className="font-display font-black uppercase" style={{ fontSize: 10, letterSpacing: '.14em', color: 'rgba(0,0,0,0.45)' }}>
+                    {weekdayLabel}
+                  </div>
+                )}
+                <div className="ml-auto font-display font-black" style={{ fontSize: 10, color: 'rgba(0,0,0,0.4)', fontVariantNumeric: 'tabular-nums' }}>
+                  {dayEvents.length}
+                </div>
               </div>
-              <div className="flex flex-col gap-0.5 flex-1">
-                {visible.map((ev, i) => (
+
+              <div className="flex flex-col" style={{ gap: ROW_GAP[density] }}>
+                {shown.map((ev, i) => (
                   <button
                     key={`${ev.id}-${i}`}
                     onClick={() => onEventClick(ev)}
-                    className="text-left text-[10px] leading-tight px-1 py-0.5 rounded font-semibold text-black truncate transition-colors hover:opacity-80"
-                    style={{ backgroundColor: "#FEABDA" }}
+                    className="flex items-baseline gap-1.5 text-left cursor-pointer w-full min-w-0"
                     title={ev.artist}
                   >
-                    {ev.emoji} {ev.artist}
+                    <span className="flex-shrink-0" style={{ fontSize: 12 }}>{ev.emoji}</span>
+                    <span
+                      className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-semibold hover:underline"
+                      style={{ fontSize: 12, lineHeight: 1.3, color: '#000' }}
+                    >
+                      {ev.artist}
+                    </span>
                   </button>
                 ))}
                 {overflow > 0 && (
                   <button
                     onClick={() => onDayOverflowClick(key, dayEvents)}
-                    className="text-[10px] text-black/60 font-bold hover:text-black transition-colors text-left px-1"
+                    className="text-left font-semibold underline cursor-pointer"
+                    style={{ fontSize: 11, color: 'rgba(0,0,0,0.6)', textUnderlineOffset: 2, paddingLeft: OVERFLOW_INDENT }}
                   >
                     +{overflow} more
                   </button>
@@ -223,6 +314,7 @@ export default function Home() {
 
   // Calendar view state
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [calendarDensity, setCalendarDensity] = useState<ConcertCalendarDensity>("comfortable");
   const now = new Date();
   const [calViewYear, setCalViewYear] = useState(now.getFullYear());
   const [calViewMonth, setCalViewMonth] = useState(now.getMonth());
@@ -961,6 +1053,9 @@ export default function Home() {
                 onNextMonth={nextCalMonth}
                 onEventClick={setCalEventDetail}
                 onDayOverflowClick={(date, evs) => setCalDaySheet({ date, events: evs })}
+                density={calendarDensity}
+                onDensityChange={setCalendarDensity}
+                activeGenreLabel={filters.genre !== "all" ? filters.genre : null}
               />
             )
           ) : !hasEvents ? (
