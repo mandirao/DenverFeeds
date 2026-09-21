@@ -595,17 +595,17 @@ export const artCategories = [
 export type ArtCategory = typeof artCategories[number];
 
 // TOPIC — what this is actually about, orthogonal to format. Multi-select:
-// an event can carry several (a train-ride tour tagged both "Trains &
-// Railways" and "Nature & Outdoors"). Free-growing in practice (the `tags`
+// an event can carry several (a train-ride tour tagged both "Trains" and
+// "Nature & Outdoors"). Free-growing in practice (the `tags`
 // column is just text[], not a DB enum) — this list is the curated set
 // offered in the picker UI, not a hard ceiling.
 export const artTopicTags = [
-  "Architecture & Design", "Art & Visual Culture", "Astronomy & Space",
-  "Birding", "Cartooning & Illustration", "Craft & Making",
-  "Culture & Heritage", "Film", "Food & Drink", "Fundraisers & Causes",
-  "History", "Horror & Spooky", "Kids & Family", "LGBTQ+",
-  "Literature & Writing", "Music", "Nature & Outdoors", "Pets & Animals",
-  "Photography", "Science", "Trains & Railways", "Wellness & Mindfulness",
+  "Architecture", "Art", "Astronomy",
+  "Birding", "Craft", "Culture",
+  "Family", "Film", "Food & Drink", "Fundraisers & Causes",
+  "History", "Horror", "LGBTQ+",
+  "Literature", "Music", "Nature & Outdoors", "Pets",
+  "Photography", "Science", "Trains", "Wellness", "Writing",
 ] as const;
 export type ArtTopicTag = typeof artTopicTags[number];
 
