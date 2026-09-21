@@ -642,6 +642,9 @@ Rules:
         for (const name of notableNames.slice(0, 2)) {
           searchQueries.push(`"${name}" Denver`);
         }
+        // The original post/screenshot often doesn't state a price — add a
+        // query aimed squarely at finding one when pass 1 came up empty.
+        if (!pass1.price && pass1.name) searchQueries.push(`"${pass1.name}" tickets price per person`);
         return searchQueries;
       },
 
@@ -650,6 +653,7 @@ Rules:
 Here is what we know from the original post:
 - Event: ${pass1.name || 'unknown'}
 - Venue: ${pass1.venue || 'unknown'}
+- Price: ${pass1.price || 'unknown — not stated in the original post'}
 - Draft notes: ${pass1.draftSummary || ''}
 
 Here is additional context from web searches about the venue and collaborators:
@@ -681,10 +685,12 @@ EXAMPLE SUMMARIES:
 - "Six beers, six cheeses, rooftop views of the Rockies — Odell pairs pints with boards from Oh My Gouda, run by an ex-Olympic ski jumper turned fromage obsessive."
 - "An omakase pop-up from the team behind Michelin-recognized Kawa Ni: twelve courses, rotating proteins, low-lit and unhurried."
 
+${!pass1.price ? `\nThe original post didn't state a price. Look through the search results above (ticket pages, venue listings, Eventbrite/AXS mentions, an explicit "free") for one, and report it in "price" below if a real source confirms it — same format as the field would normally take (e.g. "$15/person", "Free"). Leave it null if nothing in the search results actually states a price; never guess.\n` : ''}
 Return ONLY valid JSON (no markdown):
 {
   "neighborhood": "corrected Denver neighborhood based on venue address from search, or original if no better info",
-  "summary": "final 200-char-max Amuse-Bouche summary — MUST use real names of any collaborators found in search"
+  "summary": "final 200-char-max Amuse-Bouche summary — MUST use real names of any collaborators found in search"${!pass1.price ? `,
+  "price": "price confirmed by search results, or null if nothing states one"` : ''}
 }`,
 
       mapResult: (pass1, pass2) => {
@@ -701,7 +707,7 @@ Return ONLY valid JSON (no markdown):
           emoji: pass1.emoji || '🍴',
           summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
           cuisine: pass1.cuisine || 'Other',
-          price: pass1.price || '',
+          price: pass1.price || (typeof pass2.price === 'string' ? pass2.price : '') || '',
           ticketUrl: pass1.ticketUrl || '',
           announcedAt: pass1.announcedAt || '',
           selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
@@ -869,6 +875,9 @@ Rules:
         for (const name of notableNames.slice(0, 2)) {
           searchQueries.push(`"${name}" Denver`);
         }
+        // The original post/screenshot often doesn't state a price — add a
+        // query aimed squarely at finding one when pass 1 came up empty.
+        if (!pass1.price && pass1.name) searchQueries.push(`"${pass1.name}" tickets price admission`);
         return searchQueries;
       },
 
@@ -878,6 +887,7 @@ Here is what we know from the original post:
 - Event: ${pass1.name || 'unknown'}
 - Venue: ${pass1.venue || 'unknown'}
 - Category: ${pass1.category || 'unknown'}
+- Price: ${pass1.price || 'unknown — not stated in the original post'}
 - Draft notes: ${pass1.draftSummary || ''}
 
 Additional context from web searches:
@@ -902,10 +912,12 @@ EXAMPLE SUMMARIES:
 - "Author of 'Hidden Figures' reads from the new book, signs copies, takes questions — history nerd paradise at BookBar."
 - "Denver Astronomical Society opens the rooftop for Saturn opposition — bring a sweater, the view is worth it."
 
+${!pass1.price ? `\nThe original post didn't state a price. Look through the search results above (ticket pages, venue listings, Eventbrite/AXS mentions, an explicit "free") for one, and report it in "price" below if a real source confirms it — same format as the field would normally take (e.g. "$15/person", "Free"). Leave it null if nothing in the search results actually states a price; never guess.\n` : ''}
 Return ONLY valid JSON (no markdown):
 {
   "neighborhood": "corrected Denver/Boulder neighborhood based on venue from search, or original if no better info",
-  "summary": "final 200-char-max summary — must use real names of any collaborators/artists found in search"
+  "summary": "final 200-char-max summary — must use real names of any collaborators/artists found in search"${!pass1.price ? `,
+  "price": "price confirmed by search results, or null if nothing states one"` : ''}
 }`,
 
       mapResult: (pass1, pass2) => {
@@ -923,7 +935,7 @@ Return ONLY valid JSON (no markdown):
         summary: (pass2.summary || pass1.draftSummary || '').substring(0, 200),
         category: pass1.category || 'Other',
         tags: Array.isArray(pass1.tags) ? pass1.tags.filter((t: any) => typeof t === 'string' && (artTopicTags as readonly string[]).includes(t)) : [],
-        price: pass1.price || '',
+        price: pass1.price || (typeof pass2.price === 'string' ? pass2.price : '') || '',
         ticketUrl: pass1.ticketUrl || '',
         announcedAt: pass1.announcedAt || '',
         selloutRisk: (typeof pass1.selloutRisk === 'number' && pass1.selloutRisk >= 1 && pass1.selloutRisk <= 5)
@@ -998,7 +1010,7 @@ Return ONLY valid JSON (no markdown):
     currentInstanceTitle: string;
   }): Promise<RedoListingResult> {
     return this.runListingRedo(params, {
-      buildSearchQueries: ({ name, venue, isRecurring, dateStart }) => {
+      buildSearchQueries: ({ name, venue, isRecurring, dateStart, price }) => {
         const monthYear = dateStart
           ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
           : '';
@@ -1011,6 +1023,10 @@ Return ONLY valid JSON (no markdown):
         } else if (monthYear && name) {
           searchQueries.push(`"${name}" ${monthYear}`);
         }
+        // Price is missing on file often enough (screenshots/blurbs rarely
+        // state it) that the generic queries above don't reliably surface a
+        // ticket page — add a query aimed squarely at it.
+        if (!price && name) searchQueries.push(`"${name}" tickets price admission`);
         return searchQueries;
       },
 
@@ -1056,7 +1072,7 @@ Use real names of performers/speakers/artists if found in search results.`,
     currentInstanceTitle: string;
   }): Promise<RedoListingResult> {
     return this.runListingRedo(params, {
-      buildSearchQueries: ({ name, venue, cuisine, isRecurring, dateStart }) => {
+      buildSearchQueries: ({ name, venue, cuisine, isRecurring, dateStart, price }) => {
         const monthYear = dateStart
           ? new Date(dateStart + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
           : '';
@@ -1064,6 +1080,10 @@ Use real names of performers/speakers/artists if found in search results.`,
         if (name) searchQueries.push(`"${name}" Denver ${cuisine}`);
         if (name && venue) searchQueries.push(`"${name}" "${venue}" Denver food popup`);
         if (isRecurring && monthYear && name) searchQueries.push(`"${name}" ${monthYear}`);
+        // Price is missing on file often enough (screenshots/blurbs rarely
+        // state it) that the generic queries above don't reliably surface a
+        // ticket page — add a query aimed squarely at it.
+        if (!price && name) searchQueries.push(`"${name}" tickets price per person`);
         return searchQueries;
       },
 
@@ -1153,7 +1173,8 @@ TASK B — VERIFY THE DETAILS (skip this task if eventFound is false):
 ${isRecurring
   ? "This is a recurring series. Try to confirm the actual upcoming occurrence's date, along with time/venue/price/ticket link, from the search results."
   : "This is a one-time event. Confirm whether it's been rescheduled, moved, or had other details change since it was posted."}
-For dateStart, startTime, venue, neighborhood, price, ticketUrl: only report a new value if a search result genuinely confirms something different from what's on file, with a real corroborating source. If a field isn't mentioned, or results simply don't contradict what's on file, leave it null — a missing correction is far better than a wrong one.
+For dateStart, startTime, venue, neighborhood, ticketUrl: only report a new value if a search result genuinely confirms something different from what's on file, with a real corroborating source. If a field isn't mentioned, or results simply don't contradict what's on file, leave it null — a missing correction is far better than a wrong one.
+PRICE — treat this one as worth actively digging for, not just passively checking: ${price ? `it's already on file as "${price}"` : "it's currently unknown"}. Read the search results (and ticket/venue links within them) for admission cost, ticket price, or an explicit "free" — report it in the format it's usually given (e.g. "$15/person", "$10-20", "Free"). ${price ? 'Only override the value on file if a source clearly contradicts it.' : "Since nothing is on file, report whatever a source genuinely confirms — don't leave this null just because it takes more digging than the other fields."} Never guess a price that isn't stated by a real source.
 ${!isRecurring ? `DATE END — if this is a multi-day or limited-run event (not a single-day one-time event), also check whether a run/closing date is confirmed by search — including open-ended phrasing like "through October 25" or "runs through the summer", or a range like "Aug 1 – Oct 4". Report it in dateEnd, whether you're filling in a missing end date or correcting one already on file — same rule: only report it if search genuinely confirms it. Leave null if this reads as a single-day event or nothing confirms an end date.` : ''}
 VENUE — HIGH RISK: only report a venue change if the SAME event/series is explicitly confirmed at a new venue (an actual "we've moved" signal) — never just because a same-named result mentions a different place, which more likely means a different, unrelated event.
 DATE${isRecurring ? " — only report a date that reads as the upcoming/next occurrence, never a past one." : "."}
@@ -1179,7 +1200,7 @@ Based on the event details on file (name, description, and any web-confirmed fac
   "startTime": "HH:MM confirmed correction, or null",
   "venue": "confirmed correction, or null",
   "neighborhood": "confirmed correction, or null",
-  "price": "confirmed correction, or null",
+  "price": "confirmed price — fills in a currently-unknown price or corrects a wrong one — or null if truly unfindable",
   "ticketUrl": "confirmed correction, or null",
   "summary": "improved description max 200 chars, or the current one if unchanged",${isRecurring ? `
   "occurrenceNote": "specific detail for this date only max 120 chars, or null",
