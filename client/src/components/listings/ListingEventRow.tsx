@@ -244,7 +244,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
                           key={tag}
                           type="button"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onTagClick(tag); }}
-                          className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border cursor-pointer transition-colors ${
+                          className={`text-[11px] font-bold uppercase tracking-wide leading-none px-1.5 py-[3px] rounded-full border cursor-pointer transition-colors ${
                             isActive ? "bg-black text-white border-black" : "border-black/30 text-black/70 hover:bg-black hover:text-white hover:border-black"
                           }`}
                         >
@@ -253,7 +253,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
                       ) : (
                         <span
                           key={tag}
-                          className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border border-black/30 text-black/70"
+                          className="text-[11px] font-bold uppercase tracking-wide leading-none px-1.5 py-[3px] rounded-full border border-black/30 text-black/70"
                         >
                           {tag}
                         </span>
@@ -261,7 +261,6 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
                     })}
                   </span>
                 )}
-                {"."}
               </>
             )}
 

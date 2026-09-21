@@ -1063,7 +1063,7 @@ export default function ArtistryNerdery() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <span className="text-sm md:text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 md:px-2 md:py-0.5 rounded-full border border-black/30 text-black/70">{ev.category}</span>
+                    <span className="text-sm md:text-[11px] font-bold uppercase tracking-wide leading-none px-2 py-1 md:px-1.5 md:py-[3px] rounded-full border border-black/30 text-black/70">{ev.category}</span>
                     {(ev.tags ?? []).map(tag => {
                       const isActive = filterTags.includes(tag);
                       return (
@@ -1071,7 +1071,7 @@ export default function ArtistryNerdery() {
                           key={tag}
                           type="button"
                           onClick={() => toggleFilterTag(tag)}
-                          className={`text-sm md:text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 md:px-2 md:py-0.5 rounded-full border cursor-pointer transition-colors ${
+                          className={`text-sm md:text-[11px] font-bold uppercase tracking-wide leading-none px-2 py-1 md:px-1.5 md:py-[3px] rounded-full border cursor-pointer transition-colors ${
                             isActive ? "bg-black text-white border-black" : "border-black/30 text-black/70 hover:bg-black hover:text-white hover:border-black"
                           }`}
                         >
@@ -1080,7 +1080,7 @@ export default function ArtistryNerdery() {
                       );
                     })}
                     {ev.isRecurring && ev.recurrenceLabel && (
-                      <span className="text-sm md:text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 md:px-2 md:py-0.5 rounded-full bg-black/10 text-black/70">{ev.recurrenceLabel}</span>
+                      <span className="text-sm md:text-[11px] font-bold uppercase tracking-wide leading-none px-2 py-1 md:px-1.5 md:py-[3px] rounded-full bg-black/10 text-black/70">{ev.recurrenceLabel}</span>
                     )}
                   </div>
                 </div>
