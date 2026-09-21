@@ -605,7 +605,7 @@ export const artTopicTags = [
   "Family", "Film", "Food & Drink", "Fundraisers & Causes",
   "History", "Horror", "LGBTQ+",
   "Literature", "Music", "Nature & Outdoors", "Pets",
-  "Photography", "Science", "Trains", "Wellness", "Writing",
+  "Photography", "Politics", "Science", "Trains", "Wellness", "Writing",
 ] as const;
 export type ArtTopicTag = typeof artTopicTags[number];
 
