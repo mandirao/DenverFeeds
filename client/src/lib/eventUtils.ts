@@ -312,6 +312,26 @@ export function formatRecurrenceCadence(label: string | null | undefined): strin
 // kept in one place per the design handoff so it's easy to retune later.
 export const SELLOUT_LIKELY_THRESHOLD = 4;
 
+export const CHEAP_THRILLS_MAX_PRICE = 25;
+
+/** True when `price` (a free-text field like "$15/person" or "$20, $15
+ * member") can be attended for CHEAP_THRILLS_MAX_PRICE or less. "Free" and
+ * "Pay What You Can" always qualify. For a string with multiple dollar
+ * amounts (tiers, member discounts), the LOWEST one is used — the question
+ * is "is there a way in for $25 or less," not "is every ticket $25 or
+ * less." An empty or non-numeric, non-free string (e.g. "Included in
+ * general admission") returns false: we only flag events where the data
+ * actually confirms a low price, rather than guessing. */
+export function isCheapThrills(price: string | null | undefined): boolean {
+  const trimmed = (price ?? "").trim();
+  if (!trimmed) return false;
+  const normalized = trimmed.toLowerCase().replace(/-/g, " ");
+  if (normalized.includes("free") || normalized.includes("pay what you can")) return true;
+  const amounts = trimmed.match(/\d+(?:\.\d{1,2})?/g);
+  if (!amounts) return false;
+  return Math.min(...amounts.map(Number)) <= CHEAP_THRILLS_MAX_PRICE;
+}
+
 /** Tooltip copy for the "sellout likely" phrase: "Announced Jul 2 — 44 days
  * on the feed". Null when there's no announcedAt to derive it from. */
 export function announcedTooltipText(announcedAt: string | null | undefined): string | null {

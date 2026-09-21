@@ -24,7 +24,7 @@ import {
   createSearchUrl, createCalendarUrl, classifyRecurrence, addCalDays, addCalMonths,
   expandRecurringEvents, hasStartTimePassed, localDateStr,
   announcedTooltipText, SELLOUT_LIKELY_THRESHOLD, matchesRegionFilter,
-  splitDayEvents, spanEnd, formatMonthDay, formatRecurrenceCadence,
+  splitDayEvents, spanEnd, formatMonthDay, formatRecurrenceCadence, isCheapThrills,
 } from "@/lib/eventUtils";
 import { getAddedTimeCategory } from "@/lib/utils";
 import { useElementHeight } from "@/hooks/use-element-height";
@@ -233,6 +233,7 @@ export default function ArtistryNerdery() {
   const [filterRegion, setFilterRegion] = useState(() => new URLSearchParams(window.location.search).get("region") || "all");
   const [filterDay, setFilterDay] = useState(() => new URLSearchParams(window.location.search).get("day") || "all");
   const [filterDuration, setFilterDuration] = useState(() => new URLSearchParams(window.location.search).get("duration") || "all");
+  const [filterCheapThrills, setFilterCheapThrills] = useState(() => new URLSearchParams(window.location.search).get("cheap") === "1");
   const [searchQuery, setSearchQuery] = useState(() => new URLSearchParams(window.location.search).get("q") || "");
   const [searchOpen, setSearchOpen] = useState(() => searchQuery.trim() !== "");
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -259,9 +260,10 @@ export default function ArtistryNerdery() {
     filterRegion !== "all" ? url.searchParams.set("region", filterRegion) : url.searchParams.delete("region");
     filterDay !== "all" ? url.searchParams.set("day", filterDay) : url.searchParams.delete("day");
     filterDuration !== "all" ? url.searchParams.set("duration", filterDuration) : url.searchParams.delete("duration");
+    filterCheapThrills ? url.searchParams.set("cheap", "1") : url.searchParams.delete("cheap");
     searchQuery.trim() ? url.searchParams.set("q", searchQuery.trim()) : url.searchParams.delete("q");
     window.history.replaceState({}, "", url.toString());
-  }, [filterCategory, filterTags, filterRegion, filterDay, filterDuration, searchQuery]);
+  }, [filterCategory, filterTags, filterRegion, filterDay, filterDuration, filterCheapThrills, searchQuery]);
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
@@ -301,7 +303,7 @@ export default function ArtistryNerdery() {
 
   const expandedEvents = expandRecurringEvents(events);
 
-  const hasActiveFilters = sortBy !== "date" || filterCategory !== "all" || filterTags.length > 0 || filterRegion !== "all" || filterDay !== "all" || filterDuration !== "all" || searchQuery.trim() !== "";
+  const hasActiveFilters = sortBy !== "date" || filterCategory !== "all" || filterTags.length > 0 || filterRegion !== "all" || filterDay !== "all" || filterDuration !== "all" || filterCheapThrills || searchQuery.trim() !== "";
 
   const resetFilters = () => {
     setSortBy("date");
@@ -310,6 +312,7 @@ export default function ArtistryNerdery() {
     setFilterRegion("all");
     setFilterDay("all");
     setFilterDuration("all");
+    setFilterCheapThrills(false);
     setSearchQuery("");
     setSearchOpen(false);
   };
@@ -333,6 +336,7 @@ export default function ArtistryNerdery() {
   if (filterRegion !== "all") activeFilterLabels.push(REGION_LABELS[filterRegion] ?? filterRegion);
   if (filterDay !== "all") activeFilterLabels.push(filterDay.startsWith("month:") ? filterDay.slice(6) : DAY_LABELS[filterDay] ?? filterDay);
   if (filterDuration !== "all") activeFilterLabels.push(DURATION_LABELS[filterDuration] ?? filterDuration);
+  if (filterCheapThrills) activeFilterLabels.push("Cheap Thrills");
   if (sortBy !== "date") activeFilterLabels.push("Recently Added");
   if (searchQuery.trim() !== "") activeFilterLabels.push(`"${searchQuery.trim()}"`);
 
@@ -405,6 +409,7 @@ export default function ArtistryNerdery() {
       if (filterDuration === "limited-run" && (isRecurring || !hasSpan)) return false;
       if (filterDuration === "one-time" && (isRecurring || hasSpan)) return false;
     }
+    if (filterCheapThrills && !isCheapThrills(ev.price)) return false;
     return true;
   });
 
@@ -731,6 +736,19 @@ export default function ArtistryNerdery() {
                     <SelectItem value="recurring">All Recurring</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* Cheap Thrills toggle — events at $25 or less (parsed from
+                    the free-text price field; see isCheapThrills). */}
+                <button
+                  onClick={() => setFilterCheapThrills(v => !v)}
+                  className={`px-3 h-10 md:h-8 rounded-full border text-sm whitespace-nowrap flex-shrink-0 flex items-center ${
+                    filterCheapThrills
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-[#FEABDA] border-white md:bg-[#FEABDA] md:text-black md:border-black md:hover:border-white"
+                  }`}
+                >
+                  Cheap Thrills
+                </button>
 
               </div>
             </div>
