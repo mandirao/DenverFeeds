@@ -310,7 +310,7 @@ export function formatRecurrenceCadence(label: string | null | undefined): strin
 
 // Threshold above which the shared "sellout likely" phrase shows on a row —
 // kept in one place per the design handoff so it's easy to retune later.
-export const SELLOUT_LIKELY_THRESHOLD = 3;
+export const SELLOUT_LIKELY_THRESHOLD = 4;
 
 /** Tooltip copy for the "sellout likely" phrase: "Announced Jul 2 — 44 days
  * on the feed". Null when there's no announcedAt to derive it from. */
