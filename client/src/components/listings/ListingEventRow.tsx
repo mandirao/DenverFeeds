@@ -232,7 +232,37 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
             )}
 
             {category && (
-              <span className="italic"> {category}{tags.length > 0 ? ` — ${tags.join(", ")}` : ""}.</span>
+              <>
+                <span className="italic"> {category}</span>
+                {tags.length > 0 && (
+                  <span className="inline-flex flex-wrap items-center gap-1.5 align-middle ml-1.5">
+                    {tags.map(tag => {
+                      const isActive = config.isTagActive?.(tag) ?? false;
+                      const onTagClick = config.onTagClick;
+                      return onTagClick ? (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onTagClick(tag); }}
+                          className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border cursor-pointer transition-colors ${
+                            isActive ? "bg-black text-white border-black" : "border-black/30 text-black/70 hover:bg-black hover:text-white hover:border-black"
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      ) : (
+                        <span
+                          key={tag}
+                          className="text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border border-black/30 text-black/70"
+                        >
+                          {tag}
+                        </span>
+                      );
+                    })}
+                  </span>
+                )}
+                {"."}
+              </>
             )}
 
             {event.price && (

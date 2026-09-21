@@ -127,6 +127,7 @@ const artFormConfig: ListingFormConfig<InsertArtEvent> = {
     name: form.name,
     venue: form.venue,
     category: form.category,
+    tags: form.tags,
     isRecurring: form.isRecurring,
     recurrenceLabel: form.recurrenceLabel,
     recurrenceRule: form.recurrenceRule,
@@ -142,7 +143,12 @@ const artFormConfig: ListingFormConfig<InsertArtEvent> = {
   }),
   applyRedoResponse: (res, { setForm, setInstanceNote, setInstanceTitle }) => {
     if (res.status === "not-found") {
-      if (res.summary) setForm(f => ({ ...f, summary: res.summary }));
+      setForm(f => ({
+        ...f,
+        ...(res.summary ? { summary: res.summary } : {}),
+        ...(res.category ? { category: res.category } : {}),
+        ...(res.tags ? { tags: res.tags } : {}),
+      }));
       return { title: "Couldn't verify online ⚠️", description: res.message };
     }
     if (res.status === "confirmed") {
@@ -159,6 +165,8 @@ const artFormConfig: ListingFormConfig<InsertArtEvent> = {
       ...(res.neighborhood ? { neighborhood: res.neighborhood } : {}),
       ...(res.price ? { price: res.price } : {}),
       ...(res.ticketUrl ? { ticketUrl: res.ticketUrl } : {}),
+      ...(res.category ? { category: res.category } : {}),
+      ...(res.tags ? { tags: res.tags } : {}),
     }));
     if (res.instanceNote) setInstanceNote(res.instanceNote);
     if (res.instanceTitle) setInstanceTitle(res.instanceTitle);
@@ -308,6 +316,15 @@ export default function ArtistryNerdery() {
 
   const toggleFilterTag = (tag: string) => {
     setFilterTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
+  // Lets a card's tag pills toggle the Topics filter directly — merged onto
+  // the module-level artRowConfig since onTagClick/isTagActive need to close
+  // over this component's filter state.
+  const artRowConfigWithFilter: ListingRowConfig<ArtEvent> = {
+    ...artRowConfig,
+    onTagClick: toggleFilterTag,
+    isTagActive: (tag) => filterTags.includes(tag),
   };
 
   const activeFilterLabels: string[] = [];
@@ -844,7 +861,7 @@ export default function ArtistryNerdery() {
               <h3 className="text-xl text-black mb-3 font-black">{bucket.label}</h3>
               <ul className="space-y-0">
                 {bucket.events.map(ev => (
-                  <ListingEventRow key={`${ev.id}-${ev.dateStart}`} event={ev} config={artRowConfig} />
+                  <ListingEventRow key={`${ev.id}-${ev.dateStart}`} event={ev} config={artRowConfigWithFilter} />
                 ))}
               </ul>
             </div>
@@ -862,7 +879,7 @@ export default function ArtistryNerdery() {
               <div className={`px-[14px] sm:px-[22px] pt-[14px] sm:pt-4 ${stillTimeTruncated ? "" : "pb-3"}`}>
                 <ul className="list-none m-0 p-0 flex flex-col gap-[11px] sm:gap-[9px]">
                   {visibleStillTimeEvents.map(ev => (
-                    <ListingEventRow key={`still-${ev.id}`} event={ev} config={artRowConfig} />
+                    <ListingEventRow key={`still-${ev.id}`} event={ev} config={artRowConfigWithFilter} />
                   ))}
                 </ul>
                 {/* Hard-clipped peek at the next hidden event, flush against the
@@ -871,7 +888,7 @@ export default function ArtistryNerdery() {
                 {stillTimeTruncated && (
                   <div className="overflow-hidden pointer-events-none mt-[11px] sm:mt-[9px]" style={{ maxHeight: "1.1rem" }}>
                     <ul className="list-none m-0 p-0 flex flex-col gap-[11px] sm:gap-[9px]">
-                      <ListingEventRow key={`still-peek-${stillTimeEvents[STILL_VISIBLE].id}`} event={stillTimeEvents[STILL_VISIBLE]} config={artRowConfig} />
+                      <ListingEventRow key={`still-peek-${stillTimeEvents[STILL_VISIBLE].id}`} event={stillTimeEvents[STILL_VISIBLE]} config={artRowConfigWithFilter} />
                     </ul>
                   </div>
                 )}
@@ -912,7 +929,7 @@ export default function ArtistryNerdery() {
                     <ListingEventRow
                       key={`${ev.id}-${ev.dateStart}`}
                       event={ev}
-                      config={artRowConfig}
+                      config={artRowConfigWithFilter}
                       dateDisplay="timeOnly"
                     />
                   ))}
@@ -1047,9 +1064,21 @@ export default function ArtistryNerdery() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     <span className="text-sm md:text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 md:px-2 md:py-0.5 rounded-full border border-black/30 text-black/70">{ev.category}</span>
-                    {(ev.tags ?? []).map(tag => (
-                      <span key={tag} className="text-sm md:text-[11px] font-semibold px-2.5 py-1 md:px-2 md:py-0.5 rounded-full bg-black/5 text-black/60">{tag}</span>
-                    ))}
+                    {(ev.tags ?? []).map(tag => {
+                      const isActive = filterTags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => toggleFilterTag(tag)}
+                          className={`text-sm md:text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 md:px-2 md:py-0.5 rounded-full border cursor-pointer transition-colors ${
+                            isActive ? "bg-black text-white border-black" : "border-black/30 text-black/70 hover:bg-black hover:text-white hover:border-black"
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
                     {ev.isRecurring && ev.recurrenceLabel && (
                       <span className="text-sm md:text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 md:px-2 md:py-0.5 rounded-full bg-black/10 text-black/70">{ev.recurrenceLabel}</span>
                     )}

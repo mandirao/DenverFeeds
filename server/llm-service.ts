@@ -39,6 +39,8 @@ interface RedoListingResult {
   price?: string;
   ticketUrl?: string;
   summary?: string;
+  category?: string;
+  tags?: string[];
   instanceNote?: string;
   instanceTitle?: string;
   message: string;
@@ -59,6 +61,10 @@ interface ListingVerifyParams {
   currentSummary: string;
   currentInstanceNote: string;
   currentInstanceTitle: string;
+  // Only present for the art feed's classification recheck — food has no
+  // category/tags concept (cuisine is handled separately and untouched here).
+  category?: string;
+  tags?: string[];
 }
 
 const COLORADO_VENUES = [
@@ -977,6 +983,7 @@ Return ONLY valid JSON (no markdown):
     name: string;
     venue: string;
     category: string;
+    tags: string[];
     isRecurring: boolean;
     recurrenceLabel: string;
     recurrenceRule: RecurrenceRule | null;
@@ -1007,7 +1014,7 @@ Return ONLY valid JSON (no markdown):
         return searchQueries;
       },
 
-      buildPrompt: ({ category, ...p }, searchContext) => this.buildListingVerifyPrompt({
+      buildPrompt: ({ category, tags, ...p }, searchContext) => this.buildListingVerifyPrompt({
         ...p,
         feedName: 'Artistry & Nerdery Live',
         feedVoiceIntro: 'a Denver/Boulder cultural event newsletter',
@@ -1017,10 +1024,15 @@ Return ONLY valid JSON (no markdown):
 Voice: smart and curious, not academic. Like a knowledgeable friend, not a press release.
 No hype ("amazing," "incredible," "don't miss"). Lead with what makes this worth attending.
 Use real names of performers/speakers/artists if found in search results.`,
+        classificationGuide: {
+          categoryOptions: 'Theater & Musicals, Comedy & Storytelling, Film & Cinema, Dance & Movement, Music & Performance, Galleries & Exhibitions, Games, Workshops & Classes, Book Clubs, Talks & Lectures, Markets & Pop-Ups, Parties & Social, Tours & Outings',
+          tagsOptions: artTopicTags.join(', '),
+          currentTags: tags,
+        },
         searchContext,
       }),
 
-      maxTokens: 600,
+      maxTokens: 700,
 
       interpretResult: (result, params) => this.interpretListingVerifyResult(result, params),
     });
@@ -1086,11 +1098,17 @@ Name the chef or collaborators if found in search results.`,
     categoryValue: string;
     descriptionTaskGuide: string;
     searchContext: string;
+    // Only the art feed passes this — food has no category/tags taxonomy to recheck.
+    classificationGuide?: {
+      categoryOptions: string;
+      tagsOptions: string;
+      currentTags: string[];
+    };
   }): string {
     const {
       name, venue, isRecurring, recurrenceLabel, recurrenceRule, dateStart, dateEnd, startTime, price, ticketUrl,
       neighborhood, currentSummary, currentInstanceNote, currentInstanceTitle,
-      feedName, feedVoiceIntro, categoryLabel, categoryValue, descriptionTaskGuide, searchContext,
+      feedName, feedVoiceIntro, categoryLabel, categoryValue, descriptionTaskGuide, searchContext, classificationGuide,
     } = p;
 
     const dateLabel = dateStart
@@ -1148,7 +1166,12 @@ ${isRecurring ? "Do NOT mention what's specific to only this date (the particula
 
 ${isRecurring ? this.occurrenceDetailTaskPrompt(dateLabel, currentInstanceNote, currentInstanceTitle) : ''}
 
-Return ONLY valid JSON (no markdown):
+${classificationGuide ? `TASK E — RECHECK CATEGORY & TAGS (always do this, even if eventFound is false):
+Based on the event details on file (name, description, and any web-confirmed facts above), double-check the existing classification is still the best fit. Only change a value if it's clearly wrong — keep it as-is otherwise.
+- category: the FORMAT of the event (how it's experienced, not what it's about) — one of: ${classificationGuide.categoryOptions}. Current: "${categoryValue || 'unknown'}".
+- tags: the SUBJECT/TOPIC — array of zero or more from this exact list (never invent new tags): ${classificationGuide.tagsOptions}. Current: ${classificationGuide.currentTags.length ? classificationGuide.currentTags.join(', ') : '(none)'}.
+
+` : ''}Return ONLY valid JSON (no markdown):
 {
   "eventFound": true or false,
   "dateStart": "YYYY-MM-DD confirmed correction, or null",
@@ -1160,20 +1183,37 @@ Return ONLY valid JSON (no markdown):
   "ticketUrl": "confirmed correction, or null",
   "summary": "improved description max 200 chars, or the current one if unchanged",${isRecurring ? `
   "occurrenceNote": "specific detail for this date only max 120 chars, or null",
-  "titleModifier": "short label to append after the event name for this date only, or null",` : ''}
+  "titleModifier": "short label to append after the event name for this date only, or null",` : ''}${classificationGuide ? `
+  "category": "the category value, corrected only if clearly wrong — otherwise the same value as on file",
+  "tags": ["the tag array, corrected only if clearly wrong — otherwise the same array as on file"],` : ''}
   "message": "one plain-language sentence: what you found/changed, why nothing could be confirmed, or that everything checked out"
 }`;
   }
 
+  // Validates+diffs a redo/verify result's tags array against what's on file.
+  // Returns null when there's nothing valid to report or nothing changed —
+  // shared between the not-found and found branches of interpretListingVerifyResult.
+  private diffTags(resultTags: any, currentTags: string[] | undefined): string[] | null {
+    if (!Array.isArray(resultTags)) return null;
+    const validated = resultTags.filter((t: any) => typeof t === 'string' && (artTopicTags as readonly string[]).includes(t));
+    const current = currentTags || [];
+    const changed = validated.length !== current.length || validated.some((t: string) => !current.includes(t));
+    return changed ? validated : null;
+  }
+
   private interpretListingVerifyResult(result: any, params: ListingVerifyParams): RedoListingResult {
-    const { isRecurring, currentSummary, dateStart, dateEnd, startTime, venue, price, ticketUrl, neighborhood } = params;
+    const { isRecurring, currentSummary, dateStart, dateEnd, startTime, venue, price, ticketUrl, neighborhood, category, tags } = params;
 
     if (!result.eventFound) {
       const newSummary = (result.summary || currentSummary || '').substring(0, 200);
       const summaryChanged = newSummary.trim() !== (currentSummary || '').trim();
+      const categoryChanged = typeof result.category === 'string' && result.category && result.category !== category;
+      const changedTags = this.diffTags(result.tags, tags);
       return {
         status: 'not-found',
         ...(summaryChanged ? { summary: newSummary } : {}),
+        ...(categoryChanged ? { category: result.category } : {}),
+        ...(changedTags ? { tags: changedTags } : {}),
         message: result.message || "Couldn't confirm this event online — details left as-is.",
       };
     }
@@ -1186,6 +1226,9 @@ Return ONLY valid JSON (no markdown):
     if (result.neighborhood && result.neighborhood !== neighborhood) changed.neighborhood = result.neighborhood;
     if (result.price && result.price !== price) changed.price = result.price;
     if (result.ticketUrl && result.ticketUrl !== ticketUrl) changed.ticketUrl = result.ticketUrl;
+    if (typeof result.category === 'string' && result.category && result.category !== category) changed.category = result.category;
+    const changedTags = this.diffTags(result.tags, tags);
+    if (changedTags) changed.tags = changedTags;
 
     const newSummary = (result.summary || currentSummary || '').substring(0, 200);
     const summaryChanged = newSummary.trim() !== (currentSummary || '').trim();

@@ -1670,12 +1670,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI content refresh for art events
   apiRouter.post("/ai/redo-art-event-content", async (req, res) => {
     try {
-      const { name, venue, category, isRecurring, recurrenceLabel, recurrenceRule, dateStart, dateEnd, startTime, price, ticketUrl, neighborhood, currentSummary, currentInstanceNote, currentInstanceTitle } = req.body;
+      const { name, venue, category, tags, isRecurring, recurrenceLabel, recurrenceRule, dateStart, dateEnd, startTime, price, ticketUrl, neighborhood, currentSummary, currentInstanceNote, currentInstanceTitle } = req.body;
       if (!name) return res.status(400).json({ message: "Event name is required" });
       const result = await llmService.redoArtEventAI({
         name: name || "",
         venue: venue || "",
         category: category || "",
+        tags: Array.isArray(tags) ? tags : [],
         isRecurring: !!isRecurring,
         recurrenceLabel: recurrenceLabel || "",
         recurrenceRule: recurrenceRule || null,

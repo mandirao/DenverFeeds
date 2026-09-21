@@ -61,6 +61,14 @@ export interface ListingRowConfig<T extends ListingEventBase> {
   /** Topic tags (subject, orthogonal to category/format) — only Art has these
    * today; Food's config simply omits this and no tag UI renders. */
   getTags?: (event: T) => string[] | null | undefined;
+  /** If provided, tag pills render as clickable buttons that call this to
+   * toggle the tag in the feed's own filter state — lets a reader drive the
+   * Topics filter straight from a card instead of the dropdown. Omit to
+   * render tags as plain (non-interactive) pills. */
+  onTagClick?: (tag: string) => void;
+  /** Whether a given tag is currently active in the filter, for highlighting
+   * its pill. Ignored if onTagClick isn't provided. */
+  isTagActive?: (tag: string) => boolean;
   /** Renders the "↳ note" line under a recurring event's instance note, if any. */
   renderInstanceNote: (note: string) => ReactNode;
   EditModal: React.ComponentType<{ event: T; onClose: () => void }>;
