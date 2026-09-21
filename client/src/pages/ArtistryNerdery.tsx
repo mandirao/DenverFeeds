@@ -586,23 +586,22 @@ export default function ArtistryNerdery() {
                     e.g. Talks & Lectures + "Film" surfaces film talks specifically. */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className={`flex items-center gap-1.5 px-3 h-10 md:h-8 rounded-full border text-sm font-medium whitespace-nowrap flex-shrink-0 focus:outline-none ${
+                    <button className={`flex items-center gap-1.5 px-3 h-10 md:h-8 rounded-full border text-sm whitespace-nowrap flex-shrink-0 focus:outline-none ${
                       filterTags.length > 0
                         ? "bg-white text-black border-black"
                         : "bg-black text-[#FEABDA] border-white md:bg-[#FEABDA] md:text-black md:border-black md:hover:border-white"
                     }`} style={{ width: "132px" }}>
                       <span className="truncate">{filterTags.length > 0 ? `Topics (${filterTags.length})` : "Topics"}</span>
-                      <ChevronDown className="w-3 h-3 ml-auto opacity-60 flex-shrink-0" />
+                      <ChevronDown className="h-4 w-4 ml-auto opacity-50 flex-shrink-0" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-56 max-h-[340px] overflow-y-auto p-0">
+                  <DropdownMenuContent align="start" className="max-h-[340px] overflow-y-auto">
                     {artTopicTags.map(tag => (
                       <DropdownMenuCheckboxItem
                         key={tag}
                         checked={filterTags.includes(tag)}
                         onSelect={e => e.preventDefault()}
                         onCheckedChange={() => toggleFilterTag(tag)}
-                        className="text-xs font-semibold px-3 py-2 rounded-none focus:bg-gray-100 hover:bg-gray-100 cursor-pointer"
                       >
                         {tag}
                       </DropdownMenuCheckboxItem>
