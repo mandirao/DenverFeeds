@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { riskPips, RISK_LABELS } from "@/lib/eventUtils";
 import { cn } from "@/lib/utils";
 import type { ListingFormConfig, ListingInsertBase, SpecificDateEntry } from "@/lib/listingFeedConfig";
@@ -184,7 +185,7 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
         </Field>
       )}
 
-      {/* Category + Emoji */}
+      {/* Category + Topics + Emoji */}
       <div className="flex gap-3">
         <Field label={config.categoryLabel} required htmlFor={idFor(config.categoryFieldKey)} className="flex-1">
           <Select value={category} onValueChange={v => { setErrorField(null); set(config.categoryFieldKey as keyof TInsert, v); }}>
@@ -201,41 +202,49 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
             </SelectContent>
           </Select>
         </Field>
+
+        {/* Topic tags — optional second axis, orthogonal to category/format.
+            Only renders when the feed's config declares one (Art today; Food
+            has no topicTags config, so this is skipped for it). Multi-select,
+            so it's a checkbox dropdown rather than a single-value Select. */}
+        {config.topicTags && (() => {
+          const { fieldKey, label, options } = config.topicTags;
+          const selected = (form[fieldKey] as string[] | undefined) || [];
+          const toggle = (tag: string) => {
+            const next = selected.includes(tag) ? selected.filter(t => t !== tag) : [...selected, tag];
+            setForm(f => ({ ...f, [fieldKey]: next } as Partial<TInsert>));
+          };
+          return (
+            <Field label={label} htmlFor={idFor(fieldKey)} className="flex-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button type="button" id={idFor(fieldKey)}
+                    className={cn(controlBase, "flex w-full items-center justify-between gap-2 text-left font-normal")}>
+                    <span className="truncate text-field-foreground">
+                      {selected.length > 0 ? selected.join(", ") : "What's it about?"}
+                    </span>
+                    <ChevronDown className="size-4 shrink-0 opacity-50" />
+                  </button>
+                </DropdownMenuTrigger>
+                {/* See the SelectContent comment above — same portal/theme issue. */}
+                <DropdownMenuContent className="event-form-theme max-h-[280px] w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto">
+                  {options.map(tag => (
+                    <DropdownMenuCheckboxItem key={tag} checked={selected.includes(tag)}
+                      onSelect={e => e.preventDefault()} onCheckedChange={() => toggle(tag)}>
+                      {tag}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </Field>
+          );
+        })()}
+
         <Field label="Emoji" required htmlFor={idFor("emoji")} className="w-16 shrink-0">
           <TextField id={idFor("emoji")} value={form.emoji || ""} onChange={e => set("emoji" as keyof TInsert, e.target.value)}
             className={cn("px-0 text-center text-lg", fieldErr("emoji"))} placeholder={config.emojiPlaceholder} />
         </Field>
       </div>
-
-      {/* Topic tags — optional second axis, orthogonal to category/format.
-          Only renders when the feed's config declares one (Art today; Food
-          has no topicTags config, so this whole block is skipped for it). */}
-      {config.topicTags && (() => {
-        const { fieldKey, label, options } = config.topicTags;
-        const selected = (form[fieldKey] as string[] | undefined) || [];
-        const toggle = (tag: string) => {
-          const next = selected.includes(tag) ? selected.filter(t => t !== tag) : [...selected, tag];
-          setForm(f => ({ ...f, [fieldKey]: next } as Partial<TInsert>));
-        };
-        return (
-          <Field label={label} hint="what it's about — pick as many as fit">
-            <div className="flex flex-wrap gap-1.5">
-              {options.map(tag => {
-                const active = selected.includes(tag);
-                return (
-                  <button key={tag} type="button" aria-pressed={active} onClick={() => toggle(tag)}
-                    className={cn(
-                      "rounded-full border-2 px-2.5 py-1 text-xs font-semibold transition-colors",
-                      active ? "border-primary bg-primary text-primary-foreground" : "border-field-border bg-field text-field-foreground hover:bg-muted/60",
-                    )}>
-                    {tag}
-                  </button>
-                );
-              })}
-            </div>
-          </Field>
-        );
-      })()}
 
       {/* Description */}
       <Field htmlFor={idFor("summary")}>
