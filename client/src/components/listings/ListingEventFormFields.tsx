@@ -207,6 +207,36 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
         </Field>
       </div>
 
+      {/* Topic tags — optional second axis, orthogonal to category/format.
+          Only renders when the feed's config declares one (Art today; Food
+          has no topicTags config, so this whole block is skipped for it). */}
+      {config.topicTags && (() => {
+        const { fieldKey, label, options } = config.topicTags;
+        const selected = (form[fieldKey] as string[] | undefined) || [];
+        const toggle = (tag: string) => {
+          const next = selected.includes(tag) ? selected.filter(t => t !== tag) : [...selected, tag];
+          setForm(f => ({ ...f, [fieldKey]: next } as Partial<TInsert>));
+        };
+        return (
+          <Field label={label} hint="what it's about — pick as many as fit">
+            <div className="flex flex-wrap gap-1.5">
+              {options.map(tag => {
+                const active = selected.includes(tag);
+                return (
+                  <button key={tag} type="button" aria-pressed={active} onClick={() => toggle(tag)}
+                    className={cn(
+                      "rounded-full border-2 px-2.5 py-1 text-xs font-semibold transition-colors",
+                      active ? "border-primary bg-primary text-primary-foreground" : "border-field-border bg-field text-field-foreground hover:bg-muted/60",
+                    )}>
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+        );
+      })()}
+
       {/* Description */}
       <Field htmlFor={idFor("summary")}>
         <div className="mb-1 flex items-center justify-between">

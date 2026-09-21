@@ -573,14 +573,41 @@ export type FoodEvent = typeof foodEvents.$inferSelect;
 
 // ── Artistry & Nerdery Live ────────────────────────────────────────────────
 
+// FORMAT — what kind of experience this is. Kept small and closed (the
+// primary single-select filter/nav) precisely because it's a format axis,
+// not a subject axis — "Science & Nature" and "Wellness & Community" used to
+// live here too, but they were subjects wearing a format's clothing (a
+// science TALK and a science-museum PARTY both got stuck in the same bucket
+// as the science subject won the tiebreak — see the old parseArtBlurb
+// prompt's "subject beats format" rule). Subject now lives in `tags` below,
+// so an event can be Talks & Lectures + [Science, Nature & Outdoors] and
+// still coexist with a Film & Cinema + [Science] screening, instead of both
+// being flattened into one "Science & Nature" bucket. See
+// scripts/introduce-topic-tags.ts for the migration that split the old
+// category values out.
 export const artCategories = [
   "Book Clubs", "Comedy & Storytelling", "Dance & Movement",
   "Film & Cinema", "Galleries & Exhibitions", "Games",
   "Markets & Pop-Ups", "Music & Performance", "Parties & Social",
-  "Science & Nature", "Talks & Lectures", "Theater & Musicals",
-  "Wellness & Community", "Workshops & Classes"
+  "Talks & Lectures", "Theater & Musicals", "Tours & Outings",
+  "Workshops & Classes"
 ] as const;
 export type ArtCategory = typeof artCategories[number];
+
+// TOPIC — what this is actually about, orthogonal to format. Multi-select:
+// an event can carry several (a train-ride tour tagged both "Trains &
+// Railways" and "Nature & Outdoors"). Free-growing in practice (the `tags`
+// column is just text[], not a DB enum) — this list is the curated set
+// offered in the picker UI, not a hard ceiling.
+export const artTopicTags = [
+  "Architecture & Design", "Art & Visual Culture", "Astronomy & Space",
+  "Birding", "Cartooning & Illustration", "Craft & Making",
+  "Culture & Heritage", "Film", "Food & Drink", "Fundraisers & Causes",
+  "History", "Horror & Spooky", "Kids & Family", "LGBTQ+",
+  "Literature & Writing", "Music", "Nature & Outdoors", "Pets & Animals",
+  "Photography", "Science", "Trains & Railways", "Wellness & Mindfulness",
+] as const;
+export type ArtTopicTag = typeof artTopicTags[number];
 
 export const artEvents = pgTable("art_events", {
   id: serial("id").primaryKey(),
@@ -593,6 +620,8 @@ export const artEvents = pgTable("art_events", {
   startTime: text("start_time"),
   summary: text("summary").notNull(),
   category: text("category").notNull().default("Other"),
+  // Topic tags — see artTopicTags above. Orthogonal to category (format).
+  tags: text("tags").array().notNull().default([]),
   price: text("price"),
   ticketUrl: text("ticket_url"),
   sourceUrl: text("source_url"),
@@ -624,6 +653,7 @@ export const insertArtEventSchema = createInsertSchema(artEvents).omit({
   venue: z.string().min(1, "Venue is required"),
   dateStart: z.string().min(1, "Start date is required"),
   category: z.string().min(1, "Category is required"),
+  tags: z.array(z.string()).default([]),
   requester: z.string().min(1, "Your name is required"),
   recurrenceRule: recurrenceRuleSchema.nullable().optional(),
   excludedDates: z.array(z.string()).nullable().optional(),

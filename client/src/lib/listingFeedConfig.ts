@@ -58,6 +58,9 @@ export interface ListingRowConfig<T extends ListingEventBase> {
   ticketLabel: string;      // "Reserve" / "Tickets"
   ticketTextColorClass: string; // tailwind text color class for the ticket button
   getCategory: (event: T) => string | null | undefined; // cuisine vs category
+  /** Topic tags (subject, orthogonal to category/format) — only Art has these
+   * today; Food's config simply omits this and no tag UI renders. */
+  getTags?: (event: T) => string[] | null | undefined;
   /** Renders the "↳ note" line under a recurring event's instance note, if any. */
   renderInstanceNote: (note: string) => ReactNode;
   EditModal: React.ComponentType<{ event: T; onClose: () => void }>;
@@ -107,6 +110,7 @@ export interface ListingInsertBase {
   excludedDates?: string[] | null;
   verifiedThroughDate?: string | null;
   activeWeekdays?: number[] | null;
+  tags?: string[] | null;
 }
 
 export interface RedoAIResult {
@@ -147,6 +151,16 @@ export interface ListingFormConfig<TInsert extends ListingInsertBase> {
   categoryFieldKey: keyof TInsert & string; // "cuisine" | "category"
   categoryLabel: string;   // "Cuisine" / "Category"
   categoryOptions: readonly string[];
+
+  /** Optional second, multi-select classification axis (topic tags,
+   * orthogonal to category/format) — present only for feeds that have one.
+   * Omitted entirely (not just empty) for feeds without a tags concept, so
+   * the shared form/row components can branch on its presence. */
+  topicTags?: {
+    fieldKey: keyof TInsert & string; // "tags"
+    label: string;                    // "Topics"
+    options: readonly string[];
+  };
 
   venueLabel: string;               // "Venue / Restaurant" / "Venue"
   namePlaceholder: string;

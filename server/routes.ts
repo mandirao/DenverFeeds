@@ -20,7 +20,14 @@ function registerListingCrudRoutes<TSelect extends { id: number; createdAt?: unk
   router: express.Router,
   config: {
     path: string;                // "food-events" | "art-events"
-    insertSchema: ZodType<TInsert>;
+    // Input/Def left as `any` deliberately — TInsert here is the schema's
+    // *output* (parsed) type, which is what flows downstream to create/
+    // update/findPossibleDuplicates. A schema field with `.default(...)`
+    // (e.g. artEvents.tags) makes the raw Input type diverge from Output
+    // (the field is optional pre-parse, required post-parse); pinning Input
+    // to TInsert too — which `ZodType<TInsert>`'s defaults would do — forces
+    // that impossible Input===Output equality and breaks assignment here.
+    insertSchema: ZodType<TInsert, any, any>;
     resourceLabel: string;       // "food event" | "art event" — used in error messages
     getAll: () => Promise<TSelect[]>;
     getById: (id: number) => Promise<TSelect | undefined>;

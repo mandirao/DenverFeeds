@@ -11,9 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
-import { artCategories, denverProperNeighborhoods, denverMetroSuburbs, frontRangeCities, type ArtEvent, type InsertArtEvent } from "@shared/schema";
+import { artCategories, artTopicTags, denverProperNeighborhoods, denverMetroSuburbs, frontRangeCities, type ArtEvent, type InsertArtEvent } from "@shared/schema";
 import { Telescope, Plus, Sparkles, List, MoreVertical, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check, Search, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarSubscribeModal } from "@/components/CalendarSubscribeModal";
@@ -65,6 +65,7 @@ const artRowConfig: ListingRowConfig<ArtEvent> = {
   ticketLabel: "Tickets",
   ticketTextColorClass: "text-[#FE6B41]",
   getCategory: (event) => event.category,
+  getTags: (event) => event.tags,
   renderInstanceNote: (note) => (
     <span className="block text-sm italic mt-0.5" style={{ opacity: 0.75 }}>
       ↳ {note}
@@ -92,6 +93,11 @@ const artFormConfig: ListingFormConfig<InsertArtEvent> = {
   categoryFieldKey: "category",
   categoryLabel: "Category",
   categoryOptions: artCategories,
+  topicTags: {
+    fieldKey: "tags",
+    label: "Topics",
+    options: artTopicTags,
+  },
 
   venueLabel: "Venue",
   namePlaceholder: "e.g. FBC Book Club",
@@ -184,7 +190,7 @@ const artFormConfig: ListingFormConfig<InsertArtEvent> = {
   BLANK: {
     emoji: "", name: "", venue: "", neighborhood: "",
     dateStart: "", dateEnd: "", startTime: "", summary: "",
-    category: "", price: "", ticketUrl: "", sourceUrl: "", rawBlurb: "", requester: "",
+    category: "", tags: [], price: "", ticketUrl: "", sourceUrl: "", rawBlurb: "", requester: "",
     announcedAt: "", selloutRisk: undefined, isRecurring: false, recurrenceLabel: "",
   },
 
@@ -215,6 +221,7 @@ export default function ArtistryNerdery() {
   const [calDetailDeleteConfirm, setCalDetailDeleteConfirm] = useState(false);
   const [sortBy, setSortBy] = useState<"date" | "added">("date");
   const [filterCategory, setFilterCategory] = useState(() => new URLSearchParams(window.location.search).get("category") || "all");
+  const [filterTags, setFilterTags] = useState<string[]>(() => (new URLSearchParams(window.location.search).get("tags") || "").split(",").filter(Boolean));
   const [filterRegion, setFilterRegion] = useState(() => new URLSearchParams(window.location.search).get("region") || "all");
   const [filterDay, setFilterDay] = useState(() => new URLSearchParams(window.location.search).get("day") || "all");
   const [filterDuration, setFilterDuration] = useState(() => new URLSearchParams(window.location.search).get("duration") || "all");
@@ -240,12 +247,13 @@ export default function ArtistryNerdery() {
   useEffect(() => {
     const url = new URL(window.location.href);
     filterCategory !== "all" ? url.searchParams.set("category", filterCategory) : url.searchParams.delete("category");
+    filterTags.length > 0 ? url.searchParams.set("tags", filterTags.join(",")) : url.searchParams.delete("tags");
     filterRegion !== "all" ? url.searchParams.set("region", filterRegion) : url.searchParams.delete("region");
     filterDay !== "all" ? url.searchParams.set("day", filterDay) : url.searchParams.delete("day");
     filterDuration !== "all" ? url.searchParams.set("duration", filterDuration) : url.searchParams.delete("duration");
     searchQuery.trim() ? url.searchParams.set("q", searchQuery.trim()) : url.searchParams.delete("q");
     window.history.replaceState({}, "", url.toString());
-  }, [filterCategory, filterRegion, filterDay, filterDuration, searchQuery]);
+  }, [filterCategory, filterTags, filterRegion, filterDay, filterDuration, searchQuery]);
 
   const prevCalMonth = () => {
     if (calViewMonth === 0) { setCalViewMonth(11); setCalViewYear(y => y - 1); }
@@ -285,11 +293,12 @@ export default function ArtistryNerdery() {
 
   const expandedEvents = expandRecurringEvents(events);
 
-  const hasActiveFilters = sortBy !== "date" || filterCategory !== "all" || filterRegion !== "all" || filterDay !== "all" || filterDuration !== "all" || searchQuery.trim() !== "";
+  const hasActiveFilters = sortBy !== "date" || filterCategory !== "all" || filterTags.length > 0 || filterRegion !== "all" || filterDay !== "all" || filterDuration !== "all" || searchQuery.trim() !== "";
 
   const resetFilters = () => {
     setSortBy("date");
     setFilterCategory("all");
+    setFilterTags([]);
     setFilterRegion("all");
     setFilterDay("all");
     setFilterDuration("all");
@@ -297,8 +306,13 @@ export default function ArtistryNerdery() {
     setSearchOpen(false);
   };
 
+  const toggleFilterTag = (tag: string) => {
+    setFilterTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
   const activeFilterLabels: string[] = [];
   if (filterCategory !== "all") activeFilterLabels.push(filterCategory);
+  if (filterTags.length > 0) activeFilterLabels.push(filterTags.join(", "));
   if (filterRegion !== "all") activeFilterLabels.push(REGION_LABELS[filterRegion] ?? filterRegion);
   if (filterDay !== "all") activeFilterLabels.push(filterDay.startsWith("month:") ? filterDay.slice(6) : DAY_LABELS[filterDay] ?? filterDay);
   if (filterDuration !== "all") activeFilterLabels.push(DURATION_LABELS[filterDuration] ?? filterDuration);
@@ -346,10 +360,11 @@ export default function ArtistryNerdery() {
     if (normalizedSearch) {
       const instanceTitle = ev.isRecurring ? ev.instanceTitles?.[ev.dateStart] ?? "" : "";
       const instanceNote = ev.isRecurring ? ev.instanceNotes?.[ev.dateStart] ?? "" : "";
-      const haystack = `${ev.name} ${ev.venue} ${ev.neighborhood ?? ""} ${ev.summary} ${ev.category} ${instanceTitle} ${instanceNote}`.toLowerCase();
+      const haystack = `${ev.name} ${ev.venue} ${ev.neighborhood ?? ""} ${ev.summary} ${ev.category} ${(ev.tags ?? []).join(" ")} ${instanceTitle} ${instanceNote}`.toLowerCase();
       if (!haystack.includes(normalizedSearch)) return false;
     }
     if (filterCategory !== "all" && ev.category !== filterCategory) return false;
+    if (filterTags.length > 0 && !filterTags.some(t => (ev.tags ?? []).includes(t))) return false;
     if (!matchesRegionFilter(ev.neighborhood, filterRegion)) return false;
     if (filterDay !== "all") {
       const d = new Date(ev.dateStart + "T12:00:00");
@@ -566,6 +581,34 @@ export default function ArtistryNerdery() {
                     ))}
                   </SelectContent>
                 </Select>
+
+                {/* Topics filter — multi-select, orthogonal to Category (format).
+                    e.g. Talks & Lectures + "Film" surfaces film talks specifically. */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className={`flex items-center gap-1.5 px-3 h-10 md:h-8 rounded-full border text-sm font-medium whitespace-nowrap flex-shrink-0 focus:outline-none ${
+                      filterTags.length > 0
+                        ? "bg-white text-black border-black"
+                        : "bg-black text-[#FEABDA] border-white md:bg-[#FEABDA] md:text-black md:border-black md:hover:border-white"
+                    }`} style={{ width: "132px" }}>
+                      <span className="truncate">{filterTags.length > 0 ? `Topics (${filterTags.length})` : "Topics"}</span>
+                      <ChevronDown className="w-3 h-3 ml-auto opacity-60 flex-shrink-0" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="rounded-none border-2 border-black shadow-none bg-white w-56 max-h-[340px] overflow-y-auto p-0">
+                    {artTopicTags.map(tag => (
+                      <DropdownMenuCheckboxItem
+                        key={tag}
+                        checked={filterTags.includes(tag)}
+                        onSelect={e => e.preventDefault()}
+                        onCheckedChange={() => toggleFilterTag(tag)}
+                        className="text-xs font-semibold px-3 py-2 rounded-none focus:bg-gray-100 hover:bg-gray-100 cursor-pointer"
+                      >
+                        {tag}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 {/* Region filter — broad tiers (Denver/Suburbs/Front Range/
                     Mountains) up top for a quick pick, with each tier's
@@ -1005,6 +1048,9 @@ export default function ArtistryNerdery() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     <span className="text-sm md:text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 md:px-2 md:py-0.5 rounded-full border border-black/30 text-black/70">{ev.category}</span>
+                    {(ev.tags ?? []).map(tag => (
+                      <span key={tag} className="text-sm md:text-[11px] font-semibold px-2.5 py-1 md:px-2 md:py-0.5 rounded-full bg-black/5 text-black/60">{tag}</span>
+                    ))}
                     {ev.isRecurring && ev.recurrenceLabel && (
                       <span className="text-sm md:text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 md:px-2 md:py-0.5 rounded-full bg-black/10 text-black/70">{ev.recurrenceLabel}</span>
                     )}

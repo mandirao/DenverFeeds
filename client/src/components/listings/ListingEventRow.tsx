@@ -34,6 +34,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
   const calendarUrl = createCalendarUrl(event);
   const location = event.neighborhood ? `${event.venue}, ${event.neighborhood}` : event.venue;
   const category = config.getCategory(event);
+  const tags = config.getTags?.(event) ?? [];
   const EditModal = config.EditModal;
   const titleModifier = event.isRecurring ? event.instanceTitles?.[event.dateStart] : undefined;
   const displayName = titleModifier ? `${event.name}: ${titleModifier}` : event.name;
@@ -231,7 +232,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
             )}
 
             {category && (
-              <span className="italic"> {category}.</span>
+              <span className="italic"> {category}{tags.length > 0 ? ` — ${tags.join(", ")}` : ""}.</span>
             )}
 
             {event.price && (
