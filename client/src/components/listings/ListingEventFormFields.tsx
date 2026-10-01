@@ -214,14 +214,21 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
             const next = selected.includes(tag) ? selected.filter(t => t !== tag) : [...selected, tag];
             setForm(f => ({ ...f, [fieldKey]: next } as Partial<TInsert>));
           };
+          // Joining every selected tag can make the trigger's intrinsic min-content
+          // width exceed the field, which (absent min-w-0 below) would otherwise
+          // drag the whole modal wider. Summarize past 2 tags so the label always
+          // fits; min-w-0 is the actual width guard, this just keeps it readable.
+          const tagSummary = selected.length === 0 ? "What's it about?"
+            : selected.length <= 2 ? selected.join(", ")
+            : `${selected.slice(0, 2).join(", ")}, +${selected.length - 2} more`;
           return (
-            <Field label={label} htmlFor={idFor(fieldKey)} className="flex-1">
+            <Field label={label} htmlFor={idFor(fieldKey)} className="flex-1 min-w-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button type="button" id={idFor(fieldKey)}
-                    className={cn(controlBase, "flex w-full items-center justify-between gap-2 text-left font-normal")}>
-                    <span className="truncate text-field-foreground">
-                      {selected.length > 0 ? selected.join(", ") : "What's it about?"}
+                    className={cn(controlBase, "flex w-full min-w-0 items-center justify-between gap-2 text-left font-normal")}>
+                    <span className="truncate min-w-0 text-field-foreground">
+                      {tagSummary}
                     </span>
                     <ChevronDown className="size-4 shrink-0 opacity-50" />
                   </button>

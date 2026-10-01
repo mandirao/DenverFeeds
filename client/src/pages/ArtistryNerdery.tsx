@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { artCategories, artTopicTags, denverProperNeighborhoods, denverMetroSuburbs, frontRangeCities, type ArtEvent, type InsertArtEvent } from "@shared/schema";
 import { Telescope, Plus, Sparkles, List, MoreVertical, ImageIcon, FileText, ChevronDown, Calendar, CalendarDays, ChevronLeft, ChevronRight, ArrowUpDown, Check, Search, X } from "lucide-react";
@@ -614,11 +614,15 @@ export default function ArtistryNerdery() {
                         ? "bg-white text-black border-black"
                         : "bg-black text-[#FEABDA] border-white md:bg-[#FEABDA] md:text-black md:border-black md:hover:border-white"
                     }`} style={{ width: "132px" }}>
-                      <span className="truncate">{filterTags.length > 0 ? `Topics (${filterTags.length})` : "Topics"}</span>
+                      <span className="truncate">{filterTags.length > 0 ? `Topics (${filterTags.length})` : "All Topics"}</span>
                       <ChevronDown className="h-4 w-4 ml-auto opacity-50 flex-shrink-0" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="max-h-[340px] overflow-y-auto">
+                    <DropdownMenuItem onSelect={e => { e.preventDefault(); setFilterTags([]); }}>
+                      All Topics
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     {artTopicTags.map(tag => (
                       <DropdownMenuCheckboxItem
                         key={tag}
@@ -744,6 +748,9 @@ export default function ArtistryNerdery() {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
+
+                {/* Vertical separator */}
+                <div className="h-6 w-px bg-white md:bg-black opacity-40 mx-1 flex-shrink-0" />
 
                 {/* Cheap Thrills toggle — events at $25 or less (parsed from
                     the free-text price field; see isCheapThrills). */}
