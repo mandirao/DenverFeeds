@@ -91,7 +91,7 @@ const artFormConfig: ListingFormConfig<InsertArtEvent> = {
   dialogBg: AN_BG,
 
   categoryFieldKey: "category",
-  categoryLabel: "Category",
+  categoryLabel: "Format",
   categoryOptions: artCategories,
   topicTags: {
     fieldKey: "tags",
@@ -192,7 +192,7 @@ const artFormConfig: ListingFormConfig<InsertArtEvent> = {
     if (!form.venue?.trim())     return { field: "venue",     label: "Venue" };
     if (!form.dateStart?.trim()) return { field: "dateStart", label: "Start date" };
     if (!form.emoji?.trim())     return { field: "emoji",     label: "Emoji" };
-    if (!form.category?.trim())  return { field: "category",  label: "Category" };
+    if (!form.category?.trim())  return { field: "category",  label: "Format" };
     return null;
   },
   BLANK: {
@@ -588,24 +588,24 @@ export default function ArtistryNerdery() {
                 )}
                 {/* Vertical separator */}
                 <div className="h-6 w-px bg-white md:bg-black opacity-40 mx-1 flex-shrink-0" />
-                {/* Category filter */}
+                {/* Format filter */}
                 <Select value={filterCategory} onValueChange={setFilterCategory}>
                   <SelectTrigger className={`rounded-full border text-sm h-10 md:h-8 px-3 flex-shrink-0 ${
                     filterCategory !== "all"
                       ? "bg-white text-black border-black"
                       : "bg-black text-[#FEABDA] border-white md:bg-[#FEABDA] md:text-black md:border-black md:hover:border-white"
                   }`} style={{ width: "160px" }}>
-                    <SelectValue placeholder="Category" />
+                    <SelectValue placeholder="Format" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="all">All Formats</SelectItem>
                     {artCategories.map(c => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
-                {/* Topics filter — multi-select, orthogonal to Category (format).
+                {/* Topics filter — multi-select, orthogonal to Format.
                     e.g. Talks & Lectures + "Film" surfaces film talks specifically. */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
