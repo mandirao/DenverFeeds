@@ -35,6 +35,9 @@ export interface ListingEventBase {
    * on — null/empty means every day in [dateStart, dateEnd] counts. See
    * shared/schema.ts's activeWeekdays column comment. */
   activeWeekdays?: number[] | null;
+  /** Set by the "End series" row action — see shared/schema.ts's
+   * seriesEndDate column comment. */
+  seriesEndDate?: string | null;
   /** Set only on occurrences produced by expandRecurringEvents — the row's
    * real persisted dateStart (the recurrence anchor), distinct from this
    * particular occurrence's computed date living in `dateStart` itself. */

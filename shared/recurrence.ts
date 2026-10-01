@@ -380,6 +380,11 @@ export interface RecurringEventLike {
    * real — only meaningful alongside monthlyMode 'tbd'. See isDateUnverified
    * below. */
   verifiedThroughDate?: string | null;
+  /** Set by the "End series" row action (shared/schema.ts) — no occurrence
+   * on or after this date is generated, regardless of whether the row has a
+   * structured recurrenceRule or is still on the legacy keyword-matched
+   * fallback below. Independent of recurrenceRule.until. */
+  seriesEndDate?: string | null;
 }
 
 export function expandRecurringEvents<T extends RecurringEventLike>(events: T[]): T[] {
@@ -417,6 +422,12 @@ export function expandRecurringEvents<T extends RecurringEventLike>(events: T[])
       isDateUnverified: ev.recurrenceRule?.monthlyMode === 'tbd' && dateStart !== ev.verifiedThroughDate,
     } as T);
 
+    // "End series" cutoff (shared/schema.ts's seriesEndDate) — applies
+    // uniformly to both the structured and legacy-fallback paths below, so
+    // ending a series works even for rows that never got a structured
+    // recurrenceRule. Independent of recurrenceRule.until.
+    const withinSeriesEnd = (d: string) => !ev.seriesEndDate || d <= ev.seriesEndDate;
+
     // Structured rule present — use the real per-freq date math instead of
     // the legacy keyword-matched fallback below. Annual/quarterly get only 1
     // edition ahead (not 2) so those can't ever surface something up to two
@@ -425,7 +436,7 @@ export function expandRecurringEvents<T extends RecurringEventLike>(events: T[])
     if (ev.recurrenceRule) {
       const count = (ev.recurrenceRule.freq === 'annual' || ev.recurrenceRule.freq === 'quarterly') ? 1 : 2;
       const dates = computeOccurrences(ev.recurrenceRule, ev.dateStart, todayStr, count, ev.excludedDates ?? undefined);
-      for (const d of dates) result.push(makeOccurrence(d));
+      for (const d of dates) { if (withinSeriesEnd(d)) result.push(makeOccurrence(d)); }
       continue;
     }
 
@@ -440,20 +451,20 @@ export function expandRecurringEvents<T extends RecurringEventLike>(events: T[])
       const monthDay = ev.dateStart.slice(5);
       const yr = today.getFullYear();
       const thisYearOcc = `${yr}-${monthDay}`;
-      if (thisYearOcc >= todayStr) { if (!excludedSet.has(thisYearOcc)) result.push(makeOccurrence(thisYearOcc)); }
-      else if (today.getMonth() === 0) { const occ = `${yr + 1}-${monthDay}`; if (!excludedSet.has(occ)) result.push(makeOccurrence(occ)); }
+      if (thisYearOcc >= todayStr) { if (!excludedSet.has(thisYearOcc) && withinSeriesEnd(thisYearOcc)) result.push(makeOccurrence(thisYearOcc)); }
+      else if (today.getMonth() === 0) { const occ = `${yr + 1}-${monthDay}`; if (!excludedSet.has(occ) && withinSeriesEnd(occ)) result.push(makeOccurrence(occ)); }
       continue;
     }
     if (type === 'quarterly') {
       let d = ev.dateStart;
       while (d < todayStr) d = addCalMonths(d, 3);
-      if (!excludedSet.has(d)) result.push(makeOccurrence(d));
+      if (!excludedSet.has(d) && withinSeriesEnd(d)) result.push(makeOccurrence(d));
       continue;
     }
     if (type === 'irregular') {
       let d = ev.dateStart;
       while (d < todayStr) d = addCalMonths(d, 1);
-      if (!excludedSet.has(d)) result.push(makeOccurrence(d));
+      if (!excludedSet.has(d) && withinSeriesEnd(d)) result.push(makeOccurrence(d));
       continue;
     }
     const periodDays = type === 'weekly' ? 7 : type === 'biweekly' ? 14 : null;
@@ -461,7 +472,7 @@ export function expandRecurringEvents<T extends RecurringEventLike>(events: T[])
     if (periodDays) { while (d < todayStr) d = addCalDays(d, periodDays); }
     else { while (d < todayStr) d = addCalMonths(d, 1); }
     for (let i = 0; i < 2; i++) {
-      if (!excludedSet.has(d)) result.push(makeOccurrence(d));
+      if (!excludedSet.has(d) && withinSeriesEnd(d)) result.push(makeOccurrence(d));
       if (i < 1) d = periodDays ? addCalDays(d, periodDays) : addCalMonths(d, 1);
     }
   }

@@ -10,7 +10,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { MoreVertical } from "lucide-react";
 import {
   ensureHttps, formatDateRange, formatTime, createSearchUrl, createCalendarUrl,
-  formatRecurrenceCadence, announcedTooltipText, SELLOUT_LIKELY_THRESHOLD,
+  formatRecurrenceCadence, announcedTooltipText, SELLOUT_LIKELY_THRESHOLD, addCalDays,
 } from "@/lib/eventUtils";
 import type { ListingEventBase, ListingRowConfig } from "@/lib/listingFeedConfig";
 
@@ -26,6 +26,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
   const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEndSeriesConfirm, setShowEndSeriesConfirm] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [showRequesterTooltip, setShowRequesterTooltip] = useState(false);
   const [showSelloutTooltip, setShowSelloutTooltip] = useState(false);
@@ -103,9 +104,22 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
     onError: () => toast({ title: "Error", description: "Couldn't update this event.", variant: "destructive" }),
   });
 
+  // Ends the series as of the clicked occurrence — this date and everything
+  // after it stops appearing, but the row (and any already-past occurrences)
+  // is left alone. See shared/schema.ts's seriesEndDate.
+  const endSeriesMutation = useMutation({
+    mutationFn: () =>
+      apiRequest({ endpoint: `${config.apiPath}/${event.id}`, method: "PATCH", data: { seriesEndDate: addCalDays(event.dateStart, -1) } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [config.queryKey] });
+      toast({ title: "Series ended", description: `${event.name} won't show up again after this.` });
+    },
+    onError: () => toast({ title: "Error", description: "Couldn't end this series.", variant: "destructive" }),
+  });
+
   // Skips just this occurrence — the series' other dates are untouched. Used
-  // for one-off cancellations (a holiday closure) rather than deleting the
-  // whole recurring event, which "Delete entire series" below already does.
+  // for one-off cancellations (a holiday closure) rather than ending the
+  // whole recurring series, which endSeriesMutation above already does.
   const excludedDatesMutation = useMutation({
     mutationFn: (nextExcludedDates: string[]) =>
       apiRequest({ endpoint: `${config.apiPath}/${event.id}`, method: "PATCH", data: { excludedDates: nextExcludedDates } }),
@@ -366,10 +380,11 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
                 className="text-red-500 focus:text-red-500 text-sm py-1.5 focus:bg-gray-200 hover:bg-gray-200 rounded-none"
                 onClick={() => {
                   setIsMenuOpen(false);
-                  setTimeout(() => setShowDeleteConfirm(true), 100);
+                  if (event.isRecurring) setTimeout(() => setShowEndSeriesConfirm(true), 100);
+                  else setTimeout(() => setShowDeleteConfirm(true), 100);
                 }}
               >
-                {event.isRecurring ? "Delete entire series" : "Delete event"}
+                {event.isRecurring ? "End series" : "Delete event"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -399,6 +414,29 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
               className="bg-black text-white border-2 border-black rounded-none font-black text-xs uppercase hover:text-red-400 transition-colors"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* End series confirm */}
+      <AlertDialog open={showEndSeriesConfirm} onOpenChange={setShowEndSeriesConfirm}>
+        <AlertDialogContent className="border-2 border-black rounded-none" style={{ backgroundColor: config.dialogBg }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl uppercase">End series</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              This and all future dates for <strong>{event.name}</strong> will stop showing up in the feed. Past dates aren't affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-2 border-black rounded-none font-black text-xs uppercase hover:bg-black hover:text-white transition-colors">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => endSeriesMutation.mutate()}
+              className="bg-black text-white border-2 border-black rounded-none font-black text-xs uppercase hover:text-red-400 transition-colors"
+            >
+              End series
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

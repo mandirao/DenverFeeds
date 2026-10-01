@@ -549,6 +549,14 @@ export const foodEvents = pgTable("food_events", {
   // same as before this field existed. Orthogonal to recurrenceRule, which
   // covers indefinite series instead of a bounded span.
   activeWeekdays: jsonb("active_weekdays").$type<number[]>(),
+  // Set by the "End series" row action — caps the series so no occurrence
+  // on or after this date is generated, while the row (and its past
+  // occurrences) stays intact. Independent of recurrenceRule.until (a
+  // user-authored end typed into the recurrence picker): this field works
+  // uniformly even for legacy rows that only have a free-text
+  // recurrenceLabel and no structured recurrenceRule to attach `until` to.
+  // See expandRecurringEvents.
+  seriesEndDate: text("series_end_date"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -566,6 +574,7 @@ export const insertFoodEventSchema = createInsertSchema(foodEvents).omit({
   excludedDates: z.array(z.string()).nullable().optional(),
   verifiedThroughDate: z.string().nullable().optional(),
   activeWeekdays: z.array(z.number().min(0).max(6)).nullable().optional(),
+  seriesEndDate: z.string().nullable().optional(),
 });
 
 export type InsertFoodEvent = z.infer<typeof insertFoodEventSchema>;
@@ -641,6 +650,8 @@ export const artEvents = pgTable("art_events", {
   verifiedThroughDate: text("verified_through_date"),
   // See foodEvents.activeWeekdays — same meaning here.
   activeWeekdays: jsonb("active_weekdays").$type<number[]>(),
+  // See foodEvents.seriesEndDate — same meaning here.
+  seriesEndDate: text("series_end_date"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -659,6 +670,7 @@ export const insertArtEventSchema = createInsertSchema(artEvents).omit({
   excludedDates: z.array(z.string()).nullable().optional(),
   verifiedThroughDate: z.string().nullable().optional(),
   activeWeekdays: z.array(z.number().min(0).max(6)).nullable().optional(),
+  seriesEndDate: z.string().nullable().optional(),
 });
 
 export type InsertArtEvent = z.infer<typeof insertArtEventSchema>;
