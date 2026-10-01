@@ -699,7 +699,7 @@ export default function AmsueBouche() {
       <main className={`container mx-auto px-4 py-6 flex-1 transition-all duration-200 ${viewMode === "calendar" ? (isMobile ? "flex flex-col min-h-0" : "") : "max-w-3xl"}`}>
 
         {/* Recent events banner - prioritize "today", fall back to "this week", else hide. Hidden on desktop in calendar view. */}
-        {!isLoading && events.length > 0 && sortBy !== "added" && (() => {
+        {!isLoading && events.length > 0 && !hasActiveFilters && (() => {
           const todayCount = events.filter(e => getAddedTimeCategory(e.createdAt ?? null) === 'today').length;
           const weekCount = todayCount + events.filter(e => getAddedTimeCategory(e.createdAt ?? null) === 'this_week').length;
           const count = todayCount > 0 ? todayCount : weekCount;

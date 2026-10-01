@@ -1006,7 +1006,7 @@ export default function Home() {
 
       <main className={`container mx-auto px-4 py-8 transition-all duration-200 ${viewMode === "calendar" ? (isMobile ? "flex-1 flex flex-col min-h-0" : "") : "max-w-3xl"}`}>
         {/* Recent Events Banner - prioritize "today", fall back to "this week", else hide. Hidden on desktop in calendar view to give the calendar more room. */}
-        {!isLoading && !error && events.length > 0 && filters.status === "all" && filters.sortBy !== "just-added" && (() => {
+        {!isLoading && !error && events.length > 0 && !hasActiveFilters && (() => {
           const todayCount = events.filter(event => getAddedTimeCategory(event.createdAt) === 'today').length;
           const weekCount = todayCount + events.filter(event => getAddedTimeCategory(event.createdAt) === 'this_week').length;
           const count = todayCount > 0 ? todayCount : weekCount;
