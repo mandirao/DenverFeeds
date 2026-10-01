@@ -619,7 +619,10 @@ export default function ArtistryNerdery() {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="max-h-[340px] overflow-y-auto">
-                    <DropdownMenuItem onSelect={e => { e.preventDefault(); setFilterTags([]); }}>
+                    <DropdownMenuItem
+                      onSelect={e => { e.preventDefault(); setFilterTags([]); }}
+                      className="bg-transparent pl-8 text-sm font-normal normal-case tracking-normal text-popover-foreground focus:bg-accent focus:text-accent-foreground"
+                    >
                       All Topics
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
