@@ -59,6 +59,7 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
     excludedDates: event.excludedDates ?? [],
     verifiedThroughDate: event.verifiedThroughDate ?? null,
     activeWeekdays: event.activeWeekdays ?? null,
+    ...(config.topicTags ? { [config.topicTags.fieldKey]: (event as any)[config.topicTags.fieldKey] ?? [] } : {}),
   } as Partial<TInsert>);
   const currentOccurrenceDate = (form.dateStart as string) || event.dateStart;
   const [orphanConfirm, setOrphanConfirm] = useState<{
@@ -83,6 +84,9 @@ export function EditListingEventModal<T extends ListingEventBase, TInsert extend
       || JSON.stringify(form.excludedDates ?? []) !== JSON.stringify(event.excludedDates ?? [])
       || (form.verifiedThroughDate ?? null) !== (event.verifiedThroughDate ?? null)
       || JSON.stringify(form.activeWeekdays ?? []) !== JSON.stringify(event.activeWeekdays ?? [])
+      || (config.topicTags
+        ? JSON.stringify(form[config.topicTags.fieldKey] ?? []) !== JSON.stringify((event as any)[config.topicTags.fieldKey] ?? [])
+        : false)
       || instanceNote !== originalNote
       || instanceTitle !== originalTitle;
   };
