@@ -603,7 +603,7 @@ export const artTopicTags = [
   "Architecture", "Art", "Astronomy",
   "Birding", "Craft", "Culture",
   "Family", "Film", "Food & Drink", "Fundraisers & Causes",
-  "History", "Horror", "LGBTQ+",
+  "History", "Holiday", "Horror", "LGBTQ+",
   "Literature", "Music", "Nature & Outdoors", "Pets",
   "Photography", "Politics", "Science", "Sport", "Tech", "Trains", "Wellness", "Writing",
 ] as const;

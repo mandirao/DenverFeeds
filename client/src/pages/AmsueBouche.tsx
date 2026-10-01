@@ -48,7 +48,7 @@ const DAY_LABELS: Record<string, string> = {
   "0": "Sundays", "1": "Mondays", "2": "Tuesdays", "3": "Wednesdays", "4": "Thursdays", "5": "Fridays", "6": "Saturdays",
 };
 const DURATION_LABELS: Record<string, string> = {
-  "one-time": "One Time", "limited-run": "Limited Run", annual: "Annually", monthly: "Monthly", weekly: "Weekly", quarterly: "Quarterly", recurring: "All Recurring",
+  "all-limited": "All Limited", "one-time": "One Time", "limited-run": "Limited Run", annual: "Annually", monthly: "Monthly", weekly: "Weekly", quarterly: "Quarterly", recurring: "All Recurring",
 };
 
 // ── Event Row (inline sentence style, matching Setlist Social) ────────────────
@@ -347,6 +347,7 @@ export default function AmsueBouche() {
       if (filterDuration === "quarterly" && recurrenceType !== "quarterly") return false;
       if (filterDuration === "limited-run" && (isRecurring || !hasSpan)) return false;
       if (filterDuration === "one-time" && (isRecurring || hasSpan)) return false;
+      if (filterDuration === "all-limited" && isRecurring && recurrenceType !== "annual" && recurrenceType !== "irregular") return false;
     }
     return true;
   });
@@ -655,14 +656,21 @@ export default function AmsueBouche() {
                     <SelectValue placeholder="Duration" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Durations</SelectItem>
-                    <SelectItem value="one-time">One Time</SelectItem>
-                    <SelectItem value="limited-run">Limited Run</SelectItem>
-                    <SelectItem value="annual">Annually</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="quarterly">Quarterly</SelectItem>
-                    <SelectItem value="recurring">All Recurring</SelectItem>
+                    <SelectGroup>
+                      <SelectItem value="all">All Durations</SelectItem>
+                      <SelectItem value="all-limited">All Limited</SelectItem>
+                      <SelectItem value="recurring">All Recurring</SelectItem>
+                    </SelectGroup>
+                    <SelectSeparator />
+                    <SelectGroup>
+                      <SelectLabel className="text-[10px] uppercase tracking-wider text-gray-400 px-2 pb-0.5">Specific</SelectLabel>
+                      <SelectItem value="one-time">One Time</SelectItem>
+                      <SelectItem value="limited-run">Limited Run</SelectItem>
+                      <SelectItem value="annual">Annually</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="quarterly">Quarterly</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
 
