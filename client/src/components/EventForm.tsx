@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/popover";
 import { Loader2, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { aiErrorToast } from "@/lib/aiErrors";
 import { useToast } from "@/hooks/use-toast";
 
 // Function to check if string contains only emoji characters
@@ -221,13 +222,7 @@ export default function EventForm({
         });
       }
     } catch (error) {
-      console.error("Error generating event data:", error);
-      toast({
-        title: "Error generating content",
-        description:
-          "An unexpected error occurred. Please try again or enter manually.",
-        variant: "destructive",
-      });
+      toast({ ...aiErrorToast(error, "Error generating content"), variant: "destructive" });
     } finally {
       setIsGeneratingAI(false);
     }

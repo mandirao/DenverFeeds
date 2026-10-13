@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { apiRequest } from "@/lib/queryClient";
 import { 
   ArrowLeft, 
@@ -93,7 +94,23 @@ interface DiscoveryStats {
   };
 }
 
+// Every endpoint this page calls is admin-only server-side; non-admins get a
+// pointer to sign in instead of a page full of 403s.
 export default function DiscoveryAdmin() {
+  const isAdmin = useIsAdmin();
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-[#FE6B41] flex items-center justify-center px-4">
+        <p className="text-black font-medium">
+          Admin only. <Link href="/admin" className="underline">Sign in</Link>
+        </p>
+      </div>
+    );
+  }
+  return <DiscoveryAdminPanel />;
+}
+
+function DiscoveryAdminPanel() {
   const [newArtistName, setNewArtistName] = useState("");
   const [newArtistGenre, setNewArtistGenre] = useState("");
   const [newArtistPriority, setNewArtistPriority] = useState<'high' | 'medium' | 'low'>('medium');
@@ -107,7 +124,7 @@ export default function DiscoveryAdmin() {
   const { data: serviceHealth } = useQuery({
     queryKey: ["/api/admin/service-health"],
     queryFn: async () => {
-      const r = await fetch("/api/admin/service-health");
+      const r = await fetch("/api/admin/service-health", { credentials: "include" });
       return r.json();
     },
     refetchInterval: 60_000, // re-check every minute

@@ -193,33 +193,14 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserBySessionId(sessionId: string): Promise<User | undefined> {
-    if (!sessionId) {
-      console.log("No sessionId provided to getUserBySessionId");
-      return undefined;
-    }
-    
-    console.log(`Looking up user by sessionId: ${sessionId}`);
+    if (!sessionId) return undefined;
     const result = await db.select().from(users).where(eq(users.sessionId, sessionId));
-    
-    if (result.length > 0) {
-      console.log(`Found user with ID: ${result[0].id} for sessionId: ${sessionId}`);
-      return result[0];
-    } else {
-      console.log(`No user found for sessionId: ${sessionId}`);
-      return undefined;
-    }
+    return result[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    console.log(`Creating new user with data:`, JSON.stringify(insertUser));
-    try {
-      const result = await db.insert(users).values(insertUser).returning();
-      console.log(`Successfully created user with ID: ${result[0].id}`);
-      return result[0];
-    } catch (error) {
-      console.error('Error creating user:', error);
-      throw error;
-    }
+    const result = await db.insert(users).values(insertUser).returning();
+    return result[0];
   }
 
   async getAllEvents(): Promise<Event[]> {

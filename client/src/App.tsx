@@ -12,6 +12,7 @@ import AmsueBouche from "@/pages/AmsueBouche";
 import BestOfDenver from "@/pages/BestOfDenver";
 import ArtistryNerdery from "@/pages/ArtistryNerdery";
 import NotFound from "@/pages/not-found";
+import AdminLogin from "@/pages/AdminLogin";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { onAmuseBouche, onArtistryNerdistry } from "@/lib/siteConfig";
 import { initPostHog, capturePageView } from "@/lib/posthog";
@@ -57,6 +58,7 @@ function Router() {
         <Route path="/amuse-bouche" component={AmsueBouche} />
         <Route path="/best-of-denver" component={BestOfDenver} />
         <Route path="/artistry-nerdistry" component={ArtistryNerdery} />
+        <Route path="/admin" component={AdminLogin} />
         <Route component={NotFound} />
       </Switch>
     </>

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import Papa from "papaparse";
@@ -23,6 +24,7 @@ export function Footer() {
   const [csvError, setCsvError] = useState<string | null>(null);
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
   const qc = useQueryClient();
 
   // Add multiple events (CSV) mutation
@@ -204,10 +206,14 @@ export function Footer() {
           <Link href="/add" className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
             Add a Show
           </Link>
-          <span className="text-black opacity-40">|</span>
-          <button onClick={() => setCsvModalOpen(true)} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
-            Upload Events CSV
-          </button>
+          {isAdmin && (
+            <>
+              <span className="text-black opacity-40">|</span>
+              <button onClick={() => setCsvModalOpen(true)} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
+                Upload Events CSV
+              </button>
+            </>
+          )}
         </div>
         <span className="text-sm text-black whitespace-nowrap">© {new Date().getFullYear()} Setlist Social Feed</span>
       </div>

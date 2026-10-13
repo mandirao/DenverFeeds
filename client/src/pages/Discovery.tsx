@@ -54,7 +54,7 @@ export default function Discovery() {
     mutationFn: async (options: { limit: number; dryRun: boolean }) => {
       const response = await fetch('/api/discovery/run', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
         body: JSON.stringify(options),
       });
       

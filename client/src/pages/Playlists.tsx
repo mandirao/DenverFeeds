@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { ExternalLink, Plus, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -181,6 +182,7 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const monthTag = getPlaylistMonthTag(playlist);
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -275,6 +277,7 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
                     <span className={`${monthTag.color} text-xs font-bold uppercase px-2 py-1`}>
                       {monthTag.month}
                     </span>
+                    {isAdmin && (
                     <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -300,6 +303,7 @@ function PlaylistCard({ playlist }: { playlist: Playlist }) {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    )}
                   </div>
                 </div>
 
@@ -553,6 +557,7 @@ function AddPlaylistForm() {
 }
 
 export default function Playlists() {
+  const isAdmin = useIsAdmin();
   const { data: playlistsData = [], isLoading, error } = useQuery<Playlist[]>({
     queryKey: ['/api/playlists'],
     // The default queryFn will automatically make the API call
@@ -621,9 +626,11 @@ export default function Playlists() {
         )}
 
         {/* Add Playlist Button */}
-        <div className="mb-6 flex justify-start">
-          <AddPlaylistForm />
-        </div>
+        {isAdmin && (
+          <div className="mb-6 flex justify-start">
+            <AddPlaylistForm />
+          </div>
+        )}
 
         {/* Queue Playlist - Always at Top */}
         {!isLoading && !error && queuePlaylist && (

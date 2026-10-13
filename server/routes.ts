@@ -10,6 +10,7 @@ import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
 import { spotifyService } from "./spotify";
 import { llmService } from "./llm-service";
+import { aiGuard } from "./ai-guard";
 
 // Shared CRUD route registration for the Food and Art event verticals — they
 // have identical route shapes (list/create/update/delete/duplicate/upvote).
@@ -208,8 +209,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Expected array of events" });
       }
 
-      console.log("Received bulk events:", JSON.stringify(req.body));
-
       const results = {
         created: 0,
         skipped: 0,
@@ -219,8 +218,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const item of req.body) {
         try {
-          console.log("Processing item:", JSON.stringify(item));
-          
           // Enhanced date validation and parsing
           if (item.date && typeof item.date === 'string') {
             try {
@@ -347,12 +344,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Now use Zod to validate the event data
           const eventData = insertEventSchema.parse(item);
-          console.log("Parsed event data:", JSON.stringify(eventData));
           
           // Check for duplicate
           const isDuplicate = await storage.checkDuplicateEvent(eventData);
           if (isDuplicate) {
-            console.log("Duplicate event found:", JSON.stringify(item));
             results.skipped++;
             results.errors.push(`Duplicate event: ${item.artist} at ${item.venue} on ${item.date}`);
             continue;
@@ -402,7 +397,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get user ID from session
-      // @ts-ignore - Session properties are added by express-session
       const sessionId = req.session?.userId;
 
       // Visitors without a session can't have upvoted anything; don't create
@@ -417,7 +411,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const hasUpvoted = await storage.hasUserUpvoted(eventId, user.id);
-      console.log(`User ${user.id} has upvoted event ${eventId}: ${hasUpvoted}`);
       res.json({ hasUpvoted });
     } catch (error) {
       console.error("Error checking upvote status:", error);
@@ -431,7 +424,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // concurrent traffic. One request per pageview instead of one per event.
   apiRouter.get("/upvoted-events", async (req, res) => {
     try {
-      // @ts-ignore - Session properties are added by express-session
       const sessionId = req.session?.userId;
 
       if (!sessionId) {
@@ -459,23 +451,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid event ID" });
       }
 
-      // Get user ID from session
-      // @ts-ignore - Session properties are added by express-session
+      // Anonymous visitor ID, assigned by app.ts on every non-GET request
       const sessionId = req.session?.userId;
-      
-      console.log(`Upvote request - Session ID: ${sessionId}`);
-      
+      if (!sessionId) {
+        return res.status(400).json({ message: "Missing visitor session" });
+      }
+
       // Get or create the user
       let user = await storage.getUserBySessionId(sessionId);
       if (!user) {
-        console.log(`Creating new user for session ID: ${sessionId}`);
         user = await storage.createUser({
           username: `user-${Date.now()}`,
           sessionId: sessionId
         });
-        console.log(`Created user with ID: ${user.id}`);
-      } else {
-        console.log(`Found existing user ID: ${user.id} for session ID: ${sessionId}`);
       }
 
       const event = await storage.getEventById(eventId);
@@ -1276,7 +1264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI Artist Analysis route
-  apiRouter.post("/ai/analyze-artist", async (req, res) => {
+  apiRouter.post("/ai/analyze-artist", aiGuard("analyze-artist"), async (req, res) => {
     try {
       const { artist } = req.body;
       
@@ -1284,19 +1272,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Artist name is required" });
       }
 
-      console.log(`Analyzing artist: ${artist}`);
-      
       const analysis = await llmService.analyzeArtist(artist);
-      
-      console.log(`AI Analysis result for ${artist}:`, analysis);
       
       res.json(analysis);
     } catch (error) {
       console.error("Error analyzing artist:", error);
-      res.status(500).json({ 
-        message: "Failed to analyze artist",
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
+      res.status(500).json({ message: "Failed to analyze artist" });
     }
   });
 
@@ -1494,50 +1475,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Refresh playlist metadata from Spotify
-  apiRouter.post("/playlists/:id/refresh", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid playlist ID" });
-      }
-
-      const existingPlaylist = await storage.getPlaylistById(id);
-      if (!existingPlaylist) {
-        return res.status(404).json({ message: "Playlist not found" });
-      }
-
-      if (!existingPlaylist.spotifyId) {
-        return res.status(400).json({ message: "Playlist has no Spotify ID to refresh from" });
-      }
-
-      // Import the spotify service here to avoid circular dependencies
-      const { spotifyService } = await import("./spotify");
-      
-      try {
-        console.log(`Refreshing Spotify metadata for playlist ID: ${existingPlaylist.spotifyId}`);
-        const spotifyData = await spotifyService.getPlaylistDetails(existingPlaylist.spotifyId);
-        
-        const refreshedPlaylist = await storage.updatePlaylist(id, {
-          title: spotifyData.title,
-          description: spotifyData.description,
-          coverUrl: spotifyData.coverUrl,
-          trackCount: spotifyData.trackCount,
-          followerCount: spotifyData.followerCount,
-        });
-        
-        console.log(`Successfully refreshed playlist: ${spotifyData.title}`);
-        res.json(refreshedPlaylist);
-      } catch (spotifyError) {
-        console.error("Spotify API error during refresh:", spotifyError);
-        res.status(400).json({ message: "Failed to fetch updated data from Spotify" });
-      }
-    } catch (error) {
-      console.error("Error refreshing playlist:", error);
-      res.status(500).json({ message: "Server error refreshing playlist" });
-    }
-  });
-
   app.use("/api", apiRouter);
 
   // Discovered Artists API routes
@@ -1584,30 +1521,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add sample discovered artist for testing
-  app.post("/api/test-add-sample-artist", async (req, res) => {
-    try {
-      const sampleArtist = await storage.createDiscoveredArtist({
-        name: "Test Discovery Artist",
-        genre: "Rock & Alternative",
-        source: "pitchfork_best_new",
-        description: "A sample artist discovered from Pitchfork's Best New Albums for testing the review system",
-        confidence: 0.85,
-        rawData: { 
-          url: "https://pitchfork.com/reviews/albums/test",
-          reviewText: "Sample review text for testing",
-          albumTitle: "Sample Album Title",
-          rating: 8.2
-        },
-        isReviewed: false
-      });
-      res.json(sampleArtist);
-    } catch (error) {
-      console.error("Failed to create sample artist:", error);
-      res.status(500).json({ error: "Failed to create sample artist" });
-    }
-  });
-
   // ── Amuse Bouche – Food Events ───────────────────────────────────────────
   registerListingCrudRoutes(apiRouter, {
     path: "food-events",
@@ -1623,7 +1536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI blurb parser for Amuse Bouche
-  apiRouter.post("/ai/parse-blurb", async (req, res) => {
+  apiRouter.post("/ai/parse-blurb", aiGuard("parse-blurb"), async (req, res) => {
     try {
       const { blurb, imageBase64, imageMediaType, fileName } = req.body;
       if (!blurb && !imageBase64) {
@@ -1653,7 +1566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI blurb parser for Artistry & Nerdery
-  apiRouter.post("/ai/parse-art-blurb", async (req, res) => {
+  apiRouter.post("/ai/parse-art-blurb", aiGuard("parse-art-blurb"), async (req, res) => {
     try {
       const { blurb, imageBase64, imageMediaType, fileName } = req.body;
       if (!blurb && !imageBase64) {
@@ -1668,7 +1581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI content refresh for art events
-  apiRouter.post("/ai/redo-art-event-content", async (req, res) => {
+  apiRouter.post("/ai/redo-art-event-content", aiGuard("redo-art-event-content"), async (req, res) => {
     try {
       const { name, venue, category, tags, isRecurring, recurrenceLabel, recurrenceRule, dateStart, dateEnd, startTime, price, ticketUrl, neighborhood, currentSummary, currentInstanceNote, currentInstanceTitle } = req.body;
       if (!name) return res.status(400).json({ message: "Event name is required" });
@@ -1697,7 +1610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  apiRouter.post("/ai/redo-food-event-content", async (req, res) => {
+  apiRouter.post("/ai/redo-food-event-content", aiGuard("redo-food-event-content"), async (req, res) => {
     try {
       const { name, venue, cuisine, isRecurring, recurrenceLabel, recurrenceRule, dateStart, dateEnd, startTime, price, ticketUrl, neighborhood, currentSummary, currentInstanceNote, currentInstanceTitle } = req.body;
       if (!name) return res.status(400).json({ message: "Event name is required" });
@@ -1726,7 +1639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI fill for restaurant fields
-  app.post("/api/ai/fill-restaurant", async (req, res) => {
+  app.post("/api/ai/fill-restaurant", aiGuard("fill-restaurant"), async (req, res) => {
     try {
       const { name, sourceUrl } = req.body;
       if (!name?.trim()) return res.status(400).json({ message: "Restaurant name is required" });

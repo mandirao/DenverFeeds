@@ -39,8 +39,27 @@ Copy `.env.example` to `.env` and fill in:
 | `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` | optional | Artist lookup enrichment |
 | `SERPER_API_KEY` | optional | Automated concert discovery web search |
 | `VITE_POSTHOG_KEY` | optional | PostHog analytics |
+| `AI_ANON_HOURLY_LIMIT_PER_VISITOR` | optional (default 20) | AI parser calls per visitor (IP) per hour |
+| `AI_ANON_DAILY_BUDGET_CENTS` | optional (default 200) | Estimated anonymous AI spend per Denver day; `0` turns anonymous AI off |
+| `LOGIN_ATTEMPTS_PER_HOUR` | optional (default 10) | Admin sign-in attempts per IP per hour |
 
 Production values are set as Vercel environment variables (`vercel env add …`), never committed.
+
+## Security model
+
+Three kinds of caller, resolved server-side on every request (`server/auth.ts`):
+
+- **Anonymous visitors** browse everything, upvote, and submit events (manually or with the AI parsers). No account needed.
+- **Admin**: one account, provisioned with `npx tsx --env-file=.env scripts/create-admin.ts <username>` (no signup UI). Sign in at `/admin` on each domain. Admin status is read from `users.role` in the database, never from the client.
+- **Members**: reserved for later; nothing grants this today.
+
+Every non-GET `/api` request requires admin **unless** it is on the public allowlist in `server/auth.ts` (`PUBLIC_WRITE_ROUTES`), and must send an `X-Requested-With` header (CSRF guard). `npm test` fails if a route's exposure changes.
+
+Anonymous AI parsing (`/api/ai/parse-blurb`, `/parse-art-blurb`, `/analyze-artist`) is limited per visitor and by a shared daily budget, both counted in Postgres so limits hold across serverless instances (`server/ai-guard.ts`). `npx tsx --env-file=.env scripts/ai-usage-report.ts` shows daily AI usage next to events actually created.
+
+## Tests
+
+`npm test` runs the security suite against a throwaway local Postgres (`embedded-postgres`) and a fake Anthropic API. It never touches the real database or makes paid calls.
 
 ## Local setup
 

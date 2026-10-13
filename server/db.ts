@@ -12,9 +12,12 @@ if (!process.env.DATABASE_URL) {
 // Node's default CA bundle, so opt out of CA verification rather than SSL itself.
 // Keep the per-instance pool small and release idle clients quickly: Supabase's
 // pooler caps concurrent clients, and on serverless many instances share that cap.
+// A local Postgres (tests, offline dev) doesn't speak TLS at all.
+const isLocalDatabase = /@(localhost|127\.0\.0\.1)[:/]/.test(process.env.DATABASE_URL);
+
 export const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: isLocalDatabase ? false : { rejectUnauthorized: false },
   max: 2,
   idleTimeoutMillis: 10_000,
   connectionTimeoutMillis: 8_000,

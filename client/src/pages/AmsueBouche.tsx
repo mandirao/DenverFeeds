@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { Link } from "wouter";
 import { siteUrls } from "@/lib/siteConfig";
 import { Button } from "@/components/ui/button";
@@ -255,6 +256,7 @@ export default function AmsueBouche() {
   });
 
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
   const qcMain = useQueryClient();
 
   const calDetailSoldOutMutation = useMutation({
@@ -969,6 +971,7 @@ export default function AmsueBouche() {
                       {ev.soldOut && (
                         <span className="text-xs md:text-[10px] font-black uppercase bg-black text-white px-2.5 py-1 md:px-2 md:py-0.5">SOLD OUT</span>
                       )}
+                      {isAdmin && (
                       <DropdownMenu open={calDetailMenuOpen} onOpenChange={setCalDetailMenuOpen}>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-11 w-11 md:h-9 md:w-9 p-0 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-black">
@@ -992,6 +995,7 @@ export default function AmsueBouche() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -1003,7 +1007,9 @@ export default function AmsueBouche() {
                   <div className="space-y-2 md:space-y-1">
                     <div className="flex items-center gap-2 text-base md:text-sm text-black font-semibold">
                       <span>📅</span>
-                      {ev.isDateUnverified ? (
+                      {ev.isDateUnverified && !isAdmin ? (
+                        <span>Date TBA</span>
+                      ) : ev.isDateUnverified ? (
                         <button
                           type="button"
                           onClick={() => setCalDetailEditOpen(true)}

@@ -70,7 +70,7 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
   setInstanceTitle: (s: string) => void;
   occurrenceDate?: string | null;
   redoLoading: boolean;
-  onRedoAI: () => void;
+  onRedoAI?: () => void;
   config: ListingFormConfig<TInsert>;
   mode: "add" | "edit";
   specificDatesState?: SpecificDatesState;
@@ -261,11 +261,13 @@ export function ListingEventFormFields<TInsert extends ListingInsertBase>({
             <span className="font-medium normal-case tracking-normal text-muted-foreground">recommended</span>
           </span>
           <div className="flex items-center gap-2.5">
-            <button type="button" onClick={onRedoAI} disabled={redoLoading}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-accent transition-opacity hover:opacity-80 disabled:opacity-40"
-              title={form.isRecurring ? "Search for this occurrence's latest details + polish description" : "Polish description with latest web info"}>
-              ✨ {redoLoading ? "Searching…" : "AI Refresh"}
-            </button>
+            {onRedoAI && (
+              <button type="button" onClick={onRedoAI} disabled={redoLoading}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-accent transition-opacity hover:opacity-80 disabled:opacity-40"
+                title={form.isRecurring ? "Search for this occurrence's latest details + polish description" : "Polish description with latest web info"}>
+                ✨ {redoLoading ? "Searching…" : "AI Refresh"}
+              </button>
+            )}
             <span className="text-xs tabular-nums text-muted-foreground">{(form.summary || "").length}/200</span>
           </div>
         </div>

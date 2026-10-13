@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb, real, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import type { RecurrenceRule } from "./recurrence";
@@ -272,6 +272,9 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password"),
   sessionId: text("session_id").unique(),
+  // 'visitor' (anonymous upvote identity), 'admin'. Checked server-side on
+  // every privileged request — never accepted from a client.
+  role: text("role").notNull().default("visitor"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -847,3 +850,27 @@ export const insertRestaurantSchema = createInsertSchema(restaurants).omit({
 export type InsertRestaurant = z.infer<typeof insertRestaurantSchema>;
 export type Restaurant = typeof restaurants.$inferSelect;
 export type Venue = typeof venues.$inferSelect;
+
+// ── Rate limits & AI usage ──────────────────────────────────────────────────
+// Shared counters so limits hold across serverless instances (an in-memory
+// counter would reset per instance). One row per (bucket, window), e.g.
+// ('ai-visitor:<hmac of IP>', '2026-10-13T17') or ('ai-anon-budget-cents',
+// '2026-10-13'). Incremented atomically with INSERT ... ON CONFLICT ...
+// RETURNING; rows are disposable after a few days (see server/rate-limit.ts).
+export const rateLimitCounters = pgTable("rate_limit_counters", {
+  bucket: text("bucket").notNull(),
+  windowKey: text("window_key").notNull(),
+  count: integer("count").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.bucket, t.windowKey] })]);
+
+// Aggregate daily counts per AI endpoint/actor/outcome for spotting abuse
+// (e.g. many parses with no matching new events). No submissions, IPs, or
+// session identifiers are stored here.
+export const aiUsageDaily = pgTable("ai_usage_daily", {
+  day: text("day").notNull(),            // America/Denver date, YYYY-MM-DD
+  endpoint: text("endpoint").notNull(),  // e.g. "parse-blurb"
+  actor: text("actor").notNull(),        // "anonymous" | "admin"
+  outcome: text("outcome").notNull(),    // "succeeded" | "failed" | "rate_limited" | "daily_limited" | "rejected_input"
+  count: integer("count").notNull().default(0),
+}, (t) => [primaryKey({ columns: [t.day, t.endpoint, t.actor, t.outcome] })]);

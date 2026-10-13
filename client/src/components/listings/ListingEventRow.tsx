@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -24,6 +25,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
 }) {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEndSeriesConfirm, setShowEndSeriesConfirm] = useState(false);
@@ -205,7 +207,9 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
             </TooltipProvider>
 
             {" ("}
-            {event.isDateUnverified ? (
+            {event.isDateUnverified && !isAdmin ? (
+              <span className="font-medium text-black">Date TBA</span>
+            ) : event.isDateUnverified ? (
               <button
                 type="button"
                 onClick={() => setIsEditOpen(true)}
@@ -334,7 +338,8 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
           </div>
         )}
 
-        {/* Three-dot menu */}
+        {/* Three-dot menu (admin only) */}
+        {isAdmin && (
         <div className="ml-2 flex-shrink-0" style={{ position: "relative", top: "2px" }}>
           <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <DropdownMenuTrigger asChild>
@@ -389,6 +394,7 @@ export function ListingEventRow<T extends ListingEventBase>({ event, config, dat
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        )}
       </li>
 
       {/* Edit modal */}

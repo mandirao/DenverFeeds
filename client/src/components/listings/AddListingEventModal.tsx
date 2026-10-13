@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/use-is-admin";
+import { aiErrorToast } from "@/lib/aiErrors";
+import { prepareImageForUpload } from "@/lib/imageResize";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Sparkles, ImageIcon, FileText, Upload } from "lucide-react";
@@ -23,6 +26,7 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
 }) {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
   const [blurb, setBlurb] = useState("");
   const [form, setForm] = useState<Partial<TInsert>>(config.BLANK);
   const [instanceNote, setInstanceNote] = useState("");
@@ -52,6 +56,13 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
     }
   };
 
+  const loadImage = async (file: File) => {
+    const { dataUrl, base64, mediaType } = await prepareImageForUpload(file);
+    setImagePreview(dataUrl);
+    setImageBase64(base64);
+    setImageMediaType(mediaType);
+  };
+
   // Lets a copied screenshot be dropped in with ⌘V instead of only
   // click-to-browse/drag-and-drop — only active on the pre-parse screen.
   useEffect(() => {
@@ -62,14 +73,7 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
       if (!file) return;
       e.preventDefault();
       setImageFileName(file.name || "pasted-image");
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string;
-        setImagePreview(dataUrl);
-        setImageBase64(dataUrl.split(",")[1]);
-        setImageMediaType(file.type);
-      };
-      reader.readAsDataURL(file);
+      loadImage(file);
     };
     document.addEventListener("paste", handlePaste);
     return () => document.removeEventListener("paste", handlePaste);
@@ -83,17 +87,8 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const mediaType = file.type as string;
     setImageFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      const base64 = dataUrl.split(",")[1];
-      setImagePreview(dataUrl);
-      setImageBase64(base64);
-      setImageMediaType(mediaType);
-    };
-    reader.readAsDataURL(file);
+    loadImage(file);
   };
 
   const parseMutation = useMutation({
@@ -112,8 +107,8 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
       setShowForm(true);
       toast({ title, description });
     },
-    onError: () => {
-      toast({ title: "Parse failed", description: "Fill in the form manually.", variant: "destructive" });
+    onError: (error) => {
+      toast({ ...aiErrorToast(error, "Couldn't read that automatically"), variant: "destructive" });
       setShowForm(true);
     },
   });
@@ -442,7 +437,8 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
               setInstanceTitle={setInstanceTitle}
               occurrenceDate={form.dateStart}
               redoLoading={redoLoading}
-              onRedoAI={handleRedoAI}
+              // AI Refresh is an admin tool; contributors get the parser above.
+              onRedoAI={isAdmin ? handleRedoAI : undefined}
               config={config}
               mode="add"
               specificDatesState={config.features.specificDatesBatchAdd ? {

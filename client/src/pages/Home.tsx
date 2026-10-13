@@ -27,6 +27,7 @@ import { useElementHeight } from "@/hooks/use-element-height";
 import { venueOptions, VenueOption, Event, genres as schemaGenres } from "@shared/schema";
 import { apiRequest, queryClient as qc } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 const MUSIC_ORANGE = "#FE6B41";
 // Darker "card" tint — mobile calendar day-cards and the list view's
@@ -310,6 +311,7 @@ function ConcertDayScrollView({
 
 export default function Home() {
   const { toast } = useToast();
+  const isAdmin = useIsAdmin();
   const queryClientHook = useQueryClient();
 
   // Calendar view state
@@ -1131,6 +1133,7 @@ export default function Home() {
                       {ev.isScheduled && (
                         <span className="text-[10px] font-black uppercase bg-black text-white px-2 py-0.5">SCHEDULED</span>
                       )}
+                      {isAdmin && (
                       <DropdownMenu open={calDetailMenuOpen} onOpenChange={setCalDetailMenuOpen}>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-9 w-9 p-0 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-black">
@@ -1150,6 +1153,7 @@ export default function Home() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-2">

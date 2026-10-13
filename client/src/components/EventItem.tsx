@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ArrowUp, Check, Trash2, MoreVertical, Edit, X } from "lucide-react";
 import EditEventModal from "@/components/EditEventModal";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 interface EventItemProps {
   event: Event;
@@ -16,6 +17,7 @@ interface EventItemProps {
 
 function EventItem({ event }: EventItemProps) {
   const queryClient = useQueryClient();
+  const isAdmin = useIsAdmin();
   const [isHoveringArtist, setIsHoveringArtist] = useState(false);
   const [isHoveringVenue, setIsHoveringVenue] = useState(false);
   const [isHoveringDate, setIsHoveringDate] = useState(false);
@@ -349,7 +351,8 @@ function EventItem({ event }: EventItemProps) {
               )}
             </div>
             
-            {/* Right-aligned 3-dot menu */}
+            {/* Right-aligned 3-dot menu (admin only) */}
+            {isAdmin && (
             <div className="flex items-center">
               <div className="ml-auto pl-2" style={{ position: 'relative', top: '2px' }}>
                 <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -419,6 +422,7 @@ function EventItem({ event }: EventItemProps) {
                 </DropdownMenu>
               </div>
             </div>
+            )}
           </div>
         </div>
       </li>

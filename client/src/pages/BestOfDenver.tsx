@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { Link } from "wouter";
 import { siteUrls } from "@/lib/siteConfig";
 import { Button } from "@/components/ui/button";
@@ -106,6 +107,7 @@ function RestaurantRow({
   onSpotClick: (spot: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const isAdmin = useIsAdmin();
   const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(restaurant.name + " Denver restaurant")}`;
   return (
     <motion.li
@@ -132,6 +134,7 @@ function RestaurantRow({
             </Tooltip>
           </TooltipProvider>
         </div>
+        {isAdmin && (
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm"
@@ -151,6 +154,7 @@ function RestaurantRow({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        )}
       </div>
       <div className="pl-10">
         <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
@@ -548,6 +552,7 @@ const MULTI_SELECT_LABEL_CLASS = "text-[10px] uppercase tracking-widest text-bla
 export default function BestOfDenver() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [restaurantAddOpen, setRestaurantAddOpen] = useState(false);
+  const isAdmin = useIsAdmin();
   const [restaurantToEdit, setRestaurantToEdit] = useState<Restaurant | null>(null);
   const [restaurantToDelete, setRestaurantToDelete] = useState<Restaurant | null>(null);
   const parseMultiParam = (name: string) => {
@@ -716,10 +721,12 @@ export default function BestOfDenver() {
                   <TooltipContent><p>Back to the pop-up feed</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <button onClick={() => setRestaurantAddOpen(true)}
-                className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-2.5 md:py-1.5 transition-colors flex items-center gap-1">
-                <Plus className="w-4 h-4" />Foodie Gem
-              </button>
+              {isAdmin && (
+                <button onClick={() => setRestaurantAddOpen(true)}
+                  className="bg-black text-[#FEABDA] hover:text-[#41F2EE] font-black uppercase tracking-wide text-sm rounded-full px-3 py-2.5 md:py-1.5 transition-colors flex items-center gap-1">
+                  <Plus className="w-4 h-4" />Foodie Gem
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -942,11 +949,15 @@ export default function BestOfDenver() {
           <div className="text-center py-16 text-black/50">
             <p className="text-4xl mb-3">🍽️</p>
             <p className="font-bold uppercase text-sm mb-1">No restaurants yet</p>
-            <p className="text-xs mb-4">Add the group's favorite Denver spots.</p>
-            <button onClick={() => setRestaurantAddOpen(true)}
-              className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
-              Add a Restaurant
-            </button>
+            {isAdmin && (
+              <>
+                <p className="text-xs mb-4">Add the group's favorite Denver spots.</p>
+                <button onClick={() => setRestaurantAddOpen(true)}
+                  className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
+                  Add a Restaurant
+                </button>
+              </>
+            )}
           </div>
         ) : filteredRestaurants.length === 0 ? (
           <div className="text-center py-12 text-black/50">
@@ -998,10 +1009,14 @@ export default function BestOfDenver() {
             <button onClick={() => setCalendarOpen(true)} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
               Subscribe to Calendar
             </button>
-            <span className="text-black opacity-40">|</span>
-            <button onClick={() => setRestaurantAddOpen(true)} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
-              Add a Foodie Gem
-            </button>
+            {isAdmin && (
+              <>
+                <span className="text-black opacity-40">|</span>
+                <button onClick={() => setRestaurantAddOpen(true)} className="text-sm font-bold text-black hover:text-[#41F2EE] transition-colors underline uppercase">
+                  Add a Foodie Gem
+                </button>
+              </>
+            )}
           </div>
           <span className="text-sm text-black whitespace-nowrap">© {new Date().getFullYear()} Amuse-Bouche Insider</span>
         </div>

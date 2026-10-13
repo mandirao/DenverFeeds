@@ -1,9 +1,20 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Message keeps the historical "<status>: <body>" format that existing
+// callers match on; status and the parsed JSON body are attached for callers
+// that want structured handling (e.g. AI limit codes).
+export class ApiError extends Error {
+  constructor(message: string, public status: number, public body: any) {
+    super(message);
+  }
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let body: any = null;
+    try { body = JSON.parse(text); } catch { /* not JSON */ }
+    throw new ApiError(`${res.status}: ${text}`, res.status, body);
   }
 }
 
@@ -37,7 +48,8 @@ export async function apiRequest(
 
   const res = await fetch(endpoint, {
     method,
-    headers: body ? { "Content-Type": "application/json" } : {},
+    // Required by the server on every non-GET /api request (CSRF guard).
+    headers: { "X-Requested-With": "fetch", ...(body ? { "Content-Type": "application/json" } : {}) },
     body: body ? JSON.stringify(body) : undefined,
     credentials: "include",
   });
