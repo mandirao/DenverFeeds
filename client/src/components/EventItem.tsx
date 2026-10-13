@@ -4,7 +4,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from "@/components/ui/button";
 import { formatDate, createGoogleCalendarUrl, createGoogleMapsUrl, createSpotifySearchUrl, isRecentlyAdded } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, apiErrorMessage, ApiError } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ArrowUp, Check, Trash2, MoreVertical, Edit, X } from "lucide-react";
@@ -18,6 +19,7 @@ interface EventItemProps {
 function EventItem({ event }: EventItemProps) {
   const queryClient = useQueryClient();
   const isAdmin = useIsAdmin();
+  const { toast } = useToast();
   const [isHoveringArtist, setIsHoveringArtist] = useState(false);
   const [isHoveringVenue, setIsHoveringVenue] = useState(false);
   const [isHoveringDate, setIsHoveringDate] = useState(false);
@@ -130,6 +132,11 @@ function EventItem({ event }: EventItemProps) {
         // Rollback optimistic update on error
         setHasVoted(previousVoteState);
         console.error('Vote error:', error);
+        const rateLimited = error instanceof ApiError && error.status === 429;
+        toast({
+          title: rateLimited ? "Slow down a little" : "Couldn't record your vote",
+          description: apiErrorMessage(error, "Please try again in a moment."),
+        });
       }
     });
   };
@@ -310,7 +317,7 @@ function EventItem({ event }: EventItemProps) {
                             variant="ghost" 
                             size="sm"
                             onClick={handleUpvote}
-                            disabled={upvoteMutation.isPending || upvoteMutation.isError}
+                            disabled={upvoteMutation.isPending}
                             className={`${hasVoted ? 'bg-[#25428A] text-white hover:opacity-90' : 'bg-black text-[#F26241] hover:text-[#41F2EE]'} rounded-full text-xs flex items-center gap-1 h-5 px-2 py-0 cursor-pointer`}
                             aria-label={hasVoted ? 'Remove your vote for this show' : 'Upvote this show'}
                           >

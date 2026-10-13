@@ -9,6 +9,16 @@ export class ApiError extends Error {
   }
 }
 
+// The server's human-readable message for a failed request (validation
+// errors, "please try again later" limits), or the fallback for anything
+// else (network errors, unexpected failures).
+export function apiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError && typeof error.body?.message === "string" && error.status < 500) {
+    return error.body.message;
+  }
+  return fallback;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;

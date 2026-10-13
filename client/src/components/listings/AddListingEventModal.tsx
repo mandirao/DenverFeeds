@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, apiErrorMessage } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { aiErrorToast } from "@/lib/aiErrors";
@@ -127,7 +127,7 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
       forceClose();
     },
     onError: (e: any) => {
-      toast({ title: "Error", description: e?.message || "Couldn't add event.", variant: "destructive" });
+      toast({ title: "Couldn't add event", description: apiErrorMessage(e, "Something went wrong. Please try again."), variant: "destructive" });
     },
   });
 
@@ -162,7 +162,7 @@ export function AddListingEventModal<TInsert extends ListingInsertBase>({
       forceClose();
     },
     onError: (e: any) => {
-      toast({ title: "Error", description: e?.message || "Couldn't add all events.", variant: "destructive" });
+      toast({ title: "Couldn't add all events", description: apiErrorMessage(e, "Something went wrong. Please try again."), variant: "destructive" });
     },
   });
 

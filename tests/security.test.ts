@@ -11,6 +11,12 @@ import {
   type FakeAnthropic, type TestDatabase, type TestServer,
 } from "./support/harness";
 
+// A date safely inside the new-listing window (1 year back, 5 years ahead).
+function futureDate(daysAhead: number): string {
+  const d = new Date(Date.now() + daysAhead * 86_400_000);
+  return d.toISOString().slice(0, 10);
+}
+
 const ADMIN_USER = "test-admin";
 const ADMIN_PASSWORD = "correct horse battery staple";
 const SESSION_SECRET = "test-session-secret";
@@ -136,7 +142,7 @@ describe("anonymous visitors", () => {
   test("can submit events manually on all three feeds", async () => {
     const c = new Client(main.url, "198.51.100.7");
     const music = await c.request("POST", "/api/events", { body: {
-      emoji: "🎤", artist: "Manual Band", venue: "Globe Hall", date: "2099-05-01",
+      emoji: "🎤", artist: "Manual Band", venue: "Globe Hall", date: futureDate(200),
       summary: "Manual summary", soundsLike: "A, B", genre: "Rock & Alternative", requester: "Visitor",
     } });
     assert.equal(music.status, 201, music.text);
@@ -153,7 +159,7 @@ describe("anonymous visitors", () => {
   test("ownership/privilege fields in a submission are ignored", async () => {
     const c = new Client(main.url, "198.51.100.8");
     const res = await c.request("POST", "/api/events", { body: {
-      emoji: "🎤", artist: "Sneaky Band", venue: "Globe Hall", date: "2099-06-01", summary: "s", soundsLike: "A, B",
+      emoji: "🎤", artist: "Sneaky Band", venue: "Globe Hall", date: futureDate(201), summary: "s", soundsLike: "A, B",
       genre: "Rock & Alternative", requester: "Visitor", isScheduled: true, upvotes: 999, id: 424242, role: "admin",
     } });
     assert.equal(res.status, 201, res.text);
@@ -525,6 +531,357 @@ describe("client", () => {
   });
 });
 
+// ── WP2 Package A: validation and safety rails ──────────────────────────────
+
+describe("WP2-A: edit allowlists and field limits", () => {
+  const row = async (table: string, id: number) => (await db.pool.query(`SELECT * FROM ${table} WHERE id = $1`, [id])).rows[0];
+
+  test("edits containing protected or unexpected fields are rejected with a clear 400, changing nothing", async () => {
+    const admin = new Client(main.url, "192.0.2.90");
+    await loginAsAdmin(admin);
+    const forbidden = { id: 999999, upvotes: 4242, createdAt: "2000-01-01T00:00:00Z", createdVia: "discovery", created_via: "csv", somethingElse: 1 };
+    const targets: [string, string, number, Record<string, unknown>][] = [
+      ["food_events", "/api/food-events", ids.food, { name: "Renamed Listing" }],
+      ["art_events", "/api/art-events", ids.art, { name: "Renamed Listing" }],
+      ["restaurants", "/api/restaurants", ids.restaurant, { name: "Renamed Cafe" }],
+      ["venues", "/api/venues", ids.venue, { notes: "checked" }],
+    ];
+    for (const [table, path, id, valid] of targets) {
+      const method = table === "venues" ? "PUT" : "PATCH";
+      for (const [key, value] of Object.entries(forbidden)) {
+        const before = await row(table, id);
+        const res = await admin.request(method, `${path}/${id}`, { body: { ...valid, [key]: value } });
+        assert.equal(res.status, 400, `${table} + ${key}: ${res.text}`);
+        assert.match(res.json.message, new RegExp(`can't be set in an edit: ${key}`));
+        assert.deepEqual(await row(table, id), before, `${table} + ${key} must change nothing`);
+      }
+      const ok = await admin.request(method, `${path}/${id}`, { body: valid });
+      assert.equal(ok.status, 200, `${table} valid edit: ${ok.text}`);
+    }
+    const ven = await admin.request("PUT", `/api/venues/${ids.venue}`, { body: { eventCount: "not a number" } });
+    assert.equal(ven.status, 400, "a wrongly-typed field is rejected, not written");
+  });
+
+  test("music edits reject schedule/counter/identity fields; the form's own payload still saves", async () => {
+    const admin = new Client(main.url, "192.0.2.89");
+    await loginAsAdmin(admin);
+    const ev = (await db.pool.query(`SELECT * FROM events WHERE id = $1`, [ids.event])).rows[0];
+    // Exactly the 8 fields EventForm submits.
+    const form = { emoji: ev.emoji, artist: ev.artist, venue: ev.venue, date: new Date(ev.date).toISOString(), summary: ev.summary, soundsLike: ev.sounds_like, genre: ev.genre, requester: ev.requester ?? "Mandi" };
+    for (const [key, value] of Object.entries({ isScheduled: true, upvotes: 99, id: 1, createdAt: "2000-01-01T00:00:00Z", createdVia: "admin" })) {
+      const res = await admin.request("PATCH", `/api/events/${ids.event}`, { body: { ...form, [key]: value } });
+      assert.equal(res.status, 400, `${key}: ${res.text}`);
+      assert.match(res.json.message, new RegExp(key));
+    }
+    const after = (await db.pool.query(`SELECT is_scheduled, upvotes FROM events WHERE id = $1`, [ids.event])).rows[0];
+    assert.equal(after.is_scheduled, ev.is_scheduled);
+    assert.equal(after.upvotes, ev.upvotes);
+    assert.equal((await admin.request("PATCH", `/api/events/${ids.event}`, { body: form })).status, 200);
+  });
+
+  test("existing admin edit workflows still work", async () => {
+    const admin = new Client(main.url, "192.0.2.91");
+    await loginAsAdmin(admin);
+    // Quick toggles and series management (ListingEventRow).
+    for (const body of [{ soldOut: true }, { soldOut: false }, { seriesEndDate: "2099-12-31" }, { excludedDates: ["2099-02-01", "2099-03-01"] }]) {
+      const res = await admin.request("PATCH", `/api/food-events/${ids.food}`, { body });
+      assert.equal(res.status, 200, `${JSON.stringify(body)}: ${res.text}`);
+    }
+    // Full edit, shaped exactly like EditListingEventModal's payload.
+    const full = {
+      emoji: "🎨", name: "Seed Talk", venue: "Seed Hall", neighborhood: "", dateStart: "2099-01-01", dateEnd: "", startTime: "",
+      summary: "Seed", category: "Talks & Lectures", price: "", ticketUrl: "", sourceUrl: "", requester: "Mandi", announcedAt: "",
+      selloutRisk: undefined, isRecurring: true, recurrenceLabel: "1st Mondays",
+      recurrenceRule: { freq: "monthly", byWeekday: 1, monthlyMode: "nth-weekday", weekdayOrdinal: 1 },
+      excludedDates: [], verifiedThroughDate: null, activeWeekdays: null, tags: ["Science"],
+      instanceNotes: { "2099-01-01": "First one" }, instanceTitles: { "2099-01-01": "Opening night" },
+    };
+    const res = await admin.request("PATCH", `/api/art-events/${ids.art}`, { body: full });
+    assert.equal(res.status, 200, res.text);
+    // "Split into dates": PATCH the original + POST the extra dates.
+    const split = await admin.request("POST", "/api/art-events", { body: { ...full, instanceNotes: undefined, instanceTitles: undefined, dateStart: "2099-02-02", isRecurring: false, recurrenceRule: null, force: true } });
+    assert.equal(split.status, 201, split.text);
+    // Restaurant edit, shaped like RestaurantModal's 11 fields.
+    const rest = await admin.request("PATCH", `/api/restaurants/${ids.restaurant}`, { body: {
+      emoji: "🍽️", name: "Seed Cafe", description: "Cozy", cuisine: ["Other"], pricePoint: "$$", neighborhood: "RiNo & Five Points",
+      hotNew: false, michelinStar: false, jamesBeard: false, fixture: true, foodTruck: false } });
+    assert.equal(rest.status, 200, rest.text);
+  });
+
+  test("legacy-shaped rows (empty requester, old recurring anchor, very long raw blurb) can be re-saved", async () => {
+    const admin = new Client(main.url, "192.0.2.92");
+    await loginAsAdmin(admin);
+    const legacy = (await db.pool.query(
+      `INSERT INTO art_events (name, venue, date_start, summary, requester, raw_blurb, is_recurring, recurrence_label)
+       VALUES ('Play Date','Stanley Marketplace','2020-09-07','Monthly play reading','', $1, true, '1st Mondays') RETURNING id`,
+      ["x".repeat(26_635)])).rows[0].id;
+    const res = await admin.request("PATCH", `/api/art-events/${legacy}`, { body: {
+      name: "Play Date", venue: "Stanley Marketplace", dateStart: "2020-09-07", dateEnd: "", summary: "Monthly play reading",
+      category: "Theater & Musicals", requester: "", isRecurring: true, recurrenceLabel: "1st Mondays" } });
+    assert.equal(res.status, 200, res.text);
+  });
+
+  test("oversized or malformed public submissions and edits are rejected", async () => {
+    const anon = new Client(main.url, "192.0.2.93");
+    const base = { name: "Popup", venue: "Bar", dateStart: futureDate(30), summary: "s", requester: "Visitor", cuisine: "Other" };
+    const cases: [string, Record<string, unknown>][] = [
+      ["summary over 400", { summary: "x".repeat(401) }],
+      ["name over 200", { name: "x".repeat(201) }],
+      ["impossible date", { dateStart: "2026-02-30" }],
+      ["non-date dateStart", { dateStart: "next friday" }],
+      ["note over 500", { isRecurring: true, instanceNotes: { [futureDate(30)]: "x".repeat(501) } }],
+      ["note keyed by non-date", { instanceNotes: { hello: "x" } }],
+      ["too many excluded dates", { excludedDates: Array.from({ length: 501 }, () => futureDate(30)) }],
+    ];
+    for (const [label, override] of cases) {
+      const res = await anon.request("POST", "/api/food-events", { body: { ...base, ...override } });
+      assert.equal(res.status, 400, `${label}: ${res.status} ${res.text.slice(0, 120)}`);
+    }
+    const tags = await anon.request("POST", "/api/art-events", { body: { ...base, cuisine: undefined, category: "Games", tags: Array.from({ length: 21 }, (_, i) => `t${i}`) } });
+    assert.equal(tags.status, 400, "more than 20 tags");
+
+    const admin = new Client(main.url, "192.0.2.94");
+    await loginAsAdmin(admin);
+    assert.equal((await admin.request("PATCH", `/api/food-events/${ids.food}`, { body: { name: "x".repeat(201) } })).status, 400);
+    assert.equal((await admin.request("PATCH", `/api/restaurants/${ids.restaurant}`, { body: { description: "x".repeat(1001) } })).status, 400);
+  });
+});
+
+describe("WP2-A: dates", () => {
+  test("new-listing window moves with the calendar (year boundary)", async () => {
+    const { checkNewListingDate, isCalendarDate } = await import("../server/date-rules");
+    const dec31 = new Date("2026-12-31T12:00:00Z");
+    const jan1 = new Date("2027-01-01T12:00:00Z");
+    assert.equal(checkNewListingDate("2027-06-01", dec31), null);
+    assert.equal(checkNewListingDate("2031-12-30", dec31), null);
+    assert.match(checkNewListingDate("2032-01-02", dec31) ?? "", /future/);
+    assert.equal(checkNewListingDate("2032-01-01", jan1), null, "a year later, the window has moved forward");
+    assert.equal(checkNewListingDate("2026-01-02", jan1), null);
+    assert.match(checkNewListingDate("2025-12-31", jan1) ?? "", /past/);
+    assert.match(checkNewListingDate("0026-11-24", jan1) ?? "", /past/);
+    assert.match(checkNewListingDate("2062-01-01", jan1) ?? "", /future/);
+    for (const bad of ["2026-02-30", "2027-02-29", "2026-13-01", "2026-00-10", "26-11-24", "2026/11/24"]) {
+      assert.equal(isCalendarDate(bad), false, bad);
+      assert.match(checkNewListingDate(bad, jan1) ?? "", /not a valid date/, bad);
+    }
+    assert.equal(isCalendarDate("2028-02-29"), true, "leap day");
+  });
+
+  test("music add, CSV import and edit apply the rules", async () => {
+    const admin = new Client(main.url, "192.0.2.95");
+    await loginAsAdmin(admin);
+    const show = (date: string, artist: string) => ({ emoji: "🎸", artist, venue: "Globe Hall", date, summary: "s", soundsLike: "A, B", genre: "Rock & Alternative", requester: "Mandi" });
+    const nextYear = new Date().getFullYear() + 1;
+
+    // Single add: the form sends a serialized Date (ISO datetime).
+    assert.equal((await admin.request("POST", "/api/events", { body: show(new Date(`${nextYear}-03-06T06:00:00.000Z`).toISOString(), "Next Year Band") })).status, 201);
+    for (const bad of ["2062-01-01", "0026-11-24", "2026-02-30", "soon"]) {
+      assert.equal((await admin.request("POST", "/api/events", { body: show(bad, `Bad ${bad}`) })).status, 400, bad);
+    }
+
+    // CSV bulk: next year imports; impossible/out-of-window rows are skipped with a reason.
+    const bulk = await admin.request("POST", "/api/events/bulk", { body: [show(`${nextYear}-04-10`, "CSV Next Year"), show("2026-02-30", "CSV Bad Day"), show("2062-05-05", "CSV Far Future")] });
+    assert.equal(bulk.status, 201, bulk.text);
+    assert.equal(bulk.json.results.created, 1);
+    assert.equal(bulk.json.results.skipped, 2);
+    assert.match(bulk.json.results.errors.join(" "), /real YYYY-MM-DD/);
+
+    // Edit: an old event keeps its unchanged date; moving it must be sensible.
+    const old = (await db.pool.query(`INSERT INTO events (emoji, artist, venue, date, summary, sounds_like, genre) VALUES ('🎸','Old Show','Globe Hall', now() - interval '3 years','s','A, B','Rock & Alternative') RETURNING id, date`)).rows[0];
+    const unchanged = await admin.request("PATCH", `/api/events/${old.id}`, { body: { ...show(new Date(old.date).toISOString(), "Old Show (renamed)") } });
+    assert.equal(unchanged.status, 200, unchanged.text);
+    assert.equal((await admin.request("PATCH", `/api/events/${old.id}`, { body: show("2062-01-01", "Old Show") })).status, 400);
+    assert.equal((await admin.request("PATCH", `/api/events/${old.id}`, { body: show("2026-02-30", "Old Show") })).status, 400);
+    assert.equal((await admin.request("PATCH", `/api/events/${old.id}`, { body: show(`${nextYear}-01-15`, "Old Show") })).status, 200);
+  });
+});
+
+describe("WP2-A: restaurant AI fill and discovery", () => {
+  test("restaurant AI fill never fetches a supplied URL", async () => {
+    const http = await import("http");
+    let hits = 0;
+    const target = http.createServer((_req, res) => { hits++; res.end("<html>secret internal page</html>"); });
+    await new Promise<void>((r) => target.listen(0, "127.0.0.1", r));
+    const { port } = target.address() as { port: number };
+    try {
+      const admin = new Client(main.url, "192.0.2.96");
+      await loginAsAdmin(admin);
+      const before = fake.calls();
+      const res = await admin.request("POST", "/api/ai/fill-restaurant", { body: { name: "Seed Cafe", sourceUrl: `http://127.0.0.1:${port}/internal` } });
+      assert.equal(res.status, 200, res.text);
+      assert.equal(fake.calls(), before + 1, "name-based enrichment still runs");
+      assert.equal(hits, 0, "the supplied URL is never fetched");
+    } finally {
+      target.close();
+    }
+  });
+
+  test("discovery and review-queue reads are admin-only", async () => {
+    const anon = new Client(main.url, "192.0.2.97");
+    const admin = new Client(main.url, "192.0.2.98");
+    await loginAsAdmin(admin);
+    for (const p of ["/api/discovered-events", "/api/discovered-artists", "/api/artists", "/api/venues", `/api/venues/${ids.venue}`, "/api/discovery/status", "/api/discovery/venue-stats", "/api/discovery/artist-stats"]) {
+      assert.equal((await anon.request("GET", p)).status, 403, `anon ${p}`);
+      assert.equal((await admin.request("GET", p)).status, 200, `admin ${p}`);
+    }
+    // Public feeds are unaffected.
+    for (const p of ["/api/events", "/api/food-events", "/api/art-events", "/api/restaurants", "/api/playlists"]) {
+      assert.equal((await anon.request("GET", p)).status, 200, p);
+    }
+  });
+});
+
+// ── WP2 Package B: anonymous participation guardrails and provenance ────────
+
+describe("WP2-B: submission and upvote rate limits", () => {
+  const food = (i: number) => ({ name: `Limit Popup ${i}`, venue: `Venue ${i}`, dateStart: futureDate(40 + i), summary: "s", requester: "Visitor", cuisine: "Other" });
+
+  test("submission limit holds under concurrent load across instances, and is scoped", async () => {
+    await resetLimits();
+    const env = { SUBMISSIONS_PER_HOUR_PER_VISITOR: "5", UPVOTES_PER_HOUR_PER_VISITOR: "100" };
+    const [a, b] = await Promise.all([startServer(env), startServer(env)]);
+    const ip = "198.51.100.150";
+    const results = await Promise.all(Array.from({ length: 10 }, (_, i) =>
+      new Client(i % 2 ? b.url : a.url, ip).request("POST", "/api/food-events", { body: food(i) })));
+    const created = results.filter((r) => r.status === 201).length;
+    const limited = results.filter((r) => r.status === 429);
+    assert.equal(created, 5, `exactly 5 should get through, got ${created}`);
+    assert.equal(limited.length, 5);
+    assert.equal(limited[0].json.code, "RATE_LIMITED");
+    assert.match(limited[0].json.message, /try again/i);
+    assert.ok(Number(limited[0].headers.get("retry-after")) > 0);
+
+    // Same visitor, other endpoints: unaffected.
+    const sameIp = new Client(a.url, ip);
+    assert.equal((await sameIp.request("POST", `/api/events/${ids.event}/upvote`)).status, 200, "upvotes have their own bucket");
+    await sameIp.request("POST", `/api/events/${ids.event}/upvote`); // toggle back
+    assert.equal((await sameIp.request("POST", "/api/ai/parse-blurb", { body: { blurb: "popup" } })).status, 200, "AI helper has its own limits");
+    // Other visitors: unaffected. Admin on the same IP: exempt.
+    assert.equal((await new Client(a.url, "198.51.100.151").request("POST", "/api/food-events", { body: food(50) })).status, 201);
+    const admin = new Client(b.url, ip);
+    await loginAsAdmin(admin);
+    assert.equal((await admin.request("POST", "/api/food-events", { body: food(51) })).status, 201);
+    // Manual music submissions share the submission bucket.
+    const music = await new Client(a.url, ip).request("POST", "/api/events", { body: { emoji: "🎸", artist: "Late Band", venue: "Globe Hall", date: futureDate(60), summary: "s", soundsLike: "A, B", genre: "Rock & Alternative", requester: "V" } });
+    assert.equal(music.status, 429);
+  });
+
+  test("limits follow the IP address, so clearing cookies doesn't reset them", async () => {
+    await resetLimits();
+    const s2 = await startServer({ UPVOTES_PER_HOUR_PER_VISITOR: "3", SUBMISSIONS_PER_HOUR_PER_VISITOR: "2" });
+    const ip = "198.51.100.165";
+    // A brand-new cookie jar for every request = a visitor clearing cookies each time.
+    const fresh = () => new Client(s2.url, ip);
+    const votes: number[] = [];
+    for (let i = 0; i < 5; i++) votes.push((await fresh().request("POST", `/api/events/${ids.event}/upvote`)).status);
+    assert.deepEqual(votes, [200, 200, 200, 429, 429]);
+    const subs: number[] = [];
+    for (let i = 0; i < 4; i++) subs.push((await fresh().request("POST", "/api/food-events", { body: food(90 + i) })).status);
+    assert.deepEqual(subs, [201, 201, 429, 429]);
+    // Reset the vote count left behind by the three fresh-visitor votes.
+    await db.pool.query(`DELETE FROM upvotes WHERE event_id = $1`, [ids.event]);
+    await db.pool.query(`UPDATE events SET upvotes = 0 WHERE id = $1`, [ids.event]);
+  });
+
+  test("upvote limit applies per visitor", async () => {
+    await resetLimits();
+    const s1 = await startServer({ UPVOTES_PER_HOUR_PER_VISITOR: "4" });
+    const c = new Client(s1.url, "198.51.100.160");
+    const statuses: number[] = [];
+    for (let i = 0; i < 6; i++) statuses.push((await c.request("POST", `/api/events/${ids.event}/upvote`)).status);
+    assert.deepEqual(statuses, [200, 200, 200, 200, 429, 429]);
+    assert.equal((await new Client(s1.url, "198.51.100.161").request("POST", `/api/events/${ids.event}/upvote`)).status, 200);
+    await new Client(s1.url, "198.51.100.161").request("POST", `/api/events/${ids.event}/upvote`);
+  });
+});
+
+describe("WP2-B: upvote identity creation", () => {
+  test("votes for missing or Scheduled events create no visitor records", async () => {
+    const users = async () => (await db.pool.query("SELECT count(*)::int AS n FROM users")).rows[0].n;
+    const scheduled = (await db.pool.query(`INSERT INTO events (emoji, artist, venue, date, summary, sounds_like, genre, is_scheduled) VALUES ('🎸','Hosted Show','Globe Hall', now() + interval '9 days','s','A, B','Rock & Alternative', true) RETURNING id`)).rows[0].id;
+    const before = await users();
+    for (let i = 0; i < 3; i++) {
+      // Fresh cookieless visitor each time — the worst case for record creation.
+      assert.equal((await new Client(main.url, `198.51.100.${170 + i}`).request("POST", "/api/events/99999999/upvote")).status, 404);
+      assert.equal((await new Client(main.url, `198.51.100.${175 + i}`).request("POST", `/api/events/${scheduled}/upvote`)).status, 400);
+    }
+    assert.equal(await users(), before, "no visitor records for rejected votes");
+    const voter = new Client(main.url, "198.51.100.180");
+    assert.equal((await voter.request("POST", `/api/events/${ids.event}/upvote`)).status, 200);
+    assert.equal(await users(), before + 1, "a valid first vote creates exactly one");
+    await voter.request("POST", `/api/events/${ids.event}/upvote`); // toggle back
+    assert.equal(await users(), before + 1, "toggling reuses it");
+  });
+});
+
+describe("WP2-B: provenance", () => {
+  const via = async (table: string, where: string, params: any[]) =>
+    (await db.pool.query(`SELECT created_via FROM ${table} WHERE ${where} ORDER BY id DESC LIMIT 1`, params)).rows[0]?.created_via;
+  const spoof = { createdVia: "discovery", created_via: "discovery" };
+
+  test("assigned by the server on every creation path, never from the client", async () => {
+    await resetLimits();
+    const anon = new Client(main.url, "198.51.100.190");
+    const show = (artist: string) => ({ emoji: "🎸", artist, venue: "Globe Hall", date: futureDate(70), summary: "s", soundsLike: "A, B", genre: "Rock & Alternative", requester: "V", ...spoof });
+    const listing = (name: string, extra: object) => ({ name, venue: `${name} venue`, dateStart: futureDate(71), summary: "s", requester: "V", ...extra, ...spoof });
+
+    // Anonymous (manual, or after using the AI helper — parsing never creates anything).
+    assert.equal((await anon.request("POST", "/api/ai/parse-blurb", { body: { blurb: "Taco popup" } })).status, 200);
+    assert.equal((await anon.request("POST", "/api/events", { body: show("Anon Prov Band") })).status, 201);
+    assert.equal((await anon.request("POST", "/api/food-events", { body: listing("Anon Prov Popup", { cuisine: "Other" }) })).status, 201);
+    assert.equal((await anon.request("POST", "/api/art-events", { body: listing("Anon Prov Talk", { category: "Games" }) })).status, 201);
+    assert.equal(await via("events", "artist = $1", ["Anon Prov Band"]), "anonymous");
+    assert.equal(await via("food_events", "name = $1", ["Anon Prov Popup"]), "anonymous");
+    assert.equal(await via("art_events", "name = $1", ["Anon Prov Talk"]), "anonymous");
+
+    // Admin (including the duplicate action and AI-assisted entry).
+    const admin = new Client(main.url, "198.51.100.191");
+    await loginAsAdmin(admin);
+    assert.equal((await admin.request("POST", "/api/events", { body: show("Admin Prov Band") })).status, 201);
+    assert.equal((await admin.request("POST", "/api/food-events", { body: listing("Admin Prov Popup", { cuisine: "Other" }) })).status, 201);
+    const dup = await admin.request("POST", `/api/art-events/${ids.art}/duplicate`);
+    assert.equal(dup.status, 201, dup.text);
+    assert.equal(await via("events", "artist = $1", ["Admin Prov Band"]), "admin");
+    assert.equal(await via("food_events", "name = $1", ["Admin Prov Popup"]), "admin");
+    assert.equal(await via("art_events", "id = $1", [dup.json.id]), "admin");
+
+    // CSV import.
+    const bulk = await admin.request("POST", "/api/events/bulk", { body: [{ ...show("CSV Prov Band"), date: futureDate(72) }] });
+    assert.equal(bulk.json.results.created, 1, bulk.text);
+    assert.equal(await via("events", "artist = $1", ["CSV Prov Band"]), "csv");
+
+    // Discovery approval.
+    const approved = await admin.request("POST", `/api/discovered-events/${ids.discoveredEvent}/approve`);
+    assert.equal(approved.status, 200, approved.text);
+    assert.equal(await via("events", "id = $1", [approved.json.event.id]), "discovery");
+
+    // Edits can't change it.
+    const onlyForbidden = await admin.request("PATCH", `/api/food-events/${ids.food}`, { body: { createdVia: "csv", created_via: "csv", id: 1, upvotes: 5 } });
+    assert.equal(onlyForbidden.status, 400, "clear 400, not a server error");
+    assert.match(onlyForbidden.json.message, /can't be set in an edit/);
+    assert.equal((await admin.request("PATCH", `/api/food-events/${ids.food}`, { body: {} })).status, 400, "empty edit → 400");
+    assert.equal(await via("food_events", "id = $1", [ids.food]), null, "historical rows stay null");
+  });
+
+  test("never appears in API responses", async () => {
+    const anon = new Client(main.url, "198.51.100.192");
+    const admin = new Client(main.url, "198.51.100.193");
+    await loginAsAdmin(admin);
+    const bodies: any[] = [];
+    for (const p of ["/api/events", `/api/events/${ids.event}`, "/api/food-events", "/api/art-events"]) bodies.push((await anon.request("GET", p)).json);
+    bodies.push((await anon.request("POST", "/api/food-events", { body: { name: "Resp Popup", venue: "Resp venue", dateStart: futureDate(80), summary: "s", requester: "V", cuisine: "Other" } })).json);
+    bodies.push((await anon.request("POST", "/api/food-events", { body: { name: "Resp Popup 2", venue: "Resp venue", dateStart: futureDate(80), summary: "s", requester: "V", cuisine: "Other" } })).json); // possibleDuplicates
+    bodies.push((await anon.request("POST", `/api/events/${ids.event}/upvote`)).json);
+    await anon.request("POST", `/api/events/${ids.event}/upvote`);
+    bodies.push((await admin.request("PATCH", `/api/food-events/${ids.food}`, { body: { soldOut: false } })).json);
+    bodies.push((await admin.request("POST", `/api/events/${ids.event}/schedule`)).json);
+    bodies.push((await admin.request("POST", `/api/events/${ids.event}/unschedule`)).json);
+    const text = JSON.stringify(bodies);
+    assert.ok(text.includes("possibleDuplicates"), "covered the duplicate-warning response");
+    assert.doesNotMatch(text, /createdVia|created_via/);
+  });
+});
+
 // ── Admin provisioning script ───────────────────────────────────────────────
 
 describe("admin provisioning (scripts/create-admin.ts)", () => {
@@ -587,6 +944,28 @@ describe("WP1 migration", () => {
       assert.deepEqual(rows, [{ username: "user-1", session_id: "anon-1", role: "visitor" }]);
       const tables = await pool.query(`SELECT table_name FROM information_schema.tables WHERE table_name IN ('rate_limit_counters','ai_usage_daily') ORDER BY 1`);
       assert.deepEqual(tables.rows.map((r) => r.table_name), ["ai_usage_daily", "rate_limit_counters"]);
+    } finally {
+      await pool.end();
+    }
+  });
+
+  test("WP2 provenance migration is additive, idempotent, and constrained", async () => {
+    await db.createDatabase("wp2_migration_check");
+    const pg = (await import("pg")).default;
+    const pool = new pg.Pool({ connectionString: db.urlFor("wp2_migration_check") });
+    try {
+      for (const t of ["events", "food_events", "art_events"]) {
+        await pool.query(`CREATE TABLE ${t} (id serial PRIMARY KEY, name text)`);
+        await pool.query(`INSERT INTO ${t} (name) VALUES ('existing')`);
+      }
+      const { WP2_PROVENANCE_SQL } = await import("../scripts/migrate-wp2-provenance");
+      await pool.query(WP2_PROVENANCE_SQL);
+      await pool.query(WP2_PROVENANCE_SQL);
+      for (const t of ["events", "food_events", "art_events"]) {
+        assert.deepEqual((await pool.query(`SELECT name, created_via FROM ${t}`)).rows, [{ name: "existing", created_via: null }]);
+        await pool.query(`INSERT INTO ${t} (name, created_via) VALUES ('new', 'anonymous')`);
+        await assert.rejects(pool.query(`INSERT INTO ${t} (name, created_via) VALUES ('bad', 'bogus')`), /created_via_check/);
+      }
     } finally {
       await pool.end();
     }

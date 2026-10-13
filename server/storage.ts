@@ -1,6 +1,6 @@
-import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent, discoveredArtists, type DiscoveredArtist, type InsertDiscoveredArtist, venues, type Venue, type InsertVenue, foodEvents, type FoodEvent, type InsertFoodEvent, artEvents, type ArtEvent, type InsertArtEvent, restaurants, type Restaurant, type InsertRestaurant } from "@shared/schema";
+import { events, type Event, type InsertEvent, upvotes, type Upvote, type InsertUpvote, users, type User, type InsertUser, playlists, type Playlist, type InsertPlaylist, artists, type Artist, type InsertArtist, discoveredEvents, type DiscoveredEvent, type InsertDiscoveredEvent, discoveredArtists, type DiscoveredArtist, type InsertDiscoveredArtist, venues, type Venue, type InsertVenue, foodEvents, type FoodEvent, type InsertFoodEvent, artEvents, type ArtEvent, type InsertArtEvent, restaurants, type Restaurant, type InsertRestaurant, type CreatedVia } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, count, desc, gt } from "drizzle-orm";
+import { eq, and, sql, count, desc, gt, getTableColumns } from "drizzle-orm";
 import { spotifyService } from "./spotify";
 import { expandRecurringEvents } from "@shared/recurrence";
 
@@ -17,7 +17,7 @@ export interface IStorage {
   getAllEvents(): Promise<Event[]>;
   getEventById(id: number): Promise<Event | undefined>;
   getUpcomingEvents(): Promise<Event[]>;
-  createEvent(event: InsertEvent): Promise<Event>;
+  createEvent(event: InsertEvent, createdVia: CreatedVia): Promise<Event>;
   updateEvent(id: number, data: Partial<Event>): Promise<Event | undefined>;
   checkDuplicateEvent(event: InsertEvent): Promise<boolean>;
   deleteEvent(id: number): Promise<boolean>;
@@ -65,7 +65,7 @@ export interface IStorage {
   // Food event methods for Amuse Bouche
   getAllFoodEvents(): Promise<FoodEvent[]>;
   getFoodEventById(id: number): Promise<FoodEvent | undefined>;
-  createFoodEvent(event: InsertFoodEvent): Promise<FoodEvent>;
+  createFoodEvent(event: InsertFoodEvent, createdVia: CreatedVia): Promise<FoodEvent>;
   updateFoodEvent(id: number, data: Partial<FoodEvent>): Promise<FoodEvent | undefined>;
   deleteFoodEvent(id: number): Promise<boolean>;
   upvoteFoodEvent(id: number): Promise<boolean>;
@@ -74,7 +74,7 @@ export interface IStorage {
   // Art event methods for Artistry & Nerdery Live
   getAllArtEvents(): Promise<ArtEvent[]>;
   getArtEventById(id: number): Promise<ArtEvent | undefined>;
-  createArtEvent(event: InsertArtEvent): Promise<ArtEvent>;
+  createArtEvent(event: InsertArtEvent, createdVia: CreatedVia): Promise<ArtEvent>;
   updateArtEvent(id: number, data: Partial<ArtEvent>): Promise<ArtEvent | undefined>;
   deleteArtEvent(id: number): Promise<boolean>;
   upvoteArtEvent(id: number): Promise<boolean>;
@@ -97,6 +97,15 @@ export interface IStorage {
   deleteRestaurant(id: number): Promise<boolean>;
 }
 
+// Every column except created_via: provenance is internal (spam cleanup,
+// contribution stats, Discovery Agent attribution) and is never returned in
+// API responses, so reads and returning() clauses use these column sets.
+function publicColumns<T extends Record<string, any>>(table: any): Omit<T, "createdVia"> {
+  const { createdVia: _internal, ...rest } = getTableColumns(table) as any;
+  return rest;
+}
+const eventColumns = publicColumns<typeof events._.columns>(events);
+
 // Shared CRUD implementation for the Food and Art event tables — they have
 // identical shapes (id, dateStart, dateEnd, upvotes + feed-specific fields)
 // and identical query patterns. Music's `events` table is NOT part of this:
@@ -107,10 +116,11 @@ function makeListingCrud<
   TSelect extends { id: number; venue: string; dateStart: string; dateEnd?: string | null; isRecurring?: boolean | null },
   TInsert extends { venue?: string | null; dateStart?: string | null; dateEnd?: string | null }
 >(table: any) {
+  const cols: any = publicColumns(table);
   return {
     async getAll(): Promise<TSelect[]> {
       const todayMT = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver" }).format(new Date());
-      const all: TSelect[] = await db.select().from(table).orderBy(table.dateStart);
+      const all: TSelect[] = await db.select(cols).from(table).orderBy(table.dateStart);
       return all
         .map(e => ({ ...e, dateEnd: e.dateEnd || "" }))
         .filter(ev => {
@@ -124,15 +134,15 @@ function makeListingCrud<
         });
     },
     async getById(id: number): Promise<TSelect | undefined> {
-      const [event] = await db.select().from(table).where(eq(table.id, id));
+      const [event] = await db.select(cols).from(table).where(eq(table.id, id));
       return event || undefined;
     },
-    async create(event: TInsert): Promise<TSelect> {
-      const [newEvent] = (await db.insert(table).values(event as any).returning()) as TSelect[];
+    async create(event: TInsert, createdVia: CreatedVia): Promise<TSelect> {
+      const [newEvent] = (await db.insert(table).values({ ...(event as any), createdVia }).returning(cols)) as TSelect[];
       return newEvent;
     },
     async update(id: number, data: Partial<TSelect>): Promise<TSelect | undefined> {
-      const [updated] = await db.update(table).set(data as any).where(eq(table.id, id)).returning();
+      const [updated] = await db.update(table).set(data as any).where(eq(table.id, id)).returning(cols);
       return updated || undefined;
     },
     async delete(id: number): Promise<boolean> {
@@ -166,7 +176,7 @@ function makeListingCrud<
       if (!venue || !candStart) return [];
       const candEnd = candidate.dateEnd?.trim() || candStart;
 
-      const all: TSelect[] = await db.select().from(table);
+      const all: TSelect[] = await db.select(cols).from(table);
       const expanded = expandRecurringEvents(all as any) as TSelect[];
 
       return expanded.filter(ev => {
@@ -204,11 +214,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllEvents(): Promise<Event[]> {
-    return db.select().from(events).orderBy(events.date);
+    return db.select(eventColumns).from(events).orderBy(events.date);
   }
 
   async getEventById(id: number): Promise<Event | undefined> {
-    const result = await db.select().from(events).where(eq(events.id, id));
+    const result = await db.select(eventColumns).from(events).where(eq(events.id, id));
     return result[0];
   }
 
@@ -218,7 +228,7 @@ export class DatabaseStorage implements IStorage {
     // without timezone conversion issues
     
     // Query for events from today's date or later based on the database server's date
-    return db.select()
+    return db.select(eventColumns)
       .from(events)
       .where(
         // This ensures we only get events from today (current_date) or later
@@ -238,13 +248,14 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
-  async createEvent(insertEvent: InsertEvent): Promise<Event> {
+  async createEvent(insertEvent: InsertEvent, createdVia: CreatedVia): Promise<Event> {
     const result = await db.insert(events).values({
       ...insertEvent,
       isScheduled: false,
       upvotes: 0,
-      createdAt: new Date()
-    }).returning();
+      createdAt: new Date(),
+      createdVia,
+    }).returning(eventColumns);
     const newEvent = result[0];
 
     // Auto-track artist and venue when event is created
@@ -261,7 +272,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db.update(events)
       .set(data)
       .where(eq(events.id, id))
-      .returning();
+      .returning(eventColumns);
     return result[0];
   }
 
@@ -344,7 +355,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db.update(events)
       .set({ isScheduled: scheduled })
       .where(eq(events.id, eventId))
-      .returning();
+      .returning(eventColumns);
     return result[0];
   }
 
@@ -354,7 +365,7 @@ export class DatabaseStorage implements IStorage {
       await db.delete(upvotes).where(eq(upvotes.eventId, id));
       
       // Then delete the event
-      const result = await db.delete(events).where(eq(events.id, id)).returning();
+      const result = await db.delete(events).where(eq(events.id, id)).returning({ id: events.id });
       
       // If we got a result back, the deletion was successful
       return result.length > 0;
@@ -544,7 +555,7 @@ export class DatabaseStorage implements IStorage {
       soundsLike: "TBD", // Will be auto-generated after approval
       genre: discoveredEvent.genre,
       requester: 'Discovery AI'
-    });
+    }, "discovery");
 
     // Update the discovered event status
     await this.updateDiscoveredEventStatus(id, 'approved');
@@ -631,8 +642,8 @@ export class DatabaseStorage implements IStorage {
     return foodEventCrud.getById(id);
   }
 
-  async createFoodEvent(event: InsertFoodEvent): Promise<FoodEvent> {
-    return foodEventCrud.create(event);
+  async createFoodEvent(event: InsertFoodEvent, createdVia: CreatedVia): Promise<FoodEvent> {
+    return foodEventCrud.create(event, createdVia);
   }
 
   async updateFoodEvent(id: number, data: Partial<FoodEvent>): Promise<FoodEvent | undefined> {
@@ -660,8 +671,8 @@ export class DatabaseStorage implements IStorage {
     return artEventCrud.getById(id);
   }
 
-  async createArtEvent(event: InsertArtEvent): Promise<ArtEvent> {
-    return artEventCrud.create(event);
+  async createArtEvent(event: InsertArtEvent, createdVia: CreatedVia): Promise<ArtEvent> {
+    return artEventCrud.create(event, createdVia);
   }
 
   async updateArtEvent(id: number, data: Partial<ArtEvent>): Promise<ArtEvent | undefined> {

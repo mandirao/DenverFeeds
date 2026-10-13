@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, apiErrorMessage } from "@/lib/queryClient";
 import { Navbar } from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
@@ -44,8 +44,8 @@ export default function AddEvent() {
         });
       } else {
         toast({
-          title: "Error",
-          description: "Failed to add event. Please try again.",
+          title: "Couldn't add show",
+          description: apiErrorMessage(error, "Failed to add event. Please try again."),
           variant: "destructive",
         });
       }

@@ -1,7 +1,7 @@
 import express, { type Express, type Request, type Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertEventSchema, events, upvotes, insertPlaylistSchema, insertFoodEventSchema, insertArtEventSchema } from "@shared/schema";
+import { insertEventSchema, updateEventSchema, events, upvotes, insertPlaylistSchema, insertFoodEventSchema, insertArtEventSchema, updateFoodEventSchema, updateArtEventSchema, updateRestaurantSchema, updateVenueSchema } from "@shared/schema";
 import { expandRecurringEvents } from "@shared/recurrence";
 import { fromZodError } from "zod-validation-error";
 import { ZodError, type ZodType } from "zod";
@@ -11,6 +11,10 @@ import { eq, and, sql } from "drizzle-orm";
 import { spotifyService } from "./spotify";
 import { llmService } from "./llm-service";
 import { aiGuard } from "./ai-guard";
+import { getActor } from "./auth";
+import { anonymousWriteLimit } from "./abuse-limits";
+import type { CreatedVia } from "@shared/schema";
+import { checkNewListingDate, localDateString, parseEventDateInput, sameLocalDay } from "./date-rules";
 
 // Shared CRUD route registration for the Food and Art event verticals — they
 // have identical route shapes (list/create/update/delete/duplicate/upvote).
@@ -29,10 +33,13 @@ function registerListingCrudRoutes<TSelect extends { id: number; createdAt?: unk
     // to TInsert too — which `ZodType<TInsert>`'s defaults would do — forces
     // that impossible Input===Output equality and breaks assignment here.
     insertSchema: ZodType<TInsert, any, any>;
+    // Allowlist for edits: every editable field optional, everything else
+    // (id, upvotes, createdAt, ...) stripped before it reaches the database.
+    updateSchema: ZodType<Partial<TInsert>, any, any>;
     resourceLabel: string;       // "food event" | "art event" — used in error messages
     getAll: () => Promise<TSelect[]>;
     getById: (id: number) => Promise<TSelect | undefined>;
-    create: (data: TInsert) => Promise<TSelect>;
+    create: (data: TInsert, createdVia: CreatedVia) => Promise<TSelect>;
     update: (id: number, data: Partial<TSelect>) => Promise<TSelect | undefined>;
     delete: (id: number) => Promise<boolean>;
     upvote: (id: number) => Promise<boolean>;
@@ -45,7 +52,7 @@ function registerListingCrudRoutes<TSelect extends { id: number; createdAt?: unk
     findPossibleDuplicates?: (data: TInsert) => Promise<TSelect[]>;
   }
 ) {
-  const { path, insertSchema, resourceLabel, getAll, getById, create, update, delete: del, upvote, findPossibleDuplicates } = config;
+  const { path, insertSchema, updateSchema, resourceLabel, getAll, getById, create, update, delete: del, upvote, findPossibleDuplicates } = config;
 
   router.get(`/${path}`, async (_req, res) => {
     try {
@@ -55,7 +62,7 @@ function registerListingCrudRoutes<TSelect extends { id: number; createdAt?: unk
     }
   });
 
-  router.post(`/${path}`, async (req, res) => {
+  router.post(`/${path}`, anonymousWriteLimit("submission"), async (req, res) => {
     try {
       const parsed = insertSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -67,7 +74,7 @@ function registerListingCrudRoutes<TSelect extends { id: number; createdAt?: unk
           return res.json({ possibleDuplicates });
         }
       }
-      const created = await create(parsed.data);
+      const created = await create(parsed.data, await provenanceFor(req));
       res.status(201).json(created);
     } catch (error) {
       console.error(`Failed to create ${resourceLabel}:`, error);
@@ -78,7 +85,12 @@ function registerListingCrudRoutes<TSelect extends { id: number; createdAt?: unk
   router.patch(`/${path}/:id`, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updated = await update(id, req.body);
+      const parsed = updateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: validationMessage(parsed.error) });
+      }
+      if (isEmptyUpdate(parsed.data)) return res.status(400).json(NOTHING_TO_UPDATE);
+      const updated = await update(id, parsed.data as Partial<TSelect>);
       if (!updated) return res.status(404).json({ message: `${resourceLabel} not found` });
       res.json(updated);
     } catch (error) {
@@ -102,7 +114,7 @@ function registerListingCrudRoutes<TSelect extends { id: number; createdAt?: unk
       const original = await getById(id);
       if (!original) return res.status(404).json({ message: `${resourceLabel} not found` });
       const { id: _id, createdAt: _ca, upvotes: _up, ...rest } = original as any;
-      const copy = await create(rest);
+      const copy = await create(rest, "admin"); // duplicate is an admin-only action
       res.status(201).json(copy);
     } catch (error) {
       res.status(500).json({ message: `Failed to duplicate ${resourceLabel}` });
@@ -118,6 +130,34 @@ function registerListingCrudRoutes<TSelect extends { id: number; createdAt?: unk
       res.status(500).json({ message: "Failed to upvote" });
     }
   });
+}
+
+// First validation problem as a readable sentence. Unexpected/forbidden keys
+// get an explicit list so an API caller knows exactly what was refused.
+function validationMessage(error: ZodError): string {
+  const issue = error.issues[0];
+  if (issue?.code === "unrecognized_keys") {
+    return `These fields can't be set in an edit: ${issue.keys.join(", ")}`;
+  }
+  return issue?.message || "Validation failed";
+}
+
+// After allowlist parsing, an edit may contain nothing writable (e.g. only
+// id/upvotes/createdVia). Report that clearly instead of a database error.
+const NOTHING_TO_UPDATE = { message: "No editable fields in this update" };
+const isEmptyUpdate = (data: object) => Object.keys(data).length === 0;
+
+// Provenance for a create made through a public-or-admin route: admins
+// (including AI-assisted entry) are "admin", everyone else "anonymous".
+async function provenanceFor(req: Request): Promise<CreatedVia> {
+  return (await getActor(req)).kind === "admin" ? "admin" : "anonymous";
+}
+
+// Admin-supplied batch sizes for the legacy discovery jobs: each unit costs
+// paid search/AI calls, so cap them server-side.
+function clampInt(value: unknown, min: number, max: number, fallback: number): number {
+  const n = Math.floor(Number(value));
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -155,25 +195,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create a new event
-  apiRouter.post("/events", async (req, res) => {
+  apiRouter.post("/events", anonymousWriteLimit("submission"), async (req, res) => {
     try {
-      // Convert date string to Date object if it's not already
-      if (req.body.date && typeof req.body.date === 'string') {
-        try {
-          // Assuming date format is "YYYY-MM-DD"
-          const [year, month, day] = req.body.date.split('-').map(Number);
-          
-          // Create date in local timezone at midnight
-          // This preserves the day as entered in the form
-          if (year && month && day) {
-            req.body.date = new Date(year, month - 1, day, 0, 0, 0);
-            console.log(`Single event: Converted date string "${req.body.date}" to Date: ${req.body.date.toISOString()}`);
-          } else {
-            req.body.date = new Date(req.body.date);
-          }
-        } catch (dateError) {
-          console.error("Date parsing error:", dateError);
-        }
+      if (req.body.date !== undefined) {
+        const date = parseEventDateInput(req.body.date);
+        if (!date) return res.status(400).json({ message: "Validation error: please enter a real date" });
+        const windowError = checkNewListingDate(localDateString(date));
+        if (windowError) return res.status(400).json({ message: `Validation error: ${windowError}` });
+        req.body.date = date;
       }
 
       const eventData = insertEventSchema.parse(req.body);
@@ -186,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const newEvent = await storage.createEvent(eventData);
+      const newEvent = await storage.createEvent(eventData, await provenanceFor(req));
       res.status(201).json(newEvent);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -218,48 +247,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const item of req.body) {
         try {
-          // Enhanced date validation and parsing
-          if (item.date && typeof item.date === 'string') {
-            try {
-              // Properly validate and parse date format
-              const dateStr = item.date.trim();
-              console.log(`Processing date: "${dateStr}"`);
-              
-              // Regex to validate YYYY-MM-DD format
-              const dateRegex = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
-              const match = dateStr.match(dateRegex);
-              
-              if (!match) {
-                throw new Error(`Invalid date format: "${dateStr}" - must be YYYY-MM-DD`);
-              }
-              
-              const year = parseInt(match[1], 10);
-              const month = parseInt(match[2], 10);
-              const day = parseInt(match[3], 10);
-              
-              // Validate year, month, day ranges
-              if (year < 2024 || year > 2026) {
-                throw new Error(`Invalid year: ${year} - must be between 2024 and 2026`);
-              }
-              
-              if (month < 1 || month > 12) {
-                throw new Error(`Invalid month: ${month} - must be between 1 and 12`);
-              }
-              
-              const daysInMonth = new Date(year, month, 0).getDate();
-              if (day < 1 || day > daysInMonth) {
-                throw new Error(`Invalid day: ${day} - must be between 1 and ${daysInMonth} for month ${month}`);
-              }
-              
-              // Create date in local timezone at midnight
-              item.date = new Date(year, month - 1, day, 0, 0, 0);
-              console.log(`Parsed date: ${item.date.toISOString()}`);
-            } catch (dateError) {
-              console.error("Date parsing error:", dateError);
-              throw dateError; // Rethrow to be caught by the outer try/catch
-            }
+          // Real calendar date within the rolling new-listing window
+          // (replaces the old hardcoded 2024–2026 range).
+          if (item.date !== undefined) {
+            const raw = typeof item.date === "string" ? item.date.trim() : item.date;
+            const date = parseEventDateInput(raw);
+            if (!date) throw new Error(`Invalid date: "${raw}" - must be a real YYYY-MM-DD date`);
+            const windowError = checkNewListingDate(localDateString(date));
+            if (windowError) throw new Error(`Invalid date: ${windowError}`);
+            item.date = date;
           }
-          
+
           // Handle genre normalization before Zod validation
           if (item.genre && typeof item.genre === 'string') {
             const genres = [
@@ -353,7 +351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
 
-          const newEvent = await storage.createEvent(eventData);
+          const newEvent = await storage.createEvent(eventData, "csv"); // bulk import is admin-only
           results.created++;
           results.events.push(newEvent);
           console.log("Event created successfully:", newEvent.id);
@@ -444,11 +442,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upvote or remove vote for an event
-  apiRouter.post("/events/:id/upvote", async (req, res) => {
+  apiRouter.post("/events/:id/upvote", anonymousWriteLimit("upvote"), async (req, res) => {
     try {
       const eventId = parseInt(req.params.id);
       if (isNaN(eventId)) {
         return res.status(400).json({ message: "Invalid event ID" });
+      }
+
+      // Check the event first: a vote for a missing or Scheduled event must
+      // not leave a persistent visitor record behind.
+      const event = await storage.getEventById(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      if (event.isScheduled) {
+        return res.status(400).json({ message: "Cannot vote on a scheduled event" });
       }
 
       // Anonymous visitor ID, assigned by app.ts on every non-GET request
@@ -457,22 +466,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing visitor session" });
       }
 
-      // Get or create the user
+      // Get or create the visitor record (only now that the vote is valid)
       let user = await storage.getUserBySessionId(sessionId);
       if (!user) {
         user = await storage.createUser({
           username: `user-${Date.now()}`,
           sessionId: sessionId
         });
-      }
-
-      const event = await storage.getEventById(eventId);
-      if (!event) {
-        return res.status(404).json({ message: "Event not found" });
-      }
-
-      if (event.isScheduled) {
-        return res.status(400).json({ message: "Cannot vote on a scheduled event" });
       }
 
       // Directly check in the database to ensure accurate results
@@ -534,26 +534,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Event not found" });
       }
 
-      // Convert date string to Date object if it's not already
-      if (req.body.date && typeof req.body.date === 'string') {
-        try {
-          // Assuming date format is "YYYY-MM-DD"
-          const [year, month, day] = req.body.date.split('-').map(Number);
-          
-          // Create date in local timezone at midnight
-          // This preserves the day as entered in the form
-          if (year && month && day) {
-            req.body.date = new Date(year, month - 1, day, 0, 0, 0);
-          } else {
-            req.body.date = new Date(req.body.date);
-          }
-        } catch (dateError) {
-          console.error("Date parsing error:", dateError);
+      if (req.body.date !== undefined) {
+        const date = parseEventDateInput(req.body.date);
+        if (!date) return res.status(400).json({ message: "Validation error: please enter a real date" });
+        // An unchanged date is always fine, however old it is; only a moved
+        // date has to be a sensible date for a listing.
+        if (!sameLocalDay(date, new Date(existingEvent.date))) {
+          const windowError = checkNewListingDate(localDateString(date));
+          if (windowError) return res.status(400).json({ message: `Validation error: ${windowError}` });
         }
+        req.body.date = date;
       }
 
       // Validate the update data using the schema
-      const eventData = insertEventSchema.parse(req.body);
+      const parsedEdit = updateEventSchema.safeParse(req.body);
+      if (!parsedEdit.success) {
+        return res.status(400).json({ message: `Validation error: ${validationMessage(parsedEdit.error)}` });
+      }
+      const eventData = parsedEdit.data;
       
       // Check if this would create a duplicate (except for the current event)
       // Only need to check if one of the key fields is changing
@@ -820,7 +818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const options = {
         priority: req.body.priority || undefined,
-        limit: req.body.limit || 5, // Smaller limit for testing
+        limit: clampInt(req.body.limit, 1, 25, 5),
         dryRun: req.body.dryRun || false
       };
 
@@ -1195,7 +1193,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   apiRouter.post("/discovery/venue-scan", async (req, res) => {
     try {
-      const { venueLimit = 10, priority, dryRun = false } = req.body;
+      const { priority, dryRun = false } = req.body;
+      const venueLimit = clampInt(req.body.venueLimit, 1, 25, 10);
       
       console.log(`Starting venue-first discovery with limit: ${venueLimit}, priority: ${priority}, dryRun: ${dryRun}`);
       
@@ -1230,7 +1229,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Artist discovery endpoints
   apiRouter.post("/discovery/artist-scan", async (req, res) => {
     try {
-      const { sources = ['pitchfork', 'oh_my_rockness'], limit = 20, dryRun = false, city } = req.body;
+      const { sources = ['pitchfork', 'oh_my_rockness'], dryRun = false, city } = req.body;
+      const limit = clampInt(req.body.limit, 1, 50, 20);
 
       console.log(`Starting artist discovery with sources: ${sources.join(', ')}, limit: ${limit}, dryRun: ${dryRun}`);
 
@@ -1322,7 +1322,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid venue ID" });
       }
 
-      const updatedVenue = await storage.updateVenue(id, req.body);
+      const parsed = updateVenueSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: validationMessage(parsed.error) });
+      if (isEmptyUpdate(parsed.data)) return res.status(400).json(NOTHING_TO_UPDATE);
+      const updatedVenue = await storage.updateVenue(id, parsed.data);
       if (!updatedVenue) {
         return res.status(404).json({ message: "Venue not found" });
       }
@@ -1525,10 +1528,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerListingCrudRoutes(apiRouter, {
     path: "food-events",
     insertSchema: insertFoodEventSchema,
+    updateSchema: updateFoodEventSchema,
     resourceLabel: "food event",
     getAll: () => storage.getAllFoodEvents(),
     getById: (id) => storage.getFoodEventById(id),
-    create: (data) => storage.createFoodEvent(data),
+    create: (data, createdVia) => storage.createFoodEvent(data, createdVia),
     update: (id, data) => storage.updateFoodEvent(id, data),
     delete: (id) => storage.deleteFoodEvent(id),
     upvote: (id) => storage.upvoteFoodEvent(id),
@@ -1555,10 +1559,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerListingCrudRoutes(apiRouter, {
     path: "art-events",
     insertSchema: insertArtEventSchema,
+    updateSchema: updateArtEventSchema,
     resourceLabel: "art event",
     getAll: () => storage.getAllArtEvents(),
     getById: (id) => storage.getArtEventById(id),
-    create: (data) => storage.createArtEvent(data),
+    create: (data, createdVia) => storage.createArtEvent(data, createdVia),
     update: (id, data) => storage.updateArtEvent(id, data),
     delete: (id) => storage.deleteArtEvent(id),
     upvote: (id) => storage.upvoteArtEvent(id),
@@ -1641,9 +1646,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI fill for restaurant fields
   app.post("/api/ai/fill-restaurant", aiGuard("fill-restaurant"), async (req, res) => {
     try {
-      const { name, sourceUrl } = req.body;
-      if (!name?.trim()) return res.status(400).json({ message: "Restaurant name is required" });
-      const result = await llmService.fillRestaurantAI(name.trim(), sourceUrl?.trim() || undefined);
+      // Name only. The old optional sourceUrl (server-side fetch of any URL)
+      // was never used by the UI and has been removed.
+      const { name } = req.body;
+      if (typeof name !== "string" || !name.trim() || name.length > 200) return res.status(400).json({ message: "Restaurant name is required" });
+      const result = await llmService.fillRestaurantAI(name.trim());
       res.json(result);
     } catch (error) {
       console.error("Fill restaurant AI error:", error);
@@ -1676,7 +1683,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/restaurants/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updated = await storage.updateRestaurant(id, req.body);
+      const parsed = updateRestaurantSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: validationMessage(parsed.error) });
+      if (isEmptyUpdate(parsed.data)) return res.status(400).json(NOTHING_TO_UPDATE);
+      const updated = await storage.updateRestaurant(id, parsed.data);
       if (!updated) return res.status(404).json({ message: "Restaurant not found" });
       res.json(updated);
     } catch (e) {

@@ -72,8 +72,13 @@ export const PUBLIC_WRITE_ROUTES: ReadonlyArray<readonly [string, RegExp]> = [
   ["POST", /^\/auth\/(login|logout)$/],
 ];
 
-// Reads that spend money or expose internal configuration.
-const ADMIN_ONLY_READS: ReadonlyArray<RegExp> = [/^\/admin\//];
+// Reads that spend money, expose internal configuration, or serve the
+// admin-only discovery/review tooling (no public page uses these).
+const ADMIN_ONLY_READS: ReadonlyArray<RegExp> = [
+  /^\/admin\//,
+  /^\/(discovered-events|discovered-artists|artists|venues)(\/|$)/,
+  /^\/discovery(\/|$)/,
+];
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 

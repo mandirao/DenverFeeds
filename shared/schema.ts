@@ -302,7 +302,16 @@ export const events = pgTable("events", {
   isScheduled: boolean("is_scheduled").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   upvotes: integer("upvotes").default(0),
+  // Server-assigned provenance (see createdViaValues). Never accepted from
+  // clients and never returned in API responses; null on pre-WP2 rows.
+  createdVia: text("created_via"),
 });
+
+// How a listing entered the shared feed. Set by the server from the request
+// path and actor: anonymous visitor, admin (incl. AI-assisted entry), admin
+// CSV import, or approval of a discovered event.
+export const createdViaValues = ["anonymous", "admin", "csv", "discovery"] as const;
+export type CreatedVia = typeof createdViaValues[number];
 
 // Create a refined insert schema with custom validation
 export const insertEventSchema = createInsertSchema(events)
@@ -311,6 +320,7 @@ export const insertEventSchema = createInsertSchema(events)
     isScheduled: true,
     createdAt: true,
     upvotes: true,
+    createdVia: true,
   })
   .extend({
     // Add custom validation for genre to handle both formats
@@ -340,8 +350,14 @@ export const insertEventSchema = createInsertSchema(events)
     requester: z.string().min(1, "Your name is required").max(50, "Name must be 50 characters or less")
   });
 
+// Music edits send the full form (as before) and nothing else: ids,
+// isScheduled (admin schedule/unschedule routes only), upvotes, createdAt and
+// createdVia are rejected rather than silently ignored.
+export const updateEventSchema = insertEventSchema.strict();
+
 export type InsertEvent = z.infer<typeof insertEventSchema>;
-export type Event = typeof events.$inferSelect;
+// Public shape of a row: storage never selects createdVia (internal provenance).
+export type Event = Omit<typeof events.$inferSelect, "createdVia">;
 
 // Upvotes schema to track user votes
 export const upvotes = pgTable("upvotes", {
@@ -509,6 +525,7 @@ export const insertVenueSchema = createInsertSchema(venues)
     priority: z.enum(['high', 'medium', 'low']).default('medium'),
   });
 
+export const updateVenueSchema = insertVenueSchema.partial().strict();
 export type InsertVenue = z.infer<typeof insertVenueSchema>;
 
 // Food popup events for the Amuse Bouche sister site
@@ -561,27 +578,74 @@ export const foodEvents = pgTable("food_events", {
   // See expandRecurringEvents.
   seriesEndDate: text("series_end_date"),
   createdAt: timestamp("created_at").defaultNow(),
+  createdVia: text("created_via"), // server-assigned provenance; see createdViaValues
 });
+
+// ── Field rules shared by the Food and Art listing schemas ────────────────
+// Caps sit well above the largest values in production data (Oct 2026: name
+// 78, venue 63, summary 200, URLs 565, raw blurb 26,635 chars) so no existing
+// listing fails, while a public submission can't post megabytes of text.
+const isoDateString = z.string().regex(/^\d{4}-\d{1,2}-\d{1,2}$/, "Use YYYY-MM-DD dates")
+  .refine((v) => {
+    const [y, m, d] = v.split("-").map(Number);
+    const probe = new Date(0);
+    probe.setUTCFullYear(y, m - 1, d); // Date.UTC would map years 0–99 to 19xx
+    return probe.getUTCFullYear() === y && probe.getUTCMonth() === m - 1 && probe.getUTCDate() === d;
+  }, "Not a real calendar date");
+// Optional date fields are stored as "" when unset.
+const isoDateOrEmpty = z.union([z.literal(""), isoDateString]);
+// Per-occurrence notes/titles: { "YYYY-MM-DD": text }.
+const perDateText = z.record(isoDateString, z.string().max(500, "Occurrence notes must be 500 characters or less"))
+  .refine((r) => Object.keys(r).length <= 100, "Too many per-date entries");
+
+const listingFieldRules = {
+  emoji: z.string().max(20).optional(),
+  name: z.string().min(1, "Event name is required").max(200, "Event name must be 200 characters or less"),
+  venue: z.string().min(1, "Venue is required").max(200, "Venue must be 200 characters or less"),
+  neighborhood: z.string().max(100).nullable().optional(),
+  dateStart: isoDateString,
+  dateEnd: isoDateOrEmpty.nullable().optional(),
+  startTime: z.string().max(20).nullable().optional(),
+  summary: z.string().max(400, "Description must be 400 characters or less"),
+  price: z.string().max(100).nullable().optional(),
+  ticketUrl: z.string().max(2000).nullable().optional(),
+  sourceUrl: z.string().max(2000).nullable().optional(),
+  rawBlurb: z.string().max(30000).nullable().optional(),
+  requester: z.string().min(1, "Your name is required").max(100, "Name must be 100 characters or less"),
+  announcedAt: z.string().max(50).nullable().optional(),
+  recurrenceLabel: z.string().max(100).nullable().optional(),
+  recurrenceRule: recurrenceRuleSchema.nullable().optional(),
+  instanceNotes: perDateText.nullable().optional(),
+  instanceTitles: perDateText.nullable().optional(),
+  excludedDates: z.array(isoDateString).max(500).nullable().optional(),
+  verifiedThroughDate: isoDateOrEmpty.nullable().optional(),
+  activeWeekdays: z.array(z.number().int().min(0).max(6)).max(7).nullable().optional(),
+  seriesEndDate: isoDateOrEmpty.nullable().optional(),
+};
+
+// Edits: same rules, every field optional (partial updates such as the
+// sold-out toggle), and strict — any other key (id, upvotes, createdAt,
+// createdVia, or anything unexpected) rejects the whole edit with a 400
+// rather than being silently dropped. Requester is optional-and-
+// unvalidated-for-emptiness here so a legacy row can always be re-saved.
+const listingUpdateOverrides = {
+  requester: z.string().max(100).optional(),
+};
 
 export const insertFoodEventSchema = createInsertSchema(foodEvents).omit({
   id: true,
   upvotes: true,
   createdAt: true,
+  createdVia: true,
 }).extend({
-  name: z.string().min(1, "Event name is required"),
-  venue: z.string().min(1, "Venue is required"),
-  dateStart: z.string().min(1, "Start date is required"),
-  cuisine: z.string().min(1, "Cuisine type is required"),
-  requester: z.string().min(1, "Your name is required"),
-  recurrenceRule: recurrenceRuleSchema.nullable().optional(),
-  excludedDates: z.array(z.string()).nullable().optional(),
-  verifiedThroughDate: z.string().nullable().optional(),
-  activeWeekdays: z.array(z.number().min(0).max(6)).nullable().optional(),
-  seriesEndDate: z.string().nullable().optional(),
+  ...listingFieldRules,
+  cuisine: z.string().min(1, "Cuisine type is required").max(100),
 });
 
+export const updateFoodEventSchema = insertFoodEventSchema.partial().extend(listingUpdateOverrides).strict();
+
 export type InsertFoodEvent = z.infer<typeof insertFoodEventSchema>;
-export type FoodEvent = typeof foodEvents.$inferSelect;
+export type FoodEvent = Omit<typeof foodEvents.$inferSelect, "createdVia">;
 
 // ── Artistry & Nerdery Live ────────────────────────────────────────────────
 
@@ -656,28 +720,24 @@ export const artEvents = pgTable("art_events", {
   // See foodEvents.seriesEndDate — same meaning here.
   seriesEndDate: text("series_end_date"),
   createdAt: timestamp("created_at").defaultNow(),
+  createdVia: text("created_via"), // server-assigned provenance; see createdViaValues
 });
 
 export const insertArtEventSchema = createInsertSchema(artEvents).omit({
   id: true,
   upvotes: true,
   createdAt: true,
+  createdVia: true,
 }).extend({
-  name: z.string().min(1, "Event name is required"),
-  venue: z.string().min(1, "Venue is required"),
-  dateStart: z.string().min(1, "Start date is required"),
-  category: z.string().min(1, "Category is required"),
-  tags: z.array(z.string()).default([]),
-  requester: z.string().min(1, "Your name is required"),
-  recurrenceRule: recurrenceRuleSchema.nullable().optional(),
-  excludedDates: z.array(z.string()).nullable().optional(),
-  verifiedThroughDate: z.string().nullable().optional(),
-  activeWeekdays: z.array(z.number().min(0).max(6)).nullable().optional(),
-  seriesEndDate: z.string().nullable().optional(),
+  ...listingFieldRules,
+  category: z.string().min(1, "Category is required").max(100),
+  tags: z.array(z.string().max(50)).max(20).default([]),
 });
 
+export const updateArtEventSchema = insertArtEventSchema.partial().extend(listingUpdateOverrides).strict();
+
 export type InsertArtEvent = z.infer<typeof insertArtEventSchema>;
-export type ArtEvent = typeof artEvents.$inferSelect;
+export type ArtEvent = Omit<typeof artEvents.$inferSelect, "createdVia">;
 
 // ── Restaurants (Best of Denver) ─────────────────────────────────────────────
 
@@ -837,15 +897,18 @@ export const insertRestaurantSchema = createInsertSchema(restaurants).omit({
   id: true,
   createdAt: true,
 }).extend({
-  name: z.string().min(1, "Restaurant name is required"),
-  description: z.string().min(1, "Description is required"),
-  cuisine: z.array(z.string()).min(1, "At least one cuisine tag is required"),
-  pricePoint: z.string().min(1, "Price point is required"),
-  neighborhood: z.string().min(1, "Neighborhood is required"),
+  emoji: z.string().max(20).optional(),
+  name: z.string().min(1, "Restaurant name is required").max(200),
+  description: z.string().min(1, "Description is required").max(1000),
+  cuisine: z.array(z.string().max(50)).min(1, "At least one cuisine tag is required").max(20),
+  pricePoint: z.string().min(1, "Price point is required").max(10),
+  neighborhood: z.string().min(1, "Neighborhood is required").max(100),
   hotNew: z.boolean().optional().default(false),
   jamesBeard: z.boolean().optional().default(false),
   fixture: z.boolean().optional().default(false),
 });
+
+export const updateRestaurantSchema = insertRestaurantSchema.partial().strict();
 
 export type InsertRestaurant = z.infer<typeof insertRestaurantSchema>;
 export type Restaurant = typeof restaurants.$inferSelect;

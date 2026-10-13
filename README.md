@@ -42,6 +42,8 @@ Copy `.env.example` to `.env` and fill in:
 | `AI_ANON_HOURLY_LIMIT_PER_VISITOR` | optional (default 20) | AI parser calls per visitor (IP) per hour |
 | `AI_ANON_DAILY_BUDGET_CENTS` | optional (default 200) | Estimated anonymous AI spend per Denver day; `0` turns anonymous AI off |
 | `LOGIN_ATTEMPTS_PER_HOUR` | optional (default 10) | Admin sign-in attempts per IP per hour |
+| `SUBMISSIONS_PER_HOUR_PER_VISITOR` | optional (default 30) | Anonymous manual event submissions per IP per hour (all three feeds) |
+| `UPVOTES_PER_HOUR_PER_VISITOR` | optional (default 120) | Anonymous upvote actions per IP per hour |
 
 Production values are set as Vercel environment variables (`vercel env add …`), never committed.
 
@@ -54,6 +56,8 @@ Three kinds of caller, resolved server-side on every request (`server/auth.ts`):
 - **Members**: reserved for later; nothing grants this today.
 
 Every non-GET `/api` request requires admin **unless** it is on the public allowlist in `server/auth.ts` (`PUBLIC_WRITE_ROUTES`), and must send an `X-Requested-With` header (CSRF guard). `npm test` fails if a route's exposure changes.
+
+Anonymous submissions and upvotes have their own generous per-visitor hourly limits (`server/abuse-limits.ts`); admins are exempt. Edits go through explicit allowlists (`update*Schema` in `shared/schema.ts`), so ids, counters and timestamps can't be written through the API. Every new event records how it was created in an internal `created_via` column (`anonymous`, `admin`, `csv`, `discovery`) that is never returned by the API.
 
 Anonymous AI parsing (`/api/ai/parse-blurb`, `/parse-art-blurb`, `/analyze-artist`) is limited per visitor and by a shared daily budget, both counted in Postgres so limits hold across serverless instances (`server/ai-guard.ts`). `npx tsx --env-file=.env scripts/ai-usage-report.ts` shows daily AI usage next to events actually created.
 
