@@ -2,26 +2,36 @@
 
 I organize three Denver communities: one around live music, one around food, and one around the arts, sciences and other curious pursuits. Over the past year I've hosted roughly 100 Meetups across them.
 
-But I can only organize so many outings. The events worth knowing about far outnumber the ones I can host. They're scattered across venue calendars, Instagram, newsletters and word of mouth, and I was already spending real time finding them.
+DenverFeeds grew out of my own discovery and planning habits. I love finding worthwhile things to do, but I can only host so many outings. And between museum calendars, university talks, venue newsletters, restaurant announcements and Instagram, keeping up with everything I might want to attend had become a project of its own.
 
-DenverFeeds grew out of that gap. It's three curated, searchable event feeds that let members find things worth doing, whether or not I'm organizing a group to go.
+I wanted a longer view and a wider lens. Plenty of local curators publish great weekly or weekend roundups, but by the time those arrive, I'm often already booked. I wanted to find things as they're announced—sometimes months ahead—and encounter an indie show, a visiting scientist's talk or an intimate pop-up dinner without having to follow every source separately.
+
+DenverFeeds brings those discoveries together across three distinct but connected feeds. It's broad in subject matter but selective in taste: I curate according to my own eclectic interests, and members can filter that selection to what matters to them, whether they're making plans months out or looking for something this weekend.
+
+On the day I first shared Artistry/Nerdistry with our Meetup group, a member spotted an event, invited others to join him the next day, and two people did. I didn't have to host anything.
 
 | | Setlist Social Feed | Amuse-Bouche Insider | Artistry/Nerdistry Live |
 |---|---|---|---|
 | **Community** | Live music, mostly indie | Food: pop-ups, supper clubs, special dinners, plus a restaurant guide | Talks, workshops, exhibitions, games and other curious nights out |
 | **Live site** | [setlistsocialfeed.com](https://www.setlistsocialfeed.com) | [amuseboucheinsider.com](https://amuseboucheinsider.com) | [artistrynerdistry.com](https://artistrynerdistry.com) |
 
-<!-- Screenshot to add: the three feeds side by side (docs/images/three-feeds.png) -->
+<p align="center">
+  <img src="docs/images/three-feeds.webp" width="100%" alt="The three feeds on a phone, side by side: Setlist Social Feed in pink and orange with one-line show descriptions and upvote counts; Amuse-Bouche in orange and cream with a Still Time section for runs already underway; Artistry/Nerdistry in black and pink with format and topic tags, prices and ticket links.">
+</p>
+<p align="center"><sub>Same platform, three editorial identities. Live production pages, captured October 2026.</sub></p>
 
 ## What members can do
 
 - **Browse:** filters, search and a calendar view, plus cues for what was added in the last week and what's still running.
 - **Go:** every listing links to the next step: the artist on Spotify, the venue on Maps, the date in Google Calendar, tickets or the original post.
 - **Subscribe:** each feed publishes a calendar subscription, so upcoming events show up in your own calendar.
-- **Join a Meetup:** on Setlist Social, members upvote shows they'd like me to organize. When I schedule one, the show is marked **Scheduled** and links straight to the Meetup RSVP.
+- **Join a Meetup:** on Setlist Social, members upvote shows they'd like me to organize. When I schedule one, the show is marked **Scheduled** and links to our Meetup group, where members RSVP.
 - **Add an event, no account needed:** paste a screenshot or a blurb, review the AI-drafted listing, and submit it. Or type it in by hand.
 
-<!-- Screenshot to add: screenshot-to-listing flow, before and after (docs/images/ai-add.png) -->
+<p align="center">
+  <img src="docs/images/calendar-november.webp" width="100%" alt="Setlist Social Feed's desktop calendar for November 2026, viewed in mid-October: a month grid already filled with curated shows, such as Orville Peck, Superheaven, Rodrigo y Gabriela, Kurt Vile and Bonobo, with a count of shows on each day.">
+</p>
+<p align="center"><sub>Planning beyond this weekend: Setlist Social's November calendar, viewed in mid-October.</sub></p>
 
 ## Five product decisions
 
@@ -42,7 +52,11 @@ The goal wasn't to make three unrelated products, or to flatten them into one ge
 
 ### 2. Upvotes are enthusiasm, not a commitment to attend
 
-From the start, Setlist Social has let members upvote concerts they'd like me to organize as Meetups. I hoped those votes would help me prioritize shows the community genuinely wanted to attend. When I do host a show, I mark it Scheduled, and the vote button gives way to the Meetup RSVP.
+From the start, Setlist Social has let members upvote concerts they'd like me to organize as Meetups. I hoped those votes would help me prioritize shows the community genuinely wanted to attend. When I do host a show, I mark it Scheduled, and the vote button gives way to a link to our Meetup group, where members RSVP.
+
+<p align="center">
+  <img src="docs/images/scheduled-show.webp" width="600" alt="Two shows on the same night in Setlist Social Feed. Tyler Ballgame at Globe Hall carries a Scheduled tag that links to the Meetup group; Grace Cummings at Globe Hall still shows its upvote button.">
+</p>
 
 The votes influenced my hosting decisions at first, but the signal wasn't as reliable as I'd hoped. People voted for bands they loved even when they had scheduling conflicts or hadn't budgeted for tickets. Actual RSVPs were repeatedly lower than the votes suggested. And only a small part of the community voted, so the results skewed toward the most active participants.
 
@@ -51,6 +65,11 @@ The lesson wasn't that voting is useless. It was that **liking an idea, being av
 ### 3. Frictionless contribution hasn't meant more contribution
 
 I deliberately kept event submission account-free. Then I added AI-assisted parsing, so someone could turn a screenshot or event blurb into a structured listing without doing all the transcription. Keeping that open to anonymous visitors meant bounding it rather than locking it: per-visitor rate limits and a daily AI spending budget.
+
+<p align="center">
+  <img src="docs/images/ai-add-flow.webp" width="100%" alt="The Add an Event dialog in two real states. Left: a pasted text blurb about an experimental sound event at the Clyfford Still Museum, with an Autofill Event Details button. Right: the AI-drafted listing awaiting review, with suggested event name, format, topics, a short description, date, venue, neighborhood, a 6:30 PM start time, tiered prices and a high sellout risk, every field editable, ticket link and announcement date left blank, and an Add Event button the contributor still has to press.">
+</p>
+<p align="center"><sub>In production: a pasted blurb (left) becomes a draft (right). The AI's values, including an estimated sellout risk, are suggestions; every field stays editable, and nothing is published until a person reviews it and submits.</sub></p>
 
 It hasn't produced much community contribution so far. Only about 66 listings (roughly 3%) came from someone other than me. My working hypothesis is that members come partly because they want someone else to discover and vet the good stuff. When a feed is already full of options, they may not feel much reason to add more.
 
@@ -103,6 +122,8 @@ I developed the application through AI-assisted coding workflows. AI coding agen
 - **March 2025 to July 2026: Replit Agent.** It took the project from a one-page music feed to three products.
 - **Summer 2026 onward: Claude Code.** It handled the move off Replit to GitHub, Vercel and Supabase, and the work since.
 
+I also experimented with v0 as a design collaborator when redesigning the Add/Edit forms for Amuse-Bouche and Artistry/Nerdistry. I used the resulting design mock to inform the shipped experience, adapting its components and design tokens into the existing application.
+
 Commits from the Claude Code period carry a co-author line.
 
 The AI features call Anthropic's Claude through its API. I didn't build or train models. My part was deciding where AI helps, what it's allowed to do, and how a person reviews what it produces.
@@ -142,7 +163,7 @@ Addressing them shaped how the product works now:
 
 ## What I'm exploring (not built)
 
-- **Discovery Agent:** an agent that *proposes* events into a review queue. It would be measured against my own accept/reject decisions before it's trusted with anything more.
+- **Discovery Agent:** today I find and vet most listings myself. An agent could watch far more sources than I can and *propose* events into a review queue for my approval, widening coverage without giving up editorial judgment. It would be measured against my own accept/reject decisions before it's trusted with anything more.
 - **Personal picks, possibly:** a short, explainable "a few for you" list. If I build it, I'd like it to work without accounts.
 
 ## Documentation
