@@ -98,6 +98,8 @@ A lot of what's worth doing repeats: weekly game nights, monthly supper clubs, e
 
 About 250 listings have been recurring, and more than 100 of them use per-date notes.
 
+How the entry form keeps one-off events simple while supporting these schedules: [Simple by default, complex when needed](https://www.mandiobrien.com/denverfeeds/event-form).
+
 ## Where it stands
 
 - **Scale.** Since March 2025 I've curated roughly 2,400 listings across the three feeds. That's a cumulative count that includes past events. There's also a guide of about 280 restaurants. At the time of writing, about 500 upcoming events are listed.
@@ -122,7 +124,7 @@ I developed the application through AI-assisted coding workflows. AI coding agen
 - **March 2025 to July 2026: Replit Agent.** It took the project from a one-page music feed to three products.
 - **Summer 2026 onward: Claude Code.** It handled the move off Replit to GitHub, Vercel and Supabase, and the work since.
 
-I also experimented with v0 as a design collaborator when redesigning the Add/Edit forms for Amuse-Bouche and Artistry/Nerdistry. I used the resulting design mock to inform the shipped experience, adapting its components and design tokens into the existing application.
+I also experimented with v0 as a design collaborator when redesigning the Add/Edit forms for Amuse-Bouche and Artistry/Nerdistry. I used the resulting design mock to inform the shipped experience, adapting its components and design tokens into the existing application. ([Design process, with screenshots](https://www.mandiobrien.com/denverfeeds/event-form).)
 
 Commits from the Claude Code period carry a co-author line.
 
