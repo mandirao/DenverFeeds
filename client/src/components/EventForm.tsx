@@ -202,7 +202,9 @@ export default function EventForm({
         }
         
         const parts = [];
-        if (response.suggestedVenue && response.suggestedDate) {
+        if (response.concertSearchFailed) {
+          parts.push("Couldn't look up venue and date — the show search is unavailable right now, so enter them manually.");
+        } else if (response.suggestedVenue && response.suggestedDate) {
           parts.push(`Show found via ${response.concertSource || 'search'}.`);
         } else if (response.suggestedVenue || response.suggestedDate) {
           parts.push(`Partial match via ${response.concertSource || 'search'}.`);

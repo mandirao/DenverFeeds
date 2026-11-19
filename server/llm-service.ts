@@ -10,6 +10,10 @@ interface ArtistAnalysis {
   suggestedVenue?: string;
   suggestedDate?: string;
   concertSource?: string;
+  // True when the web search behind the venue/date lookup failed (e.g. the
+  // Serper account is out of credits), so an empty venue/date means
+  // "couldn't look", not "no show announced".
+  concertSearchFailed?: boolean;
 }
 
 interface SearchResult {
@@ -22,6 +26,13 @@ interface ConcertMatch {
   venue: string;
   date: string;
   source: string;
+}
+
+// Shared across one artist lookup's searches so the caller can tell
+// "searched and found nothing" apart from "every search errored".
+interface SearchTally {
+  attempted: number;
+  failed: number;
 }
 
 // Shared shape behind the AI Refresh "search-and-verify" pipeline for Food +
@@ -176,8 +187,9 @@ export class LLMService {
     return null;
   }
 
-  private async serperSearch(query: string, num: number = 5): Promise<SearchResult[]> {
+  private async serperSearch(query: string, num: number = 5, tally?: SearchTally): Promise<SearchResult[]> {
     if (!this.searchApiKey) return [];
+    if (tally) tally.attempted++;
 
     try {
       const response = await fetch('https://google.serper.dev/search', {
@@ -190,12 +202,15 @@ export class LLMService {
       });
 
       if (!response.ok) {
-        throw new Error(`Search API error: ${response.status}`);
+        // Serper puts the reason (e.g. "Not enough credits") in the body.
+        const body = await response.json().catch(() => ({}));
+        throw new Error(`Search API error: ${response.status}${(body as any)?.message ? ` — ${(body as any).message}` : ''}`);
       }
 
       const data = await response.json();
       return data.organic?.slice(0, num) || [];
     } catch (error) {
+      if (tally) tally.failed++;
       console.error('Search API error:', error);
       return [];
     }
@@ -288,7 +303,7 @@ export class LLMService {
       lowerText.includes(', co') || lowerText.includes('red rocks');
   }
 
-  async searchStructuredConcertData(artistName: string): Promise<ConcertMatch | null> {
+  async searchStructuredConcertData(artistName: string, tally?: SearchTally): Promise<ConcertMatch | null> {
     if (!this.searchApiKey) return null;
 
     console.log(`[Concert Search] Tier 1: Searching structured sources for "${artistName}"...`);
@@ -300,7 +315,7 @@ export class LLMService {
       `"${artistName}" site:dice.fm Denver Colorado`,
     ];
 
-    const results = await Promise.all(queries.map(q => this.serperSearch(q, 3)));
+    const results = await Promise.all(queries.map(q => this.serperSearch(q, 3, tally)));
     const allResults = results.flat();
 
     console.log(`[Concert Search] Tier 1: Found ${allResults.length} structured results`);
@@ -357,17 +372,21 @@ export class LLMService {
     return null;
   }
 
-  async searchGeneralConcertData(artistName: string): Promise<ConcertMatch | null> {
+  async searchGeneralConcertData(artistName: string, tally?: SearchTally): Promise<ConcertMatch | null> {
     if (!this.searchApiKey) return null;
 
     console.log(`[Concert Search] Tier 2: General web search for "${artistName}" Denver shows...`);
 
+    // Years are computed, not hardcoded, so announced next-year dates surface
+    // and this never needs an annual edit. extractDate accepts the same span.
+    const thisYear = new Date().getFullYear();
+    const years = `${thisYear} OR ${thisYear + 1}`;
     const queries = [
-      `"${artistName}" concert Denver Colorado 2026 tickets`,
-      `"${artistName}" tour Denver Boulder Colorado 2026`,
+      `"${artistName}" concert Denver Colorado ${years} tickets`,
+      `"${artistName}" tour Denver Boulder Colorado ${years}`,
     ];
 
-    const results = await Promise.all(queries.map(q => this.serperSearch(q, 5)));
+    const results = await Promise.all(queries.map(q => this.serperSearch(q, 5, tally)));
     const allResults = results.flat();
 
     console.log(`[Concert Search] Tier 2: Found ${allResults.length} general results`);
@@ -401,14 +420,19 @@ export class LLMService {
   }
 
   async analyzeArtist(artistName: string): Promise<ArtistAnalysis> {
+    const concertTally: SearchTally = { attempted: 0, failed: 0 };
     const [artistResults, concertMatch] = await Promise.all([
       this.searchArtistInfo(artistName),
-      this.searchStructuredConcertData(artistName)
+      this.searchStructuredConcertData(artistName, concertTally)
     ]);
 
     let finalConcertMatch = concertMatch;
     if (!finalConcertMatch || (!finalConcertMatch.venue && !finalConcertMatch.date)) {
-      finalConcertMatch = await this.searchGeneralConcertData(artistName);
+      finalConcertMatch = await this.searchGeneralConcertData(artistName, concertTally);
+    }
+    const concertSearchFailed = concertTally.attempted > 0 && concertTally.failed === concertTally.attempted;
+    if (concertSearchFailed) {
+      console.warn(`[Concert Search] All ${concertTally.attempted} searches failed for "${artistName}" — venue/date lookup unavailable`);
     }
 
     const artistContext = artistResults.length > 0
@@ -484,6 +508,7 @@ Respond with ONLY valid JSON, no markdown formatting:
           suggestedVenue: validatedVenue,
           suggestedDate: validatedDate,
           concertSource: finalConcertMatch?.source || undefined,
+          concertSearchFailed: concertSearchFailed || undefined,
         };
       } else {
         throw new Error('Unexpected response format');
